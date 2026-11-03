@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DayTrade Desk</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">📈 DayTrade Desk</div>
+    <nav>
+      <a href="#heatmap">Heatmap</a>
+      <a href="#news">News</a>
+      <a href="#setup">Trade-Setup</a>
+      <a href="#copy">Copy-Trading</a>
+      <a href="#journal">Journal</a>
+    </nav>
+    <div class="clock" id="marketClock"></div>
+  </header>
+
+  <div class="ticker" id="tickerTape"></div>
+
+  <main>
+    <!-- HEATMAP -->
+    <section id="heatmap" class="card">
+      <div class="card-head">
+        <h2>Markt-Heatmap</h2>
+        <select id="heatmapSource">
+          <option value="SPX500">S&amp;P 500</option>
+          <option value="NASDAQ100">Nasdaq 100</option>
+          <option value="DAX">DAX</option>
+          <option value="AllUSA">Alle US-Aktien</option>
+        </select>
+      </div>
+      <div id="heatmapWidget" class="widget tall"></div>
+    </section>
+
+    <!-- NEWS -->
+    <section id="news" class="grid-2">
+      <div class="card">
+        <div class="card-head"><h2>Top-News Aktienmarkt</h2></div>
+        <div id="newsWidget" class="widget tall"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Wirtschaftskalender (High Impact)</h2></div>
+        <div id="calendarWidget" class="widget tall"></div>
+      </div>
+    </section>
+
+    <!-- TRADE SETUP -->
+    <section id="setup" class="card">
+      <div class="card-head">
+        <h2>Intraday Trade-Setup <span class="badge">max. 1 Tag</span></h2>
+        <div class="symbol-pick">
+          <input id="symbolInput" value="NASDAQ:AAPL" spellcheck="false">
+          <button id="symbolBtn">Laden</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div id="chartWidget" class="widget chart"></div>
+        <div id="taWidget" class="widget chart"></div>
+      </div>
+
+      <h3>Setup-Rechner</h3>
+      <p class="muted">Regelbasierter Vorschlag für Stop-Loss, Take-Profit und Positionsgröße. Den Signal-Gauge oben (15-Min-Technik) als Richtungshinweis nutzen – er ist keine Garantie.</p>
+      <form id="calc" class="calc">
+        <label>Kontogröße (€)<input type="number" id="cAccount" value="5000" min="0" step="any"></label>
+        <label>Risiko pro Trade (%)<input type="number" id="cRisk" value="1" min="0.1" max="5" step="0.1"></label>
+        <label>Richtung
+          <select id="cDir"><option value="long">Long (Kauf)</option><option value="short">Short (Verkauf)</option></select>
+        </label>
+        <label>Einstiegskurs<input type="number" id="cEntry" value="100" step="any"></label>
+        <label>ATR (14, 15-Min) <input type="number" id="cAtr" value="0.8" step="any"></label>
+        <label>Stil
+          <select id="cStyle">
+            <option value="scalp">Scalp (Stop 1×ATR, CRV 1:1,5)</option>
+            <option value="momentum" selected>Momentum (Stop 1,5×ATR, CRV 1:2)</option>
+            <option value="trend">Intraday-Trend (Stop 2×ATR, CRV 1:3)</option>
+          </select>
+        </label>
+      </form>
+      <div class="result" id="calcResult"></div>
+
+      <h3>Tagesregeln</h3>
+      <ul class="rules">
+        <li>Erste 15 Minuten nach Börseneröffnung (US: 15:30 MEZ, DAX: 09:00) nur beobachten.</li>
+        <li>Kein Trade 5 Minuten vor/nach High-Impact-News (siehe Kalender).</li>
+        <li>Stop-Loss <strong>immer</strong> direkt mit der Order setzen, nie nachträglich vergrößern.</li>
+        <li>Alle Positionen spätestens 15 Minuten vor Börsenschluss schließen – keine Übernacht-Positionen.</li>
+        <li>Tageslimit: nach 3 Verlusttrades oder −3&nbsp;% Konto ist Schluss für heute.</li>
+      </ul>
+    </section>
+
+    <!-- COPY TRADING -->
+    <section id="copy" class="card">
+      <div class="card-head"><h2>Copy-Trading</h2></div>
+      <p>Echtes Copy-Trading (automatisches Nachhandeln fremder Trades) läuft immer über einen regulierten Broker mit eigenem Konto. Diese Seite kann keine Orders ausführen – hier die gängigen Plattformen zum Vergleich:</p>
+      <div class="grid-3">
+        <div class="mini">
+          <h4>eToro CopyTrader</h4>
+          <p>Bekannteste Plattform, Aktien &amp; CFDs. Trader-Statistiken (Drawdown, Risk-Score) öffentlich einsehbar.</p>
+          <a href="https://www.etoro.com/copytrader/" target="_blank" rel="noopener">Website ↗</a>
+        </div>
+        <div class="mini">
+          <h4>ZuluTrade</h4>
+          <p>Verbindet sich mit verschiedenen Brokern, eher Forex/CFD-lastig. „ZuluGuard“ begrenzt Verluste pro Signalgeber.</p>
+          <a href="https://www.zulutrade.com/" target="_blank" rel="noopener">Website ↗</a>
+        </div>
+        <div class="mini">
+          <h4>wikifolio</h4>
+          <p>Deutsche Lösung: Musterdepots von Tradern als handelbare Zertifikate. Für Daytrading weniger geeignet.</p>
+          <a href="https://www.wikifolio.com/" target="_blank" rel="noopener">Website ↗</a>
+        </div>
+      </div>
+      <h3>Checkliste vor dem Kopieren eines Traders</h3>
+      <ul class="rules">
+        <li>Mindestens 12 Monate verifizierte Historie, nicht nur ein starker Monat.</li>
+        <li>Maximaler Drawdown unter 20&nbsp;% – hohe Rendite mit hohem Drawdown ist Glück, kein System.</li>
+        <li>Haltedauer passt zu Ihrem Ziel (Intraday statt Swing).</li>
+        <li>Mit kleinem Betrag starten und Copy-Stop-Loss beim Broker setzen.</li>
+      </ul>
+    </section>
+
+    <!-- JOURNAL -->
+    <section id="journal" class="card">
+      <div class="card-head"><h2>Trade-Journal</h2><span class="muted small">wird nur lokal im Browser gespeichert</span></div>
+      <form id="jForm" class="calc">
+        <label>Symbol<input id="jSym" required placeholder="AAPL"></label>
+        <label>Richtung<select id="jDir"><option>Long</option><option>Short</option></select></label>
+        <label>Einstieg<input id="jIn" type="number" step="any" required></label>
+        <label>Ausstieg<input id="jOut" type="number" step="any" required></label>
+        <label>Stück<input id="jQty" type="number" step="any" required></label>
+        <label>Notiz<input id="jNote" placeholder="Setup, Fehler, Lernpunkt"></label>
+        <button type="submit">Eintragen</button>
+      </form>
+      <div class="stats" id="jStats"></div>
+      <div class="table-wrap">
+        <table id="jTable">
+          <thead><tr><th>Datum</th><th>Symbol</th><th>Richtung</th><th>Ein</th><th>Aus</th><th>Stück</th><th>P/L</th><th>Notiz</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="disclaimer">
+      <strong>Risikohinweis:</strong> Keine Anlageberatung. Alle Vorschläge sind mechanische Rechenregeln, keine Empfehlung zum Kauf oder Verkauf. Studien zeigen, dass die große Mehrheit privater Daytrader langfristig Geld verliert. Handeln Sie nur mit Geld, dessen Verlust Sie verkraften können, und üben Sie zuerst mit einem Demokonto.
+      Marktdaten &amp; Widgets: TradingView.
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
