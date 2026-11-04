@@ -87,6 +87,10 @@ function dataCheck(traders) {
     "24 abgeschlossene Monate + laufender Monat": u => Number.isFinite(u.currentGain) ? comp([...u.months.slice(-24).map(m => m.g), u.currentGain]) : NaN,
   };
   const usable = traders.filter(u => Number.isFinite(u.periodGain) && u.months.length >= 24);
+  for (const u of usable.slice(0, 4)) {
+    log(`Datenkontrolle Beispiel ${u.userName}: eToro-Wert ${u.periodGain}, eigene 2-Jahres-Rendite ${variants["24 abgeschlossene Monate"](u).toFixed(2)} % ` +
+      `(mit laufendem Monat ${Number.isFinite(u.currentGain) ? variants["23 abgeschlossene Monate + laufender Monat"](u).toFixed(2) : "–"} %), eToro p.a. ${u.annualizedReturn ?? "–"}`);
+  }
   let best = null;
   // eToro könnte Renditen in Prozent (12,5) oder als Anteil (0,125) liefern – beides prüfen, das passende gewinnt
   for (const scale of [1, 100]) {
