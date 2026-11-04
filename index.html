@@ -14,6 +14,7 @@
       <a href="#news">News</a>
       <a href="#setup">Trade-Setup</a>
       <a href="#copy">Copy-Trading</a>
+      <a href="#compare">Trader-Vergleich</a>
       <a href="#journal">Journal</a>
     </nav>
     <div class="clock" id="marketClock"></div>
@@ -142,6 +143,7 @@
           </div>
           <span class="muted small">Die Grenzwerte sind vorsichtige Richtwerte dieser Seite, keine Vorgaben von eToro.</span>
         </li>
+        <li>Die Werte der Kandidaten im <a href="#compare">Trader-Vergleich</a> eintragen – dort rechnet die Seite aus, welchen Trader Sie kopieren sollten.</li>
       </ol>
 
       <h3>3. Kopie in eToro eintragen</h3>
@@ -156,6 +158,120 @@
         <li>Wenn Sie Geld nachlegen oder abziehen, rechnet eToro den Copy Stop Loss neu – danach prüfen.</li>
       </ul>
       <p class="muted small">eToro-Regeln laut eToro-Website: mindestens 200 $ pro kopiertem Trader, jede kopierte Position mindestens 1 $, Copy Stop Loss einstellbar von 5 % bis 95 % (Standard 40 %). Bezeichnungen können je nach App-Version abweichen.</p>
+    </section>
+
+    <!-- TRADER-VERGLEICH -->
+    <section id="compare" class="card">
+      <div class="card-head">
+        <h2>Trader-Vergleich</h2>
+        <div class="btn-row">
+          <button type="button" class="ghost" id="cmpExamples">Beispiele laden</button>
+          <button type="button" class="ghost" id="cmpClear">Alle löschen</button>
+        </div>
+      </div>
+      <p>Tragen Sie bis zu 8 Trader mit den Werten aus ihrem eToro-Profil ein. Die Seite rechnet für jeden aus, wie sicher seine Rendite auf Können statt auf Glück beruht, und empfiehlt den besten – oder ehrlicherweise keinen.</p>
+
+      <div class="reco" id="cmpReco"></div>
+
+      <h3>Wachstum von 100 $</h3>
+      <div class="legend-row" id="cmpLegend"></div>
+      <div class="chart-host" id="cmpChart"></div>
+
+      <h3>Vergleich</h3>
+      <div class="table-wrap">
+        <table id="cmpTable">
+          <thead><tr>
+            <th>Trader</th><th>Ergebnis</th>
+            <th title="Statistische Sicherheit, dass die Leistung nicht nur Glück ist (Deflated Sharpe Ratio)">Können-Sicherheit</th>
+            <th>Monate</th>
+            <th title="Jahresrendite aus den Monatsrenditen, mit Zinseszins">Rendite p.a.</th>
+            <th title="Größter Rückgang vom Höchststand">Max. Drawdown</th>
+            <th title="Überrendite geteilt durch Schwankung, aufs Jahr gerechnet">Sharpe</th>
+            <th title="Wie Sharpe, zählt aber nur Verlust-Schwankung">Sortino</th>
+            <th title="Rendite p.a. geteilt durch Max. Drawdown">Calmar</th>
+            <th title="Durchschnittliches Ergebnis pro Trade">Erwartung/Trade</th>
+            <th title="Summe der Gewinne geteilt durch Summe der Verluste">Profit-Faktor</th>
+            <th>Ø Haltedauer</th><th>Risiko</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <h3 id="tFormTitle">Trader eintragen</h3>
+      <form id="tForm" class="calc">
+        <label>Name des Traders<input id="tName" required maxlength="40" placeholder="eToro-Benutzername"></label>
+        <label class="wide">Monatsrenditen in %, älteste zuerst
+          <textarea id="tReturns" rows="2" required placeholder="z. B. 2,1  -0,8  3,4  1,2 … (mit Leerzeichen oder ; trennen)"></textarea>
+          <span class="small muted" id="tCount">0 Werte erkannt</span>
+        </label>
+        <label>Max. Drawdown (Jahr) in %<input id="tMdd" type="number" step="any" min="0" placeholder="z. B. 8,5"></label>
+        <label>Risiko-Score (1–10)<input id="tRisk" type="number" min="1" max="10" step="1" required></label>
+        <label>Ø Haltedauer
+          <span class="pair">
+            <input id="tHold" type="number" step="any" min="0" required>
+            <select id="tHoldUnit"><option value="1">Stunden</option><option value="24">Tage</option></select>
+          </span>
+        </label>
+        <label>Profitable Trades in %<input id="tWin" type="number" step="any" min="0" max="100" placeholder="optional"></label>
+        <label>Ø Gewinn je Trade in %<input id="tAvgWin" type="number" step="any" min="0" placeholder="optional"></label>
+        <label>Ø Verlust je Trade in %<input id="tAvgLoss" type="number" step="any" placeholder="optional"></label>
+        <label>Trades pro Woche<input id="tTpw" type="number" step="any" min="0" placeholder="optional"></label>
+        <div class="btn-row">
+          <button type="submit" id="tSubmit">Trader hinzufügen</button>
+          <button type="button" class="ghost" id="tCancel" hidden>Abbrechen</button>
+        </div>
+      </form>
+      <p class="warn" id="tError" hidden></p>
+
+      <details class="info">
+        <summary>Wo stehen die Werte in eToro?</summary>
+        <div class="table-wrap">
+          <table class="check">
+            <thead><tr><th>Feld hier</th><th>Im eToro-Profil</th></tr></thead>
+            <tbody>
+              <tr><td>Monatsrenditen</td><td>Reiter <b>„Statistik“</b> → Renditetabelle nach Monaten. Jahr für Jahr von Januar bis Dezember abschreiben, mindestens 12, besser 24–36 Monate.</td></tr>
+              <tr><td>Max. Drawdown</td><td><b>„Statistik“</b> → Bereich Risiko → <b>Max. Drawdown</b>, Wert für das Jahr</td></tr>
+              <tr><td>Risiko-Score</td><td><b>„Statistik“</b> → <b>Risiko-Score</b> (Zahl von 1 bis 10)</td></tr>
+              <tr><td>Haltedauer, profitable Trades, Ø Gewinn, Ø Verlust, Trades pro Woche</td><td><b>„Statistik“</b> → Bereich <b>Trading</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted small">Die Bezeichnungen können je nach App-Version und Sprache leicht abweichen.</p>
+      </details>
+
+      <details class="info" open>
+        <summary>Ihre Grenzen</summary>
+        <form id="cmpSettings" class="calc">
+          <label>Kontostand bei eToro ($)<input id="sAccount" type="number" value="5000" min="0" step="any"></label>
+          <label>Max. Anteil pro Trader (%)<input id="sShare" type="number" value="20" min="1" max="100" step="1"></label>
+          <label>Max. Verlust pro Kopie ($)<input id="sLoss" type="number" value="250" min="0" step="any"></label>
+          <label>Max. Risiko-Score<input id="sRisk" type="number" value="5" min="1" max="10" step="1"></label>
+          <label>Max. Ø Haltedauer (Stunden)<input id="sHold" type="number" value="24" min="1" step="any"></label>
+          <label>Max. Drawdown (%)<input id="sDd" type="number" value="20" min="1" step="any"></label>
+          <label>Mindestens Monate Daten<input id="sMonths" type="number" value="12" min="3" step="1"></label>
+          <label>Geforderte Sicherheit
+            <select id="sThr"><option value="0.8">80 %</option><option value="0.9" selected>90 %</option><option value="0.95">95 %</option></select>
+          </label>
+          <label>Angesehene Trader insgesamt<input id="sSeen" type="number" min="1" step="1" placeholder="= eingetragene"></label>
+          <label>Zins ohne Risiko (% p.a.)<input id="sRf" type="number" value="2" min="0" step="any"></label>
+        </form>
+        <p class="hint">„Angesehene Trader insgesamt“: Wenn Sie 30 Profile durchgeblättert und nur die 3 besten eingetragen haben, hier 30 eintragen. Je mehr Trader man sich ansieht, desto wahrscheinlicher ist unter ihnen ein reiner Glückspilz. Die Rechnung korrigiert das.</p>
+      </details>
+
+      <details class="info">
+        <summary>So rechnet das Tool</summary>
+        <ul class="rules">
+          <li><b>Rendite p.a.</b>: die Monatsrenditen mit Zinseszins aufs Jahr gerechnet.</li>
+          <li><b>Max. Drawdown</b>: größter Rückgang vom Höchststand. Verwendet wird der größere Wert aus Ihrer eToro-Angabe und den Monatsdaten.</li>
+          <li><b>Sharpe</b>: (Monatsrendite − Zins ohne Risiko) ÷ Schwankung der Monatsrenditen, × √12 aufs Jahr gerechnet. <b>Sortino</b> zählt nur die Verlust-Schwankung. <b>Calmar</b> = Rendite p.a. ÷ Max. Drawdown.</li>
+          <li><b>Erwartung je Trade</b> = Trefferquote × Ø Gewinn − (1 − Trefferquote) × Ø Verlust. Ist sie negativ, verliert der Trader im Schnitt pro Trade.</li>
+          <li><b>Können-Sicherheit</b> („Deflated Sharpe Ratio“ nach Bailey &amp; López de Prado): wie sicher die Sharpe-Quote des Traders über der liegt, die der glücklichste von N Tradern ganz ohne Können zufällig erreicht hätte. Berücksichtigt die Länge der Historie, schiefe Verteilungen und Ausreißer.</li>
+          <li><b>Empfehlung</b>: Von allen Tradern, die Ihre Grenzen einhalten und die geforderte Sicherheit erreichen, gewinnt der mit der höchsten Können-Sicherheit.</li>
+          <li><b>Betrag</b>: der kleinste von drei Werten – Max. Anteil × Kontostand, Verlustbudget ÷ Copy Stop Loss und halbes Kelly-Kriterium (Überrendite ÷ Varianz der Monatsrenditen, halbiert) × Kontostand.</li>
+          <li><b>Copy Stop Loss</b> = 1,25 × größter bisheriger Rückgang (5–95 %). So beenden normale Schwankungen die Kopie nicht, ein ungewöhnlicher Absturz aber schon.</li>
+          <li><b>Grenzen</b>: Vergangene Renditen garantieren nichts. Kopierer schneiden meist etwas schlechter ab (Spreads, Verzögerung). Die Rechnung ist nur so gut wie die eingetragenen Zahlen.</li>
+        </ul>
+      </details>
     </section>
 
     <!-- JOURNAL -->
@@ -186,5 +302,6 @@
   </main>
 
   <script src="app.js"></script>
+  <script src="compare.js"></script>
 </body>
 </html>
