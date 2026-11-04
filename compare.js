@@ -7,7 +7,6 @@
   const COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
   const SURFACE = "#161b22";
   const MAX_TRADERS = COLORS.length;
-  const EULER = 0.5772156649015329;
   const MIN_COPY = 200; // eToro-Mindestbetrag pro kopiertem Trader ($)
 
   const EXAMPLES = [
@@ -38,74 +37,15 @@
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {} }
   const state = load();
 
-  // ---------- Mathematik ----------
-  const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
-
-  // Standardnormalverteilung Φ(z) (Abramowitz & Stegun 7.1.26, Fehler < 1,5e-7)
-  function normCdf(z) {
-    const x = Math.abs(z) / Math.SQRT2, t = 1 / (1 + 0.3275911 * x);
-    const erf = 1 - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t) * Math.exp(-x * x);
-    return z >= 0 ? (1 + erf) / 2 : (1 - erf) / 2;
-  }
-  // Umkehrfunktion Φ⁻¹(p) (Acklam, relativer Fehler < 1,2e-9)
-  function normInv(p) {
-    const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
-    const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
-    const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
-    const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
-    const tail = q => (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
-    if (p < 0.02425) return tail(Math.sqrt(-2 * Math.log(p)));
-    if (p > 1 - 0.02425) return -tail(Math.sqrt(-2 * Math.log(1 - p)));
-    const q = p - 0.5, r = q * q;
-    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
-  }
-  // Probabilistic Sharpe Ratio: P(wahre Sharpe-Quote > bench), berücksichtigt Länge, Schiefe und Wölbung
-  function psr(sr, n, skew, kurt, bench) {
-    let d = 1 - skew * sr + (kurt - 1) / 4 * sr * sr;
-    if (!(d > 0)) d = 1 + sr * sr / 2;
-    return normCdf((sr - bench) * Math.sqrt(n - 1) / Math.sqrt(d));
-  }
-  // Erwartete beste Monats-Sharpe-Quote von N Tradern ganz ohne Können bei n Monaten Historie
-  function luckBenchmark(n, N) {
-    if (N <= 1) return 0;
-    return Math.sqrt(1 / (n - 1)) * ((1 - EULER) * normInv(1 - 1 / N) + EULER * normInv(1 - 1 / (N * Math.E)));
-  }
-  // Wie viele Monate Historie wären bei gleicher Leistung für die geforderte Sicherheit nötig?
-  function monthsNeeded(r, N, thr) {
-    if (!(r.sr > 0)) return Infinity;
-    for (let m = r.n + 1; m <= 600; m++) if (psr(r.sr, m, r.skew, r.kurt, luckBenchmark(m, N)) >= thr) return m;
-    return Infinity;
-  }
+  // ---------- Auswertung (die Mathematik steht in stats.js) ----------
+  const TS = window.TradeStats;
+  const mean = TS.mean;
 
   function analyze(t, cfg, N) {
     const n = t.returns.length;
     const res = { t, n, ok: n >= 3, fails: [] };
     if (!res.ok) { res.fails.push("weniger als 3 Monatswerte"); return res; }
-    const r = t.returns.map(x => Math.max(x, -99) / 100);
-    const rfm = Math.pow(1 + cfg.rf / 100, 1 / 12) - 1;
-    const x = r.map(val => val - rfm);                       // Überrendite je Monat
-    const mx = mean(x);
-    const m2 = mean(x.map(val => (val - mx) ** 2));
-    const sd = Math.max(Math.sqrt(m2 * n / (n - 1)), 1e-9);  // Stichproben-Standardabweichung
-    const skew = m2 > 0 ? mean(x.map(val => (val - mx) ** 3)) / m2 ** 1.5 : 0;
-    const kurt = m2 > 0 ? mean(x.map(val => (val - mx) ** 4)) / m2 ** 2 : 3;
-    const sr = mx / sd;
-
-    let eq = 1, peak = 1, mddM = 0;
-    const curve = [100];
-    for (const val of r) { eq *= 1 + val; peak = Math.max(peak, eq); mddM = Math.max(mddM, 1 - eq / peak); curve.push(eq * 100); }
-    const down = Math.sqrt(mean(x.map(val => Math.min(0, val) ** 2)));
-    const mdd = Math.max(mddM * 100, Number.isFinite(t.mdd) ? t.mdd : 0);
-    const cagr = (Math.pow(eq, 12 / n) - 1) * 100;
-
-    Object.assign(res, {
-      curve, sr, skew, kurt, mdd, cagr,
-      sharpe: sr * Math.sqrt(12),
-      sortino: down > 0 ? mx / down * Math.sqrt(12) : Infinity,
-      calmar: mdd > 0 ? cagr / mdd : Infinity,
-      dsr: psr(sr, n, skew, kurt, luckBenchmark(n, N)),
-      halfKelly: mx > 0 ? mx / (sd * sd) / 2 : 0,          // Anteil vom Konto
-    });
+    Object.assign(res, TS.metrics(t.returns, { rf: cfg.rf, N, mddInput: t.mdd }));
     if ([t.win, t.avgWin, t.avgLoss].every(Number.isFinite)) {
       const p = t.win / 100, W = t.avgWin, L = Math.abs(t.avgLoss);
       res.expectancy = p * W - (1 - p) * L;
@@ -115,7 +55,7 @@
     if (n < cfg.minMonths) res.fails.push(`nur ${n} Monate Daten (mind. ${cfg.minMonths})`);
     if (t.hold > cfg.maxHold) res.fails.push(`Ø Haltedauer ${fmtHold(t.hold)} > ${fmtHold(cfg.maxHold)}`);
     if (t.risk > cfg.maxRisk) res.fails.push(`Risiko-Score ${t.risk} > ${cfg.maxRisk}`);
-    if (mdd > cfg.maxDd) res.fails.push(`Drawdown ${fmt(mdd, 1)} % > ${fmt(cfg.maxDd, 0)} %`);
+    if (res.mdd > cfg.maxDd) res.fails.push(`Drawdown ${fmt(res.mdd, 1)} % > ${fmt(cfg.maxDd, 0)} %`);
     if (res.expectancy !== undefined && res.expectancy <= 0) res.fails.push("Erwartung je Trade nicht positiv");
     if (Number.isFinite(t.tpw) && t.tpw < 1) res.fails.push("weniger als 1 Trade pro Woche");
     res.inLimits = res.fails.length === 0;
@@ -125,15 +65,14 @@
   }
 
   function allocation(r, cfg) {
-    const csl = Math.min(95, Math.max(5, Math.ceil(r.mdd * 1.25)));
-    const limits = [
-      { val: cfg.account * cfg.share / 100, why: `Ihren Max. Anteil von ${fmt(cfg.share, 0)} % des Kontos` },
-      { val: cfg.loss / (csl / 100), why: `Ihr Verlustbudget von ${fmt(cfg.loss, 0)} $` },
-      { val: cfg.account * r.halfKelly, why: `das halbe Kelly-Kriterium (${fmt(r.halfKelly * 100, 0)} % des Kontos)` },
-    ];
-    const bind = limits.reduce((m, l) => (l.val < m.val ? l : m));
-    const amount = Math.max(0, Math.floor(bind.val));
-    return { csl, amount, why: bind.why, maxLoss: amount * csl / 100, ddLoss: amount * r.mdd / 100 };
+    const a = TS.allocation(r, { share: cfg.share / 100, lossPct: cfg.account > 0 ? cfg.loss / cfg.account : 0 });
+    const why = {
+      share: `Ihren Max. Anteil von ${fmt(cfg.share, 0)} % des Kontos`,
+      loss: `Ihr Verlustbudget von ${fmt(cfg.loss, 0)} $`,
+      kelly: `das halbe Kelly-Kriterium (${fmt(r.halfKelly * 100, 0)} % des Kontos)`,
+    }[a.bind];
+    const amount = Math.max(0, Math.floor(a.frac * cfg.account + 1e-9));
+    return { csl: a.csl, amount, why, maxLoss: amount * a.csl / 100, ddLoss: amount * r.mdd / 100 };
   }
 
   // ---------- Formatierung ----------
@@ -217,7 +156,7 @@
     const cand = valid.filter(r => r.inLimits).sort(byDsr)[0];
     let detail = `<p>Kein eingetragener Trader hält alle Ihre Grenzen ein – die Gründe stehen in der Tabelle unter „Ergebnis“.</p>`;
     if (cand) {
-      const need = monthsNeeded(cand, N, cfg.thr);
+      const need = TS.monthsNeeded(cand, N, cfg.thr);
       detail = `<p>Bester Kandidat innerhalb Ihrer Grenzen: <b>${esc(cand.t.name)}</b> mit Können-Sicherheit <b>${pct(cand.dsr)}</b> (nötig: ${pct(cfg.thr)}).
         ${need < Infinity
           ? `Bei gleichbleibender Leistung wären ca. ${need} Monate Daten nötig (jetzt ${cand.n}).`
@@ -485,5 +424,5 @@
   render();
 
   // Für die Gegenprobe im Test
-  window.__cmp = { psr, luckBenchmark, normCdf, normInv, analyze, parseReturns };
+  window.__cmp = { ...TS, analyze, parseReturns };
 })();

@@ -12,6 +12,7 @@
     <nav>
       <a href="#heatmap">Heatmap</a>
       <a href="#news">News</a>
+      <a href="#daily">Tagesempfehlung</a>
       <a href="#setup">Trade-Setup</a>
       <a href="#copy">Copy-Trading</a>
       <a href="#compare">Trader-Vergleich</a>
@@ -108,6 +109,15 @@
         <li>Alle Positionen spätestens 15 Minuten vor Börsenschluss schließen – keine Übernacht-Positionen.</li>
         <li>Tageslimit: nach 3 Verlusttrades oder −3&nbsp;% Konto ist Schluss für heute.</li>
       </ul>
+    </section>
+
+    <!-- TAGESEMPFEHLUNG -->
+    <section id="daily" class="card">
+      <div class="card-head">
+        <h2>Tagesempfehlung &amp; Top 25</h2>
+        <span class="muted small" id="dailyUpdated"></span>
+      </div>
+      <div id="dailyBody"><p class="muted">Lade Daten …</p></div>
     </section>
 
     <!-- COPY TRADING -->
@@ -302,6 +312,8 @@
   </main>
 
   <script src="app.js"></script>
+  <script src="stats.js"></script>
   <script src="compare.js"></script>
+  <script src="daily.js"></script>
 </body>
 </html>

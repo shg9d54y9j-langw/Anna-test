@@ -1,0 +1,40 @@
+name: Tagesempfehlung
+
+on:
+  schedule:
+    - cron: "17 5 * * 1-5"   # Mo–Fr 06:17 Uhr (Winterzeit) bzw. 07:17 Uhr (Sommerzeit) deutscher Zeit
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-ranking
+  cancel-in-progress: false
+
+jobs:
+  ranking:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: eToro-Daten holen und Top 25 berechnen
+        env:
+          ETORO_API_KEY: ${{ secrets.ETORO_API_KEY }}
+          ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
+        run: node scripts/daily-ranking.mjs
+
+      - name: Ergebnis speichern
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -f data/ranking.json ]; then
+            git add data/ranking.json
+            git diff --cached --quiet || git commit -m "Tagesempfehlung $(date -u +%F)"
+            git push
+          fi
