@@ -196,14 +196,16 @@
       <thead><tr><th>Kopier-Dauer</th><th class="num">Ihre Chance im Plus</th><th class="num">Erwartet</th><th>Urteil</th></tr></thead>
       <tbody>${rows}</tbody></table></div>`;
   }
-  function pickCard(p, cfg, acc) {
+  function pickCard(p, cfg, acc, updated) {
     const green = p.light === "green";
     const cost = Number.isFinite(cfg.roundTripCostPct) ? cfg.roundTripCostPct : 0.3;
     const amount = acc ? Math.floor(p.amountPct * acc + 1e-9) : null;
     const minDays = Number.isFinite(p.breakEvenDays) ? Math.ceil(p.breakEvenDays) : null;
     const status = p.changed
       ? `<p class="reco-sub"><b>Neu seit heute.</b> ${esc(p.note || "")}</p>`
-      : `<p class="reco-sub">Unverändert seit ${dateDe(p.since)} · ${esc(p.note || "")}</p>`;
+      : p.since === String(updated || "").slice(0, 10)
+        ? `<p class="reco-sub"><b>Seit heute.</b> ${esc(p.note || "")}</p>`
+        : `<p class="reco-sub">Unverändert seit ${dateDe(p.since)} · ${esc(p.note || "")}</p>`;
     const steps = [];
     if (p.changed && p.previous) steps.push(`Bisherige Kopie beenden: <b>„Portfolio“</b> → ${v(esc(p.previous))} antippen → Zahnrad → <b>„Kopieren beenden“</b>.`);
     steps.push(
@@ -251,7 +253,7 @@
     const acc = account();
     const notes = [];
     if (ageDays > 4) notes.push(`Die Daten sind ${fmt(ageDays, 0)} Tage alt – läuft die GitHub-Aktion „Tagesempfehlung“ noch?`);
-    const head = pick ? pickCard(pick, cfg, acc)
+    const head = pick ? pickCard(pick, cfg, acc, d.updated)
       : d.pick === undefined
         ? `<div class="reco no"><div class="reco-head"><span class="icon-no">●</span> Tageswahl wird berechnet</div><p>Die Tageswahl erscheint nach dem nächsten Lauf der Auswertung.</p></div>`
         : `<div class="reco no"><div class="reco-head"><span class="icon-no">✗</span> Heute keine Tageswahl</div><p>Kein geprüfter Trader hält heute alle Grenzen ein (Risiko-Score, Drawdown, Historie) und lässt nach der Rechnung einen Gewinn erwarten. Lieber keine Wahl als eine riskante.</p></div>`;
