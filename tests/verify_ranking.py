@@ -99,6 +99,12 @@ def main(ranking_file, returns_file):
         row = published.get(name)
         if not row:
             continue
+        # Plausibilität der Eingangsdaten: ein Rückgang über 100 % ist unmöglich
+        p2v = t.get("peakToValley")
+        if p2v is not None and not (0 <= p2v <= 100):
+            errors.append(f"{name}: unmöglicher eToro-Drawdown {p2v} % (Einheitenfehler?)")
+        if row.get("mdd") is not None and not (0 <= row["mdd"] <= 100):
+            errors.append(f"{name}: unmöglicher Drawdown {row['mdd']} %")
         for key in ("dsr", "cagr", "mdd", "sharpe"):
             check(f"{name} {key}", m[key], row.get(key), key)
         # Regeln: Grenzen und Sicherheitsschwelle

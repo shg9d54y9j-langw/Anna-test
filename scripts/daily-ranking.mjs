@@ -104,6 +104,21 @@ function dataCheck(traders) {
   return best;
 }
 
+// Einheit von eToros Drawdown: Er muss in der Größenordnung unseres eigenen Monats-Drawdowns
+// der letzten 24 Monate liegen (Tageswerte sind meist etwas größer) – die passende Skala gewinnt.
+function drawdownScale(traders) {
+  const mddOf = gs => { let eq = 1, peak = 1, m = 0; for (const g of gs) { eq *= 1 + g / 100; peak = Math.max(peak, eq); m = Math.max(m, 1 - eq / peak); } return m * 100; };
+  const pairs = traders.filter(u => Number.isFinite(u.peakToValley) && u.peakToValley > 0)
+    .map(u => [u.peakToValley, mddOf(u.months.slice(-24).map(m => m.g))]).filter(([, m]) => m > 1);
+  if (!pairs.length) return 1;
+  const median = a => { const s = [...a].sort((x, y) => x - y); return (s[(s.length - 1) >> 1] + s[s.length >> 1]) / 2; };
+  const dist = s => median(pairs.map(([p, m]) => Math.abs(Math.log(p * s / m))));
+  const scale = dist(1) <= dist(100) ? 1 : 100;
+  const ratio = median(pairs.map(([p, m]) => p * scale / m));
+  log(`eToro-Einheit des Drawdowns: ${scale === 1 ? "Prozent" : "Anteil (×100 umgerechnet)"} – im Median ${ratio.toFixed(2)}-fach unser 24-Monats-Drawdown (${pairs.length} Trader)`);
+  return scale;
+}
+
 // Auf 4 Nachkommastellen runden, ∞/NaN als null speichern
 const clean = o => JSON.parse(JSON.stringify(o, (k, val) => (typeof val === "number" ? (Number.isFinite(val) ? Math.round(val * 1e4) / 1e4 : null) : val)));
 
@@ -162,10 +177,15 @@ async function main() {
   if (check && check.medianDeviationPp > CONFIG.maxDataDeviation) {
     throw new Error(`Datenkontrolle fehlgeschlagen: Unsere 2-Jahres-Renditen weichen im Median um ${check.medianDeviationPp.toFixed(1)} Prozentpunkte von eToros Angaben ab. Es wird nichts veröffentlicht.`);
   }
-  // eToro-Werte in dieselbe Einheit wie die Monatsrenditen bringen (Prozent)
-  const scale = check ? check.etoroScale : 1;
-  for (const u of withData) if (Number.isFinite(u.peakToValley)) u.peakToValley *= scale;
-  log(`eToro-Einheit: ${scale === 1 ? "Prozent" : "Anteil (×100 umgerechnet)"}`);
+  log(`eToro-Einheit der Renditen: ${check && check.etoroScale === 100 ? "Anteil (×100 umgerechnet)" : "Prozent"}`);
+  // eToro-Drawdown (peakToValley) hat eine eigene Einheit – separat bestimmen und unmögliche Werte verwerfen
+  const ddScale = drawdownScale(withData);
+  if (check) check.drawdownScale = ddScale;
+  for (const u of withData) {
+    if (!Number.isFinite(u.peakToValley)) continue;
+    u.peakToValley *= ddScale;
+    if (u.peakToValley > 100) u.peakToValley = undefined;   // ein Rückgang über 100 % ist unmöglich
+  }
 
   // Glücks-Korrektur: effektive Zahl unabhängiger Trader aus der mittleren Korrelation
   const rho = avgCorrelation(withData.map(u => new Map(u.months.map(m => [m.k, m.g]))));

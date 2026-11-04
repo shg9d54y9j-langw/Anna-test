@@ -20,12 +20,15 @@ const traders = Array.from({ length: 180 }, (_, i) => {
     const g = skilled ? 1.8 + 0.3 * market[m] + gauss() * 1.4 : 0.4 + 0.6 * market[m] + gauss() * 3.5;
     months.push({ timestamp: `${Math.floor(k / 12)}-${String((k % 12) + 1).padStart(2, "0")}-01T00:00:00Z`, gain: Math.round(g * 100) / 100 });
   }
-  // eToro-Angabe „gain“ für LastTwoYears: 23 abgeschlossene Monate + laufender Monat
-  const twoYears = months.slice(-24).reduce((e, m) => e * (1 + m.gain / 100), 1);
+  // Wie die echte API: „gain“ (LastTwoYears = 24 abgeschlossene Monate + laufender Monat), „dailyGain“ und
+  // „thisWeekGain“ als Anteil (0,125 = 12,5 %), „peakToValley“ dagegen in Prozent
+  const twoYears = months.slice(-25).reduce((e, m) => e * (1 + m.gain / 100), 1);
+  let eq = 1, peak = 1, dd = 0;
+  for (const m of months.slice(-25)) { eq *= 1 + m.gain / 100; peak = Math.max(peak, eq); dd = Math.max(dd, 1 - eq / peak); }
   return {
     username: `trader${String(i).padStart(3, "0")}`, riskScore: 1 + Math.floor(rnd() * 7), copiers: Math.floor(rnd() * 20000),
-    gain: Math.round((twoYears - 1) * 10000) / 100, dailyGain: Math.round(gauss() * 120) / 100, thisWeekGain: Math.round(gauss() * 250) / 100,
-    peakToValley: -Math.round((5 + rnd() * 20) * 10) / 10, profitableMonthsPct: Math.round(40 + rnd() * 40), months,
+    gain: Math.round((twoYears - 1) * 1e4) / 1e4, dailyGain: Math.round(gauss() * 120) / 1e4, thisWeekGain: Math.round(gauss() * 250) / 1e4,
+    peakToValley: -Math.round(dd * 100 * (1.05 + rnd() * 0.3) * 10) / 10, profitableMonthsPct: Math.round(40 + rnd() * 40), months,
   };
 });
 
