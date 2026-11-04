@@ -128,6 +128,8 @@ textarea {
 .chart-host .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .chart-host .dlabel { fill: #c3c2b7; font-size: 12px; }
 .chart-host .cross { stroke: rgba(255, 255, 255, .35); stroke-width: 1; }
+.chart-host .threshold { stroke: rgba(255, 255, 255, .45); stroke-width: 1; stroke-dasharray: 4 4; }
+.chart-host .axis-title { fill: var(--muted); font-size: 12px; }
 .chart-host .hit { outline: none; cursor: crosshair; }
 .chart-host .hit:focus-visible { stroke: var(--accent); stroke-width: 1; }
 .viz-tip {

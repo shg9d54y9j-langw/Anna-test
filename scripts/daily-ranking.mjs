@@ -214,12 +214,18 @@ async function main() {
   log(`${users.length} Kandidaten aus ${source}${total ? ` (${total} Treffer insgesamt)` : ""}`);
 
   const evaluated = [];
+  let denied = 0;
   for (const u of users) {
     try {
       const months = await monthlyReturns(u.userName);
       if (!evaluated.length) log(`Beispiel ${u.userName}: ${months.length} Monate, zuletzt ${months.slice(-3).map(m => `${keyToMonth(m.k)}: ${m.g}`).join(", ")}`);
       evaluated.push({ ...u, months });
     } catch (e) {
+      // Fehlt dem Schlüssel die Berechtigung, sofort mit klarer Meldung abbrechen statt 150-mal abzufragen
+      if (!evaluated.length && /HTTP 403/.test(e.message) && ++denied >= 3) {
+        throw new Error("Dem eToro-Schlüssel fehlt die Leseberechtigung für Nutzerprofile (Monatsrenditen der Trader). " +
+          "In eToro einen Schlüssel mit zusätzlichem „Read“ für Nutzer-/Personendaten erstellen und die Secrets ersetzen.");
+      }
       warn(`${u.userName}: ${e.message}`);
     }
   }
@@ -265,6 +271,8 @@ async function main() {
     screened: users.length, evaluated: withData.length, avgCorrelation: rho, nEff,
     qualifiedCount: qualified.length, config: CONFIG,
     recommendation, notice, lastRecommended, top, history,
+    // alle ausgewerteten Trader (kompakt) für die Abbildung auf der Website
+    all: rows.map(r => ({ userName: r.userName, cagr: r.cagr, mdd: r.mdd, dsr: r.dsr, sharpe: r.sharpe, risk: r.risk, months: r.months, qualified: r.qualified, inLimits: r.inLimits })),
   });
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(out, null, 2) + "\n");
