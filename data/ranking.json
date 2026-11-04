@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-04T19:44:31.692Z",
+  "updated": "2026-11-04T20:15:09.445Z",
   "source": "/v2/portfolios/rankings",
   "totalAvailable": null,
   "screened": 150,
@@ -36,7 +36,7 @@
       "rank": 1,
       "userName": "TiuBuletaire2",
       "risk": 2,
-      "copiers": 816,
+      "copiers": 818,
       "avgHoldHours": null,
       "profitableMonthsPct": 82.86,
       "months": 47,
@@ -58,7 +58,7 @@
       "rank": 2,
       "userName": "Kevin_Pando",
       "risk": 3,
-      "copiers": 1666,
+      "copiers": 1669,
       "avgHoldHours": null,
       "profitableMonthsPct": 65.52,
       "months": 28,
@@ -124,7 +124,7 @@
       "rank": 5,
       "userName": "Space-Investor",
       "risk": 4,
-      "copiers": 2035,
+      "copiers": 2030,
       "avgHoldHours": null,
       "profitableMonthsPct": 71.43,
       "months": 60,
@@ -146,7 +146,7 @@
       "rank": 6,
       "userName": "MCGINTYE",
       "risk": 4,
-      "copiers": 3778,
+      "copiers": 3780,
       "avgHoldHours": null,
       "profitableMonthsPct": 82.86,
       "months": 60,
@@ -168,7 +168,7 @@
       "rank": 7,
       "userName": "onyinvestments",
       "risk": 5,
-      "copiers": 806,
+      "copiers": 807,
       "avgHoldHours": null,
       "profitableMonthsPct": 68.57,
       "months": 55,
@@ -212,7 +212,7 @@
       "rank": 9,
       "userName": "defense_investor",
       "risk": 3,
-      "copiers": 7494,
+      "copiers": 7499,
       "avgHoldHours": null,
       "profitableMonthsPct": 65.71,
       "months": 45,
@@ -234,7 +234,7 @@
       "rank": 10,
       "userName": "Drcmart",
       "risk": 3,
-      "copiers": 1668,
+      "copiers": 1665,
       "avgHoldHours": null,
       "profitableMonthsPct": 68.57,
       "months": 60,
@@ -300,7 +300,7 @@
       "rank": 13,
       "userName": "plessas",
       "risk": 3,
-      "copiers": 1219,
+      "copiers": 1220,
       "avgHoldHours": null,
       "profitableMonthsPct": 68.57,
       "months": 43,
@@ -344,7 +344,7 @@
       "rank": 15,
       "userName": "ChristopheNour",
       "risk": 4,
-      "copiers": 596,
+      "copiers": 597,
       "avgHoldHours": null,
       "profitableMonthsPct": 54.29,
       "months": 50,
@@ -410,7 +410,7 @@
       "rank": 18,
       "userName": "ingruc",
       "risk": 5,
-      "copiers": 4747,
+      "copiers": 4749,
       "avgHoldHours": null,
       "profitableMonthsPct": 71.43,
       "months": 60,
@@ -476,7 +476,7 @@
       "rank": 21,
       "userName": "triangulacapital",
       "risk": 4,
-      "copiers": 21063,
+      "copiers": 21057,
       "avgHoldHours": null,
       "profitableMonthsPct": 71.43,
       "months": 60,
@@ -498,7 +498,7 @@
       "rank": 22,
       "userName": "Aganowak91",
       "risk": 3,
-      "copiers": 490,
+      "copiers": 489,
       "avgHoldHours": null,
       "profitableMonthsPct": 65.71,
       "months": 43,
@@ -564,7 +564,7 @@
       "rank": 25,
       "userName": "adams302",
       "risk": 4,
-      "copiers": 2205,
+      "copiers": 2203,
       "avgHoldHours": null,
       "profitableMonthsPct": 62.86,
       "months": 60,
@@ -597,9 +597,11 @@
       "dsr": 0.1822,
       "sharpe": 0.6795,
       "risk": 4,
+      "copiers": 25108,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 26,1 % > 20 %"
     },
     {
       "userName": "thomaspj",
@@ -608,9 +610,11 @@
       "dsr": 0.2325,
       "sharpe": 0.7515,
       "risk": 4,
+      "copiers": 24117,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 23,3 % > 20 %"
     },
     {
       "userName": "triangulacapital",
@@ -619,9 +623,11 @@
       "dsr": 0.3603,
       "sharpe": 0.9253,
       "risk": 4,
+      "copiers": 21057,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 36 % < 90 %"
     },
     {
       "userName": "CPHequities",
@@ -630,9 +636,11 @@
       "dsr": 0.0708,
       "sharpe": 0.4208,
       "risk": 4,
+      "copiers": 16205,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 33,1 % > 20 %"
     },
     {
       "userName": "Smudliczek",
@@ -641,9 +649,11 @@
       "dsr": 0.3039,
       "sharpe": 0.8556,
       "risk": 4,
+      "copiers": 16077,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 38,8 % > 20 %"
     },
     {
       "userName": "FundManagerZech",
@@ -652,9 +662,11 @@
       "dsr": 0.1375,
       "sharpe": 0.6099,
       "risk": 4,
+      "copiers": 11131,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 20,0 % > 20 %"
     },
     {
       "userName": "Michalhla",
@@ -663,9 +675,11 @@
       "dsr": 0.2678,
       "sharpe": 0.8267,
       "risk": 4,
+      "copiers": 9771,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 44,6 % > 20 %"
     },
     {
       "userName": "jaynemesis",
@@ -674,9 +688,11 @@
       "dsr": 0.0072,
       "sharpe": -0.0113,
       "risk": 4,
+      "copiers": 8146,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 39,7 % > 20 %"
     },
     {
       "userName": "defense_investor",
@@ -685,9 +701,11 @@
       "dsr": 0.6406,
       "sharpe": 1.4509,
       "risk": 3,
+      "copiers": 7499,
       "months": 45,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 64 % < 90 %"
     },
     {
       "userName": "KeshavLohiya",
@@ -696,9 +714,11 @@
       "dsr": 0.3386,
       "sharpe": 0.916,
       "risk": 4,
+      "copiers": 5706,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 36,8 % > 20 %"
     },
     {
       "userName": "mick_repo",
@@ -707,9 +727,11 @@
       "dsr": 0.5564,
       "sharpe": 1.1643,
       "risk": 4,
+      "copiers": 5570,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 56 % < 90 %"
     },
     {
       "userName": "rubymza",
@@ -718,9 +740,11 @@
       "dsr": 0.0064,
       "sharpe": -0.0297,
       "risk": 4,
+      "copiers": 5529,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 35,4 % > 20 %"
     },
     {
       "userName": "GreenbullInvest",
@@ -729,9 +753,11 @@
       "dsr": 0.0395,
       "sharpe": 0.3271,
       "risk": 4,
+      "copiers": 5317,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 31,7 % > 20 %"
     },
     {
       "userName": "ingruc",
@@ -740,9 +766,11 @@
       "dsr": 0.4407,
       "sharpe": 1.0237,
       "risk": 5,
+      "copiers": 4749,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 44 % < 90 %"
     },
     {
       "userName": "AmitKup",
@@ -751,9 +779,11 @@
       "dsr": 0.4125,
       "sharpe": 0.996,
       "risk": 5,
+      "copiers": 4104,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 22,2 % > 20 %"
     },
     {
       "userName": "MCGINTYE",
@@ -762,9 +792,11 @@
       "dsr": 0.6756,
       "sharpe": 1.3228,
       "risk": 4,
+      "copiers": 3780,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 68 % < 90 %"
     },
     {
       "userName": "MarianoPardo",
@@ -773,9 +805,11 @@
       "dsr": 0.0654,
       "sharpe": 0.4131,
       "risk": 4,
+      "copiers": 3366,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 43,2 % > 20 %"
     },
     {
       "userName": "steveli1029",
@@ -784,9 +818,11 @@
       "dsr": 0.1429,
       "sharpe": 0.6141,
       "risk": 4,
+      "copiers": 3261,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 59,0 % > 20 %"
     },
     {
       "userName": "Aukie2008",
@@ -795,9 +831,11 @@
       "dsr": 0.2534,
       "sharpe": 0.7842,
       "risk": 4,
+      "copiers": 2952,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 25 % < 90 %"
     },
     {
       "userName": "IlMatematico",
@@ -806,9 +844,11 @@
       "dsr": 0.1039,
       "sharpe": 0.5317,
       "risk": 3,
+      "copiers": 2848,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 35,7 % > 20 %"
     },
     {
       "userName": "Richardstroud",
@@ -817,9 +857,11 @@
       "dsr": 0.0113,
       "sharpe": 0.0644,
       "risk": 3,
+      "copiers": 2571,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 23,6 % > 20 %"
     },
     {
       "userName": "Wesl3y",
@@ -828,9 +870,11 @@
       "dsr": 0.0121,
       "sharpe": 0.0792,
       "risk": 4,
+      "copiers": 2516,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 46,0 % > 20 %"
     },
     {
       "userName": "adams302",
@@ -839,9 +883,11 @@
       "dsr": 0.2996,
       "sharpe": 0.8539,
       "risk": 4,
+      "copiers": 2203,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 30 % < 90 %"
     },
     {
       "userName": "GeorgeFatouros",
@@ -850,9 +896,11 @@
       "dsr": 0.6437,
       "sharpe": 1.3907,
       "risk": 4,
+      "copiers": 2103,
       "months": 48,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 20,6 % > 20 %"
     },
     {
       "userName": "Le_kousou",
@@ -861,9 +909,11 @@
       "dsr": 0.1746,
       "sharpe": 0.677,
       "risk": 4,
+      "copiers": 2091,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 30,6 % > 20 %"
     },
     {
       "userName": "Space-Investor",
@@ -872,9 +922,11 @@
       "dsr": 0.7069,
       "sharpe": 1.3462,
       "risk": 4,
+      "copiers": 2030,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 71 % < 90 %"
     },
     {
       "userName": "celesh",
@@ -883,9 +935,11 @@
       "dsr": 0.6143,
       "sharpe": 1.2222,
       "risk": 3,
+      "copiers": 2028,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 61 % < 90 %"
     },
     {
       "userName": "Enslinjaco",
@@ -894,9 +948,11 @@
       "dsr": 0.1335,
       "sharpe": 0.6031,
       "risk": 5,
+      "copiers": 2008,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 24,4 % > 20 %"
     },
     {
       "userName": "JORDENBOER",
@@ -905,9 +961,11 @@
       "dsr": 0.0337,
       "sharpe": 0.2779,
       "risk": 4,
+      "copiers": 1824,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 35,2 % > 20 %"
     },
     {
       "userName": "SimoneRizzetto88",
@@ -916,9 +974,11 @@
       "dsr": 0.1758,
       "sharpe": 0.6548,
       "risk": 3,
+      "copiers": 1777,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 35,7 % > 20 %"
     },
     {
       "userName": "CCalle",
@@ -927,9 +987,11 @@
       "dsr": 0.1365,
       "sharpe": 0.6207,
       "risk": 5,
+      "copiers": 1773,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 26,4 % > 20 %"
     },
     {
       "userName": "robchamow",
@@ -938,9 +1000,11 @@
       "dsr": 0.3707,
       "sharpe": 0.9509,
       "risk": 4,
+      "copiers": 1769,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 21,4 % > 20 %"
     },
     {
       "userName": "onk342",
@@ -949,9 +1013,11 @@
       "dsr": 0.4679,
       "sharpe": 1.2127,
       "risk": 5,
+      "copiers": 1768,
       "months": 46,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 47 % < 90 %"
     },
     {
       "userName": "TrevinaYoussef",
@@ -960,20 +1026,11 @@
       "dsr": 0.3321,
       "sharpe": 0.9092,
       "risk": 4,
+      "copiers": 1701,
       "months": 57,
       "qualified": false,
-      "inLimits": false
-    },
-    {
-      "userName": "Drcmart",
-      "cagr": 21.1373,
-      "mdd": 11.94,
-      "dsr": 0.6168,
-      "sharpe": 1.2365,
-      "risk": 3,
-      "months": 60,
-      "qualified": false,
-      "inLimits": true
+      "inLimits": false,
+      "reason": "Drawdown 25,4 % > 20 %"
     },
     {
       "userName": "Kevin_Pando",
@@ -982,9 +1039,24 @@
       "dsr": 0.85,
       "sharpe": 2.2777,
       "risk": 3,
+      "copiers": 1669,
       "months": 28,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 85 % < 90 %"
+    },
+    {
+      "userName": "Drcmart",
+      "cagr": 21.1373,
+      "mdd": 11.94,
+      "dsr": 0.6168,
+      "sharpe": 1.2365,
+      "risk": 3,
+      "copiers": 1665,
+      "months": 60,
+      "qualified": false,
+      "inLimits": true,
+      "reason": "Können-Sicherheit 62 % < 90 %"
     },
     {
       "userName": "StefanULS",
@@ -993,9 +1065,11 @@
       "dsr": 0.7835,
       "sharpe": 1.443,
       "risk": 4,
+      "copiers": 1512,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 78 % < 90 %"
     },
     {
       "userName": "knw500",
@@ -1004,9 +1078,11 @@
       "dsr": 0.1066,
       "sharpe": 0.5265,
       "risk": 3,
+      "copiers": 1502,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 11 % < 90 %"
     },
     {
       "userName": "Sergius95",
@@ -1015,9 +1091,11 @@
       "dsr": 0.4807,
       "sharpe": 1.0692,
       "risk": 3,
+      "copiers": 1468,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 48 % < 90 %"
     },
     {
       "userName": "Ivanectus",
@@ -1026,9 +1104,11 @@
       "dsr": 0.2851,
       "sharpe": 1.1481,
       "risk": 5,
+      "copiers": 1463,
       "months": 36,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 44,8 % > 20 %"
     },
     {
       "userName": "oceantan007",
@@ -1037,9 +1117,11 @@
       "dsr": 0.0706,
       "sharpe": 0.4356,
       "risk": 3,
+      "copiers": 1456,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 38,6 % > 20 %"
     },
     {
       "userName": "Wise_woman",
@@ -1048,9 +1130,11 @@
       "dsr": 0.1963,
       "sharpe": 0.6776,
       "risk": 3,
+      "copiers": 1423,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 20 % < 90 %"
     },
     {
       "userName": "Marirs",
@@ -1059,9 +1143,11 @@
       "dsr": 0.2153,
       "sharpe": 0.7587,
       "risk": 3,
+      "copiers": 1419,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 44,8 % > 20 %"
     },
     {
       "userName": "choose3395",
@@ -1070,9 +1156,11 @@
       "dsr": 0.4902,
       "sharpe": 1.0847,
       "risk": 5,
+      "copiers": 1390,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 36,7 % > 20 %"
     },
     {
       "userName": "Sylviafarre",
@@ -1081,9 +1169,11 @@
       "dsr": 0.0107,
       "sharpe": 0.0514,
       "risk": 4,
+      "copiers": 1386,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 82,4 % > 20 %"
     },
     {
       "userName": "VIXGold",
@@ -1092,9 +1182,11 @@
       "dsr": 0.1812,
       "sharpe": 0.6529,
       "risk": 3,
+      "copiers": 1366,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 18 % < 90 %"
     },
     {
       "userName": "KoraTrades",
@@ -1103,9 +1195,11 @@
       "dsr": 0.0097,
       "sharpe": 0.0511,
       "risk": 5,
+      "copiers": 1313,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 49,7 % > 20 %"
     },
     {
       "userName": "Moonwater",
@@ -1114,9 +1208,11 @@
       "dsr": 0.1315,
       "sharpe": 0.5638,
       "risk": 3,
+      "copiers": 1308,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 29,3 % > 20 %"
     },
     {
       "userName": "eddyb123",
@@ -1125,9 +1221,11 @@
       "dsr": 0.0136,
       "sharpe": 0.0946,
       "risk": 3,
+      "copiers": 1305,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 39,5 % > 20 %"
     },
     {
       "userName": "NabilSifo",
@@ -1136,9 +1234,11 @@
       "dsr": 0.18,
       "sharpe": 0.7197,
       "risk": 4,
+      "copiers": 1304,
       "months": 54,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 32,3 % > 20 %"
     },
     {
       "userName": "TrendingStocks",
@@ -1147,9 +1247,11 @@
       "dsr": 0.3036,
       "sharpe": 0.853,
       "risk": 4,
+      "copiers": 1300,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 30 % < 90 %"
     },
     {
       "userName": "liborvasa",
@@ -1158,9 +1260,11 @@
       "dsr": 0.0769,
       "sharpe": 0.4407,
       "risk": 4,
+      "copiers": 1296,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 24,9 % > 20 %"
     },
     {
       "userName": "rafaeldfl",
@@ -1169,9 +1273,11 @@
       "dsr": 0.5188,
       "sharpe": 1.304,
       "risk": 4,
+      "copiers": 1294,
       "months": 44,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 24,2 % > 20 %"
     },
     {
       "userName": "kasperpatrick1",
@@ -1180,9 +1286,11 @@
       "dsr": 0.0826,
       "sharpe": 0.507,
       "risk": 5,
+      "copiers": 1282,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 71,6 % > 20 %"
     },
     {
       "userName": "Social-Investor",
@@ -1191,9 +1299,11 @@
       "dsr": 0.1696,
       "sharpe": 0.668,
       "risk": 4,
+      "copiers": 1280,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 35,5 % > 20 %"
     },
     {
       "userName": "TheDividendFund",
@@ -1202,9 +1312,11 @@
       "dsr": 0.2838,
       "sharpe": 0.8904,
       "risk": 4,
+      "copiers": 1232,
       "months": 52,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 28 % < 90 %"
     },
     {
       "userName": "iBore99",
@@ -1213,9 +1325,11 @@
       "dsr": 0.1839,
       "sharpe": 0.6818,
       "risk": 4,
+      "copiers": 1230,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 18 % < 90 %"
     },
     {
       "userName": "plessas",
@@ -1224,9 +1338,11 @@
       "dsr": 0.5518,
       "sharpe": 1.3595,
       "risk": 3,
+      "copiers": 1220,
       "months": 43,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 55 % < 90 %"
     },
     {
       "userName": "RickFortune",
@@ -1235,9 +1351,11 @@
       "dsr": 0.1712,
       "sharpe": 0.7195,
       "risk": 3,
+      "copiers": 1205,
       "months": 53,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 28,6 % > 20 %"
     },
     {
       "userName": "gauravk_in",
@@ -1246,9 +1364,11 @@
       "dsr": 0.1269,
       "sharpe": 0.8351,
       "risk": 4,
+      "copiers": 1195,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 13 % < 90 %"
     },
     {
       "userName": "hugomanenti95",
@@ -1257,9 +1377,11 @@
       "dsr": 0.0201,
       "sharpe": 0.1695,
       "risk": 5,
+      "copiers": 1183,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 40,6 % > 20 %"
     },
     {
       "userName": "SharonConnolly",
@@ -1268,9 +1390,11 @@
       "dsr": 0.1384,
       "sharpe": 0.5955,
       "risk": 3,
+      "copiers": 1179,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 42,9 % > 20 %"
     },
     {
       "userName": "Nezatron",
@@ -1279,9 +1403,11 @@
       "dsr": 0.0175,
       "sharpe": 0.1308,
       "risk": 4,
+      "copiers": 1168,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 21,5 % > 20 %"
     },
     {
       "userName": "KenanAbel",
@@ -1290,9 +1416,11 @@
       "dsr": 0.1547,
       "sharpe": 0.6296,
       "risk": 4,
+      "copiers": 1148,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 33,7 % > 20 %"
     },
     {
       "userName": "Gserdan",
@@ -1301,9 +1429,11 @@
       "dsr": 0.0363,
       "sharpe": 0.2781,
       "risk": 3,
+      "copiers": 1124,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 36,0 % > 20 %"
     },
     {
       "userName": "Chrochtik",
@@ -1312,9 +1442,11 @@
       "dsr": 0.2852,
       "sharpe": 0.8427,
       "risk": 4,
+      "copiers": 1086,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 36,2 % > 20 %"
     },
     {
       "userName": "Miyoshi",
@@ -1323,9 +1455,11 @@
       "dsr": 0.014,
       "sharpe": 0.1005,
       "risk": 5,
+      "copiers": 1040,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 52,8 % > 20 %"
     },
     {
       "userName": "2BSmart",
@@ -1334,9 +1468,11 @@
       "dsr": 0.2399,
       "sharpe": 0.7724,
       "risk": 4,
+      "copiers": 1012,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 26,5 % > 20 %"
     },
     {
       "userName": "pino428",
@@ -1345,9 +1481,11 @@
       "dsr": 0.0114,
       "sharpe": 0.0651,
       "risk": 3,
+      "copiers": 1006,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 1 % < 90 %"
     },
     {
       "userName": "TradingInvest890",
@@ -1356,9 +1494,11 @@
       "dsr": 0.3014,
       "sharpe": 0.8684,
       "risk": 4,
+      "copiers": 1004,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 31,6 % > 20 %"
     },
     {
       "userName": "brirap",
@@ -1367,20 +1507,11 @@
       "dsr": 0.5037,
       "sharpe": 1.096,
       "risk": 5,
+      "copiers": 996,
       "months": 60,
       "qualified": false,
-      "inLimits": false
-    },
-    {
-      "userName": "Jenelleb123",
-      "cagr": 28.0183,
-      "mdd": 19.01,
-      "dsr": 0.6528,
-      "sharpe": 1.3408,
-      "risk": 3,
-      "months": 53,
-      "qualified": false,
-      "inLimits": true
+      "inLimits": false,
+      "reason": "Drawdown 36,7 % > 20 %"
     },
     {
       "userName": "Danielovic135",
@@ -1389,9 +1520,24 @@
       "dsr": 0.2895,
       "sharpe": 0.8381,
       "risk": 4,
+      "copiers": 991,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 29 % < 90 %"
+    },
+    {
+      "userName": "Jenelleb123",
+      "cagr": 28.0183,
+      "mdd": 19.01,
+      "dsr": 0.6528,
+      "sharpe": 1.3408,
+      "risk": 3,
+      "copiers": 991,
+      "months": 53,
+      "qualified": false,
+      "inLimits": true,
+      "reason": "Können-Sicherheit 65 % < 90 %"
     },
     {
       "userName": "Aguero1010",
@@ -1400,9 +1546,11 @@
       "dsr": 0.0658,
       "sharpe": 0.413,
       "risk": 4,
+      "copiers": 973,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 32,9 % > 20 %"
     },
     {
       "userName": "Compound72",
@@ -1411,9 +1559,11 @@
       "dsr": 0.1117,
       "sharpe": 0.5633,
       "risk": 3,
+      "copiers": 949,
       "months": 57,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 31,4 % > 20 %"
     },
     {
       "userName": "ReturnInvest",
@@ -1422,9 +1572,11 @@
       "dsr": 0.0189,
       "sharpe": 0.1496,
       "risk": 3,
+      "copiers": 938,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 32,7 % > 20 %"
     },
     {
       "userName": "PROJECT10X",
@@ -1433,9 +1585,11 @@
       "dsr": 0.0623,
       "sharpe": 0.4164,
       "risk": 5,
+      "copiers": 924,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 60,3 % > 20 %"
     },
     {
       "userName": "NoImportan3",
@@ -1444,9 +1598,11 @@
       "dsr": 0.4251,
       "sharpe": 1.0713,
       "risk": 5,
+      "copiers": 902,
       "months": 55,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 43 % < 90 %"
     },
     {
       "userName": "Marco199610",
@@ -1455,9 +1611,11 @@
       "dsr": 0.0477,
       "sharpe": 0.3556,
       "risk": 4,
+      "copiers": 899,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 58,2 % > 20 %"
     },
     {
       "userName": "Dividend_Diva",
@@ -1466,9 +1624,11 @@
       "dsr": 0.1553,
       "sharpe": 1.174,
       "risk": 4,
+      "copiers": 890,
       "months": 29,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 21,3 % > 20 %"
     },
     {
       "userName": "GlobalAlphaS",
@@ -1477,20 +1637,11 @@
       "dsr": 0.3342,
       "sharpe": 0.887,
       "risk": 3,
+      "copiers": 883,
       "months": 60,
       "qualified": false,
-      "inLimits": false
-    },
-    {
-      "userName": "Sir_H_Pennywise",
-      "cagr": 33.7243,
-      "mdd": 27.96,
-      "dsr": 0.5599,
-      "sharpe": 1.3639,
-      "risk": 5,
-      "months": 44,
-      "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 26,5 % > 20 %"
     },
     {
       "userName": "Alderique",
@@ -1499,9 +1650,24 @@
       "dsr": 0.1309,
       "sharpe": 0.5688,
       "risk": 3,
+      "copiers": 882,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 24,3 % > 20 %"
+    },
+    {
+      "userName": "Sir_H_Pennywise",
+      "cagr": 33.7243,
+      "mdd": 27.96,
+      "dsr": 0.5599,
+      "sharpe": 1.3639,
+      "risk": 5,
+      "copiers": 882,
+      "months": 44,
+      "qualified": false,
+      "inLimits": false,
+      "reason": "Drawdown 28,0 % > 20 %"
     },
     {
       "userName": "JvAnkershoffen",
@@ -1510,9 +1676,11 @@
       "dsr": 0.0626,
       "sharpe": 0.4149,
       "risk": 5,
+      "copiers": 852,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 39,7 % > 20 %"
     },
     {
       "userName": "Onegirl",
@@ -1521,9 +1689,11 @@
       "dsr": 0.0886,
       "sharpe": 0.4765,
       "risk": 4,
+      "copiers": 845,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 53,1 % > 20 %"
     },
     {
       "userName": "RobertMERC",
@@ -1532,9 +1702,11 @@
       "dsr": 0.0266,
       "sharpe": 0.2268,
       "risk": 5,
+      "copiers": 839,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 37,6 % > 20 %"
     },
     {
       "userName": "Alteneiji80",
@@ -1543,20 +1715,11 @@
       "dsr": 0.0453,
       "sharpe": 0.3504,
       "risk": 5,
+      "copiers": 831,
       "months": 60,
       "qualified": false,
-      "inLimits": false
-    },
-    {
-      "userName": "DemonicoLag",
-      "cagr": 14.3735,
-      "mdd": 60.8277,
-      "dsr": 0.1122,
-      "sharpe": 0.5474,
-      "risk": 4,
-      "months": 60,
-      "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 44,3 % > 20 %"
     },
     {
       "userName": "TiuBuletaire2",
@@ -1565,9 +1728,24 @@
       "dsr": 0.8899,
       "sharpe": 1.9661,
       "risk": 2,
+      "copiers": 818,
       "months": 47,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 89 % < 90 %"
+    },
+    {
+      "userName": "DemonicoLag",
+      "cagr": 14.3735,
+      "mdd": 60.8277,
+      "dsr": 0.1122,
+      "sharpe": 0.5474,
+      "risk": 4,
+      "copiers": 817,
+      "months": 60,
+      "qualified": false,
+      "inLimits": false,
+      "reason": "Drawdown 60,8 % > 20 %"
     },
     {
       "userName": "onyinvestments",
@@ -1576,9 +1754,11 @@
       "dsr": 0.6724,
       "sharpe": 1.3109,
       "risk": 5,
+      "copiers": 807,
       "months": 55,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 67 % < 90 %"
     },
     {
       "userName": "ThomasRoddy",
@@ -1587,9 +1767,11 @@
       "dsr": 0.1867,
       "sharpe": 0.6848,
       "risk": 5,
+      "copiers": 806,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 19 % < 90 %"
     },
     {
       "userName": "Fostijn",
@@ -1598,9 +1780,11 @@
       "dsr": 0.1166,
       "sharpe": 0.5691,
       "risk": 4,
+      "copiers": 802,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 28,1 % > 20 %"
     },
     {
       "userName": "campervans",
@@ -1609,9 +1793,11 @@
       "dsr": 0.0488,
       "sharpe": 0.3237,
       "risk": 4,
+      "copiers": 748,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 5 % < 90 %"
     },
     {
       "userName": "ioatri",
@@ -1620,9 +1806,11 @@
       "dsr": 0.1541,
       "sharpe": 0.645,
       "risk": 4,
+      "copiers": 743,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 20,3 % > 20 %"
     },
     {
       "userName": "brayladen",
@@ -1631,9 +1819,11 @@
       "dsr": 0.432,
       "sharpe": 1.0208,
       "risk": 4,
+      "copiers": 735,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 35,4 % > 20 %"
     },
     {
       "userName": "DevonToogood",
@@ -1642,9 +1832,11 @@
       "dsr": 0.2351,
       "sharpe": 0.787,
       "risk": 3,
+      "copiers": 734,
       "months": 57,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 20,2 % > 20 %"
     },
     {
       "userName": "Cfranklin89",
@@ -1653,9 +1845,11 @@
       "dsr": 0.305,
       "sharpe": 0.8866,
       "risk": 3,
+      "copiers": 726,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 29,4 % > 20 %"
     },
     {
       "userName": "geofflee2006",
@@ -1664,9 +1858,11 @@
       "dsr": 0.1419,
       "sharpe": 0.64,
       "risk": 5,
+      "copiers": 724,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 37,1 % > 20 %"
     },
     {
       "userName": "iliescu2605",
@@ -1675,9 +1871,11 @@
       "dsr": 0.7199,
       "sharpe": 1.3126,
       "risk": 2,
+      "copiers": 679,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 72 % < 90 %"
     },
     {
       "userName": "Slow_and_Steady",
@@ -1686,9 +1884,11 @@
       "dsr": 0.0137,
       "sharpe": 0.0937,
       "risk": 3,
+      "copiers": 669,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 1 % < 90 %"
     },
     {
       "userName": "RajasTrader",
@@ -1697,9 +1897,11 @@
       "dsr": 0.334,
       "sharpe": 0.8835,
       "risk": 3,
+      "copiers": 669,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 29,9 % > 20 %"
     },
     {
       "userName": "emge2116",
@@ -1708,9 +1910,11 @@
       "dsr": 0.0772,
       "sharpe": 0.4601,
       "risk": 4,
+      "copiers": 639,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 8 % < 90 %"
     },
     {
       "userName": "hugo13250",
@@ -1719,9 +1923,11 @@
       "dsr": 0.0648,
       "sharpe": 0.4521,
       "risk": 3,
+      "copiers": 625,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 55,0 % > 20 %"
     },
     {
       "userName": "SparkLiang",
@@ -1730,9 +1936,11 @@
       "dsr": 0.0156,
       "sharpe": 0.1217,
       "risk": 4,
+      "copiers": 623,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 43,9 % > 20 %"
     },
     {
       "userName": "reinhardtcoetzee",
@@ -1741,9 +1949,11 @@
       "dsr": 0.0222,
       "sharpe": 0.1785,
       "risk": 3,
+      "copiers": 621,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 46,4 % > 20 %"
     },
     {
       "userName": "Linsanity1",
@@ -1752,9 +1962,11 @@
       "dsr": 0.023,
       "sharpe": 0.2031,
       "risk": 4,
+      "copiers": 601,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 40,8 % > 20 %"
     },
     {
       "userName": "Rayeiris",
@@ -1763,9 +1975,11 @@
       "dsr": 0.3454,
       "sharpe": 1.033,
       "risk": 4,
+      "copiers": 597,
       "months": 48,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 35 % < 90 %"
     },
     {
       "userName": "ChristopheNour",
@@ -1774,9 +1988,11 @@
       "dsr": 0.4968,
       "sharpe": 1.1955,
       "risk": 4,
+      "copiers": 597,
       "months": 50,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 50 % < 90 %"
     },
     {
       "userName": "B--Art",
@@ -1785,9 +2001,11 @@
       "dsr": 0.1676,
       "sharpe": 0.6584,
       "risk": 3,
+      "copiers": 592,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 28,5 % > 20 %"
     },
     {
       "userName": "DeimosCZE",
@@ -1796,9 +2014,11 @@
       "dsr": 0.3909,
       "sharpe": 1.0888,
       "risk": 5,
+      "copiers": 588,
       "months": 49,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 32,2 % > 20 %"
     },
     {
       "userName": "DonFan",
@@ -1807,9 +2027,11 @@
       "dsr": 0.1314,
       "sharpe": 0.5742,
       "risk": 4,
+      "copiers": 581,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 21,3 % > 20 %"
     },
     {
       "userName": "AlexZy",
@@ -1818,9 +2040,11 @@
       "dsr": 0.1964,
       "sharpe": 0.6853,
       "risk": 3,
+      "copiers": 577,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 22,9 % > 20 %"
     },
     {
       "userName": "Retrosupply",
@@ -1829,9 +2053,11 @@
       "dsr": 0.083,
       "sharpe": 0.4634,
       "risk": 3,
+      "copiers": 566,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 25,6 % > 20 %"
     },
     {
       "userName": "JFKinvestor",
@@ -1840,9 +2066,11 @@
       "dsr": 0.1599,
       "sharpe": 0.6617,
       "risk": 4,
+      "copiers": 560,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 24,2 % > 20 %"
     },
     {
       "userName": "FranciscoOrtiz13",
@@ -1851,9 +2079,11 @@
       "dsr": 0.0291,
       "sharpe": 0.2289,
       "risk": 4,
+      "copiers": 554,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 44,8 % > 20 %"
     },
     {
       "userName": "wilalexa",
@@ -1862,9 +2092,11 @@
       "dsr": 0.1715,
       "sharpe": 0.6469,
       "risk": 5,
+      "copiers": 547,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 30,6 % > 20 %"
     },
     {
       "userName": "tonishiii",
@@ -1873,9 +2105,11 @@
       "dsr": 0.0913,
       "sharpe": 0.5146,
       "risk": 5,
+      "copiers": 545,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 64,2 % > 20 %"
     },
     {
       "userName": "RudolfDeLeeuw",
@@ -1884,9 +2118,11 @@
       "dsr": 0.3333,
       "sharpe": 1.0166,
       "risk": 5,
+      "copiers": 543,
       "months": 49,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 36,1 % > 20 %"
     },
     {
       "userName": "carlosmartm",
@@ -1895,9 +2131,11 @@
       "dsr": 0.4877,
       "sharpe": 1.2799,
       "risk": 3,
+      "copiers": 519,
       "months": 43,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 29,7 % > 20 %"
     },
     {
       "userName": "LucaMeier",
@@ -1906,9 +2144,11 @@
       "dsr": 0.043,
       "sharpe": 0.3141,
       "risk": 4,
+      "copiers": 518,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 23,1 % > 20 %"
     },
     {
       "userName": "IshfaaqPeerally",
@@ -1917,20 +2157,11 @@
       "dsr": 0.0037,
       "sharpe": -0.1174,
       "risk": 5,
+      "copiers": 511,
       "months": 60,
       "qualified": false,
-      "inLimits": false
-    },
-    {
-      "userName": "Cheetah26",
-      "cagr": 7.4018,
-      "mdd": 38.5088,
-      "dsr": 0.0599,
-      "sharpe": 0.3756,
-      "risk": 4,
-      "months": 60,
-      "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 25,5 % > 20 %"
     },
     {
       "userName": "Mexploder",
@@ -1939,9 +2170,24 @@
       "dsr": 0.0304,
       "sharpe": 0.2482,
       "risk": 4,
+      "copiers": 510,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 42,9 % > 20 %"
+    },
+    {
+      "userName": "Cheetah26",
+      "cagr": 7.4018,
+      "mdd": 38.5088,
+      "dsr": 0.0599,
+      "sharpe": 0.3756,
+      "risk": 4,
+      "copiers": 510,
+      "months": 60,
+      "qualified": false,
+      "inLimits": false,
+      "reason": "Drawdown 38,5 % > 20 %"
     },
     {
       "userName": "fyanezn",
@@ -1950,9 +2196,11 @@
       "dsr": 0.2021,
       "sharpe": 0.7116,
       "risk": 4,
+      "copiers": 505,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 20 % < 90 %"
     },
     {
       "userName": "PierreN2023",
@@ -1961,9 +2209,11 @@
       "dsr": 0.5029,
       "sharpe": 1.2555,
       "risk": 4,
+      "copiers": 503,
       "months": 46,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 27,7 % > 20 %"
     },
     {
       "userName": "coolingman",
@@ -1972,9 +2222,11 @@
       "dsr": 0.2811,
       "sharpe": 0.8417,
       "risk": 3,
+      "copiers": 497,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 22,3 % > 20 %"
     },
     {
       "userName": "Aganowak91",
@@ -1983,9 +2235,11 @@
       "dsr": 0.3561,
       "sharpe": 1.1112,
       "risk": 3,
+      "copiers": 489,
       "months": 43,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 36 % < 90 %"
     },
     {
       "userName": "LiamDavies",
@@ -1994,9 +2248,11 @@
       "dsr": 0.0036,
       "sharpe": -0.1302,
       "risk": 3,
+      "copiers": 485,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 25,3 % > 20 %"
     },
     {
       "userName": "nonvisedarte",
@@ -2005,9 +2261,11 @@
       "dsr": 0.0678,
       "sharpe": 0.4185,
       "risk": 4,
+      "copiers": 470,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 40,9 % > 20 %"
     },
     {
       "userName": "Finanzzyklen",
@@ -2016,9 +2274,11 @@
       "dsr": 0.0165,
       "sharpe": 0.1461,
       "risk": 4,
+      "copiers": 466,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 2 % < 90 %"
     },
     {
       "userName": "ValueBuddy",
@@ -2027,20 +2287,11 @@
       "dsr": 0.5047,
       "sharpe": 1.1592,
       "risk": 4,
+      "copiers": 465,
       "months": 54,
       "qualified": false,
-      "inLimits": true
-    },
-    {
-      "userName": "HarryH1993",
-      "cagr": 8.1217,
-      "mdd": 36.2808,
-      "dsr": 0.0504,
-      "sharpe": 0.3605,
-      "risk": 5,
-      "months": 60,
-      "qualified": false,
-      "inLimits": false
+      "inLimits": true,
+      "reason": "Können-Sicherheit 50 % < 90 %"
     },
     {
       "userName": "jianswang",
@@ -2049,9 +2300,24 @@
       "dsr": 0.1026,
       "sharpe": 0.5195,
       "risk": 5,
+      "copiers": 461,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 52,3 % > 20 %"
+    },
+    {
+      "userName": "HarryH1993",
+      "cagr": 8.1217,
+      "mdd": 36.2808,
+      "dsr": 0.0504,
+      "sharpe": 0.3605,
+      "risk": 5,
+      "copiers": 460,
+      "months": 60,
+      "qualified": false,
+      "inLimits": false,
+      "reason": "Drawdown 36,3 % > 20 %"
     },
     {
       "userName": "Benaymo23",
@@ -2060,9 +2326,11 @@
       "dsr": 0.0547,
       "sharpe": 0.3663,
       "risk": 4,
+      "copiers": 451,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 28,0 % > 20 %"
     },
     {
       "userName": "hech123",
@@ -2071,9 +2339,11 @@
       "dsr": 0.0477,
       "sharpe": 0.3621,
       "risk": 2,
+      "copiers": 448,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 31,6 % > 20 %"
     },
     {
       "userName": "RainbirdFx",
@@ -2082,9 +2352,11 @@
       "dsr": 0.264,
       "sharpe": 0.8075,
       "risk": 4,
+      "copiers": 447,
       "months": 60,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 26 % < 90 %"
     },
     {
       "userName": "MIURATRADER",
@@ -2093,9 +2365,11 @@
       "dsr": 0.1845,
       "sharpe": 0.8167,
       "risk": 4,
+      "copiers": 442,
       "months": 48,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 18 % < 90 %"
     },
     {
       "userName": "booker03",
@@ -2104,9 +2378,11 @@
       "dsr": 0.1354,
       "sharpe": 0.5939,
       "risk": 4,
+      "copiers": 440,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 48,2 % > 20 %"
     },
     {
       "userName": "Akatri",
@@ -2115,9 +2391,11 @@
       "dsr": 0.4304,
       "sharpe": 1.1545,
       "risk": 5,
+      "copiers": 436,
       "months": 46,
       "qualified": false,
-      "inLimits": true
+      "inLimits": true,
+      "reason": "Können-Sicherheit 43 % < 90 %"
     },
     {
       "userName": "CapitalGains",
@@ -2126,9 +2404,11 @@
       "dsr": 0.0181,
       "sharpe": 0.1514,
       "risk": 5,
+      "copiers": 434,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 54,5 % > 20 %"
     },
     {
       "userName": "Demtheo27",
@@ -2137,9 +2417,11 @@
       "dsr": 0.1554,
       "sharpe": 0.6432,
       "risk": 4,
+      "copiers": 433,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 29,8 % > 20 %"
     },
     {
       "userName": "Matteospaggiari",
@@ -2148,9 +2430,11 @@
       "dsr": 0.5738,
       "sharpe": 1.2798,
       "risk": 4,
+      "copiers": 425,
       "months": 51,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 22,5 % > 20 %"
     },
     {
       "userName": "alexvanl",
@@ -2159,9 +2443,11 @@
       "dsr": 0.1583,
       "sharpe": 0.7574,
       "risk": 4,
+      "copiers": 420,
       "months": 48,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 29,3 % > 20 %"
     },
     {
       "userName": "Haukro",
@@ -2170,9 +2456,11 @@
       "dsr": 0.0684,
       "sharpe": 0.4046,
       "risk": 3,
+      "copiers": 418,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 36,8 % > 20 %"
     },
     {
       "userName": "VidovM",
@@ -2181,9 +2469,11 @@
       "dsr": 0.2348,
       "sharpe": 0.802,
       "risk": 5,
+      "copiers": 413,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 26,6 % > 20 %"
     },
     {
       "userName": "JonasBarrelov",
@@ -2192,9 +2482,11 @@
       "dsr": 0.046,
       "sharpe": 0.3324,
       "risk": 4,
+      "copiers": 408,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 38,5 % > 20 %"
     },
     {
       "userName": "betterleaf",
@@ -2203,9 +2495,11 @@
       "dsr": 0.0693,
       "sharpe": 0.4235,
       "risk": 4,
+      "copiers": 402,
       "months": 60,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 42,2 % > 20 %"
     },
     {
       "userName": "Michal454",
@@ -2214,9 +2508,11 @@
       "dsr": 0.2306,
       "sharpe": 0.8248,
       "risk": 4,
+      "copiers": 400,
       "months": 53,
       "qualified": false,
-      "inLimits": false
+      "inLimits": false,
+      "reason": "Drawdown 23,3 % > 20 %"
     }
   ]
 }
