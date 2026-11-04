@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-04T20:15:09.445Z",
+  "updated": "2026-11-04T20:46:18.676Z",
   "source": "/v2/portfolios/rankings",
   "totalAvailable": null,
   "screened": 150,
@@ -19,7 +19,8 @@
     "lossPct": 0.05,
     "top": 25,
     "keepWithinTop": 5,
-    "maxDataDeviation": 25
+    "maxDataDeviation": 25,
+    "roundTripCostPct": 0.3
   },
   "dataCheck": {
     "variant": "24 abgeschlossene Monate + laufender Monat",
@@ -31,12 +32,33 @@
   "recommendation": null,
   "notice": "Heute erfüllt kein Trader alle Bedingungen.",
   "lastRecommended": null,
+  "pick": {
+    "userName": "TiuBuletaire2",
+    "light": "yellow",
+    "score": 0.5897,
+    "postMean": 1.5444,
+    "postSd": 0.2328,
+    "sdMonthly": 2.6191,
+    "pDay": 0.5512,
+    "dsr": 0.8899,
+    "cagr": 21.2477,
+    "mdd": 8.29,
+    "risk": 2,
+    "csl": 11,
+    "bind": "share",
+    "breakEvenDays": 4.0792,
+    "amountPct": 0.1,
+    "since": "2026-11-04",
+    "changed": false,
+    "previous": null,
+    "note": "Erste Tageswahl."
+  },
   "top": [
     {
       "rank": 1,
       "userName": "TiuBuletaire2",
       "risk": 2,
-      "copiers": 818,
+      "copiers": 819,
       "avgHoldHours": null,
       "profitableMonthsPct": 82.86,
       "months": 47,
@@ -52,13 +74,20 @@
       "reason": "Können-Sicherheit 89 % < 90 %",
       "csl": 11,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.5444,
+      "postSd": 0.2328,
+      "sdMonthly": 2.6191,
+      "weight": 0.7467,
+      "score": 0.5897,
+      "pDay": 0.5512,
+      "breakEvenDays": 4.0792
     },
     {
       "rank": 2,
       "userName": "Kevin_Pando",
       "risk": 3,
-      "copiers": 1669,
+      "copiers": 1668,
       "avgHoldHours": null,
       "profitableMonthsPct": 65.52,
       "months": 28,
@@ -74,7 +103,14 @@
       "reason": "Können-Sicherheit 85 % < 90 %",
       "csl": 15,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.944,
+      "postSd": 0.3724,
+      "sdMonthly": 4.7112,
+      "weight": 0.3518,
+      "score": 0.4126,
+      "pDay": 0.5359,
+      "breakEvenDays": 3.2408
     },
     {
       "rank": 3,
@@ -96,7 +132,14 @@
       "reason": "Können-Sicherheit 78 % < 90 %",
       "csl": 22,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.8152,
+      "postSd": 0.3478,
+      "sdMonthly": 5.7934,
+      "weight": 0.4348,
+      "score": 0.3133,
+      "pDay": 0.5273,
+      "breakEvenDays": 3.4706
     },
     {
       "rank": 4,
@@ -118,13 +161,20 @@
       "reason": "Können-Sicherheit 72 % < 90 %",
       "csl": 10,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 0.862,
+      "postSd": 0.1489,
+      "sdMonthly": 1.7273,
+      "weight": 0.8964,
+      "score": 0.499,
+      "pDay": 0.5433,
+      "breakEvenDays": 7.3087
     },
     {
       "rank": 5,
       "userName": "Space-Investor",
       "risk": 4,
-      "copiers": 2030,
+      "copiers": 2034,
       "avgHoldHours": null,
       "profitableMonthsPct": 71.43,
       "months": 60,
@@ -140,13 +190,20 @@
       "reason": "Können-Sicherheit 71 % < 90 %",
       "csl": 20,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.683,
+      "postSd": 0.3268,
+      "sdMonthly": 5.0729,
+      "weight": 0.5008,
+      "score": 0.3318,
+      "pDay": 0.5289,
+      "breakEvenDays": 3.7432
     },
     {
       "rank": 6,
       "userName": "MCGINTYE",
       "risk": 4,
-      "copiers": 3780,
+      "copiers": 3778,
       "avgHoldHours": null,
       "profitableMonthsPct": 82.86,
       "months": 60,
@@ -162,7 +219,14 @@
       "reason": "Können-Sicherheit 68 % < 90 %",
       "csl": 15,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.4678,
+      "postSd": 0.2749,
+      "sdMonthly": 3.7539,
+      "weight": 0.6469,
+      "score": 0.391,
+      "pDay": 0.534,
+      "breakEvenDays": 4.292
     },
     {
       "rank": 7,
@@ -184,7 +248,14 @@
       "reason": "Können-Sicherheit 67 % < 90 %",
       "csl": 23,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.7524,
+      "postSd": 0.3865,
+      "sdMonthly": 7.3992,
+      "weight": 0.3018,
+      "score": 0.2368,
+      "pDay": 0.5206,
+      "breakEvenDays": 3.5951
     },
     {
       "rank": 8,
@@ -206,13 +277,20 @@
       "reason": "Können-Sicherheit 65 % < 90 %",
       "csl": 24,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.67,
+      "postSd": 0.3433,
+      "sdMonthly": 5.288,
+      "weight": 0.4492,
+      "score": 0.3158,
+      "pDay": 0.5275,
+      "breakEvenDays": 3.7724
     },
     {
       "rank": 9,
       "userName": "defense_investor",
       "risk": 3,
-      "copiers": 7499,
+      "copiers": 7496,
       "avgHoldHours": null,
       "profitableMonthsPct": 65.71,
       "months": 45,
@@ -228,13 +306,20 @@
       "reason": "Können-Sicherheit 64 % < 90 %",
       "csl": 17,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.5091,
+      "postSd": 0.2966,
+      "sdMonthly": 3.6773,
+      "weight": 0.5888,
+      "score": 0.4104,
+      "pDay": 0.5357,
+      "breakEvenDays": 4.1746
     },
     {
       "rank": 10,
       "userName": "Drcmart",
       "risk": 3,
-      "copiers": 1665,
+      "copiers": 1666,
       "avgHoldHours": null,
       "profitableMonthsPct": 68.57,
       "months": 60,
@@ -250,13 +335,20 @@
       "reason": "Können-Sicherheit 62 % < 90 %",
       "csl": 15,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.5035,
+      "postSd": 0.2989,
+      "sdMonthly": 4.3029,
+      "weight": 0.5823,
+      "score": 0.3494,
+      "pDay": 0.5304,
+      "breakEvenDays": 4.1902
     },
     {
       "rank": 11,
       "userName": "celesh",
       "risk": 3,
-      "copiers": 2028,
+      "copiers": 2027,
       "avgHoldHours": null,
       "profitableMonthsPct": 68.57,
       "months": 60,
@@ -272,13 +364,20 @@
       "reason": "Können-Sicherheit 61 % < 90 %",
       "csl": 15,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.3753,
+      "postSd": 0.2696,
+      "sdMonthly": 3.6445,
+      "weight": 0.6603,
+      "score": 0.3774,
+      "pDay": 0.5328,
+      "breakEvenDays": 4.5808
     },
     {
       "rank": 12,
       "userName": "mick_repo",
       "risk": 4,
-      "copiers": 5570,
+      "copiers": 5571,
       "avgHoldHours": null,
       "profitableMonthsPct": 71.43,
       "months": 60,
@@ -294,13 +393,20 @@
       "reason": "Können-Sicherheit 56 % < 90 %",
       "csl": 19,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.5066,
+      "postSd": 0.3141,
+      "sdMonthly": 4.7006,
+      "weight": 0.5388,
+      "score": 0.3205,
+      "pDay": 0.5279,
+      "breakEvenDays": 4.1815
     },
     {
       "rank": 13,
       "userName": "plessas",
       "risk": 3,
-      "copiers": 1220,
+      "copiers": 1221,
       "avgHoldHours": null,
       "profitableMonthsPct": 68.57,
       "months": 43,
@@ -316,7 +422,14 @@
       "reason": "Können-Sicherheit 55 % < 90 %",
       "csl": 19,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.466,
+      "postSd": 0.3055,
+      "sdMonthly": 3.7835,
+      "weight": 0.5638,
+      "score": 0.3875,
+      "pDay": 0.5337,
+      "breakEvenDays": 4.2975
     },
     {
       "rank": 14,
@@ -338,13 +451,20 @@
       "reason": "Können-Sicherheit 50 % < 90 %",
       "csl": 21,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.5133,
+      "postSd": 0.3302,
+      "sdMonthly": 4.9143,
+      "weight": 0.4903,
+      "score": 0.3079,
+      "pDay": 0.5268,
+      "breakEvenDays": 4.1632
     },
     {
       "rank": 15,
       "userName": "ChristopheNour",
       "risk": 4,
-      "copiers": 597,
+      "copiers": 596,
       "avgHoldHours": null,
       "profitableMonthsPct": 54.29,
       "months": 50,
@@ -360,13 +480,20 @@
       "reason": "Können-Sicherheit 50 % < 90 %",
       "csl": 25,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.4838,
+      "postSd": 0.3231,
+      "sdMonthly": 4.5269,
+      "weight": 0.5121,
+      "score": 0.3278,
+      "pDay": 0.5285,
+      "breakEvenDays": 4.2457
     },
     {
       "rank": 16,
       "userName": "Sergius95",
       "risk": 3,
-      "copiers": 1468,
+      "copiers": 1469,
       "avgHoldHours": null,
       "profitableMonthsPct": 74.29,
       "months": 60,
@@ -382,7 +509,14 @@
       "reason": "Können-Sicherheit 48 % < 90 %",
       "csl": 25,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.4292,
+      "postSd": 0.3119,
+      "sdMonthly": 4.6384,
+      "weight": 0.5454,
+      "score": 0.3081,
+      "pDay": 0.5268,
+      "breakEvenDays": 4.4079
     },
     {
       "rank": 17,
@@ -404,13 +538,20 @@
       "reason": "Können-Sicherheit 47 % < 90 %",
       "csl": 20,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.5948,
+      "postSd": 0.3709,
+      "sdMonthly": 5.9689,
+      "weight": 0.3571,
+      "score": 0.2672,
+      "pDay": 0.5232,
+      "breakEvenDays": 3.9504
     },
     {
       "rank": 18,
       "userName": "ingruc",
       "risk": 5,
-      "copiers": 4749,
+      "copiers": 4746,
       "avgHoldHours": null,
       "profitableMonthsPct": 71.43,
       "months": 60,
@@ -426,7 +567,14 @@
       "reason": "Können-Sicherheit 44 % < 90 %",
       "csl": 18,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.3476,
+      "postSd": 0.2984,
+      "sdMonthly": 4.2898,
+      "weight": 0.5838,
+      "score": 0.3142,
+      "pDay": 0.5273,
+      "breakEvenDays": 4.6748
     },
     {
       "rank": 19,
@@ -448,7 +596,14 @@
       "reason": "Können-Sicherheit 43 % < 90 %",
       "csl": 25,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.4585,
+      "postSd": 0.3335,
+      "sdMonthly": 4.6296,
+      "weight": 0.4801,
+      "score": 0.3151,
+      "pDay": 0.5274,
+      "breakEvenDays": 4.3194
     },
     {
       "rank": 20,
@@ -470,13 +625,20 @@
       "reason": "Können-Sicherheit 43 % < 90 %",
       "csl": 20,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.6163,
+      "postSd": 0.4048,
+      "sdMonthly": 8.8009,
+      "weight": 0.234,
+      "score": 0.1837,
+      "pDay": 0.516,
+      "breakEvenDays": 3.8977
     },
     {
       "rank": 21,
       "userName": "triangulacapital",
       "risk": 4,
-      "copiers": 21057,
+      "copiers": 21069,
       "avgHoldHours": null,
       "profitableMonthsPct": 71.43,
       "months": 60,
@@ -492,13 +654,20 @@
       "reason": "Können-Sicherheit 36 % < 90 %",
       "csl": 21,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.3513,
+      "postSd": 0.3198,
+      "sdMonthly": 4.8633,
+      "weight": 0.5219,
+      "score": 0.2779,
+      "pDay": 0.5242,
+      "breakEvenDays": 4.6621
     },
     {
       "rank": 22,
       "userName": "Aganowak91",
       "risk": 3,
-      "copiers": 489,
+      "copiers": 490,
       "avgHoldHours": null,
       "profitableMonthsPct": 65.71,
       "months": 43,
@@ -514,7 +683,14 @@
       "reason": "Können-Sicherheit 36 % < 90 %",
       "csl": 21,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.4138,
+      "postSd": 0.3356,
+      "sdMonthly": 4.5363,
+      "weight": 0.4734,
+      "score": 0.3117,
+      "pDay": 0.5271,
+      "breakEvenDays": 4.4562
     },
     {
       "rank": 23,
@@ -536,13 +712,20 @@
       "reason": "Können-Sicherheit 35 % < 90 %",
       "csl": 25,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.4932,
+      "postSd": 0.3688,
+      "sdMonthly": 6.0055,
+      "weight": 0.3641,
+      "score": 0.2486,
+      "pDay": 0.5216,
+      "breakEvenDays": 4.2191
     },
     {
       "rank": 24,
       "userName": "TrendingStocks",
       "risk": 4,
-      "copiers": 1300,
+      "copiers": 1298,
       "avgHoldHours": null,
       "profitableMonthsPct": 71.43,
       "months": 60,
@@ -558,13 +741,20 @@
       "reason": "Können-Sicherheit 30 % < 90 %",
       "csl": 17,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.0314,
+      "postSd": 0.2465,
+      "sdMonthly": 3.2007,
+      "weight": 0.7159,
+      "score": 0.3222,
+      "pDay": 0.528,
+      "breakEvenDays": 6.1081
     },
     {
       "rank": 25,
       "userName": "adams302",
       "risk": 4,
-      "copiers": 2203,
+      "copiers": 2206,
       "avgHoldHours": null,
       "profitableMonthsPct": 62.86,
       "months": 60,
@@ -580,15 +770,29 @@
       "reason": "Können-Sicherheit 30 % < 90 %",
       "csl": 19,
       "amountPct": 0.2,
-      "bind": "share"
+      "bind": "share",
+      "postMean": 1.2963,
+      "postSd": 0.319,
+      "sdMonthly": 4.8397,
+      "weight": 0.5243,
+      "score": 0.2679,
+      "pDay": 0.5233,
+      "breakEvenDays": 4.8599
     }
   ],
   "history": [
     {
       "date": "2026-11-04",
-      "userName": null
+      "userName": null,
+      "pick": "TiuBuletaire2",
+      "light": "yellow"
     }
   ],
+  "shrinkage": {
+    "priorMonthly": 1.2282,
+    "tau2": 0.214,
+    "noiseFactor": 0.4973
+  },
   "all": [
     {
       "userName": "JeppeKirkBonde",
@@ -597,11 +801,19 @@
       "dsr": 0.1822,
       "sharpe": 0.6795,
       "risk": 4,
-      "copiers": 25108,
+      "copiers": 25109,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 26,1 % > 20 %"
+      "reason": "Drawdown 26,1 % > 20 %",
+      "postMean": 1.1878,
+      "postSd": 0.3249,
+      "sdMonthly": 5.0132,
+      "score": 0.2369,
+      "pDay": 0.5206,
+      "csl": 33,
+      "amountPct": 0.1515,
+      "breakEvenDays": 5.304
     },
     {
       "userName": "thomaspj",
@@ -610,11 +822,19 @@
       "dsr": 0.2325,
       "sharpe": 0.7515,
       "risk": 4,
-      "copiers": 24117,
+      "copiers": 24110,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 23,3 % > 20 %"
+      "reason": "Drawdown 23,3 % > 20 %",
+      "postMean": 1.3248,
+      "postSd": 0.3519,
+      "sdMonthly": 5.9577,
+      "score": 0.2224,
+      "pDay": 0.5193,
+      "csl": 30,
+      "amountPct": 0.1667,
+      "breakEvenDays": 4.7555
     },
     {
       "userName": "triangulacapital",
@@ -623,11 +843,19 @@
       "dsr": 0.3603,
       "sharpe": 0.9253,
       "risk": 4,
-      "copiers": 21057,
+      "copiers": 21069,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 36 % < 90 %"
+      "reason": "Können-Sicherheit 36 % < 90 %",
+      "postMean": 1.3513,
+      "postSd": 0.3198,
+      "sdMonthly": 4.8633,
+      "score": 0.2779,
+      "pDay": 0.5242,
+      "csl": 21,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.6621
     },
     {
       "userName": "CPHequities",
@@ -636,11 +864,19 @@
       "dsr": 0.0708,
       "sharpe": 0.4208,
       "risk": 4,
-      "copiers": 16205,
+      "copiers": 16223,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 33,1 % > 20 %"
+      "reason": "Drawdown 33,1 % > 20 %",
+      "postMean": 0.9904,
+      "postSd": 0.3225,
+      "sdMonthly": 4.9427,
+      "score": 0.2004,
+      "pDay": 0.5174,
+      "csl": 42,
+      "amountPct": 0.119,
+      "breakEvenDays": 6.3608
     },
     {
       "userName": "Smudliczek",
@@ -649,11 +885,19 @@
       "dsr": 0.3039,
       "sharpe": 0.8556,
       "risk": 4,
-      "copiers": 16077,
+      "copiers": 16144,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 38,8 % > 20 %"
+      "reason": "Drawdown 38,8 % > 20 %",
+      "postMean": 1.4593,
+      "postSd": 0.3749,
+      "sdMonthly": 7.0311,
+      "score": 0.2075,
+      "pDay": 0.5181,
+      "csl": 49,
+      "amountPct": 0.102,
+      "breakEvenDays": 4.3173
     },
     {
       "userName": "FundManagerZech",
@@ -662,11 +906,19 @@
       "dsr": 0.1375,
       "sharpe": 0.6099,
       "risk": 4,
-      "copiers": 11131,
+      "copiers": 11149,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 20,0 % > 20 %"
+      "reason": "Drawdown 20,0 % > 20 %",
+      "postMean": 1.1092,
+      "postSd": 0.3165,
+      "sdMonthly": 4.7676,
+      "score": 0.2327,
+      "pDay": 0.5202,
+      "csl": 26,
+      "amountPct": 0.1923,
+      "breakEvenDays": 5.6797
     },
     {
       "userName": "Michalhla",
@@ -675,11 +927,19 @@
       "dsr": 0.2678,
       "sharpe": 0.8267,
       "risk": 4,
-      "copiers": 9771,
+      "copiers": 9773,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 44,6 % > 20 %"
+      "reason": "Drawdown 44,6 % > 20 %",
+      "postMean": 1.5024,
+      "postSd": 0.4247,
+      "sdMonthly": 11.7784,
+      "score": 0.1276,
+      "pDay": 0.5111,
+      "csl": 56,
+      "amountPct": 0.0893,
+      "breakEvenDays": 4.1934
     },
     {
       "userName": "jaynemesis",
@@ -688,11 +948,19 @@
       "dsr": 0.0072,
       "sharpe": -0.0113,
       "risk": 4,
-      "copiers": 8146,
+      "copiers": 8150,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 39,7 % > 20 %"
+      "reason": "Drawdown 39,7 % > 20 %",
+      "postMean": 0.8138,
+      "postSd": 0.3636,
+      "sdMonthly": 6.4602,
+      "score": 0.126,
+      "pDay": 0.511,
+      "csl": 50,
+      "amountPct": 0,
+      "breakEvenDays": 7.7412
     },
     {
       "userName": "defense_investor",
@@ -701,11 +969,19 @@
       "dsr": 0.6406,
       "sharpe": 1.4509,
       "risk": 3,
-      "copiers": 7499,
+      "copiers": 7496,
       "months": 45,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 64 % < 90 %"
+      "reason": "Können-Sicherheit 64 % < 90 %",
+      "postMean": 1.5091,
+      "postSd": 0.2966,
+      "sdMonthly": 3.6773,
+      "score": 0.4104,
+      "pDay": 0.5357,
+      "csl": 17,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.1746
     },
     {
       "userName": "KeshavLohiya",
@@ -714,11 +990,19 @@
       "dsr": 0.3386,
       "sharpe": 0.916,
       "risk": 4,
-      "copiers": 5706,
+      "copiers": 5707,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 36,8 % > 20 %"
+      "reason": "Drawdown 36,8 % > 20 %",
+      "postMean": 1.5432,
+      "postSd": 0.3997,
+      "sdMonthly": 8.7237,
+      "score": 0.1769,
+      "pDay": 0.5154,
+      "csl": 46,
+      "amountPct": 0.1087,
+      "breakEvenDays": 4.0824
     },
     {
       "userName": "mick_repo",
@@ -727,11 +1011,19 @@
       "dsr": 0.5564,
       "sharpe": 1.1643,
       "risk": 4,
-      "copiers": 5570,
+      "copiers": 5571,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 56 % < 90 %"
+      "reason": "Können-Sicherheit 56 % < 90 %",
+      "postMean": 1.5066,
+      "postSd": 0.3141,
+      "sdMonthly": 4.7006,
+      "score": 0.3205,
+      "pDay": 0.5279,
+      "csl": 19,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.1815
     },
     {
       "userName": "rubymza",
@@ -740,11 +1032,19 @@
       "dsr": 0.0064,
       "sharpe": -0.0297,
       "risk": 4,
-      "copiers": 5529,
+      "copiers": 5532,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 35,4 % > 20 %"
+      "reason": "Drawdown 35,4 % > 20 %",
+      "postMean": 0.6326,
+      "postSd": 0.3138,
+      "sdMonthly": 4.691,
+      "score": 0.1349,
+      "pDay": 0.5117,
+      "csl": 45,
+      "amountPct": 0,
+      "breakEvenDays": 9.9584
     },
     {
       "userName": "GreenbullInvest",
@@ -753,11 +1053,19 @@
       "dsr": 0.0395,
       "sharpe": 0.3271,
       "risk": 4,
-      "copiers": 5317,
+      "copiers": 5314,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 31,7 % > 20 %"
+      "reason": "Drawdown 31,7 % > 20 %",
+      "postMean": 1.172,
+      "postSd": 0.4012,
+      "sdMonthly": 8.8559,
+      "score": 0.1323,
+      "pDay": 0.5115,
+      "csl": 40,
+      "amountPct": 0.125,
+      "breakEvenDays": 5.3753
     },
     {
       "userName": "ingruc",
@@ -766,11 +1074,19 @@
       "dsr": 0.4407,
       "sharpe": 1.0237,
       "risk": 5,
-      "copiers": 4749,
+      "copiers": 4746,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 44 % < 90 %"
+      "reason": "Können-Sicherheit 44 % < 90 %",
+      "postMean": 1.3476,
+      "postSd": 0.2984,
+      "sdMonthly": 4.2898,
+      "score": 0.3142,
+      "pDay": 0.5273,
+      "csl": 18,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.6748
     },
     {
       "userName": "AmitKup",
@@ -779,11 +1095,19 @@
       "dsr": 0.4125,
       "sharpe": 0.996,
       "risk": 5,
-      "copiers": 4104,
+      "copiers": 4101,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 22,2 % > 20 %"
+      "reason": "Drawdown 22,2 % > 20 %",
+      "postMean": 1.5418,
+      "postSd": 0.3679,
+      "sdMonthly": 6.6659,
+      "score": 0.2313,
+      "pDay": 0.5201,
+      "csl": 28,
+      "amountPct": 0.1786,
+      "breakEvenDays": 4.0861
     },
     {
       "userName": "MCGINTYE",
@@ -792,11 +1116,19 @@
       "dsr": 0.6756,
       "sharpe": 1.3228,
       "risk": 4,
-      "copiers": 3780,
+      "copiers": 3778,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 68 % < 90 %"
+      "reason": "Können-Sicherheit 68 % < 90 %",
+      "postMean": 1.4678,
+      "postSd": 0.2749,
+      "sdMonthly": 3.7539,
+      "score": 0.391,
+      "pDay": 0.534,
+      "csl": 15,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.292
     },
     {
       "userName": "MarianoPardo",
@@ -805,11 +1137,19 @@
       "dsr": 0.0654,
       "sharpe": 0.4131,
       "risk": 4,
-      "copiers": 3366,
+      "copiers": 3370,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 43,2 % > 20 %"
+      "reason": "Drawdown 43,2 % > 20 %",
+      "postMean": 1.1599,
+      "postSd": 0.3778,
+      "sdMonthly": 7.1931,
+      "score": 0.1612,
+      "pDay": 0.514,
+      "csl": 54,
+      "amountPct": 0.0926,
+      "breakEvenDays": 5.4317
     },
     {
       "userName": "steveli1029",
@@ -818,11 +1158,19 @@
       "dsr": 0.1429,
       "sharpe": 0.6141,
       "risk": 4,
-      "copiers": 3261,
+      "copiers": 3262,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 59,0 % > 20 %"
+      "reason": "Drawdown 59,0 % > 20 %",
+      "postMean": 1.3834,
+      "postSd": 0.4193,
+      "sdMonthly": 10.9044,
+      "score": 0.1269,
+      "pDay": 0.511,
+      "csl": 74,
+      "amountPct": 0.0676,
+      "breakEvenDays": 4.5541
     },
     {
       "userName": "Aukie2008",
@@ -831,11 +1179,19 @@
       "dsr": 0.2534,
       "sharpe": 0.7842,
       "risk": 4,
-      "copiers": 2952,
+      "copiers": 2950,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 25 % < 90 %"
+      "reason": "Können-Sicherheit 25 % < 90 %",
+      "postMean": 1.2237,
+      "postSd": 0.3126,
+      "sdMonthly": 4.6594,
+      "score": 0.2626,
+      "pDay": 0.5228,
+      "csl": 16,
+      "amountPct": 0.2,
+      "breakEvenDays": 5.1482
     },
     {
       "userName": "IlMatematico",
@@ -844,11 +1200,19 @@
       "dsr": 0.1039,
       "sharpe": 0.5317,
       "risk": 3,
-      "copiers": 2848,
+      "copiers": 2849,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 35,7 % > 20 %"
+      "reason": "Drawdown 35,7 % > 20 %",
+      "postMean": 1.1539,
+      "postSd": 0.3482,
+      "sdMonthly": 5.8097,
+      "score": 0.1986,
+      "pDay": 0.5173,
+      "csl": 45,
+      "amountPct": 0.1111,
+      "breakEvenDays": 5.4597
     },
     {
       "userName": "Richardstroud",
@@ -861,7 +1225,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 23,6 % > 20 %"
+      "reason": "Drawdown 23,6 % > 20 %",
+      "postMean": 0.4932,
+      "postSd": 0.24,
+      "sdMonthly": 3.0835,
+      "score": 0.1599,
+      "pDay": 0.5139,
+      "csl": 30,
+      "amountPct": 0.1667,
+      "breakEvenDays": 12.7738
     },
     {
       "userName": "Wesl3y",
@@ -870,11 +1242,19 @@
       "dsr": 0.0121,
       "sharpe": 0.0792,
       "risk": 4,
-      "copiers": 2516,
+      "copiers": 2515,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 46,0 % > 20 %"
+      "reason": "Drawdown 46,0 % > 20 %",
+      "postMean": 0.8999,
+      "postSd": 0.3696,
+      "sdMonthly": 6.7545,
+      "score": 0.1332,
+      "pDay": 0.5116,
+      "csl": 58,
+      "amountPct": 0.0862,
+      "breakEvenDays": 7.0011
     },
     {
       "userName": "adams302",
@@ -883,11 +1263,19 @@
       "dsr": 0.2996,
       "sharpe": 0.8539,
       "risk": 4,
-      "copiers": 2203,
+      "copiers": 2206,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 30 % < 90 %"
+      "reason": "Können-Sicherheit 30 % < 90 %",
+      "postMean": 1.2963,
+      "postSd": 0.319,
+      "sdMonthly": 4.8397,
+      "score": 0.2679,
+      "pDay": 0.5233,
+      "csl": 19,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.8599
     },
     {
       "userName": "GeorgeFatouros",
@@ -896,11 +1284,19 @@
       "dsr": 0.6437,
       "sharpe": 1.3907,
       "risk": 4,
-      "copiers": 2103,
+      "copiers": 2105,
       "months": 48,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 20,6 % > 20 %"
+      "reason": "Drawdown 20,6 % > 20 %",
+      "postMean": 1.7398,
+      "postSd": 0.382,
+      "sdMonthly": 6.6575,
+      "score": 0.2613,
+      "pDay": 0.5227,
+      "csl": 26,
+      "amountPct": 0.1923,
+      "breakEvenDays": 3.6211
     },
     {
       "userName": "Le_kousou",
@@ -909,11 +1305,19 @@
       "dsr": 0.1746,
       "sharpe": 0.677,
       "risk": 4,
-      "copiers": 2091,
+      "copiers": 2092,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 30,6 % > 20 %"
+      "reason": "Drawdown 30,6 % > 20 %",
+      "postMean": 1.2113,
+      "postSd": 0.3327,
+      "sdMonthly": 5.2607,
+      "score": 0.2303,
+      "pDay": 0.52,
+      "csl": 39,
+      "amountPct": 0.1282,
+      "breakEvenDays": 5.2008
     },
     {
       "userName": "Space-Investor",
@@ -922,11 +1326,19 @@
       "dsr": 0.7069,
       "sharpe": 1.3462,
       "risk": 4,
-      "copiers": 2030,
+      "copiers": 2034,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 71 % < 90 %"
+      "reason": "Können-Sicherheit 71 % < 90 %",
+      "postMean": 1.683,
+      "postSd": 0.3268,
+      "sdMonthly": 5.0729,
+      "score": 0.3318,
+      "pDay": 0.5289,
+      "csl": 20,
+      "amountPct": 0.2,
+      "breakEvenDays": 3.7432
     },
     {
       "userName": "celesh",
@@ -935,11 +1347,19 @@
       "dsr": 0.6143,
       "sharpe": 1.2222,
       "risk": 3,
-      "copiers": 2028,
+      "copiers": 2027,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 61 % < 90 %"
+      "reason": "Können-Sicherheit 61 % < 90 %",
+      "postMean": 1.3753,
+      "postSd": 0.2696,
+      "sdMonthly": 3.6445,
+      "score": 0.3774,
+      "pDay": 0.5328,
+      "csl": 15,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.5808
     },
     {
       "userName": "Enslinjaco",
@@ -948,11 +1368,19 @@
       "dsr": 0.1335,
       "sharpe": 0.6031,
       "risk": 5,
-      "copiers": 2008,
+      "copiers": 2006,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 24,4 % > 20 %"
+      "reason": "Drawdown 24,4 % > 20 %",
+      "postMean": 1.2417,
+      "postSd": 0.3601,
+      "sdMonthly": 6.3031,
+      "score": 0.197,
+      "pDay": 0.5171,
+      "csl": 31,
+      "amountPct": 0.1613,
+      "breakEvenDays": 5.0738
     },
     {
       "userName": "JORDENBOER",
@@ -965,7 +1393,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 35,2 % > 20 %"
+      "reason": "Drawdown 35,2 % > 20 %",
+      "postMean": 0.961,
+      "postSd": 0.3456,
+      "sdMonthly": 5.712,
+      "score": 0.1682,
+      "pDay": 0.5146,
+      "csl": 44,
+      "amountPct": 0.1136,
+      "breakEvenDays": 6.5557
     },
     {
       "userName": "SimoneRizzetto88",
@@ -978,7 +1414,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 35,7 % > 20 %"
+      "reason": "Drawdown 35,7 % > 20 %",
+      "postMean": 1.2031,
+      "postSd": 0.3352,
+      "sdMonthly": 5.3444,
+      "score": 0.2251,
+      "pDay": 0.5196,
+      "csl": 45,
+      "amountPct": 0.1111,
+      "breakEvenDays": 5.2366
     },
     {
       "userName": "CCalle",
@@ -987,11 +1431,19 @@
       "dsr": 0.1365,
       "sharpe": 0.6207,
       "risk": 5,
-      "copiers": 1773,
+      "copiers": 1774,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 26,4 % > 20 %"
+      "reason": "Drawdown 26,4 % > 20 %",
+      "postMean": 1.267,
+      "postSd": 0.3645,
+      "sdMonthly": 6.5046,
+      "score": 0.1948,
+      "pDay": 0.517,
+      "csl": 33,
+      "amountPct": 0.1515,
+      "breakEvenDays": 4.9724
     },
     {
       "userName": "robchamow",
@@ -1000,11 +1452,19 @@
       "dsr": 0.3707,
       "sharpe": 0.9509,
       "risk": 4,
-      "copiers": 1769,
+      "copiers": 1771,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 21,4 % > 20 %"
+      "reason": "Drawdown 21,4 % > 20 %",
+      "postMean": 1.4299,
+      "postSd": 0.3385,
+      "sdMonthly": 5.4546,
+      "score": 0.2622,
+      "pDay": 0.5228,
+      "csl": 27,
+      "amountPct": 0.1852,
+      "breakEvenDays": 4.4058
     },
     {
       "userName": "onk342",
@@ -1017,7 +1477,15 @@
       "months": 46,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 47 % < 90 %"
+      "reason": "Können-Sicherheit 47 % < 90 %",
+      "postMean": 1.5948,
+      "postSd": 0.3709,
+      "sdMonthly": 5.9689,
+      "score": 0.2672,
+      "pDay": 0.5232,
+      "csl": 20,
+      "amountPct": 0.2,
+      "breakEvenDays": 3.9504
     },
     {
       "userName": "TrevinaYoussef",
@@ -1030,7 +1498,15 @@
       "months": 57,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 25,4 % > 20 %"
+      "reason": "Drawdown 25,4 % > 20 %",
+      "postMean": 1.4276,
+      "postSd": 0.3538,
+      "sdMonthly": 5.8818,
+      "score": 0.2427,
+      "pDay": 0.5211,
+      "csl": 32,
+      "amountPct": 0.1563,
+      "breakEvenDays": 4.413
     },
     {
       "userName": "Kevin_Pando",
@@ -1039,11 +1515,19 @@
       "dsr": 0.85,
       "sharpe": 2.2777,
       "risk": 3,
-      "copiers": 1669,
+      "copiers": 1668,
       "months": 28,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 85 % < 90 %"
+      "reason": "Können-Sicherheit 85 % < 90 %",
+      "postMean": 1.944,
+      "postSd": 0.3724,
+      "sdMonthly": 4.7112,
+      "score": 0.4126,
+      "pDay": 0.5359,
+      "csl": 15,
+      "amountPct": 0.2,
+      "breakEvenDays": 3.2408
     },
     {
       "userName": "Drcmart",
@@ -1052,11 +1536,19 @@
       "dsr": 0.6168,
       "sharpe": 1.2365,
       "risk": 3,
-      "copiers": 1665,
+      "copiers": 1666,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 62 % < 90 %"
+      "reason": "Können-Sicherheit 62 % < 90 %",
+      "postMean": 1.5035,
+      "postSd": 0.2989,
+      "sdMonthly": 4.3029,
+      "score": 0.3494,
+      "pDay": 0.5304,
+      "csl": 15,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.1902
     },
     {
       "userName": "StefanULS",
@@ -1069,7 +1561,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 78 % < 90 %"
+      "reason": "Können-Sicherheit 78 % < 90 %",
+      "postMean": 1.8152,
+      "postSd": 0.3478,
+      "sdMonthly": 5.7934,
+      "score": 0.3133,
+      "pDay": 0.5273,
+      "csl": 22,
+      "amountPct": 0.2,
+      "breakEvenDays": 3.4706
     },
     {
       "userName": "knw500",
@@ -1078,11 +1578,19 @@
       "dsr": 0.1066,
       "sharpe": 0.5265,
       "risk": 3,
-      "copiers": 1502,
+      "copiers": 1500,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 11 % < 90 %"
+      "reason": "Können-Sicherheit 11 % < 90 %",
+      "postMean": 0.7271,
+      "postSd": 0.2195,
+      "sdMonthly": 2.7395,
+      "score": 0.2654,
+      "pDay": 0.5231,
+      "csl": 23,
+      "amountPct": 0.2,
+      "breakEvenDays": 8.664
     },
     {
       "userName": "Sergius95",
@@ -1091,11 +1599,19 @@
       "dsr": 0.4807,
       "sharpe": 1.0692,
       "risk": 3,
-      "copiers": 1468,
+      "copiers": 1469,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 48 % < 90 %"
+      "reason": "Können-Sicherheit 48 % < 90 %",
+      "postMean": 1.4292,
+      "postSd": 0.3119,
+      "sdMonthly": 4.6384,
+      "score": 0.3081,
+      "pDay": 0.5268,
+      "csl": 25,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.4079
     },
     {
       "userName": "Ivanectus",
@@ -1104,11 +1620,19 @@
       "dsr": 0.2851,
       "sharpe": 1.1481,
       "risk": 5,
-      "copiers": 1463,
+      "copiers": 1464,
       "months": 36,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 44,8 % > 20 %"
+      "reason": "Drawdown 44,8 % > 20 %",
+      "postMean": 1.4527,
+      "postSd": 0.4518,
+      "sdMonthly": 17.8984,
+      "score": 0.0812,
+      "pDay": 0.5071,
+      "csl": 56,
+      "amountPct": 0.0893,
+      "breakEvenDays": 4.3367
     },
     {
       "userName": "oceantan007",
@@ -1117,11 +1641,19 @@
       "dsr": 0.0706,
       "sharpe": 0.4356,
       "risk": 3,
-      "copiers": 1456,
+      "copiers": 1455,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 38,6 % > 20 %"
+      "reason": "Drawdown 38,6 % > 20 %",
+      "postMean": 1.1318,
+      "postSd": 0.3634,
+      "sdMonthly": 6.4527,
+      "score": 0.1754,
+      "pDay": 0.5153,
+      "csl": 49,
+      "amountPct": 0.102,
+      "breakEvenDays": 5.5662
     },
     {
       "userName": "Wise_woman",
@@ -1134,7 +1666,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 20 % < 90 %"
+      "reason": "Können-Sicherheit 20 % < 90 %",
+      "postMean": 1.0513,
+      "postSd": 0.2851,
+      "sdMonthly": 3.9768,
+      "score": 0.2644,
+      "pDay": 0.523,
+      "csl": 20,
+      "amountPct": 0.2,
+      "breakEvenDays": 5.9924
     },
     {
       "userName": "Marirs",
@@ -1143,11 +1683,19 @@
       "dsr": 0.2153,
       "sharpe": 0.7587,
       "risk": 3,
-      "copiers": 1419,
+      "copiers": 1418,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 44,8 % > 20 %"
+      "reason": "Drawdown 44,8 % > 20 %",
+      "postMean": 1.433,
+      "postSd": 0.394,
+      "sdMonthly": 8.2625,
+      "score": 0.1734,
+      "pDay": 0.5151,
+      "csl": 56,
+      "amountPct": 0.0893,
+      "breakEvenDays": 4.3963
     },
     {
       "userName": "choose3395",
@@ -1160,7 +1708,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 36,7 % > 20 %"
+      "reason": "Drawdown 36,7 % > 20 %",
+      "postMean": 1.6479,
+      "postSd": 0.419,
+      "sdMonthly": 10.8698,
+      "score": 0.1516,
+      "pDay": 0.5132,
+      "csl": 46,
+      "amountPct": 0.1087,
+      "breakEvenDays": 3.8231
     },
     {
       "userName": "Sylviafarre",
@@ -1169,11 +1725,19 @@
       "dsr": 0.0107,
       "sharpe": 0.0514,
       "risk": 4,
-      "copiers": 1386,
+      "copiers": 1382,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 82,4 % > 20 %"
+      "reason": "Drawdown 82,4 % > 20 %",
+      "postMean": 1.1238,
+      "postSd": 0.4336,
+      "sdMonthly": 13.6741,
+      "score": 0.0822,
+      "pDay": 0.5072,
+      "csl": 95,
+      "amountPct": 0.0526,
+      "breakEvenDays": 5.6059
     },
     {
       "userName": "VIXGold",
@@ -1186,7 +1750,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 18 % < 90 %"
+      "reason": "Können-Sicherheit 18 % < 90 %",
+      "postMean": 0.7485,
+      "postSd": 0.2033,
+      "sdMonthly": 2.4857,
+      "score": 0.3011,
+      "pDay": 0.5262,
+      "csl": 17,
+      "amountPct": 0.2,
+      "breakEvenDays": 8.4172
     },
     {
       "userName": "KoraTrades",
@@ -1199,7 +1771,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 49,7 % > 20 %"
+      "reason": "Drawdown 49,7 % > 20 %",
+      "postMean": 1.0765,
+      "postSd": 0.4216,
+      "sdMonthly": 11.2621,
+      "score": 0.0956,
+      "pDay": 0.5083,
+      "csl": 63,
+      "amountPct": 0.0654,
+      "breakEvenDays": 5.8525
     },
     {
       "userName": "Moonwater",
@@ -1212,20 +1792,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 29,3 % > 20 %"
-    },
-    {
-      "userName": "eddyb123",
-      "cagr": 2.2944,
-      "mdd": 39.506,
-      "dsr": 0.0136,
-      "sharpe": 0.0946,
-      "risk": 3,
-      "copiers": 1305,
-      "months": 60,
-      "qualified": false,
-      "inLimits": false,
-      "reason": "Drawdown 39,5 % > 20 %"
+      "reason": "Drawdown 29,3 % > 20 %",
+      "postMean": 1.0907,
+      "postSd": 0.3211,
+      "sdMonthly": 4.9009,
+      "score": 0.2226,
+      "pDay": 0.5194,
+      "csl": 37,
+      "amountPct": 0.1351,
+      "breakEvenDays": 5.7761
     },
     {
       "userName": "NabilSifo",
@@ -1238,7 +1813,36 @@
       "months": 54,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 32,3 % > 20 %"
+      "reason": "Drawdown 32,3 % > 20 %",
+      "postMean": 1.3887,
+      "postSd": 0.3967,
+      "sdMonthly": 8.036,
+      "score": 0.1728,
+      "pDay": 0.515,
+      "csl": 41,
+      "amountPct": 0.122,
+      "breakEvenDays": 4.5367
+    },
+    {
+      "userName": "eddyb123",
+      "cagr": 2.2944,
+      "mdd": 39.506,
+      "dsr": 0.0136,
+      "sharpe": 0.0946,
+      "risk": 3,
+      "copiers": 1304,
+      "months": 60,
+      "qualified": false,
+      "inLimits": false,
+      "reason": "Drawdown 39,5 % > 20 %",
+      "postMean": 0.6938,
+      "postSd": 0.3042,
+      "sdMonthly": 4.4369,
+      "score": 0.1564,
+      "pDay": 0.5136,
+      "csl": 50,
+      "amountPct": 0.1,
+      "breakEvenDays": 9.0803
     },
     {
       "userName": "TrendingStocks",
@@ -1247,11 +1851,19 @@
       "dsr": 0.3036,
       "sharpe": 0.853,
       "risk": 4,
-      "copiers": 1300,
+      "copiers": 1298,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 30 % < 90 %"
+      "reason": "Können-Sicherheit 30 % < 90 %",
+      "postMean": 1.0314,
+      "postSd": 0.2465,
+      "sdMonthly": 3.2007,
+      "score": 0.3222,
+      "pDay": 0.528,
+      "csl": 17,
+      "amountPct": 0.2,
+      "breakEvenDays": 6.1081
     },
     {
       "userName": "liborvasa",
@@ -1264,7 +1876,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 24,9 % > 20 %"
+      "reason": "Drawdown 24,9 % > 20 %",
+      "postMean": 1.0324,
+      "postSd": 0.3309,
+      "sdMonthly": 5.2034,
+      "score": 0.1984,
+      "pDay": 0.5173,
+      "csl": 32,
+      "amountPct": 0.1563,
+      "breakEvenDays": 6.1021
     },
     {
       "userName": "rafaeldfl",
@@ -1277,7 +1897,15 @@
       "months": 44,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 24,2 % > 20 %"
+      "reason": "Drawdown 24,2 % > 20 %",
+      "postMean": 1.661,
+      "postSd": 0.388,
+      "sdMonthly": 6.7024,
+      "score": 0.2478,
+      "pDay": 0.5216,
+      "csl": 31,
+      "amountPct": 0.1613,
+      "breakEvenDays": 3.7929
     },
     {
       "userName": "kasperpatrick1",
@@ -1290,7 +1918,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 71,6 % > 20 %"
+      "reason": "Drawdown 71,6 % > 20 %",
+      "postMean": 1.3447,
+      "postSd": 0.4382,
+      "sdMonthly": 15.0363,
+      "score": 0.0894,
+      "pDay": 0.5078,
+      "csl": 90,
+      "amountPct": 0.0556,
+      "breakEvenDays": 4.685
     },
     {
       "userName": "Social-Investor",
@@ -1303,7 +1939,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 35,5 % > 20 %"
+      "reason": "Drawdown 35,5 % > 20 %",
+      "postMean": 1.3016,
+      "postSd": 0.3649,
+      "sdMonthly": 6.5208,
+      "score": 0.1996,
+      "pDay": 0.5174,
+      "csl": 45,
+      "amountPct": 0.1111,
+      "breakEvenDays": 4.8403
     },
     {
       "userName": "TheDividendFund",
@@ -1316,7 +1960,15 @@
       "months": 52,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 28 % < 90 %"
+      "reason": "Können-Sicherheit 28 % < 90 %",
+      "postMean": 1.3118,
+      "postSd": 0.3293,
+      "sdMonthly": 4.7961,
+      "score": 0.2735,
+      "pDay": 0.5238,
+      "csl": 18,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.8024
     },
     {
       "userName": "iBore99",
@@ -1329,7 +1981,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 18 % < 90 %"
+      "reason": "Können-Sicherheit 18 % < 90 %",
+      "postMean": 1.1101,
+      "postSd": 0.3012,
+      "sdMonthly": 4.3593,
+      "score": 0.2546,
+      "pDay": 0.5222,
+      "csl": 18,
+      "amountPct": 0.2,
+      "breakEvenDays": 5.6753
     },
     {
       "userName": "plessas",
@@ -1338,11 +1998,19 @@
       "dsr": 0.5518,
       "sharpe": 1.3595,
       "risk": 3,
-      "copiers": 1220,
+      "copiers": 1221,
       "months": 43,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 55 % < 90 %"
+      "reason": "Können-Sicherheit 55 % < 90 %",
+      "postMean": 1.466,
+      "postSd": 0.3055,
+      "sdMonthly": 3.7835,
+      "score": 0.3875,
+      "pDay": 0.5337,
+      "csl": 19,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.2975
     },
     {
       "userName": "RickFortune",
@@ -1351,11 +2019,19 @@
       "dsr": 0.1712,
       "sharpe": 0.7195,
       "risk": 3,
-      "copiers": 1205,
+      "copiers": 1204,
       "months": 53,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 28,6 % > 20 %"
+      "reason": "Drawdown 28,6 % > 20 %",
+      "postMean": 1.2344,
+      "postSd": 0.3402,
+      "sdMonthly": 5.1829,
+      "score": 0.2382,
+      "pDay": 0.5207,
+      "csl": 36,
+      "amountPct": 0.1389,
+      "breakEvenDays": 5.1038
     },
     {
       "userName": "gauravk_in",
@@ -1368,7 +2044,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 13 % < 90 %"
+      "reason": "Können-Sicherheit 13 % < 90 %",
+      "postMean": 1.5056,
+      "postSd": 0.4139,
+      "sdMonthly": 10.1855,
+      "score": 0.1478,
+      "pDay": 0.5129,
+      "csl": 25,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.1843
     },
     {
       "userName": "hugomanenti95",
@@ -1377,11 +2061,19 @@
       "dsr": 0.0201,
       "sharpe": 0.1695,
       "risk": 5,
-      "copiers": 1183,
+      "copiers": 1182,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 40,6 % > 20 %"
+      "reason": "Drawdown 40,6 % > 20 %",
+      "postMean": 0.9988,
+      "postSd": 0.3799,
+      "sdMonthly": 7.3167,
+      "score": 0.1365,
+      "pDay": 0.5119,
+      "csl": 51,
+      "amountPct": 0.098,
+      "breakEvenDays": 6.3076
     },
     {
       "userName": "SharonConnolly",
@@ -1394,7 +2086,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 42,9 % > 20 %"
+      "reason": "Drawdown 42,9 % > 20 %",
+      "postMean": 1.286,
+      "postSd": 0.3778,
+      "sdMonthly": 7.1954,
+      "score": 0.1787,
+      "pDay": 0.5156,
+      "csl": 54,
+      "amountPct": 0.0926,
+      "breakEvenDays": 4.8987
     },
     {
       "userName": "Nezatron",
@@ -1403,11 +2103,19 @@
       "dsr": 0.0175,
       "sharpe": 0.1308,
       "risk": 4,
-      "copiers": 1168,
+      "copiers": 1169,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 21,5 % > 20 %"
+      "reason": "Drawdown 21,5 % > 20 %",
+      "postMean": 0.6632,
+      "postSd": 0.2855,
+      "sdMonthly": 3.9853,
+      "score": 0.1664,
+      "pDay": 0.5145,
+      "csl": 27,
+      "amountPct": 0.1852,
+      "breakEvenDays": 9.499
     },
     {
       "userName": "KenanAbel",
@@ -1416,11 +2124,19 @@
       "dsr": 0.1547,
       "sharpe": 0.6296,
       "risk": 4,
-      "copiers": 1148,
+      "copiers": 1147,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 33,7 % > 20 %"
+      "reason": "Drawdown 33,7 % > 20 %",
+      "postMean": 1.3154,
+      "postSd": 0.3801,
+      "sdMonthly": 7.3259,
+      "score": 0.1795,
+      "pDay": 0.5156,
+      "csl": 43,
+      "amountPct": 0.1163,
+      "breakEvenDays": 4.7896
     },
     {
       "userName": "Gserdan",
@@ -1433,7 +2149,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 36,0 % > 20 %"
+      "reason": "Drawdown 36,0 % > 20 %",
+      "postMean": 0.9701,
+      "postSd": 0.3483,
+      "sdMonthly": 5.8153,
+      "score": 0.1668,
+      "pDay": 0.5145,
+      "csl": 45,
+      "amountPct": 0.1111,
+      "breakEvenDays": 6.4943
     },
     {
       "userName": "Chrochtik",
@@ -1442,11 +2166,19 @@
       "dsr": 0.2852,
       "sharpe": 0.8427,
       "risk": 4,
-      "copiers": 1086,
+      "copiers": 1084,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 36,2 % > 20 %"
+      "reason": "Drawdown 36,2 % > 20 %",
+      "postMean": 1.4128,
+      "postSd": 0.3599,
+      "sdMonthly": 6.2938,
+      "score": 0.2245,
+      "pDay": 0.5195,
+      "csl": 46,
+      "amountPct": 0.1087,
+      "breakEvenDays": 4.4592
     },
     {
       "userName": "Miyoshi",
@@ -1455,11 +2187,19 @@
       "dsr": 0.014,
       "sharpe": 0.1005,
       "risk": 5,
-      "copiers": 1040,
+      "copiers": 1041,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 52,8 % > 20 %"
+      "reason": "Drawdown 52,8 % > 20 %",
+      "postMean": 0.938,
+      "postSd": 0.3762,
+      "sdMonthly": 7.1015,
+      "score": 0.1321,
+      "pDay": 0.5115,
+      "csl": 67,
+      "amountPct": 0.0746,
+      "breakEvenDays": 6.7164
     },
     {
       "userName": "2BSmart",
@@ -1472,7 +2212,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 26,5 % > 20 %"
+      "reason": "Drawdown 26,5 % > 20 %",
+      "postMean": 1.3684,
+      "postSd": 0.3621,
+      "sdMonthly": 6.3917,
+      "score": 0.2141,
+      "pDay": 0.5186,
+      "csl": 34,
+      "amountPct": 0.1471,
+      "breakEvenDays": 4.6039
     },
     {
       "userName": "pino428",
@@ -1481,11 +2229,19 @@
       "dsr": 0.0114,
       "sharpe": 0.0651,
       "risk": 3,
-      "copiers": 1006,
+      "copiers": 1007,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 1 % < 90 %"
+      "reason": "Können-Sicherheit 1 % < 90 %",
+      "postMean": 0.5143,
+      "postSd": 0.2481,
+      "sdMonthly": 3.2296,
+      "score": 0.1592,
+      "pDay": 0.5139,
+      "csl": 23,
+      "amountPct": 0.2,
+      "breakEvenDays": 12.2505
     },
     {
       "userName": "TradingInvest890",
@@ -1498,7 +2254,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 31,6 % > 20 %"
+      "reason": "Drawdown 31,6 % > 20 %",
+      "postMean": 1.4895,
+      "postSd": 0.3851,
+      "sdMonthly": 7.6389,
+      "score": 0.195,
+      "pDay": 0.517,
+      "csl": 40,
+      "amountPct": 0.125,
+      "breakEvenDays": 4.2297
     },
     {
       "userName": "brirap",
@@ -1507,24 +2271,19 @@
       "dsr": 0.5037,
       "sharpe": 1.096,
       "risk": 5,
-      "copiers": 996,
+      "copiers": 995,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 36,7 % > 20 %"
-    },
-    {
-      "userName": "Danielovic135",
-      "cagr": 15.0096,
-      "mdd": 15.4538,
-      "dsr": 0.2895,
-      "sharpe": 0.8381,
-      "risk": 4,
-      "copiers": 991,
-      "months": 60,
-      "qualified": false,
-      "inLimits": true,
-      "reason": "Können-Sicherheit 29 % < 90 %"
+      "reason": "Drawdown 36,7 % > 20 %",
+      "postMean": 1.6274,
+      "postSd": 0.4325,
+      "sdMonthly": 13.4022,
+      "score": 0.1214,
+      "pDay": 0.5106,
+      "csl": 46,
+      "amountPct": 0.1087,
+      "breakEvenDays": 3.8712
     },
     {
       "userName": "Jenelleb123",
@@ -1537,7 +2296,36 @@
       "months": 53,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 65 % < 90 %"
+      "reason": "Können-Sicherheit 65 % < 90 %",
+      "postMean": 1.67,
+      "postSd": 0.3433,
+      "sdMonthly": 5.288,
+      "score": 0.3158,
+      "pDay": 0.5275,
+      "csl": 24,
+      "amountPct": 0.2,
+      "breakEvenDays": 3.7724
+    },
+    {
+      "userName": "Danielovic135",
+      "cagr": 15.0096,
+      "mdd": 15.4538,
+      "dsr": 0.2895,
+      "sharpe": 0.8381,
+      "risk": 4,
+      "copiers": 991,
+      "months": 60,
+      "qualified": false,
+      "inLimits": true,
+      "reason": "Können-Sicherheit 29 % < 90 %",
+      "postMean": 1.2538,
+      "postSd": 0.3099,
+      "sdMonthly": 4.5857,
+      "score": 0.2734,
+      "pDay": 0.5238,
+      "csl": 20,
+      "amountPct": 0.2,
+      "breakEvenDays": 5.0248
     },
     {
       "userName": "Aguero1010",
@@ -1546,11 +2334,19 @@
       "dsr": 0.0658,
       "sharpe": 0.413,
       "risk": 4,
-      "copiers": 973,
+      "copiers": 974,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 32,9 % > 20 %"
+      "reason": "Drawdown 32,9 % > 20 %",
+      "postMean": 0.9961,
+      "postSd": 0.326,
+      "sdMonthly": 5.0474,
+      "score": 0.1973,
+      "pDay": 0.5172,
+      "csl": 42,
+      "amountPct": 0.119,
+      "breakEvenDays": 6.325
     },
     {
       "userName": "Compound72",
@@ -1563,7 +2359,15 @@
       "months": 57,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 31,4 % > 20 %"
+      "reason": "Drawdown 31,4 % > 20 %",
+      "postMean": 1.1696,
+      "postSd": 0.3492,
+      "sdMonthly": 5.7,
+      "score": 0.2052,
+      "pDay": 0.5179,
+      "csl": 40,
+      "amountPct": 0.125,
+      "breakEvenDays": 5.3863
     },
     {
       "userName": "ReturnInvest",
@@ -1576,7 +2380,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 32,7 % > 20 %"
+      "reason": "Drawdown 32,7 % > 20 %",
+      "postMean": 0.762,
+      "postSd": 0.3132,
+      "sdMonthly": 4.6765,
+      "score": 0.163,
+      "pDay": 0.5142,
+      "csl": 41,
+      "amountPct": 0.122,
+      "breakEvenDays": 8.2673
     },
     {
       "userName": "PROJECT10X",
@@ -1589,7 +2401,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 60,3 % > 20 %"
+      "reason": "Drawdown 60,3 % > 20 %",
+      "postMean": 1.3036,
+      "postSd": 0.4375,
+      "sdMonthly": 14.7928,
+      "score": 0.0881,
+      "pDay": 0.5077,
+      "csl": 76,
+      "amountPct": 0.0658,
+      "breakEvenDays": 4.8326
     },
     {
       "userName": "NoImportan3",
@@ -1602,7 +2422,15 @@
       "months": 55,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 43 % < 90 %"
+      "reason": "Können-Sicherheit 43 % < 90 %",
+      "postMean": 1.6163,
+      "postSd": 0.4048,
+      "sdMonthly": 8.8009,
+      "score": 0.1837,
+      "pDay": 0.516,
+      "csl": 20,
+      "amountPct": 0.2,
+      "breakEvenDays": 3.8977
     },
     {
       "userName": "Marco199610",
@@ -1611,11 +2439,19 @@
       "dsr": 0.0477,
       "sharpe": 0.3556,
       "risk": 4,
-      "copiers": 899,
+      "copiers": 900,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 58,2 % > 20 %"
+      "reason": "Drawdown 58,2 % > 20 %",
+      "postMean": 1.2173,
+      "postSd": 0.4111,
+      "sdMonthly": 9.8505,
+      "score": 0.1236,
+      "pDay": 0.5108,
+      "csl": 73,
+      "amountPct": 0.0685,
+      "breakEvenDays": 5.1755
     },
     {
       "userName": "Dividend_Diva",
@@ -1624,11 +2460,19 @@
       "dsr": 0.1553,
       "sharpe": 1.174,
       "risk": 4,
-      "copiers": 890,
+      "copiers": 891,
       "months": 29,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 21,3 % > 20 %"
+      "reason": "Drawdown 21,3 % > 20 %",
+      "postMean": 1.492,
+      "postSd": 0.4319,
+      "sdMonthly": 9.2187,
+      "score": 0.1618,
+      "pDay": 0.5141,
+      "csl": 27,
+      "amountPct": 0.1852,
+      "breakEvenDays": 4.2224
     },
     {
       "userName": "GlobalAlphaS",
@@ -1641,20 +2485,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 26,5 % > 20 %"
-    },
-    {
-      "userName": "Alderique",
-      "cagr": 9.1962,
-      "mdd": 24.2749,
-      "dsr": 0.1309,
-      "sharpe": 0.5688,
-      "risk": 3,
-      "copiers": 882,
-      "months": 60,
-      "qualified": false,
-      "inLimits": false,
-      "reason": "Drawdown 24,3 % > 20 %"
+      "reason": "Drawdown 26,5 % > 20 %",
+      "postMean": 1.3371,
+      "postSd": 0.324,
+      "sdMonthly": 4.9867,
+      "score": 0.2681,
+      "pDay": 0.5233,
+      "csl": 34,
+      "amountPct": 0.1471,
+      "breakEvenDays": 4.7118
     },
     {
       "userName": "Sir_H_Pennywise",
@@ -1663,11 +2502,40 @@
       "dsr": 0.5599,
       "sharpe": 1.3639,
       "risk": 5,
-      "copiers": 882,
+      "copiers": 883,
       "months": 44,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 28,0 % > 20 %"
+      "reason": "Drawdown 28,0 % > 20 %",
+      "postMean": 1.6856,
+      "postSd": 0.3804,
+      "sdMonthly": 6.2888,
+      "score": 0.268,
+      "pDay": 0.5233,
+      "csl": 35,
+      "amountPct": 0.1429,
+      "breakEvenDays": 3.7376
+    },
+    {
+      "userName": "Alderique",
+      "cagr": 9.1962,
+      "mdd": 24.2749,
+      "dsr": 0.1309,
+      "sharpe": 0.5688,
+      "risk": 3,
+      "copiers": 881,
+      "months": 60,
+      "qualified": false,
+      "inLimits": false,
+      "reason": "Drawdown 24,3 % > 20 %",
+      "postMean": 0.9687,
+      "postSd": 0.2836,
+      "sdMonthly": 3.9426,
+      "score": 0.2457,
+      "pDay": 0.5214,
+      "csl": 31,
+      "amountPct": 0.1613,
+      "breakEvenDays": 6.5035
     },
     {
       "userName": "JvAnkershoffen",
@@ -1680,7 +2548,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 39,7 % > 20 %"
+      "reason": "Drawdown 39,7 % > 20 %",
+      "postMean": 1.1752,
+      "postSd": 0.3825,
+      "sdMonthly": 7.4753,
+      "score": 0.1572,
+      "pDay": 0.5137,
+      "csl": 50,
+      "amountPct": 0.1,
+      "breakEvenDays": 5.3609
     },
     {
       "userName": "Onegirl",
@@ -1693,7 +2569,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 53,1 % > 20 %"
+      "reason": "Drawdown 53,1 % > 20 %",
+      "postMean": 1.2503,
+      "postSd": 0.3948,
+      "sdMonthly": 8.32,
+      "score": 0.1503,
+      "pDay": 0.5131,
+      "csl": 67,
+      "amountPct": 0.0746,
+      "breakEvenDays": 5.0388
     },
     {
       "userName": "RobertMERC",
@@ -1702,11 +2586,19 @@
       "dsr": 0.0266,
       "sharpe": 0.2268,
       "risk": 5,
-      "copiers": 839,
+      "copiers": 838,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 37,6 % > 20 %"
+      "reason": "Drawdown 37,6 % > 20 %",
+      "postMean": 1.0713,
+      "postSd": 0.3899,
+      "sdMonthly": 7.9607,
+      "score": 0.1346,
+      "pDay": 0.5117,
+      "csl": 47,
+      "amountPct": 0.1064,
+      "breakEvenDays": 5.8806
     },
     {
       "userName": "Alteneiji80",
@@ -1715,11 +2607,19 @@
       "dsr": 0.0453,
       "sharpe": 0.3504,
       "risk": 5,
-      "copiers": 831,
+      "copiers": 830,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 44,3 % > 20 %"
+      "reason": "Drawdown 44,3 % > 20 %",
+      "postMean": 1.1416,
+      "postSd": 0.3859,
+      "sdMonthly": 7.6917,
+      "score": 0.1484,
+      "pDay": 0.5129,
+      "csl": 56,
+      "amountPct": 0.0893,
+      "breakEvenDays": 5.5187
     },
     {
       "userName": "TiuBuletaire2",
@@ -1728,11 +2628,19 @@
       "dsr": 0.8899,
       "sharpe": 1.9661,
       "risk": 2,
-      "copiers": 818,
+      "copiers": 819,
       "months": 47,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 89 % < 90 %"
+      "reason": "Können-Sicherheit 89 % < 90 %",
+      "postMean": 1.5444,
+      "postSd": 0.2328,
+      "sdMonthly": 2.6191,
+      "score": 0.5897,
+      "pDay": 0.5512,
+      "csl": 11,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.0792
     },
     {
       "userName": "DemonicoLag",
@@ -1745,7 +2653,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 60,8 % > 20 %"
+      "reason": "Drawdown 60,8 % > 20 %",
+      "postMean": 1.2889,
+      "postSd": 0.3916,
+      "sdMonthly": 8.0834,
+      "score": 0.1594,
+      "pDay": 0.5139,
+      "csl": 77,
+      "amountPct": 0.0649,
+      "breakEvenDays": 4.8881
     },
     {
       "userName": "onyinvestments",
@@ -1758,7 +2674,15 @@
       "months": 55,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 67 % < 90 %"
+      "reason": "Können-Sicherheit 67 % < 90 %",
+      "postMean": 1.7524,
+      "postSd": 0.3865,
+      "sdMonthly": 7.3992,
+      "score": 0.2368,
+      "pDay": 0.5206,
+      "csl": 23,
+      "amountPct": 0.2,
+      "breakEvenDays": 3.5951
     },
     {
       "userName": "ThomasRoddy",
@@ -1767,11 +2691,19 @@
       "dsr": 0.1867,
       "sharpe": 0.6848,
       "risk": 5,
-      "copiers": 806,
+      "copiers": 807,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 19 % < 90 %"
+      "reason": "Können-Sicherheit 19 % < 90 %",
+      "postMean": 1.1776,
+      "postSd": 0.3206,
+      "sdMonthly": 4.885,
+      "score": 0.2411,
+      "pDay": 0.521,
+      "csl": 25,
+      "amountPct": 0.2,
+      "breakEvenDays": 5.3499
     },
     {
       "userName": "Fostijn",
@@ -1784,7 +2716,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 28,1 % > 20 %"
+      "reason": "Drawdown 28,1 % > 20 %",
+      "postMean": 1.2878,
+      "postSd": 0.3854,
+      "sdMonthly": 7.6589,
+      "score": 0.1681,
+      "pDay": 0.5146,
+      "csl": 36,
+      "amountPct": 0.1389,
+      "breakEvenDays": 4.8921
     },
     {
       "userName": "campervans",
@@ -1793,11 +2733,19 @@
       "dsr": 0.0488,
       "sharpe": 0.3237,
       "risk": 4,
-      "copiers": 748,
+      "copiers": 749,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 5 % < 90 %"
+      "reason": "Können-Sicherheit 5 % < 90 %",
+      "postMean": 0.7406,
+      "postSd": 0.2662,
+      "sdMonthly": 3.5749,
+      "score": 0.2072,
+      "pDay": 0.518,
+      "csl": 22,
+      "amountPct": 0.2,
+      "breakEvenDays": 8.5071
     },
     {
       "userName": "ioatri",
@@ -1806,11 +2754,19 @@
       "dsr": 0.1541,
       "sharpe": 0.645,
       "risk": 4,
-      "copiers": 743,
+      "copiers": 742,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 20,3 % > 20 %"
+      "reason": "Drawdown 20,3 % > 20 %",
+      "postMean": 1.134,
+      "postSd": 0.3162,
+      "sdMonthly": 4.7594,
+      "score": 0.2383,
+      "pDay": 0.5207,
+      "csl": 26,
+      "amountPct": 0.1923,
+      "breakEvenDays": 5.5557
     },
     {
       "userName": "brayladen",
@@ -1823,7 +2779,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 35,4 % > 20 %"
+      "reason": "Drawdown 35,4 % > 20 %",
+      "postMean": 1.6009,
+      "postSd": 0.391,
+      "sdMonthly": 8.0388,
+      "score": 0.1991,
+      "pDay": 0.5173,
+      "csl": 45,
+      "amountPct": 0.1111,
+      "breakEvenDays": 3.9353
     },
     {
       "userName": "DevonToogood",
@@ -1836,7 +2800,15 @@
       "months": 57,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 20,2 % > 20 %"
+      "reason": "Drawdown 20,2 % > 20 %",
+      "postMean": 1.1403,
+      "postSd": 0.2922,
+      "sdMonthly": 4.0353,
+      "score": 0.2826,
+      "pDay": 0.5246,
+      "csl": 26,
+      "amountPct": 0.1923,
+      "breakEvenDays": 5.525
     },
     {
       "userName": "Cfranklin89",
@@ -1849,7 +2821,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 29,4 % > 20 %"
+      "reason": "Drawdown 29,4 % > 20 %",
+      "postMean": 1.4456,
+      "postSd": 0.3604,
+      "sdMonthly": 6.3143,
+      "score": 0.2289,
+      "pDay": 0.5199,
+      "csl": 37,
+      "amountPct": 0.1351,
+      "breakEvenDays": 4.3582
     },
     {
       "userName": "geofflee2006",
@@ -1862,7 +2842,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 37,1 % > 20 %"
+      "reason": "Drawdown 37,1 % > 20 %",
+      "postMean": 1.399,
+      "postSd": 0.4203,
+      "sdMonthly": 11.0578,
+      "score": 0.1265,
+      "pDay": 0.511,
+      "csl": 47,
+      "amountPct": 0.1064,
+      "breakEvenDays": 4.5033
     },
     {
       "userName": "iliescu2605",
@@ -1875,7 +2863,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 72 % < 90 %"
+      "reason": "Können-Sicherheit 72 % < 90 %",
+      "postMean": 0.862,
+      "postSd": 0.1489,
+      "sdMonthly": 1.7273,
+      "score": 0.499,
+      "pDay": 0.5433,
+      "csl": 10,
+      "amountPct": 0.2,
+      "breakEvenDays": 7.3087
     },
     {
       "userName": "Slow_and_Steady",
@@ -1888,7 +2884,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 1 % < 90 %"
+      "reason": "Können-Sicherheit 1 % < 90 %",
+      "postMean": 0.4704,
+      "postSd": 0.2231,
+      "sdMonthly": 2.7968,
+      "score": 0.1682,
+      "pDay": 0.5146,
+      "csl": 23,
+      "amountPct": 0.2,
+      "breakEvenDays": 13.3921
     },
     {
       "userName": "RajasTrader",
@@ -1901,7 +2905,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 29,9 % > 20 %"
+      "reason": "Drawdown 29,9 % > 20 %",
+      "postMean": 1.4354,
+      "postSd": 0.3574,
+      "sdMonthly": 6.1837,
+      "score": 0.2321,
+      "pDay": 0.5202,
+      "csl": 38,
+      "amountPct": 0.1316,
+      "breakEvenDays": 4.3891
     },
     {
       "userName": "emge2116",
@@ -1910,11 +2922,19 @@
       "dsr": 0.0772,
       "sharpe": 0.4601,
       "risk": 4,
-      "copiers": 639,
+      "copiers": 640,
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 8 % < 90 %"
+      "reason": "Können-Sicherheit 8 % < 90 %",
+      "postMean": 0.9619,
+      "postSd": 0.305,
+      "sdMonthly": 4.4564,
+      "score": 0.2158,
+      "pDay": 0.5188,
+      "csl": 20,
+      "amountPct": 0.2,
+      "breakEvenDays": 6.5498
     },
     {
       "userName": "hugo13250",
@@ -1923,11 +2943,19 @@
       "dsr": 0.0648,
       "sharpe": 0.4521,
       "risk": 3,
-      "copiers": 625,
+      "copiers": 627,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 55,0 % > 20 %"
+      "reason": "Drawdown 55,0 % > 20 %",
+      "postMean": 1.319,
+      "postSd": 0.4367,
+      "sdMonthly": 14.5583,
+      "score": 0.0906,
+      "pDay": 0.5079,
+      "csl": 69,
+      "amountPct": 0.0725,
+      "breakEvenDays": 4.7762
     },
     {
       "userName": "SparkLiang",
@@ -1940,7 +2968,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 43,9 % > 20 %"
+      "reason": "Drawdown 43,9 % > 20 %",
+      "postMean": 0.8558,
+      "postSd": 0.3481,
+      "sdMonthly": 5.808,
+      "score": 0.1473,
+      "pDay": 0.5128,
+      "csl": 55,
+      "amountPct": 0.0909,
+      "breakEvenDays": 7.3618
     },
     {
       "userName": "reinhardtcoetzee",
@@ -1949,11 +2985,19 @@
       "dsr": 0.0222,
       "sharpe": 0.1785,
       "risk": 3,
-      "copiers": 621,
+      "copiers": 620,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 46,4 % > 20 %"
+      "reason": "Drawdown 46,4 % > 20 %",
+      "postMean": 0.8789,
+      "postSd": 0.3427,
+      "sdMonthly": 5.6043,
+      "score": 0.1568,
+      "pDay": 0.5136,
+      "csl": 59,
+      "amountPct": 0.0847,
+      "breakEvenDays": 7.168
     },
     {
       "userName": "Linsanity1",
@@ -1966,7 +3010,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 40,8 % > 20 %"
+      "reason": "Drawdown 40,8 % > 20 %",
+      "postMean": 1.0835,
+      "postSd": 0.3982,
+      "sdMonthly": 8.5972,
+      "score": 0.126,
+      "pDay": 0.511,
+      "csl": 51,
+      "amountPct": 0.098,
+      "breakEvenDays": 5.8145
     },
     {
       "userName": "Rayeiris",
@@ -1979,7 +3031,15 @@
       "months": 48,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 35 % < 90 %"
+      "reason": "Können-Sicherheit 35 % < 90 %",
+      "postMean": 1.4932,
+      "postSd": 0.3688,
+      "sdMonthly": 6.0055,
+      "score": 0.2486,
+      "pDay": 0.5216,
+      "csl": 25,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.2191
     },
     {
       "userName": "ChristopheNour",
@@ -1988,11 +3048,19 @@
       "dsr": 0.4968,
       "sharpe": 1.1955,
       "risk": 4,
-      "copiers": 597,
+      "copiers": 596,
       "months": 50,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 50 % < 90 %"
+      "reason": "Können-Sicherheit 50 % < 90 %",
+      "postMean": 1.4838,
+      "postSd": 0.3231,
+      "sdMonthly": 4.5269,
+      "score": 0.3278,
+      "pDay": 0.5285,
+      "csl": 25,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.2457
     },
     {
       "userName": "B--Art",
@@ -2005,7 +3073,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 28,5 % > 20 %"
+      "reason": "Drawdown 28,5 % > 20 %",
+      "postMean": 1.2009,
+      "postSd": 0.3337,
+      "sdMonthly": 5.2937,
+      "score": 0.2269,
+      "pDay": 0.5197,
+      "csl": 36,
+      "amountPct": 0.1389,
+      "breakEvenDays": 5.246
     },
     {
       "userName": "DeimosCZE",
@@ -2014,11 +3090,19 @@
       "dsr": 0.3909,
       "sharpe": 1.0888,
       "risk": 5,
-      "copiers": 588,
+      "copiers": 589,
       "months": 49,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 32,2 % > 20 %"
+      "reason": "Drawdown 32,2 % > 20 %",
+      "postMean": 1.5881,
+      "postSd": 0.4231,
+      "sdMonthly": 10.3861,
+      "score": 0.1529,
+      "pDay": 0.5133,
+      "csl": 41,
+      "amountPct": 0.122,
+      "breakEvenDays": 3.9671
     },
     {
       "userName": "DonFan",
@@ -2031,7 +3115,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 21,3 % > 20 %"
+      "reason": "Drawdown 21,3 % > 20 %",
+      "postMean": 1.0139,
+      "postSd": 0.2958,
+      "sdMonthly": 4.2262,
+      "score": 0.2399,
+      "pDay": 0.5209,
+      "csl": 27,
+      "amountPct": 0.1852,
+      "breakEvenDays": 6.2136
     },
     {
       "userName": "AlexZy",
@@ -2044,7 +3136,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 22,9 % > 20 %"
+      "reason": "Drawdown 22,9 % > 20 %",
+      "postMean": 1.0638,
+      "postSd": 0.2871,
+      "sdMonthly": 4.0222,
+      "score": 0.2645,
+      "pDay": 0.523,
+      "csl": 29,
+      "amountPct": 0.1724,
+      "breakEvenDays": 5.9221
     },
     {
       "userName": "Retrosupply",
@@ -2057,7 +3157,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 25,6 % > 20 %"
+      "reason": "Drawdown 25,6 % > 20 %",
+      "postMean": 0.9695,
+      "postSd": 0.3066,
+      "sdMonthly": 4.4976,
+      "score": 0.2156,
+      "pDay": 0.5188,
+      "csl": 33,
+      "amountPct": 0.1515,
+      "breakEvenDays": 6.4982
     },
     {
       "userName": "JFKinvestor",
@@ -2070,7 +3178,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 24,2 % > 20 %"
+      "reason": "Drawdown 24,2 % > 20 %",
+      "postMean": 1.2726,
+      "postSd": 0.3563,
+      "sdMonthly": 6.1376,
+      "score": 0.2073,
+      "pDay": 0.518,
+      "csl": 31,
+      "amountPct": 0.1613,
+      "breakEvenDays": 4.9504
     },
     {
       "userName": "FranciscoOrtiz13",
@@ -2083,7 +3199,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 44,8 % > 20 %"
+      "reason": "Drawdown 44,8 % > 20 %",
+      "postMean": 0.9453,
+      "postSd": 0.3516,
+      "sdMonthly": 5.9447,
+      "score": 0.159,
+      "pDay": 0.5138,
+      "csl": 57,
+      "amountPct": 0.0877,
+      "breakEvenDays": 6.6648
     },
     {
       "userName": "wilalexa",
@@ -2092,11 +3216,19 @@
       "dsr": 0.1715,
       "sharpe": 0.6469,
       "risk": 5,
-      "copiers": 547,
+      "copiers": 546,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 30,6 % > 20 %"
+      "reason": "Drawdown 30,6 % > 20 %",
+      "postMean": 1.1674,
+      "postSd": 0.3259,
+      "sdMonthly": 5.0458,
+      "score": 0.2314,
+      "pDay": 0.5201,
+      "csl": 39,
+      "amountPct": 0.1282,
+      "breakEvenDays": 5.3966
     },
     {
       "userName": "tonishiii",
@@ -2105,11 +3237,19 @@
       "dsr": 0.0913,
       "sharpe": 0.5146,
       "risk": 5,
-      "copiers": 545,
+      "copiers": 544,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 64,2 % > 20 %"
+      "reason": "Drawdown 64,2 % > 20 %",
+      "postMean": 1.3418,
+      "postSd": 0.4294,
+      "sdMonthly": 12.6895,
+      "score": 0.1057,
+      "pDay": 0.5092,
+      "csl": 81,
+      "amountPct": 0.0617,
+      "breakEvenDays": 4.6954
     },
     {
       "userName": "RudolfDeLeeuw",
@@ -2118,11 +3258,19 @@
       "dsr": 0.3333,
       "sharpe": 1.0166,
       "risk": 5,
-      "copiers": 543,
+      "copiers": 542,
       "months": 49,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 36,1 % > 20 %"
+      "reason": "Drawdown 36,1 % > 20 %",
+      "postMean": 1.5461,
+      "postSd": 0.4295,
+      "sdMonthly": 11.4882,
+      "score": 0.1346,
+      "pDay": 0.5117,
+      "csl": 46,
+      "amountPct": 0.1087,
+      "breakEvenDays": 4.0748
     },
     {
       "userName": "carlosmartm",
@@ -2135,7 +3283,15 @@
       "months": 43,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 29,7 % > 20 %"
+      "reason": "Drawdown 29,7 % > 20 %",
+      "postMean": 1.6519,
+      "postSd": 0.4036,
+      "sdMonthly": 7.6846,
+      "score": 0.215,
+      "pDay": 0.5187,
+      "csl": 38,
+      "amountPct": 0.1316,
+      "breakEvenDays": 3.8138
     },
     {
       "userName": "LucaMeier",
@@ -2144,11 +3300,19 @@
       "dsr": 0.043,
       "sharpe": 0.3141,
       "risk": 4,
-      "copiers": 518,
+      "copiers": 519,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 23,1 % > 20 %"
+      "reason": "Drawdown 23,1 % > 20 %",
+      "postMean": 0.9186,
+      "postSd": 0.3245,
+      "sdMonthly": 5.0011,
+      "score": 0.1837,
+      "pDay": 0.516,
+      "csl": 29,
+      "amountPct": 0.1724,
+      "breakEvenDays": 6.8584
     },
     {
       "userName": "IshfaaqPeerally",
@@ -2161,20 +3325,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 25,5 % > 20 %"
-    },
-    {
-      "userName": "Mexploder",
-      "cagr": 5.1341,
-      "mdd": 42.9057,
-      "dsr": 0.0304,
-      "sharpe": 0.2482,
-      "risk": 4,
-      "copiers": 510,
-      "months": 60,
-      "qualified": false,
-      "inLimits": false,
-      "reason": "Drawdown 42,9 % > 20 %"
+      "reason": "Drawdown 25,5 % > 20 %",
+      "postMean": 0.5634,
+      "postSd": 0.3121,
+      "sdMonthly": 4.6457,
+      "score": 0.1213,
+      "pDay": 0.5106,
+      "csl": 32,
+      "amountPct": 0,
+      "breakEvenDays": 11.1818
     },
     {
       "userName": "Cheetah26",
@@ -2187,7 +3346,36 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 38,5 % > 20 %"
+      "reason": "Drawdown 38,5 % > 20 %",
+      "postMean": 0.9878,
+      "postSd": 0.3319,
+      "sdMonthly": 5.2339,
+      "score": 0.1887,
+      "pDay": 0.5164,
+      "csl": 49,
+      "amountPct": 0.102,
+      "breakEvenDays": 6.3781
+    },
+    {
+      "userName": "Mexploder",
+      "cagr": 5.1341,
+      "mdd": 42.9057,
+      "dsr": 0.0304,
+      "sharpe": 0.2482,
+      "risk": 4,
+      "copiers": 508,
+      "months": 60,
+      "qualified": false,
+      "inLimits": false,
+      "reason": "Drawdown 42,9 % > 20 %",
+      "postMean": 0.9591,
+      "postSd": 0.3516,
+      "sdMonthly": 5.9428,
+      "score": 0.1614,
+      "pDay": 0.514,
+      "csl": 54,
+      "amountPct": 0.0926,
+      "breakEvenDays": 6.5687
     },
     {
       "userName": "fyanezn",
@@ -2200,7 +3388,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 20 % < 90 %"
+      "reason": "Können-Sicherheit 20 % < 90 %",
+      "postMean": 1.1868,
+      "postSd": 0.3174,
+      "sdMonthly": 4.7942,
+      "score": 0.2476,
+      "pDay": 0.5215,
+      "csl": 24,
+      "amountPct": 0.2,
+      "breakEvenDays": 5.3083
     },
     {
       "userName": "PierreN2023",
@@ -2213,7 +3409,15 @@
       "months": 46,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 27,7 % > 20 %"
+      "reason": "Drawdown 27,7 % > 20 %",
+      "postMean": 1.5674,
+      "postSd": 0.3485,
+      "sdMonthly": 5.0982,
+      "score": 0.3074,
+      "pDay": 0.5267,
+      "csl": 35,
+      "amountPct": 0.1429,
+      "breakEvenDays": 4.0195
     },
     {
       "userName": "coolingman",
@@ -2226,7 +3430,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 22,3 % > 20 %"
+      "reason": "Drawdown 22,3 % > 20 %",
+      "postMean": 1.2761,
+      "postSd": 0.3157,
+      "sdMonthly": 4.7437,
+      "score": 0.269,
+      "pDay": 0.5234,
+      "csl": 28,
+      "amountPct": 0.1786,
+      "breakEvenDays": 4.937
     },
     {
       "userName": "Aganowak91",
@@ -2235,11 +3447,19 @@
       "dsr": 0.3561,
       "sharpe": 1.1112,
       "risk": 3,
-      "copiers": 489,
+      "copiers": 490,
       "months": 43,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 36 % < 90 %"
+      "reason": "Können-Sicherheit 36 % < 90 %",
+      "postMean": 1.4138,
+      "postSd": 0.3356,
+      "sdMonthly": 4.5363,
+      "score": 0.3117,
+      "pDay": 0.5271,
+      "csl": 21,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.4562
     },
     {
       "userName": "LiamDavies",
@@ -2252,7 +3472,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 25,3 % > 20 %"
+      "reason": "Drawdown 25,3 % > 20 %",
+      "postMean": 0.4436,
+      "postSd": 0.2726,
+      "sdMonthly": 3.7074,
+      "score": 0.1196,
+      "pDay": 0.5104,
+      "csl": 32,
+      "amountPct": 0,
+      "breakEvenDays": 14.2032
     },
     {
       "userName": "nonvisedarte",
@@ -2261,11 +3489,19 @@
       "dsr": 0.0678,
       "sharpe": 0.4185,
       "risk": 4,
-      "copiers": 470,
+      "copiers": 469,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 40,9 % > 20 %"
+      "reason": "Drawdown 40,9 % > 20 %",
+      "postMean": 1.1657,
+      "postSd": 0.3785,
+      "sdMonthly": 7.2328,
+      "score": 0.1612,
+      "pDay": 0.514,
+      "csl": 52,
+      "amountPct": 0.0962,
+      "breakEvenDays": 5.4047
     },
     {
       "userName": "Finanzzyklen",
@@ -2278,7 +3514,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 2 % < 90 %"
+      "reason": "Können-Sicherheit 2 % < 90 %",
+      "postMean": 0.6586,
+      "postSd": 0.2802,
+      "sdMonthly": 3.869,
+      "score": 0.1702,
+      "pDay": 0.5148,
+      "csl": 25,
+      "amountPct": 0.2,
+      "breakEvenDays": 9.5658
     },
     {
       "userName": "ValueBuddy",
@@ -2291,20 +3535,15 @@
       "months": 54,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 50 % < 90 %"
-    },
-    {
-      "userName": "jianswang",
-      "cagr": 13.711,
-      "mdd": 52.2837,
-      "dsr": 0.1026,
-      "sharpe": 0.5195,
-      "risk": 5,
-      "copiers": 461,
-      "months": 60,
-      "qualified": false,
-      "inLimits": false,
-      "reason": "Drawdown 52,3 % > 20 %"
+      "reason": "Können-Sicherheit 50 % < 90 %",
+      "postMean": 1.5133,
+      "postSd": 0.3302,
+      "sdMonthly": 4.9143,
+      "score": 0.3079,
+      "pDay": 0.5268,
+      "csl": 21,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.1632
     },
     {
       "userName": "HarryH1993",
@@ -2313,11 +3552,40 @@
       "dsr": 0.0504,
       "sharpe": 0.3605,
       "risk": 5,
+      "copiers": 461,
+      "months": 60,
+      "qualified": false,
+      "inLimits": false,
+      "reason": "Drawdown 36,3 % > 20 %",
+      "postMean": 1.1071,
+      "postSd": 0.3725,
+      "sdMonthly": 6.9034,
+      "score": 0.1604,
+      "pDay": 0.514,
+      "csl": 46,
+      "amountPct": 0.1087,
+      "breakEvenDays": 5.6905
+    },
+    {
+      "userName": "jianswang",
+      "cagr": 13.711,
+      "mdd": 52.2837,
+      "dsr": 0.1026,
+      "sharpe": 0.5195,
+      "risk": 5,
       "copiers": 460,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 36,3 % > 20 %"
+      "reason": "Drawdown 52,3 % > 20 %",
+      "postMean": 1.2789,
+      "postSd": 0.395,
+      "sdMonthly": 8.3379,
+      "score": 0.1534,
+      "pDay": 0.5134,
+      "csl": 66,
+      "amountPct": 0.0758,
+      "breakEvenDays": 4.926
     },
     {
       "userName": "Benaymo23",
@@ -2330,7 +3598,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 28,0 % > 20 %"
+      "reason": "Drawdown 28,0 % > 20 %",
+      "postMean": 0.9797,
+      "postSd": 0.3315,
+      "sdMonthly": 5.2218,
+      "score": 0.1876,
+      "pDay": 0.5163,
+      "csl": 35,
+      "amountPct": 0.1429,
+      "breakEvenDays": 6.4304
     },
     {
       "userName": "hech123",
@@ -2343,7 +3619,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 31,6 % > 20 %"
+      "reason": "Drawdown 31,6 % > 20 %",
+      "postMean": 1.0121,
+      "postSd": 0.3424,
+      "sdMonthly": 5.5954,
+      "score": 0.1809,
+      "pDay": 0.5157,
+      "csl": 40,
+      "amountPct": 0.125,
+      "breakEvenDays": 6.2249
     },
     {
       "userName": "RainbirdFx",
@@ -2356,7 +3640,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 26 % < 90 %"
+      "reason": "Können-Sicherheit 26 % < 90 %",
+      "postMean": 1.1153,
+      "postSd": 0.2772,
+      "sdMonthly": 3.8045,
+      "score": 0.2931,
+      "pDay": 0.5255,
+      "csl": 17,
+      "amountPct": 0.2,
+      "breakEvenDays": 5.6488
     },
     {
       "userName": "MIURATRADER",
@@ -2369,7 +3661,15 @@
       "months": 48,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 18 % < 90 %"
+      "reason": "Können-Sicherheit 18 % < 90 %",
+      "postMean": 1.3719,
+      "postSd": 0.3748,
+      "sdMonthly": 6.2849,
+      "score": 0.2183,
+      "pDay": 0.519,
+      "csl": 22,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.5921
     },
     {
       "userName": "booker03",
@@ -2382,7 +3682,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 48,2 % > 20 %"
+      "reason": "Drawdown 48,2 % > 20 %",
+      "postMean": 1.3371,
+      "postSd": 0.3994,
+      "sdMonthly": 8.7,
+      "score": 0.1537,
+      "pDay": 0.5134,
+      "csl": 61,
+      "amountPct": 0.082,
+      "breakEvenDays": 4.7116
     },
     {
       "userName": "Akatri",
@@ -2395,7 +3703,15 @@
       "months": 46,
       "qualified": false,
       "inLimits": true,
-      "reason": "Können-Sicherheit 43 % < 90 %"
+      "reason": "Können-Sicherheit 43 % < 90 %",
+      "postMean": 1.4585,
+      "postSd": 0.3335,
+      "sdMonthly": 4.6296,
+      "score": 0.3151,
+      "pDay": 0.5274,
+      "csl": 25,
+      "amountPct": 0.2,
+      "breakEvenDays": 4.3194
     },
     {
       "userName": "CapitalGains",
@@ -2408,7 +3724,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 54,5 % > 20 %"
+      "reason": "Drawdown 54,5 % > 20 %",
+      "postMean": 1.1019,
+      "postSd": 0.413,
+      "sdMonthly": 10.0732,
+      "score": 0.1094,
+      "pDay": 0.5095,
+      "csl": 69,
+      "amountPct": 0.0725,
+      "breakEvenDays": 5.7176
     },
     {
       "userName": "Demtheo27",
@@ -2421,7 +3745,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 29,8 % > 20 %"
+      "reason": "Drawdown 29,8 % > 20 %",
+      "postMean": 1.2652,
+      "postSd": 0.3583,
+      "sdMonthly": 6.223,
+      "score": 0.2033,
+      "pDay": 0.5177,
+      "csl": 38,
+      "amountPct": 0.1316,
+      "breakEvenDays": 4.9796
     },
     {
       "userName": "Matteospaggiari",
@@ -2434,7 +3766,15 @@
       "months": 51,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 22,5 % > 20 %"
+      "reason": "Drawdown 22,5 % > 20 %",
+      "postMean": 1.6839,
+      "postSd": 0.3742,
+      "sdMonthly": 6.4491,
+      "score": 0.2611,
+      "pDay": 0.5227,
+      "csl": 29,
+      "amountPct": 0.1724,
+      "breakEvenDays": 3.7412
     },
     {
       "userName": "alexvanl",
@@ -2447,7 +3787,15 @@
       "months": 48,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 29,3 % > 20 %"
+      "reason": "Drawdown 29,3 % > 20 %",
+      "postMean": 1.2514,
+      "postSd": 0.3454,
+      "sdMonthly": 5.102,
+      "score": 0.2453,
+      "pDay": 0.5213,
+      "csl": 37,
+      "amountPct": 0.1351,
+      "breakEvenDays": 5.0345
     },
     {
       "userName": "Haukro",
@@ -2456,11 +3804,19 @@
       "dsr": 0.0684,
       "sharpe": 0.4046,
       "risk": 3,
-      "copiers": 418,
+      "copiers": 416,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 36,8 % > 20 %"
+      "reason": "Drawdown 36,8 % > 20 %",
+      "postMean": 0.9026,
+      "postSd": 0.2992,
+      "sdMonthly": 4.3091,
+      "score": 0.2095,
+      "pDay": 0.5182,
+      "csl": 46,
+      "amountPct": 0.1087,
+      "breakEvenDays": 6.9796
     },
     {
       "userName": "VidovM",
@@ -2469,11 +3825,19 @@
       "dsr": 0.2348,
       "sharpe": 0.802,
       "risk": 5,
-      "copiers": 413,
+      "copiers": 411,
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 26,6 % > 20 %"
+      "reason": "Drawdown 26,6 % > 20 %",
+      "postMean": 1.4793,
+      "postSd": 0.4064,
+      "sdMonthly": 9.348,
+      "score": 0.1582,
+      "pDay": 0.5138,
+      "csl": 34,
+      "amountPct": 0.1471,
+      "breakEvenDays": 4.2587
     },
     {
       "userName": "JonasBarrelov",
@@ -2486,7 +3850,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 38,5 % > 20 %"
+      "reason": "Drawdown 38,5 % > 20 %",
+      "postMean": 0.9834,
+      "postSd": 0.3403,
+      "sdMonthly": 5.5186,
+      "score": 0.1782,
+      "pDay": 0.5155,
+      "csl": 49,
+      "amountPct": 0.102,
+      "breakEvenDays": 6.4063
     },
     {
       "userName": "betterleaf",
@@ -2499,7 +3871,15 @@
       "months": 60,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 42,2 % > 20 %"
+      "reason": "Drawdown 42,2 % > 20 %",
+      "postMean": 1.1021,
+      "postSd": 0.3567,
+      "sdMonthly": 6.1533,
+      "score": 0.1791,
+      "pDay": 0.5156,
+      "csl": 53,
+      "amountPct": 0.0943,
+      "breakEvenDays": 5.7161
     },
     {
       "userName": "Michal454",
@@ -2512,7 +3892,15 @@
       "months": 53,
       "qualified": false,
       "inLimits": false,
-      "reason": "Drawdown 23,3 % > 20 %"
+      "reason": "Drawdown 23,3 % > 20 %",
+      "postMean": 1.4096,
+      "postSd": 0.3776,
+      "sdMonthly": 6.7501,
+      "score": 0.2088,
+      "pDay": 0.5182,
+      "csl": 30,
+      "amountPct": 0.1667,
+      "breakEvenDays": 4.4692
     }
   ]
 }
