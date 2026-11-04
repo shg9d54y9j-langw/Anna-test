@@ -5,36 +5,61 @@ on:
     - cron: "17 5 * * 1-5"   # Mo–Fr 06:17 Uhr (Winterzeit) bzw. 07:17 Uhr (Sommerzeit) deutscher Zeit
   workflow_dispatch:
 
-permissions:
-  contents: write
+# Grundsätzlich keine Rechte – jeder Job bekommt nur, was er braucht.
+permissions: {}
 
 concurrency:
   group: daily-ranking
   cancel-in-progress: false
 
 jobs:
-  ranking:
+  # Job 1 kennt die eToro-Schlüssel, darf aber nichts im Repository ändern.
+  fetch:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      ranking: ${{ steps.calc.outputs.ranking }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          node-version: 22
+          persist-credentials: false
 
       - name: eToro-Daten holen und Top 25 berechnen
+        id: calc
         env:
           ETORO_API_KEY: ${{ secrets.ETORO_API_KEY }}
           ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
-        run: node scripts/daily-ranking.mjs
+        run: |
+          node --version
+          node scripts/daily-ranking.mjs
+          if [ -f data/ranking.json ]; then
+            echo "ranking=$(base64 -w0 data/ranking.json)" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Job 2 darf das Ergebnis speichern, bekommt aber keine eToro-Schlüssel.
+  save:
+    needs: fetch
+    if: needs.fetch.outputs.ranking != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.ref_name }}
 
       - name: Ergebnis speichern
+        env:
+          RANKING_B64: ${{ needs.fetch.outputs.ranking }}
         run: |
+          mkdir -p data
+          printf '%s' "$RANKING_B64" | base64 -d > data/ranking.json
+          node -e 'JSON.parse(require("fs").readFileSync("data/ranking.json", "utf8"))'
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -f data/ranking.json ]; then
-            git add data/ranking.json
-            git diff --cached --quiet || git commit -m "Tagesempfehlung $(date -u +%F)"
-            git push
-          fi
+          git add data/ranking.json
+          git diff --cached --quiet || git commit -m "Tagesempfehlung $(date -u +%F)"
+          git push

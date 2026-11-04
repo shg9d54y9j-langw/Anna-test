@@ -30,9 +30,20 @@ const THROTTLE_MS = Number(process.env.ETORO_THROTTLE_MS ?? 1100);   // eToro er
 const OUT = process.env.RANKING_OUT || fileURLToPath(new URL("../data/ranking.json", import.meta.url));
 const KEY = process.env.ETORO_API_KEY, USER_KEY = process.env.ETORO_USER_KEY;
 
-const log = (...a) => console.log(...a);
-const warn = msg => console.log(`::warning::${msg}`);
+// Schlüssel sicherheitshalber aus jeder Ausgabe entfernen (GitHub maskiert sie zusätzlich)
+const redact = s => [KEY, USER_KEY].filter(k => k && k.length >= 8).reduce((t, k) => t.split(k).join("***"), String(s));
+const log = (...a) => console.log(...a.map(redact));
+const warn = msg => console.log(`::warning::${redact(msg)}`);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Schutz: Die Schlüssel gehen ausschließlich per HTTPS an public-api.etoro.com (Ausnahme: lokaler Testserver)
+const apiHost = new URL(API);
+const localTest = ["localhost", "127.0.0.1"].includes(apiHost.hostname);
+if (!localTest && !(apiHost.protocol === "https:" && apiHost.hostname === "public-api.etoro.com")) {
+  console.log(`::error::Unzulässige API-Adresse ${apiHost.host} – die Schlüssel werden nur an public-api.etoro.com gesendet.`);
+  process.exit(1);
+}
+const VALID_NAME = /^[A-Za-z0-9_.-]{1,40}$/;   // eToro-Benutzernamen; alles andere wird verworfen
 
 // ---------- eToro-API ----------
 let lastCall = 0;
@@ -45,7 +56,11 @@ async function call(path, params = {}) {
     lastCall = Date.now();
     let res;
     try {
-      res = await fetch(url, { headers: { "x-api-key": KEY, "x-user-key": USER_KEY, "x-request-id": randomUUID(), accept: "application/json" } });
+      res = await fetch(url, {
+        headers: { "x-api-key": KEY, "x-user-key": USER_KEY, "x-request-id": randomUUID(), accept: "application/json" },
+        redirect: "error",                    // keine Weiterleitung – sonst gingen die Schlüssel an einen anderen Server
+        signal: AbortSignal.timeout(20000),
+      });
     } catch (e) {
       if (attempt === 4) throw new Error(`Netzwerkfehler bei ${url.pathname}: ${e.message}`);
       await sleep(3000 * attempt);
@@ -77,8 +92,9 @@ function toUser(raw) {
   const it = flatten(raw);
   const p2v = num(field(it, "peakToValley", "maxDrawdown", "drawdown"));
   const holdMin = num(field(it, "avgHoldingTimeInMinutes", "avgHoldingTimeMinutes"));
+  const name = field(it, "userName", "username", "customerName", "nickName");
   return {
-    userName: field(it, "userName", "username", "customerName", "nickName"),
+    userName: typeof name === "string" && VALID_NAME.test(name) ? name : undefined,
     risk: num(field(it, "riskScore", "risk")),
     copiers: num(field(it, "copiers", "copiersCount", "numberOfCopiers")),
     peakToValley: Number.isFinite(p2v) ? Math.abs(p2v) : undefined,
@@ -145,7 +161,7 @@ async function monthlyReturns(userName) {
   for (const m of findMonthly(data)) {
     const k = monthKey(field(m, "timestamp", "date", "start", "month"));
     const g = num(field(m, "gain", "value", "return"));
-    if (Number.isFinite(k) && Number.isFinite(g) && k < current) byMonth.set(k, g);
+    if (Number.isFinite(k) && Number.isFinite(g) && Math.abs(g) <= 1000 && k < current) byMonth.set(k, g);
   }
   const keys = [...byMonth.keys()].sort((a, b) => a - b);
   let i = keys.length - 1;
@@ -258,4 +274,4 @@ async function main() {
   log(recommendation ? `Tagesempfehlung: ${recommendation.userName} (${recommendation.note})` : notice);
 }
 
-main().catch(e => { console.log(`::error::${e.message}`); process.exit(1); });
+main().catch(e => { console.log(`::error::${redact(e.message)}`); process.exit(1); });

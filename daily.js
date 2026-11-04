@@ -9,7 +9,8 @@
   const pct = p => (p > 0.995 ? "über 99 %" : p < 0.005 ? "unter 1 %" : `${fmt(p * 100, 0)} %`);
   const n1 = x => (Number.isFinite(x) ? fmt(x, 1) : "–");
   const profile = u => `https://www.etoro.com/people/${encodeURIComponent(u)}`;
-  const link = u => `<a href="${profile(u)}" target="_blank" rel="noopener">${esc(u)}</a>`;
+  const link = u => `<a href="${profile(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`;
+  const okName = u => typeof u === "string" && /^[A-Za-z0-9_.-]{1,40}$/.test(u);   // nur gültige eToro-Namen anzeigen
   const dateDe = iso => new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
   const hold = h => (!Number.isFinite(h) ? "–" : h < 48 ? `${fmt(h, h < 10 ? 1 : 0)} Std.` : `${fmt(h / 24, 0)} Tage`);
   const account = () => { const x = parseFloat(($("sAccount") || {}).value); return Number.isFinite(x) && x > 0 ? x : null; };
@@ -39,7 +40,10 @@
 
   function render() {
     if (!data) return setup();
-    const d = data, rec = d.recommendation, cfg = d.config || {};
+    const d = data, cfg = d.config || {};
+    const rec = d.recommendation && okName(d.recommendation.userName) ? d.recommendation : null;
+    if (rec && rec.previous && !okName(rec.previous)) rec.previous = null;
+    const top = Array.isArray(d.top) ? d.top.filter(r => r && okName(r.userName)) : [];
     const ageDays = (Date.now() - new Date(d.updated)) / 864e5;
     $("dailyUpdated").textContent = `Stand: ${new Date(d.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })} Uhr`;
     const acc = account();
@@ -88,7 +92,7 @@
       Glücks-Korrektur für effektiv ${fmt(d.nEff, 0)} unabhängige Trader (mittlere Korrelation ${fmt(d.avgCorrelation, 2)}).
       ${d.qualifiedCount} ${d.qualifiedCount === 1 ? "erfüllt" : "erfüllen"} alle Bedingungen (Können-Sicherheit ab ${pct(cfg.threshold || 0.9)}, Drawdown bis ${cfg.maxDd} %).`;
 
-    const rows = (d.top || []).map(r => `<tr>
+    const rows = top.map(r => `<tr>
         <td>${r.rank}</td>
         <td>${link(r.userName)}</td>
         <td>${r.qualified ? `<span class="tag good">✓ sicher</span>` : `<span class="tag bad"><span class="x">✗</span> ${esc(r.reason || "")}</span>`}</td>
