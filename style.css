@@ -130,6 +130,12 @@ textarea {
 .chart-host .cross { stroke: rgba(255, 255, 255, .35); stroke-width: 1; }
 .chart-host .threshold { stroke: rgba(255, 255, 255, .45); stroke-width: 1; stroke-dasharray: 4 4; }
 .chart-host .axis-title { fill: var(--muted); font-size: 12px; }
+.live { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin: 12px 0 4px; }
+.live.alert { border-color: var(--down); }
+.live p { margin: 6px 0 0; }
+.live-head { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.dot.on { background: var(--up); box-shadow: 0 0 0 3px rgba(38, 162, 105, .25); }
 .chart-host .hit { outline: none; cursor: crosshair; }
 .chart-host .hit:focus-visible { stroke: var(--accent); stroke-width: 1; }
 .viz-tip {

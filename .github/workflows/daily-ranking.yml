@@ -2,7 +2,8 @@ name: Tagesempfehlung
 
 on:
   schedule:
-    - cron: "17 5 * * 1-5"   # Mo–Fr 06:17 Uhr (Winterzeit) bzw. 07:17 Uhr (Sommerzeit) deutscher Zeit
+    - cron: "17 5 * * 1-5"    # Mo–Fr vor Xetra-Eröffnung (06:17 Uhr Winterzeit / 07:17 Uhr Sommerzeit)
+    - cron: "47 12 * * 1-5"   # Mo–Fr vor US-Eröffnung (13:47 Uhr Winterzeit / 14:47 Uhr Sommerzeit)
   workflow_dispatch:
 
 # Grundsätzlich keine Rechte – jeder Job bekommt nur, was er braucht.
@@ -21,6 +22,7 @@ jobs:
       contents: read
     outputs:
       ranking: ${{ steps.calc.outputs.ranking }}
+      returns: ${{ steps.calc.outputs.returns }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -33,15 +35,38 @@ jobs:
           ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
         run: |
           node --version
+          rm -f data/returns.json
           node scripts/daily-ranking.mjs
-          if [ -f data/ranking.json ]; then
+          if [ -f data/returns.json ]; then
             echo "ranking=$(base64 -w0 data/ranking.json)" >> "$GITHUB_OUTPUT"
+            echo "returns=$(gzip -9c data/returns.json | base64 -w0)" >> "$GITHUB_OUTPUT"
           fi
 
-  # Job 2 darf das Ergebnis speichern, bekommt aber keine eToro-Schlüssel.
-  save:
+  # Job 2 rechnet jede veröffentlichte Zahl unabhängig in Python nach – ohne Schlüssel, ohne Schreibrechte.
+  verify:
     needs: fetch
     if: needs.fetch.outputs.ranking != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Unabhängige Gegenrechnung
+        env:
+          RANKING_B64: ${{ needs.fetch.outputs.ranking }}
+          RETURNS_B64: ${{ needs.fetch.outputs.returns }}
+        run: |
+          printf '%s' "$RANKING_B64" | base64 -d > /tmp/ranking.json
+          printf '%s' "$RETURNS_B64" | base64 -d | gunzip > /tmp/returns.json
+          python3 tests/verify_ranking.py /tmp/ranking.json /tmp/returns.json
+
+  # Job 3 speichert erst, wenn die Gegenrechnung bestanden ist – bekommt keine eToro-Schlüssel.
+  save:
+    needs: [fetch, verify]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -54,12 +79,14 @@ jobs:
       - name: Ergebnis speichern
         env:
           RANKING_B64: ${{ needs.fetch.outputs.ranking }}
+          RETURNS_B64: ${{ needs.fetch.outputs.returns }}
         run: |
           mkdir -p data
           printf '%s' "$RANKING_B64" | base64 -d > data/ranking.json
-          node -e 'JSON.parse(require("fs").readFileSync("data/ranking.json", "utf8"))'
+          printf '%s' "$RETURNS_B64" | base64 -d | gunzip > data/returns.json
+          node -e 'for (const f of ["data/ranking.json", "data/returns.json"]) JSON.parse(require("fs").readFileSync(f, "utf8"))'
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/ranking.json
+          git add data/ranking.json data/returns.json
           git diff --cached --quiet || git commit -m "Tagesempfehlung $(date -u +%F)"
           git push

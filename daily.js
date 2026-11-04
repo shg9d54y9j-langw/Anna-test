@@ -3,8 +3,9 @@
 // Nutzt fmt, esc, kpi, v, warnBox und $ aus app.js.
 (() => {
   const RAW = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/claude/daytrade-website/data/ranking.json";
+  const LIVE = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/live-data/live.json";
   const body = $("dailyBody");
-  let data = null;
+  let data = null, live = null;
 
   const pct = p => (p > 0.995 ? "über 99 %" : p < 0.005 ? "unter 1 %" : `${fmt(p * 100, 0)} %`);
   const n1 = x => (Number.isFinite(x) ? fmt(x, 1) : "–");
@@ -12,15 +13,36 @@
   const link = u => `<a href="${profile(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`;
   const okName = u => typeof u === "string" && /^[A-Za-z0-9_.-]{1,40}$/.test(u);   // nur gültige eToro-Namen anzeigen
   const dateDe = iso => new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-  const hold = h => (!Number.isFinite(h) ? "–" : h < 48 ? `${fmt(h, h < 10 ? 1 : 0)} Std.` : `${fmt(h / 24, 0)} Tage`);
-  const account = () => { const x = parseFloat(($("sAccount") || {}).value); return Number.isFinite(x) && x > 0 ? x : null; };
+    const account = () => { const x = parseFloat(($("sAccount") || {}).value); return Number.isFinite(x) && x > 0 ? x : null; };
 
   async function load() {
     const get = url => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
-    const [local, raw] = await Promise.all([get("data/ranking.json"), get(RAW)]);
+    const t = Date.now();
+    const [local, raw, lv] = await Promise.all([get(`data/ranking.json?t=${t}`), get(`${RAW}?t=${t}`), get(`${LIVE}?t=${t}`)]);
     const list = [local, raw].filter(d => d && d.updated);
     data = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
+    live = lv && lv.updated && Array.isArray(lv.entries) ? lv : null;
     render();
+  }
+
+  // Live-Anzeige: Tagesergebnis und Risiko des kopierten Traders, Warnungen
+  const sign = x => (x > 0 ? "+" : "") + fmt(x, 2);
+  function liveBox() {
+    if (!live) return `<p class="hint">Live-Werte erscheinen hier, sobald der Live-Wächter (alle 15 Minuten an Börsentagen) gelaufen ist.</p>`;
+    const age = (Date.now() - new Date(live.updated)) / 6e4;
+    const time = new Date(live.updated).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    const f = okName(live.followed) ? live.entries.find(e => e.userName === live.followed) : null;
+    const alerts = (live.alerts || []).filter(a => a && typeof a.text === "string");
+    let html = `<div class="live ${alerts.length ? "alert" : ""}">
+      <div class="live-head"><span class="dot ${age < 40 ? "on" : ""}"></span> Live-Stand ${time} Uhr${age >= 40 ? ` <span class="muted small">(${fmt(age / 60, 1)} Std. alt – außerhalb der Börsenzeit normal)</span>` : ""}</div>`;
+    if (f) {
+      html += `<p class="small">${link(f.userName)}: heute <b class="${f.dailyGain < 0 ? "down" : "up"}">${Number.isFinite(f.dailyGain) ? sign(f.dailyGain) + " %" : "–"}</b>
+        · diese Woche <b class="${f.thisWeekGain < 0 ? "down" : "up"}">${Number.isFinite(f.thisWeekGain) ? sign(f.thisWeekGain) + " %" : "–"}</b>
+        · Risiko-Score <b>${f.risk ?? "–"}</b></p>`;
+    }
+    for (const a of alerts) html += `<p class="warn">⚠ ${esc(a.text)} Kopie in eToro prüfen: Portfolio → Trader → Zahnrad → „Kopieren pausieren“.</p>`;
+    if (!f && !alerts.length) html += `<p class="muted small">Zurzeit wird kein Trader kopiert. Tagesergebnisse der Top 25 stehen in der Tabelle unter „Heute“.</p>`;
+    return html + `</div>`;
   }
 
   function setup() {
@@ -92,6 +114,9 @@
       Glücks-Korrektur für effektiv ${fmt(d.nEff, 0)} unabhängige Trader (mittlere Korrelation ${fmt(d.avgCorrelation, 2)}).
       ${d.qualifiedCount} ${d.qualifiedCount === 1 ? "erfüllt" : "erfüllen"} alle Bedingungen (Können-Sicherheit ab ${pct(cfg.threshold || 0.9)}, Drawdown bis ${cfg.maxDd} %).`;
 
+    const liveOf = r => (live ? live.entries.find(e => e.userName === r.userName) : null);
+    const liveRisk = r => { const l = liveOf(r); return l && Number.isFinite(l.risk) ? l.risk : (r.risk ?? "–"); };
+    const liveDay = r => { const l = liveOf(r); return l && Number.isFinite(l.dailyGain) ? `<span class="${l.dailyGain < 0 ? "down" : "up"}">${sign(l.dailyGain)} %</span>` : "–"; };
     const rows = top.map(r => `<tr>
         <td>${r.rank}</td>
         <td>${link(r.userName)}</td>
@@ -100,14 +125,15 @@
         <td>${n1(r.cagr)} %</td>
         <td>${n1(r.mdd)} %</td>
         <td>${Number.isFinite(r.sharpe) ? fmt(r.sharpe, 2) : "–"}</td>
-        <td>${r.risk ?? "–"}</td>
+        <td>${liveRisk(r)}</td>
+        <td>${liveDay(r)}</td>
         <td>${Number.isFinite(r.copiers) ? r.copiers.toLocaleString("de-DE") : "–"}</td>
-        <td>${hold(r.avgHoldHours)}</td>
         <td>${r.months}</td>
       </tr>`).join("");
 
     body.innerHTML = `
       ${head}
+      ${liveBox()}
       ${warnBox(notes)}
       <p class="hint">${basis}</p>
       <h3>Abbildung: Sicherheit und Rendite aller geprüften Trader</h3>
@@ -118,7 +144,7 @@
       <p class="muted small">Sortierung: zuerst alle sicheren Trader nach Rendite, danach die übrigen nach Können-Sicherheit. Rendite und Drawdown aus den Monatsrenditen der letzten bis zu ${cfg.maxMonths} Monate.</p>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Platz</th><th>Trader</th><th>Ergebnis</th><th>Können-Sicherheit</th><th>Rendite p.a.</th><th>Max. Drawdown</th><th>Sharpe</th><th>Risiko</th><th>Kopierer</th><th>Ø Haltedauer</th><th>Monate</th></tr></thead>
+          <thead><tr><th>Platz</th><th>Trader</th><th>Ergebnis</th><th>Können-Sicherheit</th><th>Rendite p.a.</th><th>Max. Drawdown</th><th>Sharpe</th><th>Risiko</th><th>Heute (live)</th><th>Kopierer</th><th>Monate</th></tr></thead>
           <tbody>${rows || `<tr><td colspan="11" class="muted">Keine Trader innerhalb der Grenzen.</td></tr>`}</tbody>
         </table>
       </div>
@@ -258,4 +284,6 @@
   let rt;
   window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => data && render(), 200); });
   load();
+  setInterval(() => { if (!document.hidden) load(); }, 5 * 60 * 1000);   // automatisch alle 5 Minuten neu laden
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
 })();
