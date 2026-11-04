@@ -88,11 +88,14 @@ function dataCheck(traders) {
   };
   const usable = traders.filter(u => Number.isFinite(u.periodGain) && u.months.length >= 24);
   let best = null;
-  for (const [name, f] of Object.entries(variants)) {
-    const diffs = usable.map(u => Math.abs(f(u) - u.periodGain)).filter(Number.isFinite);
-    const med = median(diffs);
-    log(`Datenkontrolle (${name}): Median-Abweichung zu eToro ${Number.isFinite(med) ? med.toFixed(2) : "–"} Prozentpunkte bei ${diffs.length} Tradern`);
-    if (Number.isFinite(med) && (!best || med < best.medianDeviationPp)) best = { variant: name, medianDeviationPp: med, traders: diffs.length };
+  // eToro könnte Renditen in Prozent (12,5) oder als Anteil (0,125) liefern – beides prüfen, das passende gewinnt
+  for (const scale of [1, 100]) {
+    for (const [name, f] of Object.entries(variants)) {
+      const diffs = usable.map(u => Math.abs(f(u) - u.periodGain * scale)).filter(Number.isFinite);
+      const med = median(diffs);
+      log(`Datenkontrolle (${name}, eToro-Werte ${scale === 1 ? "in Prozent" : "als Anteil"}): Median-Abweichung ${Number.isFinite(med) ? med.toFixed(2) : "–"} Prozentpunkte bei ${diffs.length} Tradern`);
+      if (Number.isFinite(med) && (!best || med < best.medianDeviationPp)) best = { variant: name, etoroScale: scale, medianDeviationPp: med, traders: diffs.length };
+    }
   }
   return best;
 }
@@ -155,6 +158,10 @@ async function main() {
   if (check && check.medianDeviationPp > CONFIG.maxDataDeviation) {
     throw new Error(`Datenkontrolle fehlgeschlagen: Unsere 2-Jahres-Renditen weichen im Median um ${check.medianDeviationPp.toFixed(1)} Prozentpunkte von eToros Angaben ab. Es wird nichts veröffentlicht.`);
   }
+  // eToro-Werte in dieselbe Einheit wie die Monatsrenditen bringen (Prozent)
+  const scale = check ? check.etoroScale : 1;
+  for (const u of withData) if (Number.isFinite(u.peakToValley)) u.peakToValley *= scale;
+  log(`eToro-Einheit: ${scale === 1 ? "Prozent" : "Anteil (×100 umgerechnet)"}`);
 
   // Glücks-Korrektur: effektive Zahl unabhängiger Trader aus der mittleren Korrelation
   const rho = avgCorrelation(withData.map(u => new Map(u.months.map(m => [m.k, m.g]))));

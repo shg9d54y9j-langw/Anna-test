@@ -34,6 +34,12 @@ async function main() {
     } catch (e) { warn(`${followed}: ${e.message}`); }
   }
 
+  // Einheit der eToro-Renditen (Prozent oder Anteil) – von der Datenkontrolle des Tagesjobs ermittelt
+  const scale = ranking.dataCheck && ranking.dataCheck.etoroScale === 100 ? 100 : 1;
+  for (const t of byName.values()) {
+    if (Number.isFinite(t.dailyGain)) t.dailyGain *= scale;
+    if (Number.isFinite(t.thisWeekGain)) t.thisWeekGain *= scale;
+  }
   const entries = [...names].map(n => byName.get(n)).filter(Boolean).map(t => ({
     userName: t.userName, risk: t.risk ?? null, dailyGain: t.dailyGain ?? null, thisWeekGain: t.thisWeekGain ?? null, copiers: t.copiers ?? null,
   }));
@@ -57,7 +63,7 @@ async function main() {
   }
   const newAlerts = alerts.filter(a => !prevIds.has(a.id));
 
-  const out = { updated: now.toISOString(), followed, limits: LIMITS, entries, alerts, newAlerts };
+  const out = { updated: now.toISOString(), followed, unit: scale === 100 ? "eToro liefert Anteile, umgerechnet in Prozent" : "Prozent", limits: LIMITS, entries, alerts, newAlerts };
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(out) + "\n");
   log(`Live-Stand: ${entries.length} Trader${followed ? `, verfolgt: ${followed}` : ""}, Warnungen: ${alerts.length} (neu: ${newAlerts.length})`);
