@@ -5,7 +5,7 @@
 (() => {
   const STORE = "daytrade-traders-v1";
   const COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
-  const SURFACE = "#161b22";
+  const SURFACE = "#10151d";
   const MAX_TRADERS = COLORS.length;
   const MIN_COPY = 200; // eToro-Mindestbetrag pro kopiertem Trader ($)
 
@@ -169,11 +169,34 @@
       <p class="muted small">Eine hohe Rendite allein reicht nicht: Bei wenigen Monaten und starken Schwankungen kann sie gut Zufall sein. Weitere Trader eintragen oder in einigen Monaten erneut prüfen. ${basis}</p>`;
   }
 
+  // Sortierbare Vergleichstabelle (Klick auf die Überschrift; Standard: sichere Trader zuerst)
+  const cState = { key: "result", dir: "desc" };
+  let lastRows = [], lastCfg = { thr: 0.9 };
+  const okv = (r, x) => (r.ok ? x : null);
+  const CCOLS = [
+    { key: "name", label: "Trader", get: r => r.t.name },
+    { key: "result", label: "Ergebnis", num: true, title: "Sichere Trader zuerst, dann nach Können-Sicherheit", get: r => (r.qualified ? 2 : r.inLimits ? 1 : 0) + (r.dsr || 0) },
+    { key: "dsr", label: "Können-Sicherheit", num: true, title: "Statistische Sicherheit, dass die Leistung nicht nur Glück ist (Deflated Sharpe Ratio)", get: r => okv(r, r.dsr) },
+    { key: "n", label: "Monate", num: true, get: r => r.n },
+    { key: "cagr", label: "Rendite p.a.", num: true, title: "Jahresrendite aus den Monatsrenditen, mit Zinseszins", get: r => okv(r, r.cagr) },
+    { key: "mdd", label: "Max. Drawdown", num: true, title: "Größter Rückgang vom Höchststand", get: r => okv(r, r.mdd) },
+    { key: "sharpe", label: "Sharpe", num: true, title: "Überrendite geteilt durch Schwankung, aufs Jahr gerechnet", get: r => okv(r, r.sharpe) },
+    { key: "sortino", label: "Sortino", num: true, title: "Wie Sharpe, zählt aber nur Verlust-Schwankung", get: r => okv(r, r.sortino) },
+    { key: "calmar", label: "Calmar", num: true, title: "Rendite p.a. geteilt durch Max. Drawdown", get: r => okv(r, r.calmar) },
+    { key: "exp", label: "Erwartung/Trade", num: true, title: "Durchschnittliches Ergebnis pro Trade", get: r => r.expectancy },
+    { key: "pf", label: "Profit-Faktor", num: true, title: "Summe der Gewinne geteilt durch Summe der Verluste", get: r => r.profitFactor },
+    { key: "hold", label: "Ø Haltedauer", num: true, get: r => r.t.hold },
+    { key: "risk", label: "Risiko", num: true, get: r => r.t.risk },
+  ];
   function renderTable(rows, cfg) {
+    if (rows) { lastRows = rows; lastCfg = cfg; }
+    rows = lastRows; cfg = lastCfg;
     const rank = r => (!r.ok ? 3 : r.qualified ? 0 : r.inLimits ? 1 : 2);
-    const sorted = [...rows].sort((a, b) => rank(a) - rank(b) || (b.dsr || 0) - (a.dsr || 0));
-    const bestId = sorted[0] && sorted[0].qualified ? sorted[0].t.id : null;
-    $("cmpTable").querySelector("tbody").innerHTML = sorted.map(r => {
+    const best = [...rows].sort((a, b) => rank(a) - rank(b) || (b.dsr || 0) - (a.dsr || 0))[0];
+    const bestId = best && best.qualified ? best.t.id : null;
+    const thead = $("cmpTable").querySelector("thead");
+    thead.innerHTML = sortHead(CCOLS, cState);
+    $("cmpTable").querySelector("tbody").innerHTML = sortRows(rows, CCOLS, cState).map(r => {
       const t = r.t;
       const result = r.qualified
         ? `<span class="tag good">✓ ${t.id === bestId ? "Empfohlen" : "Geeignet"}</span>`
@@ -182,22 +205,23 @@
       const safety = r.ok ? `<span class="${sure ? "up" : "down"}">${sure ? "✓" : "✗"}</span> ${pct(r.dsr)}` : "–";
       return `<tr>
         <td class="actions"><span class="lkey" style="background:${COLORS[t.slot]}"></span> ${esc(t.name)}
-          <button type="button" data-edit="${esc(t.id)}" title="Bearbeiten">✎</button><button type="button" data-del="${esc(t.id)}" title="Löschen">✕</button></td>
+          <button type="button" data-edit="${esc(t.id)}" title="Bearbeiten" aria-label="${esc(t.name)} bearbeiten">✎</button><button type="button" data-del="${esc(t.id)}" title="Löschen" aria-label="${esc(t.name)} löschen">✕</button></td>
         <td>${result}</td>
-        <td>${safety}</td>
-        <td>${r.n}</td>
-        <td>${r.ok ? num(r.cagr, 1) + " %" : "–"}</td>
-        <td>${r.ok ? num(r.mdd, 1) + " %" : "–"}</td>
-        <td>${r.ok ? num(r.sharpe) : "–"}</td>
-        <td>${r.ok ? num(r.sortino) : "–"}</td>
-        <td>${r.ok ? num(r.calmar) : "–"}</td>
-        <td>${r.expectancy !== undefined ? num(r.expectancy) + " %" : "–"}</td>
-        <td>${r.profitFactor !== undefined ? num(r.profitFactor) : "–"}</td>
-        <td>${fmtHold(t.hold)}</td>
-        <td>${Number.isFinite(t.risk) ? t.risk : "–"}</td>
+        <td class="num">${safety}</td>
+        <td class="num">${r.n}</td>
+        <td class="num">${r.ok ? num(r.cagr, 1) + " %" : "–"}</td>
+        <td class="num">${r.ok ? num(r.mdd, 1) + " %" : "–"}</td>
+        <td class="num">${r.ok ? num(r.sharpe) : "–"}</td>
+        <td class="num">${r.ok ? num(r.sortino) : "–"}</td>
+        <td class="num">${r.ok ? num(r.calmar) : "–"}</td>
+        <td class="num">${r.expectancy !== undefined ? num(r.expectancy) + " %" : "–"}</td>
+        <td class="num">${r.profitFactor !== undefined ? num(r.profitFactor) : "–"}</td>
+        <td class="num">${fmtHold(t.hold)}</td>
+        <td class="num">${Number.isFinite(t.risk) ? t.risk : "–"}</td>
       </tr>`;
-    }).join("") || `<tr><td colspan="13" class="muted">Noch keine Trader eingetragen.</td></tr>`;
+    }).join("") || `<tr><td colspan="${CCOLS.length}" class="muted">Noch keine Trader eingetragen.</td></tr>`;
   }
+  bindSort($("cmpTable").querySelector("thead"), CCOLS, cState, () => renderTable());
 
   function niceTicks(min, max, count) {
     const raw = (max - min || 1) / count;

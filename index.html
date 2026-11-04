@@ -2,320 +2,428 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://s3.tradingview.com; frame-src https://*.tradingview.com https://*.tradingview-widget.com; connect-src 'self' https://raw.githubusercontent.com https://*.tradingview.com; img-src 'self' data: https://*.tradingview.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://s3.tradingview.com; frame-src https://*.tradingview.com https://*.tradingview-widget.com; connect-src 'self' https://raw.githubusercontent.com https://*.tradingview.com; img-src 'self' data: https://*.tradingview.com; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#07090d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DayTrade Desk">
+  <meta name="description" content="Daytrading-Cockpit: Heatmap, News, Trade-Setup, geprüfte Copy-Trading-Empfehlung und Journal.">
   <title>DayTrade Desk</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">📈 DayTrade Desk</div>
-    <nav>
-      <a href="#heatmap">Heatmap</a>
-      <a href="#news">News</a>
-      <a href="#daily">Tagesempfehlung</a>
-      <a href="#setup">Trade-Setup</a>
-      <a href="#copy">Copy-Trading</a>
-      <a href="#compare">Trader-Vergleich</a>
-      <a href="#journal">Journal</a>
-    </nav>
-    <div class="clock" id="marketClock"></div>
+  <a class="skip" href="#views">Zum Inhalt springen</a>
+
+  <header class="appbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18M12 2v20M18 5v14"/><rect x="4" y="7" width="4" height="8" rx="1.2"/><rect x="10" y="5" width="4" height="11" rx="1.2"/><rect x="16" y="9" width="4" height="6" rx="1.2"/></svg>
+      <span>DayTrade <b>Desk</b></span>
+    </div>
+    <div class="sessions" id="sessions" aria-label="Börsenzeiten"></div>
   </header>
 
   <div class="ticker" id="tickerTape"></div>
 
-  <main>
-    <!-- HEATMAP -->
-    <section id="heatmap" class="card">
-      <div class="card-head">
-        <h2>Markt-Heatmap</h2>
-        <select id="heatmapSource">
-          <option value="SPX500">S&amp;P 500</option>
-          <option value="NASDAQ100">Nasdaq 100</option>
-          <option value="DAX">DAX</option>
-          <option value="AllUSA">Alle US-Aktien</option>
-        </select>
+  <nav class="tabs" role="tablist" aria-label="Bereiche">
+    <button class="tab" role="tab" id="tab-home" aria-controls="home" data-tab="home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Übersicht</span></button>
+    <button class="tab" role="tab" id="tab-markt" aria-controls="markt" data-tab="markt">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Markt</span></button>
+    <button class="tab" role="tab" id="tab-news" aria-controls="news" data-tab="news">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M19 9h1a1 1 0 0 1 1 1v8a2 2 0 0 1-2 2M8 9h7M8 13h7M8 17h4"/></svg><span>News</span></button>
+    <button class="tab" role="tab" id="tab-setup" aria-controls="setup" data-tab="setup">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span>Trade-Setup</span></button>
+    <button class="tab" role="tab" id="tab-daily" aria-controls="daily" data-tab="daily">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Tagesempfehlung</span></button>
+    <button class="tab" role="tab" id="tab-copy" aria-controls="copy" data-tab="copy">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><span>Copy-Trading</span></button>
+    <button class="tab" role="tab" id="tab-compare" aria-controls="compare" data-tab="compare">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V4M16 20v-7M21 20H3"/></svg><span>Trader-Vergleich</span></button>
+    <button class="tab" role="tab" id="tab-journal" aria-controls="journal" data-tab="journal">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z"/><path d="M5 19.5A2.5 2.5 0 0 1 7.5 17H20"/></svg><span>Journal</span></button>
+  </nav>
+
+  <main id="views">
+    <!-- ÜBERSICHT -->
+    <section id="home" class="view" role="tabpanel" aria-labelledby="tab-home" hidden>
+      <div class="view-head">
+        <div>
+          <p class="eyebrow" id="ovDate"></p>
+          <h1 id="ovGreeting">Übersicht</h1>
+        </div>
+        <p class="lead">Ihr Handelstag auf einen Blick: Börsenzeiten, geprüfte Tagesempfehlung, Live-Wächter und Ihr Journal.</p>
       </div>
-      <div id="heatmapWidget" class="widget tall"></div>
+      <div class="dash">
+        <article class="card">
+          <h2 class="card-title">Börsen</h2>
+          <div id="ovSessions" class="session-list"></div>
+          <p class="hint">Feiertage sind nicht berücksichtigt.</p>
+        </article>
+        <article class="card">
+          <h2 class="card-title">Tagesempfehlung</h2>
+          <div id="ovReco"><p class="muted">Lade …</p></div>
+        </article>
+        <article class="card">
+          <h2 class="card-title">Live-Wächter</h2>
+          <div id="ovLive"><p class="muted">Lade …</p></div>
+        </article>
+        <article class="card">
+          <h2 class="card-title">Mein Handelstag</h2>
+          <div id="ovJournal"></div>
+        </article>
+        <article class="card span-2">
+          <h2 class="card-title">Tagesregeln</h2>
+          <ul class="checklist">
+            <li>Erste 15 Minuten nach Börseneröffnung (Xetra 09:00, USA 15:30 Uhr) nur beobachten.</li>
+            <li>Kein Trade 5 Minuten vor und nach wichtigen Wirtschaftsdaten (siehe News → Kalender).</li>
+            <li>Stop-Loss <strong>immer</strong> direkt mit der Order setzen und nie nachträglich vergrößern.</li>
+            <li>Alle Positionen spätestens 15 Minuten vor Börsenschluss schließen – keine Übernacht-Positionen.</li>
+            <li>Tageslimit: nach 3 Verlusttrades oder −3 % des Kontos ist Schluss für heute.</li>
+          </ul>
+        </article>
+        <article class="card span-2">
+          <h2 class="card-title">Schnellzugriff</h2>
+          <div class="quick">
+            <a class="quick-btn" href="#setup"><span>Trade planen</span><small>Stop, Ziel und Stückzahl</small></a>
+            <a class="quick-btn" href="#markt"><span>Heatmap</span><small>Wer bewegt den Markt?</small></a>
+            <a class="quick-btn" href="#news"><span>News &amp; Termine</span><small>Was steht heute an?</small></a>
+            <a class="quick-btn" href="#journal"><span>Trade eintragen</span><small>Journal und Tageslimit</small></a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- MARKT -->
+    <section id="markt" class="view" role="tabpanel" aria-labelledby="tab-markt" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Markt</p><h1>Was bewegt sich heute?</h1></div>
+        <p class="lead">Die Heatmap zeigt Gewinner und Verlierer nach Sektoren, darunter die stärksten Bewegungen in den USA.</p>
+      </div>
+      <article class="card">
+        <div class="card-head">
+          <h2 class="card-title">Heatmap</h2>
+          <select id="heatmapSource" aria-label="Index für die Heatmap">
+            <option value="SPX500">S&amp;P 500</option>
+            <option value="NASDAQ100">Nasdaq 100</option>
+            <option value="DAX">DAX</option>
+            <option value="AllUSA">Alle US-Aktien</option>
+          </select>
+        </div>
+        <div id="heatmapWidget" class="widget tall"></div>
+      </article>
+      <article class="card">
+        <div class="card-head"><h2 class="card-title">Top-Gewinner, -Verlierer und meistgehandelt (USA)</h2></div>
+        <div id="hotlistWidget" class="widget tall"></div>
+      </article>
     </section>
 
     <!-- NEWS -->
-    <section id="news" class="grid-2">
-      <div class="card">
-        <div class="card-head"><h2>Top-News Aktienmarkt</h2></div>
-        <div id="newsWidget" class="widget tall"></div>
+    <section id="news" class="view" role="tabpanel" aria-labelledby="tab-news" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">News</p><h1>Nachrichten und Termine</h1></div>
+        <p class="lead">Wichtige Wirtschaftsdaten bewegen die Kurse – davor und danach nicht handeln.</p>
       </div>
-      <div class="card">
-        <div class="card-head"><h2>Wirtschaftskalender (High Impact)</h2></div>
-        <div id="calendarWidget" class="widget tall"></div>
+      <div class="grid-2">
+        <article class="card">
+          <div class="card-head"><h2 class="card-title">Top-News Aktienmarkt</h2></div>
+          <div id="newsWidget" class="widget tall"></div>
+        </article>
+        <article class="card">
+          <div class="card-head"><h2 class="card-title">Wirtschaftskalender (wichtige Termine)</h2></div>
+          <div id="calendarWidget" class="widget tall"></div>
+        </article>
       </div>
     </section>
 
-    <!-- TRADE SETUP -->
-    <section id="setup" class="card">
-      <div class="card-head">
-        <h2>Intraday Trade-Setup <span class="badge">max. 1 Tag</span></h2>
+    <!-- TRADE-SETUP -->
+    <section id="setup" class="view" role="tabpanel" aria-labelledby="tab-setup" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Trade-Setup <span class="badge">max. 1 Tag</span></p><h1>Trade planen</h1></div>
         <div class="symbol-pick">
-          <input id="symbolInput" value="NASDAQ:AAPL" spellcheck="false">
-          <button id="symbolBtn">Laden</button>
+          <input id="symbolInput" value="NASDAQ:AAPL" spellcheck="false" aria-label="Symbol, z. B. NASDAQ:AAPL">
+          <button id="symbolBtn" class="btn">Laden</button>
         </div>
       </div>
-
-      <div class="grid-2">
-        <div id="chartWidget" class="widget chart"></div>
-        <div id="taWidget" class="widget chart"></div>
+      <div class="grid-chart">
+        <article class="card flush"><div id="chartWidget" class="widget chart"></div></article>
+        <article class="card flush"><div id="taWidget" class="widget chart"></div></article>
       </div>
 
-      <h3>Setup-Rechner</h3>
-      <p class="muted">Werte eintragen – darunter steht genau, was Sie in eToro in welches Feld eintragen. Den Signal-Gauge oben (15-Min-Technik) können Sie als Richtungshinweis nutzen, er ist keine Garantie.</p>
-      <form id="calc" class="calc">
-        <label>Kontostand bei eToro<input type="number" id="cAccount" value="5000" min="0" step="any"></label>
-        <label>Kontowährung
-          <select id="cCur"><option value="$" selected>US-Dollar ($)</option><option value="€">Euro (€)</option></select>
-        </label>
-        <label>Risiko pro Trade (%)<input type="number" id="cRisk" value="1" min="0.1" max="5" step="0.1"></label>
-        <label>Richtung
-          <select id="cDir"><option value="long">Long – auf steigende Kurse</option><option value="short">Short – auf fallende Kurse</option></select>
-        </label>
-        <label>Einstiegskurs<input type="number" id="cEntry" value="100" step="any"></label>
-        <label>ATR (Wert aus dem Chart)<input type="number" id="cAtr" value="0.8" step="any"></label>
-        <label>Stil
-          <select id="cStyle">
-            <option value="scalp">Scalp (Stop 1×ATR, CRV 1:1,5)</option>
-            <option value="momentum" selected>Momentum (Stop 1,5×ATR, CRV 1:2)</option>
-            <option value="trend">Intraday-Trend (Stop 2×ATR, CRV 1:3)</option>
-          </select>
-        </label>
-        <label>Hebel
-          <select id="cLev"><option value="1" selected>x1 – ohne Hebel (empfohlen)</option><option value="2">x2</option><option value="5">x5</option></select>
-        </label>
-      </form>
-      <p class="hint"><strong>Woher die Werte kommen:</strong> Einstiegskurs = aktueller Kurs der Aktie in eToro. ATR = die Zahl im Indikator „ATR 14“ unten im Chart oben (15-Minuten-Kerzen). Kontostand und Kurs in derselben Währung rechnen – US-Aktien handelt eToro in Dollar.</p>
-      <div class="result" id="calcResult"></div>
+      <article class="card">
+        <h2 class="card-title">Setup-Rechner</h2>
+        <p class="muted">Werte eintragen – darunter steht genau, was Sie in eToro in welches Feld eintragen. Die Technik-Anzeige oben (15-Minuten-Kerzen) ist ein Richtungshinweis, keine Garantie.</p>
+        <form id="calc" class="calc">
+          <label>Kontostand bei eToro<input type="number" id="cAccount" value="5000" min="0" step="any" data-account></label>
+          <label>Kontowährung
+            <select id="cCur"><option value="$" selected>US-Dollar ($)</option><option value="€">Euro (€)</option></select>
+          </label>
+          <label>Risiko pro Trade (%)<input type="number" id="cRisk" value="1" min="0.1" max="5" step="0.1"></label>
+          <label>Richtung
+            <select id="cDir"><option value="long">Long – auf steigende Kurse</option><option value="short">Short – auf fallende Kurse</option></select>
+          </label>
+          <label>Einstiegskurs<input type="number" id="cEntry" value="100" step="any"></label>
+          <label>ATR (Wert aus dem Chart)<input type="number" id="cAtr" value="0.8" step="any"></label>
+          <label>Stil
+            <select id="cStyle">
+              <option value="scalp">Scalp (Stop 1×ATR, CRV 1:1,5)</option>
+              <option value="momentum" selected>Momentum (Stop 1,5×ATR, CRV 1:2)</option>
+              <option value="trend">Intraday-Trend (Stop 2×ATR, CRV 1:3)</option>
+            </select>
+          </label>
+          <label>Hebel
+            <select id="cLev"><option value="1" selected>x1 – ohne Hebel (empfohlen)</option><option value="2">x2</option><option value="5">x5</option></select>
+          </label>
+        </form>
+        <p class="hint"><strong>Woher die Werte kommen:</strong> Einstiegskurs = aktueller Kurs der Aktie in eToro. ATR = die Zahl im Indikator „ATR 14“ unten im Chart (15-Minuten-Kerzen). Kontostand und Kurs in derselben Währung rechnen – US-Aktien handelt eToro in Dollar.</p>
+        <div class="result" id="calcResult"></div>
+      </article>
 
-      <div class="etoro">
-        <h3>So tragen Sie den Trade in eToro ein</h3>
+      <article class="card etoro">
+        <h2 class="card-title">So tragen Sie den Trade in eToro ein</h2>
         <p class="legend"><b>Fett</b> = Button oder Feld in eToro · <span class="v">blau hinterlegt</span> = Wert, den Sie eintragen</p>
         <ol class="steps" id="etoroSteps"></ol>
-        <h4>Während des Tages</h4>
+        <h3>Während des Tages</h3>
         <ol class="steps" id="etoroFollow"></ol>
         <p class="muted small">Die Bezeichnungen in der eToro-App können je nach Version und Sprache leicht abweichen.</p>
-      </div>
-
-      <h3>Tagesregeln</h3>
-      <ul class="rules">
-        <li>Erste 15 Minuten nach Börseneröffnung (US: 15:30 MEZ, DAX: 09:00) nur beobachten.</li>
-        <li>Kein Trade 5 Minuten vor/nach High-Impact-News (siehe Kalender).</li>
-        <li>Stop-Loss <strong>immer</strong> direkt mit der Order setzen, nie nachträglich vergrößern.</li>
-        <li>Alle Positionen spätestens 15 Minuten vor Börsenschluss schließen – keine Übernacht-Positionen.</li>
-        <li>Tageslimit: nach 3 Verlusttrades oder −3&nbsp;% Konto ist Schluss für heute.</li>
-      </ul>
+      </article>
     </section>
 
     <!-- TAGESEMPFEHLUNG -->
-    <section id="daily" class="card">
-      <div class="card-head">
-        <h2>Tagesempfehlung &amp; Top 25</h2>
-        <span class="muted small" id="dailyUpdated"></span>
+    <section id="daily" class="view" role="tabpanel" aria-labelledby="tab-daily" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Copy-Trading · automatisch geprüft</p><h1>Tagesempfehlung &amp; Top 25</h1></div>
+        <p class="lead" id="dailyUpdated"></p>
       </div>
       <div id="dailyBody"><p class="muted">Lade Daten …</p></div>
     </section>
 
-    <!-- COPY TRADING -->
-    <section id="copy" class="card">
-      <div class="card-head"><h2>Copy-Trading bei eToro</h2></div>
-      <p>Beim Copy-Trading übernimmt eToro automatisch die Trades eines anderen Traders in Ihr Konto, anteilig zu Ihrem Betrag. Wie lange eine Position offen bleibt, entscheidet der kopierte Trader. Für Daytrading deshalb nur Trader wählen, deren durchschnittliche Haltedauer unter einem Tag liegt.</p>
+    <!-- COPY-TRADING -->
+    <section id="copy" class="view" role="tabpanel" aria-labelledby="tab-copy" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Copy-Trading</p><h1>Trader bei eToro kopieren</h1></div>
+        <p class="lead">eToro übernimmt automatisch die Trades eines anderen Traders, anteilig zu Ihrem Betrag. Wie lange eine Position offen bleibt, entscheidet der kopierte Trader.</p>
+      </div>
+      <div class="grid-2">
+        <article class="card">
+          <h2 class="card-title">1. Copy-Rechner</h2>
+          <form id="copyCalc" class="calc">
+            <label>Kontostand bei eToro ($)<input type="number" id="kAccount" value="5000" min="0" step="any" data-account></label>
+            <label>Anteil fürs Kopieren (%)<input type="number" id="kShare" value="10" min="1" max="100" step="1"></label>
+            <label>Maximal akzeptierter Verlust ($)<input type="number" id="kLoss" value="100" min="0" step="any"></label>
+          </form>
+          <div class="result" id="copyResult"></div>
+        </article>
+        <article class="card">
+          <h2 class="card-title">2. Kopie in eToro eintragen</h2>
+          <ol class="steps" id="copySteps"></ol>
+        </article>
+      </div>
 
-      <h3>1. Copy-Rechner</h3>
-      <form id="copyCalc" class="calc">
-        <label>Kontostand bei eToro ($)<input type="number" id="kAccount" value="5000" min="0" step="any"></label>
-        <label>Anteil fürs Kopieren (%)<input type="number" id="kShare" value="10" min="1" max="100" step="1"></label>
-        <label>Maximal akzeptierter Verlust ($)<input type="number" id="kLoss" value="100" min="0" step="any"></label>
-      </form>
-      <div class="result" id="copyResult"></div>
+      <article class="card">
+        <h2 class="card-title">3. Passenden Trader finden</h2>
+        <ol class="steps">
+          <li>Am einfachsten: die geprüfte <a href="#daily">Tagesempfehlung</a> nutzen – sie wird an jedem Börsentag automatisch berechnet.</li>
+          <li>Oder selbst suchen: In eToro auf <b>„Entdecken“</b> → <b>„Personen“</b> (bzw. „Top-Investoren kopieren“) gehen, einen Trader antippen und den Reiter <b>„Statistik“</b> öffnen.</li>
+          <li>Nur kopieren, wenn alle Werte passen:
+            <div class="table-wrap">
+              <table class="check">
+                <thead><tr><th>Kennzahl im Profil</th><th>Ihr Grenzwert</th></tr></thead>
+                <tbody>
+                  <tr><td><b>Risiko-Score</b> (Skala 1–10)</td><td><span class="v">5 oder niedriger</span></td></tr>
+                  <tr><td><b>Max. Drawdown</b> (Jahr)</td><td><span class="v">unter 20 %</span></td></tr>
+                  <tr><td><b>Aktiv seit</b></td><td><span class="v">mindestens 12 Monate</span></td></tr>
+                  <tr><td><b>Profitable Wochen</b></td><td><span class="v">über 55 %</span></td></tr>
+                  <tr><td><b>Trades pro Woche</b></td><td><span class="v">auch in den letzten 2 Wochen gehandelt</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <span class="muted small">Die Grenzwerte sind vorsichtige Richtwerte dieser Seite, keine Vorgaben von eToro.</span>
+          </li>
+          <li>Die Werte der Kandidaten im <a href="#compare">Trader-Vergleich</a> eintragen – dort rechnet die Seite aus, welchen Trader Sie kopieren sollten.</li>
+        </ol>
+      </article>
 
-      <h3>2. Passenden Trader finden</h3>
-      <ol class="steps">
-        <li>In eToro auf <b>„Entdecken“</b> → <b>„Personen“</b> (bzw. „Top-Investoren kopieren“) gehen.</li>
-        <li>Einen Trader antippen und im Profil den Reiter <b>„Statistik“</b> öffnen.</li>
-        <li>Nur kopieren, wenn alle Werte passen:
-          <div class="table-wrap">
-            <table class="check">
-              <thead><tr><th>Kennzahl im Profil</th><th>Ihr Grenzwert</th></tr></thead>
-              <tbody>
-                <tr><td><b>Risiko-Score</b> (Skala 1–10)</td><td><span class="v">5 oder niedriger</span></td></tr>
-                <tr><td><b>Max. Drawdown</b> (Jahr)</td><td><span class="v">unter 20 %</span></td></tr>
-                <tr><td><b>Ø Haltedauer</b></td><td><span class="v">unter 1 Tag</span></td></tr>
-                <tr><td><b>Aktiv seit</b></td><td><span class="v">mindestens 12 Monate</span></td></tr>
-                <tr><td><b>Profitable Wochen</b></td><td><span class="v">über 55 %</span></td></tr>
-                <tr><td><b>Trades pro Woche</b></td><td><span class="v">auch in den letzten 2 Wochen gehandelt</span></td></tr>
-              </tbody>
-            </table>
-          </div>
-          <span class="muted small">Die Grenzwerte sind vorsichtige Richtwerte dieser Seite, keine Vorgaben von eToro.</span>
-        </li>
-        <li>Die Werte der Kandidaten im <a href="#compare">Trader-Vergleich</a> eintragen – dort rechnet die Seite aus, welchen Trader Sie kopieren sollten.</li>
-      </ol>
-
-      <h3>3. Kopie in eToro eintragen</h3>
-      <ol class="steps" id="copySteps"></ol>
-
-      <h3>4. Überwachen und beenden</h3>
-      <ul class="rules">
-        <li>Laufende Kopie ansehen: <b>„Portfolio“</b> → Trader antippen. Dort stehen alle kopierten Positionen.</li>
-        <li>In den Einstellungen der Kopie (Zahnrad) → <b>„Kopieren pausieren“</b>: keine neuen Trades mehr, offene laufen nach den Regeln des Traders weiter.</li>
-        <li><b>„Kopieren beenden“</b>: eToro fragt, ob Sie die Positionen schließen oder selbst weiterführen wollen.</li>
-        <li>Wird der Copy Stop Loss erreicht, schließt eToro automatisch alle Positionen dieser Kopie.</li>
-        <li>Wenn Sie Geld nachlegen oder abziehen, rechnet eToro den Copy Stop Loss neu – danach prüfen.</li>
-      </ul>
-      <p class="muted small">eToro-Regeln laut eToro-Website: mindestens 200 $ pro kopiertem Trader, jede kopierte Position mindestens 1 $, Copy Stop Loss einstellbar von 5 % bis 95 % (Standard 40 %). Bezeichnungen können je nach App-Version abweichen.</p>
+      <article class="card">
+        <h2 class="card-title">4. Überwachen und beenden</h2>
+        <ul class="checklist">
+          <li>Laufende Kopie ansehen: <b>„Portfolio“</b> → Trader antippen. Dort stehen alle kopierten Positionen.</li>
+          <li>In den Einstellungen der Kopie (Zahnrad) → <b>„Kopieren pausieren“</b>: keine neuen Trades mehr, offene laufen nach den Regeln des Traders weiter.</li>
+          <li><b>„Kopieren beenden“</b>: eToro fragt, ob Sie die Positionen schließen oder selbst weiterführen wollen.</li>
+          <li>Wird der Copy Stop Loss erreicht, schließt eToro automatisch alle Positionen dieser Kopie.</li>
+          <li>Wenn Sie Geld nachlegen oder abziehen, rechnet eToro den Copy Stop Loss neu – danach prüfen.</li>
+        </ul>
+        <p class="muted small">eToro-Regeln laut eToro-Website: mindestens 200 $ pro kopiertem Trader, jede kopierte Position mindestens 1 $, Copy Stop Loss einstellbar von 5 % bis 95 % (Standard 40 %). Bezeichnungen können je nach App-Version abweichen.</p>
+      </article>
     </section>
 
     <!-- TRADER-VERGLEICH -->
-    <section id="compare" class="card">
-      <div class="card-head">
-        <h2>Trader-Vergleich</h2>
+    <section id="compare" class="view" role="tabpanel" aria-labelledby="tab-compare" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Eigene Kandidaten prüfen</p><h1>Trader-Vergleich</h1></div>
         <div class="btn-row">
-          <button type="button" class="ghost" id="cmpExamples">Beispiele laden</button>
-          <button type="button" class="ghost" id="cmpClear">Alle löschen</button>
+          <button type="button" class="btn ghost" id="cmpExamples">Beispiele laden</button>
+          <button type="button" class="btn ghost" id="cmpClear">Alle löschen</button>
         </div>
       </div>
-      <p>Tragen Sie bis zu 8 Trader mit den Werten aus ihrem eToro-Profil ein. Die Seite rechnet für jeden aus, wie sicher seine Rendite auf Können statt auf Glück beruht, und empfiehlt den besten – oder ehrlicherweise keinen.</p>
+      <p class="lead">Tragen Sie bis zu 8 Trader mit den Werten aus ihrem eToro-Profil ein. Die Seite rechnet für jeden aus, wie sicher seine Rendite auf Können statt auf Glück beruht, und empfiehlt den besten – oder ehrlicherweise keinen.</p>
 
       <div class="reco" id="cmpReco"></div>
 
-      <h3>Wachstum von 100 $</h3>
-      <div class="legend-row" id="cmpLegend"></div>
-      <div class="chart-host" id="cmpChart"></div>
+      <article class="card">
+        <h2 class="card-title">Wachstum von 100 $</h2>
+        <div class="legend-row" id="cmpLegend"></div>
+        <div class="chart-host" id="cmpChart"></div>
+      </article>
 
-      <h3>Vergleich</h3>
-      <div class="table-wrap">
-        <table id="cmpTable">
-          <thead><tr>
-            <th>Trader</th><th>Ergebnis</th>
-            <th title="Statistische Sicherheit, dass die Leistung nicht nur Glück ist (Deflated Sharpe Ratio)">Können-Sicherheit</th>
-            <th>Monate</th>
-            <th title="Jahresrendite aus den Monatsrenditen, mit Zinseszins">Rendite p.a.</th>
-            <th title="Größter Rückgang vom Höchststand">Max. Drawdown</th>
-            <th title="Überrendite geteilt durch Schwankung, aufs Jahr gerechnet">Sharpe</th>
-            <th title="Wie Sharpe, zählt aber nur Verlust-Schwankung">Sortino</th>
-            <th title="Rendite p.a. geteilt durch Max. Drawdown">Calmar</th>
-            <th title="Durchschnittliches Ergebnis pro Trade">Erwartung/Trade</th>
-            <th title="Summe der Gewinne geteilt durch Summe der Verluste">Profit-Faktor</th>
-            <th>Ø Haltedauer</th><th>Risiko</th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <h3 id="tFormTitle">Trader eintragen</h3>
-      <form id="tForm" class="calc">
-        <label>Name des Traders<input id="tName" required maxlength="40" placeholder="eToro-Benutzername"></label>
-        <label class="wide">Monatsrenditen in %, älteste zuerst
-          <textarea id="tReturns" rows="2" required placeholder="z. B. 2,1  -0,8  3,4  1,2 … (mit Leerzeichen oder ; trennen)"></textarea>
-          <span class="small muted" id="tCount">0 Werte erkannt</span>
-        </label>
-        <label>Max. Drawdown (Jahr) in %<input id="tMdd" type="number" step="any" min="0" placeholder="z. B. 8,5"></label>
-        <label>Risiko-Score (1–10)<input id="tRisk" type="number" min="1" max="10" step="1" required></label>
-        <label>Ø Haltedauer
-          <span class="pair">
-            <input id="tHold" type="number" step="any" min="0" required>
-            <select id="tHoldUnit"><option value="1">Stunden</option><option value="24">Tage</option></select>
-          </span>
-        </label>
-        <label>Profitable Trades in %<input id="tWin" type="number" step="any" min="0" max="100" placeholder="optional"></label>
-        <label>Ø Gewinn je Trade in %<input id="tAvgWin" type="number" step="any" min="0" placeholder="optional"></label>
-        <label>Ø Verlust je Trade in %<input id="tAvgLoss" type="number" step="any" placeholder="optional"></label>
-        <label>Trades pro Woche<input id="tTpw" type="number" step="any" min="0" placeholder="optional"></label>
-        <div class="btn-row">
-          <button type="submit" id="tSubmit">Trader hinzufügen</button>
-          <button type="button" class="ghost" id="tCancel" hidden>Abbrechen</button>
-        </div>
-      </form>
-      <p class="warn" id="tError" hidden></p>
-
-      <details class="info">
-        <summary>Wo stehen die Werte in eToro?</summary>
+      <article class="card">
+        <h2 class="card-title">Vergleich</h2>
+        <p class="muted small">Auf eine Spaltenüberschrift tippen, um zu sortieren – noch einmal tippen kehrt die Reihenfolge um.</p>
         <div class="table-wrap">
-          <table class="check">
-            <thead><tr><th>Feld hier</th><th>Im eToro-Profil</th></tr></thead>
-            <tbody>
-              <tr><td>Monatsrenditen</td><td>Reiter <b>„Statistik“</b> → Renditetabelle nach Monaten. Jahr für Jahr von Januar bis Dezember abschreiben, mindestens 12, besser 24–36 Monate.</td></tr>
-              <tr><td>Max. Drawdown</td><td><b>„Statistik“</b> → Bereich Risiko → <b>Max. Drawdown</b>, Wert für das Jahr</td></tr>
-              <tr><td>Risiko-Score</td><td><b>„Statistik“</b> → <b>Risiko-Score</b> (Zahl von 1 bis 10)</td></tr>
-              <tr><td>Haltedauer, profitable Trades, Ø Gewinn, Ø Verlust, Trades pro Woche</td><td><b>„Statistik“</b> → Bereich <b>Trading</b></td></tr>
-            </tbody>
-          </table>
+          <table id="cmpTable"><thead></thead><tbody></tbody></table>
         </div>
-        <p class="muted small">Die Bezeichnungen können je nach App-Version und Sprache leicht abweichen.</p>
-      </details>
+      </article>
 
-      <details class="info" open>
-        <summary>Ihre Grenzen</summary>
-        <form id="cmpSettings" class="calc">
-          <label>Kontostand bei eToro ($)<input id="sAccount" type="number" value="5000" min="0" step="any"></label>
-          <label>Max. Anteil pro Trader (%)<input id="sShare" type="number" value="20" min="1" max="100" step="1"></label>
-          <label>Max. Verlust pro Kopie ($)<input id="sLoss" type="number" value="250" min="0" step="any"></label>
-          <label>Max. Risiko-Score<input id="sRisk" type="number" value="5" min="1" max="10" step="1"></label>
-          <label>Max. Ø Haltedauer (Stunden)<input id="sHold" type="number" value="24" min="1" step="any"></label>
-          <label>Max. Drawdown (%)<input id="sDd" type="number" value="20" min="1" step="any"></label>
-          <label>Mindestens Monate Daten<input id="sMonths" type="number" value="12" min="3" step="1"></label>
-          <label>Geforderte Sicherheit
-            <select id="sThr"><option value="0.8">80 %</option><option value="0.9" selected>90 %</option><option value="0.95">95 %</option></select>
+      <article class="card">
+        <h2 class="card-title" id="tFormTitle">Trader eintragen</h2>
+        <form id="tForm" class="calc">
+          <label>Name des Traders<input id="tName" required maxlength="40" placeholder="eToro-Benutzername"></label>
+          <label class="wide">Monatsrenditen in %, älteste zuerst
+            <textarea id="tReturns" rows="2" required placeholder="z. B. 2,1  -0,8  3,4  1,2 … (mit Leerzeichen oder ; trennen)"></textarea>
+            <span class="small muted" id="tCount">0 Werte erkannt</span>
           </label>
-          <label>Angesehene Trader insgesamt<input id="sSeen" type="number" min="1" step="1" placeholder="= eingetragene"></label>
-          <label>Zins ohne Risiko (% p.a.)<input id="sRf" type="number" value="2" min="0" step="any"></label>
+          <label>Max. Drawdown (Jahr) in %<input id="tMdd" type="number" step="any" min="0" placeholder="z. B. 8,5"></label>
+          <label>Risiko-Score (1–10)<input id="tRisk" type="number" min="1" max="10" step="1" required></label>
+          <label>Ø Haltedauer
+            <span class="pair">
+              <input id="tHold" type="number" step="any" min="0" required>
+              <select id="tHoldUnit"><option value="1">Stunden</option><option value="24">Tage</option></select>
+            </span>
+          </label>
+          <label>Profitable Trades in %<input id="tWin" type="number" step="any" min="0" max="100" placeholder="optional"></label>
+          <label>Ø Gewinn je Trade in %<input id="tAvgWin" type="number" step="any" min="0" placeholder="optional"></label>
+          <label>Ø Verlust je Trade in %<input id="tAvgLoss" type="number" step="any" placeholder="optional"></label>
+          <label>Trades pro Woche<input id="tTpw" type="number" step="any" min="0" placeholder="optional"></label>
+          <div class="btn-row">
+            <button type="submit" class="btn" id="tSubmit">Trader hinzufügen</button>
+            <button type="button" class="btn ghost" id="tCancel" hidden>Abbrechen</button>
+          </div>
         </form>
-        <p class="hint">„Angesehene Trader insgesamt“: Wenn Sie 30 Profile durchgeblättert und nur die 3 besten eingetragen haben, hier 30 eintragen. Je mehr Trader man sich ansieht, desto wahrscheinlicher ist unter ihnen ein reiner Glückspilz. Die Rechnung korrigiert das.</p>
-      </details>
+        <p class="warn" id="tError" hidden></p>
 
-      <details class="info">
-        <summary>So rechnet das Tool</summary>
-        <ul class="rules">
-          <li><b>Rendite p.a.</b>: die Monatsrenditen mit Zinseszins aufs Jahr gerechnet.</li>
-          <li><b>Max. Drawdown</b>: größter Rückgang vom Höchststand. Verwendet wird der größere Wert aus Ihrer eToro-Angabe und den Monatsdaten.</li>
-          <li><b>Sharpe</b>: (Monatsrendite − Zins ohne Risiko) ÷ Schwankung der Monatsrenditen, × √12 aufs Jahr gerechnet. <b>Sortino</b> zählt nur die Verlust-Schwankung. <b>Calmar</b> = Rendite p.a. ÷ Max. Drawdown.</li>
-          <li><b>Erwartung je Trade</b> = Trefferquote × Ø Gewinn − (1 − Trefferquote) × Ø Verlust. Ist sie negativ, verliert der Trader im Schnitt pro Trade.</li>
-          <li><b>Können-Sicherheit</b> („Deflated Sharpe Ratio“ nach Bailey &amp; López de Prado): wie sicher die Sharpe-Quote des Traders über der liegt, die der glücklichste von N Tradern ganz ohne Können zufällig erreicht hätte. Berücksichtigt die Länge der Historie, schiefe Verteilungen und Ausreißer.</li>
-          <li><b>Empfehlung</b>: Von allen Tradern, die Ihre Grenzen einhalten und die geforderte Sicherheit erreichen, gewinnt der mit der höchsten Können-Sicherheit.</li>
-          <li><b>Betrag</b>: der kleinste von drei Werten – Max. Anteil × Kontostand, Verlustbudget ÷ Copy Stop Loss und halbes Kelly-Kriterium (Überrendite ÷ Varianz der Monatsrenditen, halbiert) × Kontostand.</li>
-          <li><b>Copy Stop Loss</b> = 1,25 × größter bisheriger Rückgang (5–95 %). So beenden normale Schwankungen die Kopie nicht, ein ungewöhnlicher Absturz aber schon.</li>
-          <li><b>Grenzen</b>: Vergangene Renditen garantieren nichts. Kopierer schneiden meist etwas schlechter ab (Spreads, Verzögerung). Die Rechnung ist nur so gut wie die eingetragenen Zahlen.</li>
-        </ul>
-      </details>
+        <details class="info">
+          <summary>Wo stehen die Werte in eToro?</summary>
+          <div class="table-wrap">
+            <table class="check">
+              <thead><tr><th>Feld hier</th><th>Im eToro-Profil</th></tr></thead>
+              <tbody>
+                <tr><td>Monatsrenditen</td><td>Reiter <b>„Statistik“</b> → Renditetabelle nach Monaten. Jahr für Jahr von Januar bis Dezember abschreiben, mindestens 12, besser 24–36 Monate.</td></tr>
+                <tr><td>Max. Drawdown</td><td><b>„Statistik“</b> → Bereich Risiko → <b>Max. Drawdown</b>, Wert für das Jahr</td></tr>
+                <tr><td>Risiko-Score</td><td><b>„Statistik“</b> → <b>Risiko-Score</b> (Zahl von 1 bis 10)</td></tr>
+                <tr><td>Haltedauer, profitable Trades, Ø Gewinn, Ø Verlust, Trades pro Woche</td><td><b>„Statistik“</b> → Bereich <b>Trading</b></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="muted small">Die Bezeichnungen können je nach App-Version und Sprache leicht abweichen.</p>
+        </details>
+
+        <details class="info" open>
+          <summary>Ihre Grenzen</summary>
+          <form id="cmpSettings" class="calc">
+            <label>Kontostand bei eToro ($)<input id="sAccount" type="number" value="5000" min="0" step="any" data-account></label>
+            <label>Max. Anteil pro Trader (%)<input id="sShare" type="number" value="20" min="1" max="100" step="1"></label>
+            <label>Max. Verlust pro Kopie ($)<input id="sLoss" type="number" value="250" min="0" step="any"></label>
+            <label>Max. Risiko-Score<input id="sRisk" type="number" value="5" min="1" max="10" step="1"></label>
+            <label>Max. Ø Haltedauer (Stunden)<input id="sHold" type="number" value="24" min="1" step="any"></label>
+            <label>Max. Drawdown (%)<input id="sDd" type="number" value="20" min="1" step="any"></label>
+            <label>Mindestens Monate Daten<input id="sMonths" type="number" value="12" min="3" step="1"></label>
+            <label>Geforderte Sicherheit
+              <select id="sThr"><option value="0.8">80 %</option><option value="0.9" selected>90 %</option><option value="0.95">95 %</option></select>
+            </label>
+            <label>Angesehene Trader insgesamt<input id="sSeen" type="number" min="1" step="1" placeholder="= eingetragene"></label>
+            <label>Zins ohne Risiko (% p.a.)<input id="sRf" type="number" value="2" min="0" step="any"></label>
+          </form>
+          <p class="hint">„Angesehene Trader insgesamt“: Wenn Sie 30 Profile durchgeblättert und nur die 3 besten eingetragen haben, hier 30 eintragen. Je mehr Trader man sich ansieht, desto wahrscheinlicher ist unter ihnen ein reiner Glückspilz. Die Rechnung korrigiert das.</p>
+        </details>
+
+        <details class="info">
+          <summary>So rechnet das Tool</summary>
+          <ul class="checklist">
+            <li><b>Rendite p.a.</b>: die Monatsrenditen mit Zinseszins aufs Jahr gerechnet.</li>
+            <li><b>Max. Drawdown</b>: größter Rückgang vom Höchststand. Verwendet wird der größere Wert aus Ihrer eToro-Angabe und den Monatsdaten.</li>
+            <li><b>Sharpe</b>: (Monatsrendite − Zins ohne Risiko) ÷ Schwankung der Monatsrenditen, × √12 aufs Jahr gerechnet. <b>Sortino</b> zählt nur die Verlust-Schwankung. <b>Calmar</b> = Rendite p.a. ÷ Max. Drawdown.</li>
+            <li><b>Erwartung je Trade</b> = Trefferquote × Ø Gewinn − (1 − Trefferquote) × Ø Verlust. Ist sie negativ, verliert der Trader im Schnitt pro Trade.</li>
+            <li><b>Können-Sicherheit</b> („Deflated Sharpe Ratio“ nach Bailey &amp; López de Prado): wie sicher die Sharpe-Quote des Traders über der liegt, die der glücklichste von N Tradern ganz ohne Können zufällig erreicht hätte. Berücksichtigt die Länge der Historie, schiefe Verteilungen und Ausreißer.</li>
+            <li><b>Empfehlung</b>: Von allen Tradern, die Ihre Grenzen einhalten und die geforderte Sicherheit erreichen, gewinnt der mit der höchsten Können-Sicherheit.</li>
+            <li><b>Betrag</b>: der kleinste von drei Werten – Max. Anteil × Kontostand, Verlustbudget ÷ Copy Stop Loss und halbes Kelly-Kriterium (Überrendite ÷ Varianz der Monatsrenditen, halbiert) × Kontostand.</li>
+            <li><b>Copy Stop Loss</b> = 1,25 × größter bisheriger Rückgang (5–95 %). So beenden normale Schwankungen die Kopie nicht, ein ungewöhnlicher Absturz aber schon.</li>
+            <li><b>Grenzen</b>: Vergangene Renditen garantieren nichts. Kopierer schneiden meist etwas schlechter ab (Spreads, Verzögerung). Die Rechnung ist nur so gut wie die eingetragenen Zahlen.</li>
+          </ul>
+        </details>
+      </article>
     </section>
 
     <!-- JOURNAL -->
-    <section id="journal" class="card">
-      <div class="card-head"><h2>Trade-Journal</h2><span class="muted small">wird nur lokal im Browser gespeichert</span></div>
-      <form id="jForm" class="calc">
-        <label>Symbol<input id="jSym" required placeholder="AAPL"></label>
-        <label>Richtung<select id="jDir"><option>Long</option><option>Short</option></select></label>
-        <label>Einstieg<input id="jIn" type="number" step="any" required></label>
-        <label>Ausstieg<input id="jOut" type="number" step="any" required></label>
-        <label>Stück<input id="jQty" type="number" step="any" required></label>
-        <label>Notiz<input id="jNote" placeholder="Setup, Fehler, Lernpunkt"></label>
-        <button type="submit">Eintragen</button>
-      </form>
-      <div class="stats" id="jStats"></div>
-      <div class="table-wrap">
-        <table id="jTable">
-          <thead><tr><th>Datum</th><th>Symbol</th><th>Richtung</th><th>Ein</th><th>Aus</th><th>Stück</th><th>P/L</th><th>Notiz</th><th></th></tr></thead>
-          <tbody></tbody>
-        </table>
+    <section id="journal" class="view" role="tabpanel" aria-labelledby="tab-journal" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Trade-Journal · nur in Ihrem Browser gespeichert</p><h1>Journal &amp; Tageslimit</h1></div>
+        <div class="btn-row">
+          <button type="button" class="btn ghost" id="jExport">Als CSV exportieren</button>
+        </div>
       </div>
+      <div id="jToday"></div>
+      <article class="card">
+        <h2 class="card-title">Trade eintragen</h2>
+        <form id="jForm" class="calc">
+          <label>Symbol<input id="jSym" required placeholder="AAPL" maxlength="20"></label>
+          <label>Richtung<select id="jDir"><option>Long</option><option>Short</option></select></label>
+          <label>Einstieg<input id="jIn" type="number" step="any" required></label>
+          <label>Ausstieg<input id="jOut" type="number" step="any" required></label>
+          <label>Stück<input id="jQty" type="number" step="any" required></label>
+          <label>Notiz<input id="jNote" placeholder="Setup, Fehler, Lernpunkt" maxlength="200"></label>
+          <div class="btn-row"><button type="submit" class="btn">Eintragen</button></div>
+        </form>
+      </article>
+      <div class="stats" id="jStats"></div>
+      <article class="card">
+        <h2 class="card-title">Gewinn und Verlust über alle Trades</h2>
+        <div class="chart-host" id="jChart"></div>
+      </article>
+      <article class="card">
+        <h2 class="card-title">Alle Trades</h2>
+        <div class="table-wrap">
+          <table id="jTable"><thead></thead><tbody></tbody></table>
+        </div>
+      </article>
     </section>
-
-    <footer class="disclaimer">
-      <strong>Risikohinweis:</strong> Keine Anlageberatung. Alle Vorschläge sind mechanische Rechenregeln, keine Empfehlung zum Kauf oder Verkauf. Studien zeigen, dass die große Mehrheit privater Daytrader langfristig Geld verliert. Handeln Sie nur mit Geld, dessen Verlust Sie verkraften können, und üben Sie zuerst mit einem Demokonto.
-      Marktdaten &amp; Widgets: TradingView.
-    </footer>
   </main>
+
+  <footer class="disclaimer">
+    <strong>Risikohinweis:</strong> Keine Anlageberatung. Alle Vorschläge sind mechanische Rechenregeln, keine Empfehlung zum Kauf oder Verkauf. Die große Mehrheit privater Daytrader verliert langfristig Geld. Handeln Sie nur mit Geld, dessen Verlust Sie verkraften können, und üben Sie zuerst mit einem Demokonto.
+    Marktdaten &amp; Widgets: TradingView. Schrift: Inter (SIL Open Font License).
+  </footer>
+
+  <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" hidden>
+    <header class="drawer-head">
+      <h2 id="drawerTitle"></h2>
+      <button type="button" class="icon-btn" id="drawerClose" aria-label="Schließen">✕</button>
+    </header>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <script src="app.js"></script>
   <script src="stats.js"></script>
   <script src="compare.js"></script>
   <script src="daily.js"></script>
+  <script src="overview.js"></script>
 </body>
 </html>

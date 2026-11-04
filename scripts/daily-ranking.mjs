@@ -228,7 +228,7 @@ async function main() {
     qualifiedCount: qualified.length, config: CONFIG, dataCheck: check,
     recommendation, notice, lastRecommended, top, history,
     // alle ausgewerteten Trader (kompakt) für die Abbildung auf der Website
-    all: rows.map(r => ({ userName: r.userName, cagr: r.cagr, mdd: r.mdd, dsr: r.dsr, sharpe: r.sharpe, risk: r.risk, months: r.months, qualified: r.qualified, inLimits: r.inLimits })),
+    all: rows.map(r => ({ userName: r.userName, cagr: r.cagr, mdd: r.mdd, dsr: r.dsr, sharpe: r.sharpe, risk: r.risk, copiers: r.copiers, months: r.months, qualified: r.qualified, inLimits: r.inLimits, reason: r.reason })),
   });
   // Rohdaten für die unabhängige Gegenrechnung
   const returns = {

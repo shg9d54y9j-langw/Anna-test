@@ -1,37 +1,76 @@
 // ---------- Tagesempfehlung & Top 25 ----------
-// Liest data/ranking.json (wird jeden Börsentag vom GitHub-Job aktualisiert).
-// Nutzt fmt, esc, kpi, v, warnBox und $ aus app.js.
+// Liest data/ranking.json (geprüft vom GitHub-Job), data/returns.json (Monatsrenditen für das Detail-Fenster)
+// und den Live-Stand vom Zweig live-data. Nutzt Hilfsfunktionen aus app.js.
 (() => {
-  const RAW = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/claude/daytrade-website/data/ranking.json";
-  const LIVE = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/live-data/live.json";
+  const BASE = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test";
+  const RAW = `${BASE}/claude/daytrade-website/data/ranking.json`;
+  const RAW_RETURNS = `${BASE}/claude/daytrade-website/data/returns.json`;
+  const LIVE = `${BASE}/live-data/live.json`;
   const body = $("dailyBody");
-  let data = null, live = null;
+  let data = null, live = null, returns = null, returnsLoading = null;
 
-  const pct = p => (p > 0.995 ? "über 99 %" : p < 0.005 ? "unter 1 %" : `${fmt(p * 100, 0)} %`);
+  const pct = p => (!Number.isFinite(p) ? "–" : p > 0.995 ? "über 99 %" : p < 0.005 ? "unter 1 %" : `${fmt(p * 100, 0)} %`);
   const n1 = x => (Number.isFinite(x) ? fmt(x, 1) : "–");
+  const sign = x => (x > 0 ? "+" : "") + fmt(x, 2);
   const profile = u => `https://www.etoro.com/people/${encodeURIComponent(u)}`;
   const link = u => `<a href="${profile(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`;
   const okName = u => typeof u === "string" && /^[A-Za-z0-9_.-]{1,40}$/.test(u);   // nur gültige eToro-Namen anzeigen
   const dateDe = iso => new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-    const account = () => { const x = parseFloat(($("sAccount") || {}).value); return Number.isFinite(x) && x > 0 ? x : null; };
+  const account = () => { const x = parseFloat(($("sAccount") || {}).value); return Number.isFinite(x) && x > 0 ? x : null; };
+  const get = url => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
 
   async function load() {
-    const get = url => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
     const t = Date.now();
     const [local, raw, lv] = await Promise.all([get(`data/ranking.json?t=${t}`), get(`${RAW}?t=${t}`), get(`${LIVE}?t=${t}`)]);
     const list = [local, raw].filter(d => d && d.updated);
-    data = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
+    const next = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
+    if (next && data && next.updated !== data.updated) returns = null;   // neue Auswertung → Monatsrenditen neu laden
+    data = next;
     live = lv && lv.updated && Array.isArray(lv.entries) ? lv : null;
+    window.DTD.ranking = data;
+    window.DTD.live = live;
+    window.dispatchEvent(new Event("dtd:data"));
+    notifyAlerts();
     render();
   }
+  function loadReturns() {
+    if (returns) return Promise.resolve(returns);
+    if (!returnsLoading) {
+      const t = Date.now();
+      returnsLoading = Promise.all([get(`data/returns.json?t=${t}`), get(`${RAW_RETURNS}?t=${t}`)]).then(list => {
+        const ok = list.filter(r => r && Array.isArray(r.traders));
+        returns = ok.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
+        returnsLoading = null;
+        return returns;
+      });
+    }
+    return returnsLoading;
+  }
 
-  // Live-Anzeige: Tagesergebnis und Risiko des kopierten Traders, Warnungen
-  const sign = x => (x > 0 ? "+" : "") + fmt(x, 2);
+  // ---------- Live-Warnungen: Hinweis und Zähler am Reiter ----------
+  function notifyAlerts() {
+    const alerts = live ? (live.alerts || []).filter(a => a && typeof a.text === "string") : [];
+    const tab = $("tab-daily");
+    tab.querySelector(".count")?.remove();
+    if (alerts.length) {
+      const c = document.createElement("span");
+      c.className = "count";
+      c.textContent = alerts.length;
+      c.setAttribute("aria-label", `${alerts.length} Warnung(en)`);
+      tab.append(c);
+    }
+    const seen = new Set(store.get("dtd-seen-alerts", []));
+    for (const a of alerts) if (!seen.has(a.id)) { toast("Warnung vom Live-Wächter", ` ${a.text}`); seen.add(a.id); }
+    store.set("dtd-seen-alerts", [...seen].slice(-100));
+  }
+
+  // ---------- Live-Anzeige ----------
+  const liveOf = name => (live ? live.entries.find(e => e.userName === name) : null);
   function liveBox() {
     if (!live) return `<p class="hint">Live-Werte erscheinen hier, sobald der Live-Wächter (alle 15 Minuten an Börsentagen) gelaufen ist.</p>`;
     const age = (Date.now() - new Date(live.updated)) / 6e4;
     const time = new Date(live.updated).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-    const f = okName(live.followed) ? live.entries.find(e => e.userName === live.followed) : null;
+    const f = okName(live.followed) ? liveOf(live.followed) : null;
     const alerts = (live.alerts || []).filter(a => a && typeof a.text === "string");
     let html = `<div class="live ${alerts.length ? "alert" : ""}">
       <div class="live-head"><span class="dot ${age < 40 ? "on" : ""}"></span> Live-Stand ${time} Uhr${age >= 40 ? ` <span class="muted small">(${fmt(age / 60, 1)} Std. alt – außerhalb der Börsenzeit normal)</span>` : ""}</div>`;
@@ -41,7 +80,7 @@
         · Risiko-Score <b>${f.risk ?? "–"}</b></p>`;
     }
     for (const a of alerts) html += `<p class="warn">⚠ ${esc(a.text)} Kopie in eToro prüfen: Portfolio → Trader → Zahnrad → „Kopieren pausieren“.</p>`;
-    if (!f && !alerts.length) html += `<p class="muted small">Zurzeit wird kein Trader kopiert. Tagesergebnisse der Top 25 stehen in der Tabelle unter „Heute“.</p>`;
+    if (!f && !alerts.length) html += `<p class="muted small">Zurzeit wird kein Trader kopiert. Die Tagesergebnisse stehen in der Tabelle unter „Heute (live)“.</p>`;
     return html + `</div>`;
   }
 
@@ -50,24 +89,84 @@
     body.innerHTML = `
       <div class="reco no">
         <div class="reco-head"><span class="icon-no">●</span> Noch keine Live-Daten</div>
-        <p>Die Top 25 und die Tagesempfehlung werden jeden Börsentag um ca. 7 Uhr automatisch aus eToro-Daten berechnet. Dafür einmalig:</p>
+        <p>Die Top 25 und die Tagesempfehlung werden an jedem Börsentag automatisch aus eToro-Daten berechnet. Dafür einmalig:</p>
         <ol class="steps">
-          <li>In eToro: <b>Einstellungen</b> → <b>Trading</b> → <b>API-Key-Verwaltung</b> → <b>„Neuen Schlüssel erstellen“</b>. Name: ${v("DayTrade Desk")}, Berechtigung: ${v("nur Lesen")}. Mit dem SMS-Code bestätigen und <b>beide</b> Schlüssel kopieren – der User Key wird nur einmal angezeigt.</li>
-          <li>In GitHub: Repository → <b>Settings</b> → <b>Secrets and variables</b> → <b>Actions</b> → <b>„New repository secret“</b>. Zweimal anlegen: Name ${v("ETORO_API_KEY")} mit dem öffentlichen API-Schlüssel und Name ${v("ETORO_USER_KEY")} mit dem User Key.</li>
-          <li>Unter <b>Actions</b> → <b>„Tagesempfehlung“</b> → <b>„Run workflow“</b> einmal von Hand starten. Nach ca. 5 Minuten erscheinen hier die Daten.</li>
+          <li>In eToro: <b>Einstellungen</b> → <b>Trading</b> → <b>API-Key-Verwaltung</b> → <b>„Neuen Schlüssel erstellen“</b>, nur Leserechte („Read“ bei Trading – Demo, Benutzerinfo und Marktdaten).</li>
+          <li>In GitHub: Repository → <b>Settings</b> → <b>Secrets and variables</b> → <b>Actions</b>: ${v("ETORO_API_KEY")} (öffentlicher Schlüssel) und ${v("ETORO_USER_KEY")} (privater Schlüssel) anlegen.</li>
+          <li>Unter <b>Actions</b> → <b>„Tagesempfehlung“</b> → <b>„Run workflow“</b> einmal starten.</li>
         </ol>
         <p class="muted small">Die Schlüssel niemals in einen Chat oder in Dateien kopieren – nur in die GitHub-Secrets.</p>
       </div>`;
   }
 
+  // ---------- Tabelle (sortierbar, durchsuchbar) ----------
+  const tState = { key: "rank", dir: "asc" };
+  let mode = "top", search = "";
+  const liveRisk = r => { const l = liveOf(r.userName); return l && Number.isFinite(l.risk) ? l.risk : Number.isFinite(r.risk) ? r.risk : null; };
+  const liveDay = r => { const l = liveOf(r.userName); return l && Number.isFinite(l.dailyGain) ? l.dailyGain : null; };
+  const COLS = [
+    { key: "rank", label: "Platz", num: true, first: "asc", get: r => r.rank },
+    { key: "userName", label: "Trader", get: r => r.userName },
+    { key: "result", label: "Ergebnis", num: true, title: "Sichere Trader zuerst, dann innerhalb der Grenzen, dann der Rest", get: r => (r.qualified ? 2 : r.inLimits ? 1 : 0) + (r.dsr || 0) },
+    { key: "dsr", label: "Können-Sicherheit", num: true, title: "Wie wahrscheinlich die bisherige Leistung Können statt Glück war", get: r => r.dsr },
+    { key: "cagr", label: "Rendite p.a.", num: true, get: r => r.cagr },
+    { key: "mdd", label: "Max. Drawdown", num: true, title: "Größter Rückgang vom Höchststand", get: r => r.mdd },
+    { key: "sharpe", label: "Sharpe", num: true, title: "Rendite im Verhältnis zur Schwankung", get: r => r.sharpe },
+    { key: "risk", label: "Risiko", num: true, title: "eToro-Risiko-Score 1–10 (live)", get: liveRisk },
+    { key: "today", label: "Heute (live)", num: true, get: liveDay },
+    { key: "copiers", label: "Kopierer", num: true, get: r => r.copiers },
+    { key: "months", label: "Monate", num: true, title: "Monate Historie in der Auswertung", get: r => r.months },
+  ];
+  function rowsFor() {
+    if (!data) return [];
+    if (mode === "top") return (data.top || []).filter(r => r && okName(r.userName));
+    // alle ausgewerteten Trader in derselben Reihenfolge wie die Top-Liste, danach die außerhalb der Grenzen
+    const all = (data.all || []).filter(r => r && okName(r.userName));
+    const safe = all.filter(r => r.qualified).sort((a, b) => b.cagr - a.cagr);
+    const inl = all.filter(r => !r.qualified && r.inLimits).sort((a, b) => b.dsr - a.dsr);
+    const out = all.filter(r => !r.inLimits).sort((a, b) => b.dsr - a.dsr);
+    return [...safe, ...inl, ...out].map((r, i) => ({ ...r, rank: i + 1 }));
+  }
+  function resultCell(r, full = false) {
+    if (r.qualified) return `<span class="tag good">✓ sicher${full ? " – alle Bedingungen erfüllt" : ""}</span>`;
+    const reason = r.reason || (r.inLimits === false ? "außerhalb der Grenzen" : "zu unsicher");
+    const text = full ? reason : /^Können-Sicherheit/.test(reason) ? "zu unsicher" : reason;
+    return `<span class="tag bad" title="${esc(reason)}"><span class="x">✗</span> ${esc(text)}</span>`;
+  }
+  function renderTable() {
+    const table = $("dailyTable");
+    if (!table) return;
+    const q = search.trim().toLowerCase();
+    const rows = sortRows(rowsFor().filter(r => !q || r.userName.toLowerCase().includes(q)), COLS, tState);
+    table.querySelector("thead").innerHTML = sortHead(COLS, tState);
+    table.querySelector("tbody").innerHTML = rows.map(r => {
+      const day = liveDay(r);
+      return `<tr class="clickable" data-user="${esc(r.userName)}">
+        <td class="num">${r.rank}</td>
+        <td><button type="button" class="link-btn" data-user="${esc(r.userName)}">${esc(r.userName)}</button></td>
+        <td>${resultCell(r)}</td>
+        <td class="num">${pct(r.dsr)}</td>
+        <td class="num">${n1(r.cagr)} %</td>
+        <td class="num">${n1(r.mdd)} %</td>
+        <td class="num">${Number.isFinite(r.sharpe) ? fmt(r.sharpe, 2) : "–"}</td>
+        <td class="num">${liveRisk(r) ?? "–"}</td>
+        <td class="num">${day === null ? "–" : `<span class="${day < 0 ? "down" : "up"}">${sign(day)} %</span>`}</td>
+        <td class="num">${Number.isFinite(r.copiers) ? r.copiers.toLocaleString("de-DE") : "–"}</td>
+        <td class="num">${r.months ?? "–"}</td>
+      </tr>`;
+    }).join("") || `<tr><td colspan="${COLS.length}" class="muted">Keine Trader gefunden.</td></tr>`;
+    $("dailyCount").textContent = `${rows.length} ${rows.length === 1 ? "Trader" : "Trader"}`;
+  }
+
+  // ---------- Gesamtansicht ----------
   function render() {
     if (!data) return setup();
+    const searchFocused = document.activeElement && document.activeElement.id === "dailySearch";
     const d = data, cfg = d.config || {};
     const rec = d.recommendation && okName(d.recommendation.userName) ? d.recommendation : null;
     if (rec && rec.previous && !okName(rec.previous)) rec.previous = null;
-    const top = Array.isArray(d.top) ? d.top.filter(r => r && okName(r.userName)) : [];
     const ageDays = (Date.now() - new Date(d.updated)) / 864e5;
-    $("dailyUpdated").textContent = `Stand: ${new Date(d.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })} Uhr`;
+    $("dailyUpdated").textContent = `Stand: ${new Date(d.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })} Uhr · aktualisiert sich automatisch`;
     const acc = account();
     const notes = [];
     if (ageDays > 4) notes.push(`Die Daten sind ${fmt(ageDays, 0)} Tage alt – läuft die GitHub-Aktion „Tagesempfehlung“ noch?`);
@@ -99,7 +198,7 @@
             ${kpi("Max. Drawdown", `${n1(rec.mdd)} %`, "down")}
           </div>
           <ol class="steps">${steps.map(s => `<li>${s}</li>`).join("")}</ol>
-          ${acc ? "" : `<p class="muted small">Tragen Sie unten im Trader-Vergleich unter „Ihre Grenzen“ Ihren Kontostand ein, dann steht hier der Betrag in Dollar.</p>`}
+          ${acc ? "" : `<p class="muted small">Kontostand im Trade-Setup eintragen, dann steht hier der Betrag in Dollar.</p>`}
         </div>`;
     } else {
       head = `
@@ -110,57 +209,101 @@
         </div>`;
     }
 
-    const basis = `Geprüft: ${d.evaluated} der ${d.screened} meistkopierten Popular Investors mit Risiko-Score bis ${cfg.maxRisk} und mindestens ${cfg.minMonths} Monaten Historie.
-      Glücks-Korrektur für effektiv ${fmt(d.nEff, 0)} unabhängige Trader (mittlere Korrelation ${fmt(d.avgCorrelation, 2)}).
-      ${d.qualifiedCount} ${d.qualifiedCount === 1 ? "erfüllt" : "erfüllen"} alle Bedingungen (Können-Sicherheit ab ${pct(cfg.threshold || 0.9)}, Drawdown bis ${cfg.maxDd} %).`;
-
-    const liveOf = r => (live ? live.entries.find(e => e.userName === r.userName) : null);
-    const liveRisk = r => { const l = liveOf(r); return l && Number.isFinite(l.risk) ? l.risk : (r.risk ?? "–"); };
-    const liveDay = r => { const l = liveOf(r); return l && Number.isFinite(l.dailyGain) ? `<span class="${l.dailyGain < 0 ? "down" : "up"}">${sign(l.dailyGain)} %</span>` : "–"; };
-    const rows = top.map(r => `<tr>
-        <td>${r.rank}</td>
-        <td>${link(r.userName)}</td>
-        <td>${r.qualified ? `<span class="tag good">✓ sicher</span>` : `<span class="tag bad"><span class="x">✗</span> ${esc(r.reason || "")}</span>`}</td>
-        <td>${pct(r.dsr)}</td>
-        <td>${n1(r.cagr)} %</td>
-        <td>${n1(r.mdd)} %</td>
-        <td>${Number.isFinite(r.sharpe) ? fmt(r.sharpe, 2) : "–"}</td>
-        <td>${liveRisk(r)}</td>
-        <td>${liveDay(r)}</td>
-        <td>${Number.isFinite(r.copiers) ? r.copiers.toLocaleString("de-DE") : "–"}</td>
-        <td>${r.months}</td>
-      </tr>`).join("");
+    const check = d.dataCheck && Number.isFinite(d.dataCheck.medianDeviationPp)
+      ? ` Datenkontrolle: Abweichung zu eToros eigenen Angaben im Median ${fmt(d.dataCheck.medianDeviationPp, 2)} Prozentpunkte; jede Zahl wurde unabhängig nachgerechnet.` : "";
+    const stats = `
+      <div class="stats">
+        ${kpi("Geprüfte Trader", d.evaluated)}
+        ${kpi("Innerhalb der Grenzen", (d.all || []).filter(r => r.inLimits).length)}
+        ${kpi("Sicher (ab " + pct(cfg.threshold || 0.9) + ")", d.qualifiedCount, d.qualifiedCount ? "up" : "")}
+        ${kpi("Glücks-Korrektur für", `${fmt(d.nEff, 0)} Trader`)}
+      </div>`;
 
     body.innerHTML = `
       ${head}
       ${liveBox()}
       ${warnBox(notes)}
-      <p class="hint">${basis}</p>
-      <h3>Abbildung: Sicherheit und Rendite aller geprüften Trader</h3>
-      <p class="muted small">Jeder Punkt ist ein Trader. Rechts der gestrichelten Linie liegt die Können-Sicherheit bei mindestens ${pct(cfg.threshold || 0.9)}, je höher der Punkt, desto mehr Rendite pro Jahr. Gesucht wird also oben rechts.</p>
-      <div class="legend-row" id="dailyLegend"></div>
-      <div class="chart-host" id="dailyChart"></div>
-      <h3>Top 25</h3>
-      <p class="muted small">Sortierung: zuerst alle sicheren Trader nach Rendite, danach die übrigen nach Können-Sicherheit. Rendite und Drawdown aus den Monatsrenditen der letzten bis zu ${cfg.maxMonths} Monate.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Platz</th><th>Trader</th><th>Ergebnis</th><th>Können-Sicherheit</th><th>Rendite p.a.</th><th>Max. Drawdown</th><th>Sharpe</th><th>Risiko</th><th>Heute (live)</th><th>Kopierer</th><th>Monate</th></tr></thead>
-          <tbody>${rows || `<tr><td colspan="11" class="muted">Keine Trader innerhalb der Grenzen.</td></tr>`}</tbody>
-        </table>
-      </div>
+      ${stats}
+      <p class="hint">Geprüft werden die ${d.screened} meistkopierten Popular Investors mit Risiko-Score bis ${cfg.maxRisk} und mindestens ${cfg.minMonths} Monaten Historie. Sicher heißt: Können-Sicherheit ab ${pct(cfg.threshold || 0.9)} und Drawdown bis ${cfg.maxDd} %. Die Glücks-Korrektur berücksichtigt, dass sich viele Trader ähnlich bewegen (mittlere Korrelation ${fmt(d.avgCorrelation, 2)}).${check}</p>
+      <article class="card">
+        <h2 class="card-title">Sicherheit und Rendite aller geprüften Trader</h2>
+        <p class="muted small">Jeder Punkt ist ein Trader. Rechts der gestrichelten Linie liegt die Können-Sicherheit bei mindestens ${pct(cfg.threshold || 0.9)}, je höher, desto mehr Rendite pro Jahr. Gesucht wird oben rechts. Auf einen Punkt tippen zeigt die Werte.</p>
+        <div class="legend-row" id="dailyLegend"></div>
+        <div class="chart-host" id="dailyChart"></div>
+      </article>
+      <article class="card">
+        <div class="card-head">
+          <h2 class="card-title">${mode === "top" ? "Top 25" : "Alle geprüften Trader"} <span class="muted small" id="dailyCount"></span></h2>
+          <div class="toolbar" style="margin:0">
+            <div class="seg" role="group" aria-label="Auswahl">
+              <button type="button" data-mode="top" aria-pressed="${mode === "top"}">Top 25</button>
+              <button type="button" data-mode="all" aria-pressed="${mode === "all"}">Alle ${(d.all || []).length}</button>
+            </div>
+            <input type="search" id="dailySearch" placeholder="Trader suchen …" aria-label="Trader suchen" value="${esc(search)}">
+          </div>
+        </div>
+        <p class="muted small">Auf eine Spaltenüberschrift tippen sortiert nach der höchsten Zahl, noch einmal tippen nach der niedrigsten. Auf einen Trader tippen öffnet seine Details mit allen Monatsrenditen.</p>
+        <div class="table-wrap"><table id="dailyTable"><thead></thead><tbody></tbody></table></div>
+      </article>
       <p class="muted small">Vergangene Renditen garantieren nichts. Die Sicherheit gibt an, wie wahrscheinlich die bisherige Leistung Können statt Glück war – nicht, dass sie weitergeht.</p>`;
-    scatter(Array.isArray(d.all) && d.all.length ? d.all : top, cfg, rec ? rec.userName : null);
+    renderTable();
+    drawScatter();
+    if (searchFocused) { const s = $("dailySearch"); s.focus(); s.setSelectionRange(s.value.length, s.value.length); }
   }
 
-  // ---------- Abbildung: Können-Sicherheit (x) gegen Rendite p.a. (y) ----------
+  // Ereignisse im Bereich (einmal registriert, gelten auch nach dem Neuzeichnen)
+  body.addEventListener("click", e => {
+    const sortBtn = e.target.closest("#dailyTable .th-sort");
+    if (sortBtn) {
+      const col = COLS.find(c => c.key === sortBtn.dataset.key);
+      if (tState.key === col.key) tState.dir = tState.dir === "asc" ? "desc" : "asc";
+      else { tState.key = col.key; tState.dir = col.first || (col.num ? "desc" : "asc"); }
+      renderTable();
+      body.querySelector(`#dailyTable .th-sort[data-key="${col.key}"]`)?.focus();
+      return;
+    }
+    const seg = e.target.closest(".seg button[data-mode]");
+    if (seg) { mode = seg.dataset.mode; render(); return; }
+    const row = e.target.closest("#dailyTable tr[data-user]");
+    if (row && !e.target.closest("a")) openTrader(row.dataset.user);
+  });
+  body.addEventListener("input", e => { if (e.target.id === "dailySearch") { search = e.target.value; renderTable(); } });
+
+  // ---------- Detail-Fenster eines Traders ----------
+  async function openTrader(name) {
+    if (!okName(name) || !data) return;
+    const all = [...(data.all || []), ...(data.top || [])];
+    const r = { ...all.find(x => x.userName === name), ...(data.top || []).find(x => x.userName === name) };
+    const l = liveOf(name);
+    const cfg = data.config || {};
+    const html = `
+      <div>${resultCell(r, true)}</div>
+      <div class="result" style="margin-top:0">
+        ${kpi("Können-Sicherheit", pct(r.dsr), r.qualified ? "up" : "")}
+        ${kpi("Rendite p.a.", `${n1(r.cagr)} %`, r.cagr >= 0 ? "up" : "down")}
+        ${kpi("Max. Drawdown", `${n1(r.mdd)} %`, "down")}
+        ${kpi("Sharpe", Number.isFinite(r.sharpe) ? fmt(r.sharpe, 2) : "–")}
+        ${kpi("Risiko-Score", l && Number.isFinite(l.risk) ? l.risk : r.risk ?? "–")}
+        ${kpi("Heute (live)", l && Number.isFinite(l.dailyGain) ? `${sign(l.dailyGain)} %` : "–", l && l.dailyGain < 0 ? "down" : "up")}
+      </div>
+      <div><h3 style="margin-top:0">Monatsrenditen</h3><div class="chart-host" id="trMonths"><p class="muted">Lade Monatsrenditen …</p></div></div>
+      <div><h3>Wachstum von 100 $</h3><div class="chart-host" id="trGrowth"></div></div>
+      <div id="trYears"></div>
+      <a class="btn" href="${profile(name)}" target="_blank" rel="noopener noreferrer">Profil bei eToro öffnen ↗</a>
+      <p class="muted small">Grenzen dieser Seite: Risiko-Score bis ${cfg.maxRisk}, Drawdown bis ${cfg.maxDd} %, Können-Sicherheit ab ${pct(cfg.threshold || 0.9)}. Vergangene Renditen garantieren nichts.</p>`;
+    openDrawer(name, html);
+    const ret = await loadReturns();
+    if ($("drawer").hidden || $("drawerTitle").textContent !== name) return;
+    const tr = ret && ret.traders.find(t => t.userName === name);
+    if (!tr) { $("trMonths").innerHTML = `<p class="muted">Monatsrenditen sind für diesen Trader nicht verfügbar.</p>`; return; }
+    drawMonths($("trMonths"), tr.months);
+    drawGrowth($("trGrowth"), tr.months);
+    drawYears($("trYears"), tr.months);
+  }
+
+  const MONTHS = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."];
+  const monthLabel = ym => { const [y, m] = ym.split("-").map(Number); return `${MONTHS[m - 1]} ${y}`; };
   const NS = "http://www.w3.org/2000/svg";
-  const BLUE = "#3987e5", GRAY = "#8b949e", INK = "#e6edf3", SURFACE = "#161b22";
-  const STYLE = {
-    rec:    { r: 7,   fill: BLUE,   stroke: INK,     sw: 2,   label: "Tagesempfehlung" },
-    safe:   { r: 4.5, fill: BLUE,   stroke: SURFACE, sw: 1.5, label: "Sicher – alle Bedingungen erfüllt" },
-    unsafe: { r: 4.5, fill: GRAY,   stroke: SURFACE, sw: 1.5, label: "Zu unsicher – könnte Glück sein" },
-    out:    { r: 4,   fill: "none", stroke: GRAY,    sw: 1.5, label: "Außerhalb Ihrer Grenzen (Drawdown/Risiko)" },
-  };
   const svgEl = (tag, attrs, parent) => {
     const e = document.createElementNS(NS, tag);
     for (const k in attrs) e.setAttribute(k, attrs[k]);
@@ -174,16 +317,105 @@
     for (let x = Math.floor(min / step) * step; x <= Math.ceil(max / step) * step + step / 2; x += step) out.push(+x.toFixed(10));
     return out;
   }
+  function tipFor(host) {
+    let tip = host.querySelector(".viz-tip");
+    if (!tip) { tip = document.createElement("div"); tip.className = "viz-tip"; tip.hidden = true; host.append(tip); }
+    return tip;
+  }
+  function placeTip(tip, x, y, W, H) {
+    tip.hidden = false;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    tip.style.left = `${Math.max(0, x + 12 + tw > W ? x - tw - 12 : x + 12)}px`;
+    tip.style.top = `${Math.max(0, Math.min(H - th, y - th / 2))}px`;
+  }
 
+  // Balken je Monat: grün = Gewinn, rot = Verlust
+  function drawMonths(host, months) {
+    const W = Math.max(280, host.clientWidth), H = 210, m = { l: 44, r: 8, t: 10, b: 24 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b, n = months.length;
+    const vals = months.map(x => x[1]);
+    const ticks = niceTicks(Math.min(0, ...vals), Math.max(0, ...vals), 4);
+    const y0 = ticks[0], y1 = ticks[ticks.length - 1];
+    const Y = val => m.t + (y1 - val) / (y1 - y0) * ph, bw = pw / n;
+    const svg = svgEl("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `Monatsrenditen der letzten ${n} Monate` });
+    for (const t of ticks) {
+      svgEl("line", { x1: m.l, x2: m.l + pw, y1: Y(t), y2: Y(t), class: t === 0 ? "base" : "grid" }, svg);
+      svgEl("text", { x: m.l - 6, y: Y(t) + 4, "text-anchor": "end", class: "tick" }, svg).textContent = `${fmt(t, 0)} %`;
+    }
+    months.forEach(([ym, g], i) => {
+      const x = m.l + i * bw + Math.max(0.5, bw * 0.12), w = Math.max(1, bw * 0.76);
+      svgEl("rect", { x, y: Math.min(Y(g), Y(0)), width: w, height: Math.max(1, Math.abs(Y(g) - Y(0))), rx: Math.min(2, w / 2), fill: g >= 0 ? "#22c55e" : "#f05252", opacity: 0.9 }, svg);
+      if (ym.endsWith("-01")) svgEl("text", { x: x + w / 2, y: H - 6, "text-anchor": "middle", class: "tick" }, svg).textContent = ym.slice(0, 4);
+    });
+    const hit = svgEl("rect", { x: m.l, y: m.t, width: pw, height: ph, fill: "transparent", class: "hit" }, svg);
+    const mark = svgEl("rect", { y: m.t, height: ph, width: bw, fill: "rgba(255,255,255,.06)", visibility: "hidden" }, svg);
+    svg.insertBefore(mark, svg.firstChild);
+    host.replaceChildren(svg);
+    const tip = tipFor(host);
+    const show = ev => {
+      const r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) * (W / r.width);
+      const i = Math.max(0, Math.min(n - 1, Math.floor((x - m.l) / bw)));
+      const [ym, g] = months[i];
+      mark.setAttribute("x", m.l + i * bw); mark.setAttribute("visibility", "visible");
+      tip.innerHTML = `<div class="tip-head"></div><div class="tip-row"><strong class="${g >= 0 ? "up" : "down"}">${sign(g)} %</strong></div>`;
+      tip.querySelector(".tip-head").textContent = monthLabel(ym);
+      placeTip(tip, m.l + i * bw + bw / 2, Y(g), W, H);
+    };
+    hit.addEventListener("pointermove", show);
+    hit.addEventListener("pointerdown", show);
+    hit.addEventListener("pointerleave", () => { tip.hidden = true; mark.setAttribute("visibility", "hidden"); });
+  }
+
+  // Wachstum von 100 $ über alle Monate
+  function drawGrowth(host, months) {
+    const W = Math.max(280, host.clientWidth), H = 170, m = { l: 52, r: 10, t: 10, b: 22 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    let eq = 100;
+    const pts = [100, ...months.map(([, g]) => (eq *= 1 + g / 100))];
+    const ticks = niceTicks(Math.min(100, ...pts), Math.max(100, ...pts), 4);
+    const y0 = ticks[0], y1 = ticks[ticks.length - 1];
+    const X = i => m.l + i / (pts.length - 1) * pw, Y = val => m.t + (y1 - val) / (y1 - y0) * ph;
+    const line = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p).toFixed(1)}`).join("");
+    host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Aus 100 $ wurden ${fmt(pts[pts.length - 1], 0)} $">
+      ${ticks.map(t => `<line class="${t === 100 ? "base" : "grid"}" x1="${m.l}" x2="${m.l + pw}" y1="${Y(t)}" y2="${Y(t)}"/><text class="tick" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${fmt(t, 0)} $</text>`).join("")}
+      <path d="${line}" fill="none" stroke="#4f8cff" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="${X(pts.length - 1)}" cy="${Y(pts[pts.length - 1])}" r="4.5" fill="#4f8cff" stroke="#0a0e14" stroke-width="2"/>
+      <text class="tick" x="${m.l}" y="${H - 5}">${monthLabel(months[0][0])}</text>
+      <text class="tick" x="${m.l + pw}" y="${H - 5}" text-anchor="end">${monthLabel(months[months.length - 1][0])}: ${fmt(pts[pts.length - 1], 0)} $</text>
+    </svg>`;
+  }
+
+  // Jahresrenditen (verkettet aus den Monatswerten)
+  function drawYears(host, months) {
+    const years = new Map();
+    for (const [ym, g] of months) { const y = ym.slice(0, 4); years.set(y, (years.get(y) ?? 1) * (1 + g / 100)); }
+    host.innerHTML = `<h3>Je Kalenderjahr</h3><div class="result" style="margin-top:6px">${[...years].map(([y, f]) => {
+      const r = (f - 1) * 100, n = months.filter(([ym]) => ym.startsWith(y)).length;
+      return kpi(`${y}${n < 12 ? ` (${n} Mon.)` : ""}`, `${sign(r)} %`, r >= 0 ? "up" : "down");
+    }).join("")}</div>`;
+  }
+
+  // ---------- Abbildung: Können-Sicherheit (x) gegen Rendite p.a. (y) ----------
+  const BLUE = "#3987e5", GRAY = "#8b949e", INK = "#e8eef6", SURFACE = "#10151d";
+  const STYLE = {
+    rec:    { r: 7,   fill: BLUE,   stroke: INK,     sw: 2,   label: "Tagesempfehlung" },
+    safe:   { r: 4.5, fill: BLUE,   stroke: SURFACE, sw: 1.5, label: "Sicher – alle Bedingungen erfüllt" },
+    unsafe: { r: 4.5, fill: GRAY,   stroke: SURFACE, sw: 1.5, label: "Zu unsicher – könnte Glück sein" },
+    out:    { r: 4,   fill: "none", stroke: GRAY,    sw: 1.5, label: "Außerhalb der Grenzen (Drawdown/Risiko)" },
+  };
+  function drawScatter() {
+    if (!data) return;
+    const rec = data.recommendation && okName(data.recommendation.userName) ? data.recommendation.userName : null;
+    scatter(Array.isArray(data.all) && data.all.length ? data.all : (data.top || []), data.config || {}, rec);
+  }
   function scatter(points, cfg, recName) {
     const host = $("dailyChart"), legend = $("dailyLegend");
-    if (!host) return;
+    if (!host || host.closest(".view").hidden) return;
     const thr = cfg.threshold || 0.9;
     const kind = p => (p.userName === recName ? "rec" : p.qualified ? "safe" : p.inLimits === false ? "out" : "unsafe");
     const pts = points.filter(p => p && okName(p.userName) && Number.isFinite(p.dsr) && Number.isFinite(p.cagr)).map(p => ({ ...p, k: kind(p) }));
     if (!pts.length) { host.innerHTML = `<p class="muted">Keine Daten für die Abbildung.</p>`; legend.replaceChildren(); return; }
 
-    // Legende: Symbole wie im Diagramm
     legend.replaceChildren();
     for (const k of ["rec", "safe", "unsafe", "out"]) {
       if (!pts.some(p => p.k === k)) continue;
@@ -204,8 +436,7 @@
 
     const svg = svgEl("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img",
       "aria-label": `Streudiagramm: ${pts.length} Trader nach Können-Sicherheit und Rendite pro Jahr, davon ${pts.filter(p => p.k === "safe" || p.k === "rec").length} sicher.` });
-    // Bereich „sicher“ dezent hinterlegen
-    svgEl("rect", { x: X(thr), y: m.t, width: X(1) - X(thr), height: ph, fill: "rgba(57,135,229,.07)" }, svg);
+    svgEl("rect", { x: X(thr), y: m.t, width: X(1) - X(thr), height: ph, fill: "rgba(57,135,229,.08)" }, svg);
     for (const t of yt) {
       svgEl("line", { x1: m.l, x2: m.l + pw, y1: Y(t), y2: Y(t), class: t === 0 ? "base" : "grid" }, svg);
       svgEl("text", { x: m.l - 8, y: Y(t) + 4, "text-anchor": "end", class: "tick" }, svg).textContent = `${fmt(t, 0)} %`;
@@ -218,60 +449,64 @@
     svgEl("line", { x1: X(thr), x2: X(thr), y1: m.t, y2: m.t + ph, class: "threshold" }, svg);
     svgEl("text", { x: X(thr) - 6, y: m.t + 12, "text-anchor": "end", class: "tick" }, svg).textContent = `Schwelle ${pct(thr)}`;
 
-    // Punkte: unwichtige zuerst, Empfehlung zuletzt (oben)
     const order = { out: 0, unsafe: 1, safe: 2, rec: 3 };
-    const sorted = [...pts].sort((a, b) => order[a.k] - order[b.k]);
-    for (const p of sorted) {
+    for (const p of [...pts].sort((a, b) => order[a.k] - order[b.k])) {
       const s = STYLE[p.k];
       p.cx = X(p.dsr); p.cy = Y(p.cagr);
       svgEl("circle", { cx: p.cx, cy: p.cy, r: s.r, fill: s.fill, stroke: s.stroke, "stroke-width": s.sw }, svg);
     }
-    const recPt = pts.find(p => p.k === "rec");
-    if (recPt) {
-      const left = recPt.cx > m.l + pw - 140;
-      svgEl("text", { x: recPt.cx + (left ? -12 : 12), y: recPt.cy - 10, "text-anchor": left ? "end" : "start", class: "dlabel" }, svg).textContent = recPt.userName;
+    // Beschriftung: Empfehlung bzw. die sichersten Trader
+    const labelled = pts.filter(p => p.k === "rec").concat([...pts].filter(p => p.k !== "rec").sort((a, b) => b.dsr - a.dsr).slice(0, recName ? 2 : 3));
+    const placed = [];
+    for (const p of labelled.sort((a, b) => a.cy - b.cy)) {
+      const left = p.cx > m.l + pw - 150;
+      let y = p.cy - 10;
+      for (const q of placed) if (Math.abs(q.y - y) < 15 && Math.abs(q.x - p.cx) < 150) y = q.y + 15;
+      placed.push({ x: p.cx, y });
+      svgEl("text", { x: p.cx + (left ? -12 : 12), y, "text-anchor": left ? "end" : "start", class: "dlabel" }, svg).textContent = p.userName;
     }
 
-    // Hover: nächster Punkt im Umkreis von 24 px, Tooltip zeigt die Werte
     const ring = svgEl("circle", { r: 9, fill: "none", stroke: INK, "stroke-width": 1.5, visibility: "hidden" }, svg);
     const hit = svgEl("rect", { x: 0, y: 0, width: W, height: H, fill: "transparent", tabindex: 0, class: "hit" }, svg);
     host.replaceChildren(svg);
-    const tip = document.createElement("div");
-    tip.className = "viz-tip";
-    tip.hidden = true;
-    host.append(tip);
+    const tip = tipFor(host);
     const byX = [...pts].sort((a, b) => a.dsr - b.dsr || a.cagr - b.cagr);
-    let curIdx = byX.indexOf(recPt || byX[byX.length - 1]);
+    let curIdx = byX.length - 1, current = null;
 
     function show(p) {
+      current = p;
       ring.setAttribute("cx", p.cx); ring.setAttribute("cy", p.cy); ring.setAttribute("visibility", "visible");
       const head = document.createElement("div");
       head.className = "tip-head";
       head.textContent = `${p.userName} · ${STYLE[p.k].label}`;
       tip.replaceChildren(head);
       for (const [label, val] of [["Können-Sicherheit", pct(p.dsr)], ["Rendite p.a.", `${n1(p.cagr)} %`], ["Max. Drawdown", `${n1(p.mdd)} %`], ["Monate Historie", String(p.months ?? "–")]]) {
-        const row = document.createElement("div"), b = document.createElement("strong"), l = document.createElement("span");
-        row.className = "tip-row"; b.textContent = val; l.className = "muted"; l.textContent = label;
-        row.append(b, l);
+        const row = document.createElement("div"), b = document.createElement("strong"), lab = document.createElement("span");
+        row.className = "tip-row"; b.textContent = val; lab.className = "muted"; lab.textContent = label;
+        row.append(b, lab);
         tip.append(row);
       }
-      tip.hidden = false;
-      const tw = tip.offsetWidth, th = tip.offsetHeight;
-      tip.style.left = `${Math.max(0, p.cx + 14 + tw > W ? p.cx - tw - 14 : p.cx + 14)}px`;
-      tip.style.top = `${Math.max(0, Math.min(H - th, p.cy - th / 2))}px`;
+      const more = document.createElement("div");
+      more.className = "tip-head";
+      more.textContent = "Tippen/Klicken für Details";
+      tip.append(more);
+      placeTip(tip, p.cx, p.cy, W, H);
     }
-    function hide() { ring.setAttribute("visibility", "hidden"); tip.hidden = true; }
-    hit.addEventListener("pointermove", ev => {
+    function hide() { ring.setAttribute("visibility", "hidden"); tip.hidden = true; current = null; }
+    const nearest = ev => {
       const r = svg.getBoundingClientRect(), sx = W / r.width;
       const x = (ev.clientX - r.left) * sx, y = (ev.clientY - r.top) * sx;
       let best = null, bd = 24 * 24;
       for (const p of pts) { const d2 = (p.cx - x) ** 2 + (p.cy - y) ** 2; if (d2 < bd) { bd = d2; best = p; } }
-      best ? show(best) : hide();
-    });
+      return best;
+    };
+    hit.addEventListener("pointermove", ev => { const p = nearest(ev); p ? show(p) : hide(); });
     hit.addEventListener("pointerleave", hide);
+    hit.addEventListener("click", ev => { const p = nearest(ev) || current; if (p) openTrader(p.userName); });
     hit.addEventListener("focus", () => show(byX[curIdx]));
     hit.addEventListener("blur", hide);
     hit.addEventListener("keydown", ev => {
+      if (ev.key === "Enter" && current) { openTrader(current.userName); return; }
       if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
       curIdx = Math.max(0, Math.min(byX.length - 1, curIdx + (ev.key === "ArrowRight" ? 1 : -1)));
       show(byX[curIdx]);
@@ -279,11 +514,13 @@
     });
   }
 
+  // Kontostand ändert die Beträge; Größenänderung zeichnet nur die Abbildung neu (Eingaben bleiben erhalten)
   const settings = $("cmpSettings");
-  if (settings) settings.addEventListener("input", () => data && render());
+  if (settings) settings.addEventListener("input", e => { if (e.target.id === "sAccount" && data) render(); });
   let rt;
-  window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => data && render(), 200); });
+  window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawScatter, 150); });
   load();
   setInterval(() => { if (!document.hidden) load(); }, 5 * 60 * 1000);   // automatisch alle 5 Minuten neu laden
   document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+  window.DTD.openTrader = openTrader;
 })();
