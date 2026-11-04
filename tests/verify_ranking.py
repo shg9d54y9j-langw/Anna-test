@@ -15,7 +15,8 @@ from statistics import NormalDist
 
 Z = NormalDist()
 EULER = 0.5772156649015329
-TOL = {"dsr": 5e-4, "cagr": 5e-3, "mdd": 5e-3, "sharpe": 5e-3, "nEff": 5e-2, "avgCorrelation": 5e-4}
+TOL = {"dsr": 5e-4, "cagr": 5e-3, "mdd": 5e-3, "sharpe": 5e-3, "nEff": 5e-2, "avgCorrelation": 5e-4,
+       "postMean": 5e-4, "postSd": 5e-4, "sdMonthly": 5e-4, "score": 5e-4, "pDay": 5e-4, "priorMonthly": 5e-4, "tau2": 5e-4}
 
 
 def metrics(returns_pct, rf, n_trials, mdd_input):
@@ -47,6 +48,30 @@ def metrics(returns_pct, rf, n_trials, mdd_input):
         d = 1 + sr * sr / 2
     dsr = Z.cdf((sr - bench) * math.sqrt(n - 1) / math.sqrt(d))
     return {"sharpe": sr * math.sqrt(12), "cagr": cagr, "mdd": mdd, "dsr": dsr}
+
+
+def shrink(items):
+    """Random-Effects-Schrumpfung (DerSimonian & Laird) – unabhängig von stats.js implementiert."""
+    k = len(items)
+    w = [1 / max(se2, 1e-12) for _, se2 in items]
+    sw = sum(w)
+    yw = sum(wi * m for wi, (m, _) in zip(w, items)) / sw
+    q = sum(wi * (m - yw) ** 2 for wi, (m, _) in zip(w, items))
+    c = sw - sum(wi * wi for wi in w) / sw
+    tau2 = max(0.0, (q - (k - 1)) / c) if k > 1 and c > 0 else 0.0
+    ws = [1 / (max(se2, 1e-12) + tau2) for _, se2 in items]
+    prior = sum(wsi * m for wsi, (m, _) in zip(ws, items)) / sum(ws)
+    post = []
+    for m, se2 in items:
+        b = tau2 / (tau2 + se2) if tau2 > 0 else 0.0
+        post.append((prior + b * (m - prior), math.sqrt(b * se2)))
+    return prior, tau2, post
+
+
+def p_profit(post_mean, sd_monthly, post_sd, h, cost=0.0):
+    expected = post_mean * h - cost
+    sd = math.sqrt(sd_monthly ** 2 * h + (post_sd * h) ** 2)
+    return Z.cdf(expected / sd) if sd > 0 else (1.0 if expected > 0 else 0.0)
 
 
 def pearson(a, b):
@@ -87,6 +112,23 @@ def main(ranking_file, returns_file):
     if set(published) != {t["userName"] for t in traders}:
         errors.append("Die Trader in ranking.json und returns.json stimmen nicht überein")
 
+    # Schrumpfung über alle Trader
+    noise = 1 - min(0.95, max(0.0, rho))   # nur Zufall, der nicht alle Trader gemeinsam trifft
+    basics = {}
+    for t in traders:
+        vals = [g for _, g in t["months"]]
+        n = len(vals)
+        mu = sum(vals) / n
+        sd = math.sqrt(sum((x - mu) ** 2 for x in vals) / (n - 1))
+        basics[t["userName"]] = (mu, sd, sd * sd / n * noise)
+    names_order = [t["userName"] for t in traders]
+    prior, tau2, post = shrink([(basics[nm][0], basics[nm][2]) for nm in names_order])
+    post_by = dict(zip(names_order, post))
+    shr = ranking.get("shrinkage") or {}
+    check("Schrumpfung: gemeinsamer Mittelwert", prior, shr.get("priorMonthly"), "priorMonthly")
+    check("Schrumpfung: τ²", tau2, shr.get("tau2"), "tau2")
+    score_by = {}
+
     recomputed = {}
     for t in traders:
         name = t["userName"]
@@ -107,6 +149,14 @@ def main(ranking_file, returns_file):
             errors.append(f"{name}: unmöglicher Drawdown {row['mdd']} %")
         for key in ("dsr", "cagr", "mdd", "sharpe"):
             check(f"{name} {key}", m[key], row.get(key), key)
+        pm, psd = post_by[name]
+        sdm = basics[name][1]
+        score_by[name] = pm / sdm if sdm > 0 else 0.0
+        check(f"{name} erwartete Monatsrendite", pm, row.get("postMean"), "postMean")
+        check(f"{name} Unsicherheit", psd, row.get("postSd"), "postSd")
+        check(f"{name} Monatsschwankung", sdm, row.get("sdMonthly"), "sdMonthly")
+        check(f"{name} Bewertung", score_by[name], row.get("score"), "score")
+        check(f"{name} Gewinntag-Chance", p_profit(pm, sdm, psd, 1 / 21), row.get("pDay"), "pDay")
         # Regeln: Grenzen und Sicherheitsschwelle
         risk = t.get("risk")
         in_limits = (risk is None or risk <= cfg["maxRisk"]) and m["mdd"] <= cfg["maxDd"] + 1e-9
@@ -134,13 +184,39 @@ def main(ranking_file, returns_file):
     if rec and rec.get("changed") is not False and safe and rec["userName"] != safe[0]["userName"]:
         errors.append(f"Neue Empfehlung {rec['userName']} ist nicht der sichere Trader mit der höchsten Rendite")
 
+    # Tageswahl: grün nur mit gesichertem Trader; neue Wahl = höchste Bewertung; unveränderte Wahl höchstens Platz keepWithinTop
+    pick = ranking.get("pick")
+    positive = lambda x: score_by.get(x["userName"], 0) > 0   # nur positive erwartete Rendite kommt in Frage
+    green = sorted([x for x in rows if x["qualified"] and positive(x)], key=lambda x: -score_by.get(x["userName"], 0))
+    yellow = sorted([x for x in rows if x["inLimits"] and positive(x)], key=lambda x: -score_by.get(x["userName"], 0))
+    pool = green or yellow
+    if pool and not pick:
+        errors.append("Es gibt Trader innerhalb der Grenzen mit positiver erwarteter Rendite, aber keine Tageswahl")
+    if not pool and pick:
+        errors.append("Tageswahl, obwohl kein Trader die Grenzen einhält")
+    if pick and pool:
+        light = "green" if green else "yellow"
+        names = [x["userName"] for x in pool]
+        if pick.get("light") != light:
+            errors.append(f"Tageswahl-Ampel {pick.get('light')}, richtig wäre {light}")
+        if pick["userName"] not in names:
+            errors.append(f"Tageswahl {pick['userName']} ist nicht im zulässigen Kreis")
+        elif pick.get("changed") and pick["userName"] != names[0]:
+            errors.append(f"Neue Tageswahl {pick['userName']} ist nicht der Trader mit der besten Bewertung ({names[0]})")
+        elif names.index(pick["userName"]) >= cfg["keepWithinTop"]:
+            errors.append(f"Tageswahl {pick['userName']} liegt nur auf Platz {names.index(pick['userName']) + 1}")
+        row = published.get(pick["userName"], {})
+        want = row.get("amountPct", 0) * (1 if light == "green" else 0.5)
+        if abs((pick.get("amountPct") or 0) - want) > 1e-3:
+            errors.append(f"Tageswahl-Betrag {pick.get('amountPct')} statt {want}")
+
     if errors:
         print(f"::error::Gegenrechnung fehlgeschlagen – {len(errors)} Abweichung(en):")
         for e in errors[:40]:
             print("  -", e)
         sys.exit(1)
     print(f"Gegenrechnung bestanden: {len(recomputed)} Trader, alle Kennzahlen, Grenzen, Reihenfolge und Empfehlung stimmen "
-          f"(effektiv N = {n_eff:.1f}, mittlere Korrelation {rho:.3f}).")
+          f"(effektiv N = {n_eff:.1f}, mittlere Korrelation {rho:.3f}); Schrumpfung und Tageswahl ebenfalls bestätigt.")
 
 
 if __name__ == "__main__":

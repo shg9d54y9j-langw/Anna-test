@@ -44,7 +44,21 @@
     if (!d) { box.innerHTML = `<p class="muted">Noch keine Auswertung vorhanden.</p>${goto("daily", "Zur Tagesempfehlung")}`; return; }
     const cfg = d.config || {}, thr = cfg.threshold || 0.9;
     const rec = d.recommendation && okName(d.recommendation.userName) ? d.recommendation : null;
+    const pick = d.pick && okName(d.pick.userName) ? d.pick : null;
     const stand = `Stand ${new Date(d.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })} Uhr`;
+    if (pick) {
+      const green = pick.light === "green";
+      const acc = account();
+      const amount = acc ? `${fmt(Math.floor(pick.amountPct * acc + 1e-9), 0)} $` : `${fmt(pick.amountPct * 100, 0)} % des Kontos`;
+      box.innerHTML = `<p class="big-number ${green ? "up" : ""}">${green ? "✓" : "●"} ${esc(pick.userName)}</p>
+        <p class="chips"><span class="chip ${green ? "open" : "caution"}">${green ? "gesichert" : "nicht gesichert · halber Betrag"}</span>
+          ${pick.changed ? `<span class="chip">neu seit heute</span>` : ""}</p>
+        <p class="muted">Betrag ${amount} · Copy Stop Loss ${pick.csl} % · Gewinntag-Chance des Traders ${pct(pick.pDay)}</p>
+        ${pick.changed && okName(pick.previous) ? `<p class="small warn">Zuerst die Kopie von <b>${esc(pick.previous)}</b> beenden.</p>` : ""}
+        <p class="small muted">${stand}${Number.isFinite(pick.breakEvenDays) ? ` · mindestens ${Math.ceil(pick.breakEvenDays)} Börsentage laufen lassen` : ""}</p>
+        ${goto("daily", "Anleitung für eToro")}`;
+      return;
+    }
     if (rec) {
       box.innerHTML = `<p class="big-number up">✓ ${esc(rec.userName)}</p>
         <p class="muted">Heute kopieren · Können-Sicherheit ${pct(rec.dsr)} · Rendite ${fmt(rec.cagr, 1)} % p.a. · Copy Stop Loss ${rec.csl} %</p>
@@ -95,4 +109,5 @@
   window.addEventListener("dtd:clock", () => { renderHead(); renderSessions(); });
   window.addEventListener("dtd:data", () => { renderReco(); renderLive(); });
   window.addEventListener("dtd:journal", renderJournal);
+  $("cAccount").addEventListener("input", renderReco);
 })();

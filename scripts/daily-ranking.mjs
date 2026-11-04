@@ -26,6 +26,7 @@ const CONFIG = {
   top: 25,
   keepWithinTop: 5,   // Empfehlung wechselt erst, wenn der Trader aus den Top 5 der sicheren Trader fällt
   maxDataDeviation: 25, // Datenkontrolle: weichen unsere 2-Jahres-Renditen im Median um mehr als 25 Prozentpunkte von eToro ab → nichts veröffentlichen
+  roundTripCostPct: 0.3, // geschätzte Kosten einer Kopie: Spread 0,15 % beim Öffnen + 0,15 % beim Schließen (eToro-Gebührenseite, CFDs auf Aktien/ETFs)
 };
 
 const here = p => fileURLToPath(new URL(p, import.meta.url));
@@ -142,6 +143,41 @@ function decide(prev, qualified, rows) {
   return { ...pick(qualified[0]), since: today, changed: Boolean(prevRec), previous: prevRec ? prevRec.userName : null, note };
 }
 
+// Tageswahl: jeden Morgen genau ein Trader. Grün = gesichert (Können-Sicherheit erreicht), gelb = beste verfügbare Wahl.
+// Bewertet wird die geschrumpfte erwartete Rendite je Schwankung; gewechselt wird nur, wenn der bisherige Trader
+// aus den besten 5 fällt oder die Grenzen verletzt – jeder Wechsel kostet Spreads.
+function decidePick(prev, rows) {
+  const today = new Date().toISOString().slice(0, 10);
+  const prevPick = prev && prev.pick;
+  // Nur Trader mit positiver erwarteter Rendite nach Schrumpfung kommen in Frage – sonst lieber keine Wahl
+  const green = rows.filter(r => r.qualified && r.score > 0).sort((a, b) => b.score - a.score);
+  const yellow = rows.filter(r => r.inLimits && r.score > 0).sort((a, b) => b.score - a.score);
+  const pool = green.length ? green : yellow;
+  if (!pool.length) return null;
+  const light = green.length ? "green" : "yellow";
+  const take = r => ({
+    userName: r.userName, light, score: r.score, postMean: r.postMean, postSd: r.postSd, sdMonthly: r.sdMonthly, pDay: r.pDay,
+    dsr: r.dsr, cagr: r.cagr, mdd: r.mdd, risk: r.risk, csl: r.csl, bind: r.bind, breakEvenDays: r.breakEvenDays,
+    amountPct: light === "green" ? r.amountPct : r.amountPct / 2,     // nicht gesichert → nur halber Betrag
+  });
+  const pos = prevPick ? pool.findIndex(r => r.userName === prevPick.userName) : -1;
+  if (prevPick && pos >= 0 && pos < CONFIG.keepWithinTop && prevPick.light === light) {
+    return { ...take(pool[pos]), since: prevPick.since || today, changed: false, previous: null,
+      note: `Unverändert – weiterhin unter den besten ${CONFIG.keepWithinTop} (Platz ${pos + 1}); ein Wechsel würde nur Kosten verursachen.` };
+  }
+  const best = pool[0];
+  const same = prevPick && prevPick.userName === best.userName;
+  let note = "Erste Tageswahl.";
+  if (prevPick && !same) {
+    const old = rows.find(r => r.userName === prevPick.userName);
+    note = !old ? `${prevPick.userName} ist nicht mehr unter den geprüften Tradern.`
+      : !old.inLimits ? `${prevPick.userName} hält die Grenzen nicht mehr ein (${old.reason}).`
+      : light === "green" && prevPick.light !== "green" ? "Es gibt jetzt einen gesicherten Trader."
+      : `${prevPick.userName} ist nicht mehr unter den besten ${CONFIG.keepWithinTop}.`;
+  } else if (same) note = light === "green" ? "Jetzt gesichert." : "Nicht mehr gesichert – deshalb nur noch halber Betrag.";
+  return { ...take(best), since: same ? prevPick.since || today : today, changed: Boolean(prevPick) && !same, previous: prevPick && !same ? prevPick.userName : null, note };
+}
+
 async function main() {
   if (!hasKeys) {
     warn("Die Secrets ETORO_API_KEY und ETORO_USER_KEY fehlen – Job übersprungen. Anleitung auf der Website unter „Tagesempfehlung“.");
@@ -191,8 +227,24 @@ async function main() {
   const rho = avgCorrelation(withData.map(u => new Map(u.months.map(m => [m.k, m.g]))));
   const nEff = S.effectiveTrials(withData.length, rho);
 
-  const rows = withData.map(u => {
+  // Schrumpfung: erwartete Monatsrendite jedes Traders, zum Durchschnitt aller Trader gezogen –
+  // je kürzer und schwankender die Historie, desto stärker (Jones & Shanken 2005, Harvey & Liu 2018).
+  // Für Unterschiede zwischen Tradern zählt nur der Zufall, der nicht alle gemeinsam trifft (Markt):
+  // deshalb wird das Rauschen mit (1 − mittlere Korrelation) gewichtet.
+  const noiseFactor = 1 - Math.min(0.95, Math.max(0, rho));
+  const basics = withData.map(u => {
+    const g = u.months.map(x => x.g), n = g.length, mu = S.mean(g);
+    const sd = Math.sqrt(g.reduce((acc, x) => acc + (x - mu) ** 2, 0) / (n - 1));
+    return { mean: mu, sd, se2: (sd * sd) / n * noiseFactor };
+  });
+  const shr = S.shrink(basics);
+
+  const rows = withData.map((u, i) => {
     const m = S.metrics(u.months.map(x => x.g), { rf: CONFIG.rf, N: nEff, mddInput: u.peakToValley });
+    const b = basics[i], post = shr.post[i];
+    const pDay = S.horizon(post.mean, b.sd, post.sd, S.HORIZONS.d1, 0).pProfit;    // Chance auf einen Gewinntag des Traders
+    const score = b.sd > 0 ? post.mean / b.sd : 0;                                  // erwartete Rendite je Schwankung
+    const breakEvenDays = post.mean > 0 ? CONFIG.roundTripCostPct / (post.mean / 21) : null;
     const fails = [];
     if (u.risk !== undefined && u.risk > CONFIG.maxRisk) fails.push(`Risiko-Score ${u.risk} > ${CONFIG.maxRisk}`);
     if (m.mdd > CONFIG.maxDd) fails.push(`Drawdown ${m.mdd.toFixed(1).replace(".", ",")} % > ${CONFIG.maxDd} %`);
@@ -206,6 +258,7 @@ async function main() {
       months: m.n, lastMonth: keyToMonth(u.months[u.months.length - 1].k),
       cagr: m.cagr, sharpe: m.sharpe, sortino: m.sortino, mdd: m.mdd, dsr: m.dsr, halfKelly: m.halfKelly,
       qualified, inLimits, reason: fails[0] || null, csl: alloc.csl, amountPct: alloc.frac, bind: alloc.bind,
+      postMean: post.mean, postSd: post.sd, sdMonthly: b.sd, weight: post.weight, score, pDay, breakEvenDays,
     };
   });
 
@@ -215,20 +268,25 @@ async function main() {
   const top = [...qualified, ...rest].slice(0, CONFIG.top).map((r, i) => ({ rank: i + 1, ...r }));
 
   const recommendation = decide(prev, qualified, rows);
+  const pick = decidePick(prev, rows);
   const lastRecommended = recommendation ? { userName: recommendation.userName, since: recommendation.since } : (prev && prev.lastRecommended) || null;
   const notice = recommendation ? null
     : `Heute erfüllt kein Trader alle Bedingungen.` + (lastRecommended ? ` Wenn Sie ${lastRecommended.userName} kopieren: Kopie pausieren, bis wieder eine Empfehlung erscheint.` : "");
   const today = new Date().toISOString().slice(0, 10);
-  const history = [...((prev && prev.history) || []).filter(h => h.date !== today), { date: today, userName: recommendation ? recommendation.userName : null }].slice(-60);
+  const history = [...((prev && prev.history) || []).filter(h => h.date !== today),
+    { date: today, userName: recommendation ? recommendation.userName : null, pick: pick ? pick.userName : null, light: pick ? pick.light : null }].slice(-60);
   const updated = new Date().toISOString();
 
   const out = clean({
     updated, source, totalAvailable: total ?? null,
     screened: users.length, evaluated: withData.length, avgCorrelation: rho, nEff,
     qualifiedCount: qualified.length, config: CONFIG, dataCheck: check,
-    recommendation, notice, lastRecommended, top, history,
-    // alle ausgewerteten Trader (kompakt) für die Abbildung auf der Website
-    all: rows.map(r => ({ userName: r.userName, cagr: r.cagr, mdd: r.mdd, dsr: r.dsr, sharpe: r.sharpe, risk: r.risk, copiers: r.copiers, months: r.months, qualified: r.qualified, inLimits: r.inLimits, reason: r.reason })),
+    recommendation, notice, lastRecommended, pick, top, history,
+    shrinkage: { priorMonthly: shr.prior, tau2: shr.tau2, noiseFactor },
+    // alle ausgewerteten Trader (kompakt) für Abbildung, Tabelle und Detail-Fenster
+    all: rows.map(r => ({ userName: r.userName, cagr: r.cagr, mdd: r.mdd, dsr: r.dsr, sharpe: r.sharpe, risk: r.risk, copiers: r.copiers, months: r.months,
+      qualified: r.qualified, inLimits: r.inLimits, reason: r.reason, postMean: r.postMean, postSd: r.postSd, sdMonthly: r.sdMonthly, score: r.score, pDay: r.pDay,
+      csl: r.csl, amountPct: r.amountPct, breakEvenDays: r.breakEvenDays })),
   });
   // Rohdaten für die unabhängige Gegenrechnung
   const returns = {
@@ -243,6 +301,8 @@ async function main() {
   log(`Ausgewertet: ${withData.length} Trader, mittlere Korrelation ${rho.toFixed(2)}, effektiv N = ${nEff.toFixed(1)}, sicher: ${qualified.length}`);
   for (const r of top.slice(0, 5)) log(`#${r.rank} ${r.userName}: Sicherheit ${(r.dsr * 100).toFixed(1)} %, Rendite p.a. ${r.cagr.toFixed(1)} %, Drawdown ${r.mdd.toFixed(1)} %${r.qualified ? " ✓" : ""}`);
   log(recommendation ? `Tagesempfehlung: ${recommendation.userName} (${recommendation.note})` : notice);
+  log(`Schrumpfung: gemeinsamer Mittelwert ${shr.prior.toFixed(2)} % pro Monat, Streuung echter Unterschiede τ² = ${shr.tau2.toFixed(3)}`);
+  log(pick ? `Tageswahl (${pick.light === "green" ? "grün, gesichert" : "gelb, nicht gesichert"}): ${pick.userName} – erwartet ${pick.postMean.toFixed(2)} % pro Monat, Gewinntag-Chance ${(pick.pDay * 100).toFixed(1)} % (${pick.note})` : "Keine Tageswahl: kein Trader innerhalb der Grenzen mit positiver erwarteter Rendite.");
 }
 
 main().catch(e => fail(e.message));

@@ -332,14 +332,14 @@ function copyCalc() {
     kpi("Betrag", `${fmt(amount, 0)} $`) +
     kpi("Copy Stop Loss", `${csl} %`, "down") +
     kpi("Max. Verlust", `${fmt(maxLoss)} $`, "down") +
-    kpi("Offene Trades kopieren", "Nein") +
+    kpi("Offene Trades kopieren", "Ja") +
     warnBox(warnings);
 
   $("copySteps").innerHTML = [
     `Im Profil des Traders oben auf <b>„Kopieren“</b> tippen.`,
     `Feld <b>„Betrag“</b>: ${v(fmt(amount, 0) + " $")} eintragen.`,
     `<b>„Copy Stop Loss“</b> (steht beim Stop-Loss bzw. hinter dem Zahnrad, Standard 40 %) auf ${v(csl + " %")} stellen. Damit verlieren Sie mit dieser Kopie höchstens ca. ${fmt(maxLoss)} $.`,
-    `Häkchen <b>„Offene Trades kopieren“</b>: ${v("nicht setzen")}. Sonst steigen Sie in schon laufende Trades zum aktuellen, oft schlechteren Kurs ein.`,
+    `Häkchen <b>„Offene Trades kopieren“</b>: ${v("anhaken")}. Nur so läuft Ihre Kopie wie die Zahlen, nach denen der Trader ausgewählt wurde – ohne Häkchen starten Sie mit leerem Portfolio und bekommen nur neue Trades.`,
     `Mit <b>„Kopieren“</b> bestätigen.`,
   ].map(s => `<li>${s}</li>`).join("");
 }

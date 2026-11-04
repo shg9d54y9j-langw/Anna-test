@@ -1,6 +1,6 @@
 // Live-Wächter (GitHub Actions, alle 15 Minuten an Börsentagen):
 // holt Tagesergebnis, Wochenergebnis und Risiko-Score der Top-Trader aus der eToro-Rangliste
-// und meldet Warnungen für den empfohlenen bzw. zuletzt empfohlenen Trader.
+// und meldet Warnungen für den Trader der Tageswahl (bzw. den empfohlenen oder zuletzt empfohlenen).
 // Braucht nur 2–3 API-Abfragen pro Lauf.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -19,7 +19,9 @@ async function main() {
   let ranking = {};
   try { ranking = JSON.parse(await readFile(RANKING, "utf8")); } catch { warn("Noch keine ranking.json vorhanden."); }
   const maxRisk = (ranking.config && ranking.config.maxRisk) || 5;
-  const followedRaw = (ranking.recommendation && ranking.recommendation.userName) || (ranking.lastRecommended && ranking.lastRecommended.userName) || null;
+  // Verfolgt wird die Tageswahl (die Website sagt, wen Sie kopieren sollen); ältere Stände ohne Tageswahl: die Empfehlung
+  const followedRaw = (ranking.pick && ranking.pick.userName) || (ranking.recommendation && ranking.recommendation.userName)
+    || (ranking.lastRecommended && ranking.lastRecommended.userName) || null;
   const followed = followedRaw && VALID_NAME.test(followedRaw) ? followedRaw : null;
   const names = new Set([...(ranking.top || []).map(t => t.userName), followed].filter(n => n && VALID_NAME.test(n)));
 

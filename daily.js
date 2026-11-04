@@ -112,6 +112,8 @@
     { key: "cagr", label: "Rendite p.a.", num: true, get: r => r.cagr },
     { key: "mdd", label: "Max. Drawdown", num: true, title: "Größter Rückgang vom Höchststand", get: r => r.mdd },
     { key: "sharpe", label: "Sharpe", num: true, title: "Rendite im Verhältnis zur Schwankung", get: r => r.sharpe },
+    { key: "pDay", label: "Gewinntag", num: true, title: "Chance, dass der Trader einen Tag im Plus abschließt (Näherung)", get: r => r.pDay },
+    { key: "postMean", label: "Erwartet/Monat", num: true, title: "Erwartete Monatsrendite nach Schrumpfung über alle Trader", get: r => r.postMean },
     { key: "risk", label: "Risiko", num: true, title: "eToro-Risiko-Score 1–10 (live)", get: liveRisk },
     { key: "today", label: "Heute (live)", num: true, get: liveDay },
     { key: "copiers", label: "Kopierer", num: true, get: r => r.copiers },
@@ -149,6 +151,8 @@
         <td class="num">${n1(r.cagr)} %</td>
         <td class="num">${n1(r.mdd)} %</td>
         <td class="num">${Number.isFinite(r.sharpe) ? fmt(r.sharpe, 2) : "–"}</td>
+        <td class="num">${pct(r.pDay)}</td>
+        <td class="num">${Number.isFinite(r.postMean) ? `${sign(r.postMean)} %` : "–"}</td>
         <td class="num">${liveRisk(r) ?? "–"}</td>
         <td class="num">${day === null ? "–" : `<span class="${day < 0 ? "down" : "up"}">${sign(day)} %</span>`}</td>
         <td class="num">${Number.isFinite(r.copiers) ? r.copiers.toLocaleString("de-DE") : "–"}</td>
@@ -158,56 +162,99 @@
     $("dailyCount").textContent = `${rows.length} ${rows.length === 1 ? "Trader" : "Trader"}`;
   }
 
+  // ---------- Forschung, auf der die Tageswahl beruht ----------
+  const SRC = (url, text) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  const RESEARCH = `
+    <details class="info card">
+      <summary>Forschung: Worauf die Tageswahl beruht (Stand November 2026)</summary>
+      <ul class="checklist">
+        <li><b>Copy-Trading verleitet zu zu viel Risiko.</b> ${SRC("https://econpapers.repec.org/RePEc:inm:ormnsc:v:66:y:12:i:2020:p:5608-5622", "Apesteguia, Oechssler &amp; Weidenholzer, Management Science 2020")}. → Strenge Grenzen für Risiko-Score und Drawdown, Copy Stop Loss.</li>
+        <li><b>Kopierer wählen nach Beliebtheit, und die sagt kaum etwas über Leistung.</b> Gespiegelte Trades verloren im Schnitt 0,61 %, eigene nur 0,07 % (eToro-Daten). ${SRC("https://www.arxiv.org/pdf/2507.01817", "Studie zu eToro, arXiv 2025")}. → Kopierer-Zahl fließt nicht in die Wahl ein.</li>
+        <li><b>Mehr Follower machen Trader schlechter</b> – mehr Trades, mehr Hebel, schwächere Ergebnisse. ${SRC("https://pubsonline.informs.org/doi/abs/10.1287/mnsc.2022.03144", "Xu, Wang, Liu &amp; Qiu, Management Science 2025")}. → Kein Bonus für Beliebtheit, Live-Wächter beobachtet das Risiko.</li>
+        <li><b>Folgen lohnt sich nach Kosten selten.</b> Keine Strategie erzielte nach Transaktionskosten eine Überrendite. ${SRC("https://econpapers.repec.org/RePEc:eee:quaeco:v:70:y:2018:i:c:p:160-171", "„To follow or not to follow“, Quarterly Review of Economics and Finance 2018")}. → Kosten werden für jede Kopier-Dauer eingerechnet.</li>
+        <li><b>Vergangene Leistung ist vor allem Rauschen</b>; bessere Prognosen entstehen, wenn man alle Trader gemeinsam betrachtet und Ausreißer zum Durchschnitt zieht. ${SRC("https://econpapers.repec.org/RePEc:oup:rfinst:v:31:y:2018:i:7:p:2499-2552", "Harvey &amp; Liu, Review of Financial Studies 2018")}, ${SRC("https://econpapers.repec.org/RePEc:eee:jfinec:v:78:y:2005:i:3:p:507-552", "Jones &amp; Shanken, Journal of Financial Economics 2005")}. → Schrumpfung der erwarteten Rendite.</li>
+        <li><b>Glück beim Besten aus vielen herausrechnen:</b> Deflated Sharpe Ratio nach Bailey &amp; López de Prado (2014). → „Können-Sicherheit“ und grüne Ampel.</li>
+        <li><b>Kurzfristige Überlegenheit ist klein und vergeht schnell</b> (gemessen über Quartale, nicht Tage). ${SRC("https://ideas.repec.org/a/oup/rfinst/v18y2005i2p569-597.html", "Bollen &amp; Busse, Review of Financial Studies 2005")}. Innerhalb eines Tages gibt es nur schwache Muster auf Marktebene (Erklärungskraft 1,6 %). ${SRC("https://econpapers.repec.org/RePEc:eee:jfinec:v:129:y:2018:i:2:p:394-414", "Gao, Han, Li &amp; Zhou, Journal of Financial Economics 2018")}. → Keine Vorhersage „wer heute am besten abschließt“ – sie wäre Zufall.</li>
+        <li><b>Aufsicht warnt vor den Risiken von Copy-Trading.</b> ${SRC("https://www.iosco.org/library/pubdocs/pdf/IOSCOPD793.pdf", "IOSCO-Abschlussbericht 2025")}.</li>
+        <li><b>Kosten:</b> Für kopierte Positionen gelten dieselben Spreads wie für eigene; für CFDs auf Aktien/ETFs nennt eToro 0,15 % beim Öffnen und beim Schließen. ${SRC("https://etoro.com/trading/fees", "eToro-Gebührenseite")}.</li>
+      </ul>
+    </details>`;
+
+  // ---------- Tageswahl ----------
+  const HZ = [["m30", "30 Minuten"], ["d1", "1 Tag"], ["w1", "1 Woche"], ["m1", "1 Monat"], ["m3", "3 Monate"]];
+  function horizonTable(p, cost) {
+    const TS = window.TradeStats;
+    const rows = HZ.map(([k, label]) => {
+      const h = TS.horizon(p.postMean, p.sdMonthly, p.postSd, TS.HORIZONS[k], cost);
+      const verdict = h.expected <= 0 ? `<span class="tag bad"><span class="x">✗</span> lohnt sich nicht – Kosten höher als erwarteter Gewinn</span>`
+        : h.pProfit < 0.6 ? `<span class="tag bad">≈ kaum besser als ein Münzwurf</span>`
+        : `<span class="tag good">✓ sinnvoll</span>`;
+      return `<tr><td>${label}</td><td class="num"><span class="pbar"><span style="width:${(h.pProfit * 100).toFixed(0)}%"></span></span>${pct(h.pProfit)}</td>
+        <td class="num ${h.expected < 0 ? "down" : "up"}">${sign(h.expected)} %</td><td>${verdict}</td></tr>`;
+    }).join("");
+    return `<div class="table-wrap"><table class="hz">
+      <thead><tr><th>Kopier-Dauer</th><th class="num">Ihre Chance im Plus</th><th class="num">Erwartet</th><th>Urteil</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  }
+  function pickCard(p, cfg, acc) {
+    const green = p.light === "green";
+    const cost = Number.isFinite(cfg.roundTripCostPct) ? cfg.roundTripCostPct : 0.3;
+    const amount = acc ? Math.floor(p.amountPct * acc + 1e-9) : null;
+    const minDays = Number.isFinite(p.breakEvenDays) ? Math.ceil(p.breakEvenDays) : null;
+    const status = p.changed
+      ? `<p class="reco-sub"><b>Neu seit heute.</b> ${esc(p.note || "")}</p>`
+      : `<p class="reco-sub">Unverändert seit ${dateDe(p.since)} · ${esc(p.note || "")}</p>`;
+    const steps = [];
+    if (p.changed && p.previous) steps.push(`Bisherige Kopie beenden: <b>„Portfolio“</b> → ${v(esc(p.previous))} antippen → Zahnrad → <b>„Kopieren beenden“</b>.`);
+    steps.push(
+      `In eToro oben in die Suche ${v(esc(p.userName))} eingeben und das Profil öffnen (oder direkt: ${link(p.userName)}). Auf <b>„Kopieren“</b> tippen.`,
+      `Feld <b>„Betrag“</b>: ${v(amount !== null ? `${fmt(amount, 0)} $` : `${fmt(p.amountPct * 100, 0)} % Ihres Kontos`)}${green ? "" : " – halber Betrag, weil nicht gesichert"}.`,
+      `<b>„Copy Stop Loss“</b>: ${v(p.csl + " %")}. Damit verlieren Sie mit dieser Kopie höchstens ca. ${amount !== null ? `${fmt(amount * p.csl / 100, 0)} $` : `${p.csl} % des Betrags`}.`,
+      `Häkchen <b>„Offene Trades kopieren“</b>: ${v("anhaken")} – nur so läuft Ihre Kopie wie die ausgewerteten Zahlen.`,
+      `Mit <b>„Kopieren“</b> bestätigen.`,
+      `Laufen lassen: ${v(minDays ? `mindestens ${minDays} Börsentage` : "mehrere Wochen")} – so lange dauert es im Schnitt, bis die Kosten von ${fmt(cost, 1)} % wieder verdient sind. Nicht täglich wechseln.`,
+      `Jeden Morgen hier nachsehen: Steht ein neuer Name da, zuerst die alte Kopie beenden. Sonst nichts tun.`,
+    );
+    return `
+      <div class="reco ${green ? "ok" : "no"}">
+        <div class="reco-head"><span class="${green ? "icon-ok" : "icon-no"}">●</span> Tageswahl: ${link(p.userName)}
+          <span class="chip ${green ? "open" : "caution"}">${green ? "gesichert" : "nicht gesichert · halber Betrag"}</span></div>
+        ${status}
+        ${green ? "" : `<p class="small">Kein Trader erreicht heute die geforderte Können-Sicherheit von ${pct(cfg.threshold || 0.9)}. Das ist die beste verfügbare Wahl nach der Rechnung unten – deshalb nur mit halbem Betrag oder zuerst im Demokonto üben.</p>`}
+        <div class="result">
+          ${kpi("Gewinntag-Chance des Traders", pct(p.pDay), p.pDay >= 0.5 ? "up" : "down")}
+          ${kpi("Erwartet pro Monat", `${sign(p.postMean)} %`, p.postMean >= 0 ? "up" : "down")}
+          ${kpi("Können-Sicherheit", pct(p.dsr), green ? "up" : "")}
+          ${kpi("Max. Drawdown", `${n1(p.mdd)} %`, "down")}
+          ${kpi("Betrag", amount !== null ? `${fmt(amount, 0)} $` : `${fmt(p.amountPct * 100, 0)} %`)}
+          ${kpi("Copy Stop Loss", `${p.csl} %`, "down")}
+        </div>
+        <h3>So tragen Sie es in eToro ein</h3>
+        <ol class="steps">${steps.map(x => `<li>${x}</li>`).join("")}</ol>
+        <h3>Wie lange kopieren? Chancen nach Kosten</h3>
+        ${horizonTable(p, cost)}
+        <p class="muted small">„Gewinntag-Chance des Traders“: wie wahrscheinlich der Trader einen Börsentag im Plus abschließt. „Ihre Chance im Plus“: wie wahrscheinlich Ihre Kopie nach Abzug der Kosten im Plus liegt – bei kurzer Dauer viel kleiner, weil die Kosten sofort anfallen.
+          Gerechnet mit der erwarteten Monatsrendite nach Schrumpfung (${sign(p.postMean)} %), der Schwankung des Traders (${fmt(p.sdMonthly, 2)} % pro Monat) und geschätzten Kosten von ${fmt(cost, 1)} % (Spread beim Öffnen und Schließen laut eToro-Gebührenseite). Näherung – keine Garantie.</p>
+        ${acc ? "" : `<p class="muted small">Kontostand im Trade-Setup eintragen, dann stehen hier Beträge in Dollar.</p>`}
+      </div>`;
+  }
+
   // ---------- Gesamtansicht ----------
   function render() {
     if (!data) return setup();
     const searchFocused = document.activeElement && document.activeElement.id === "dailySearch";
     const d = data, cfg = d.config || {};
-    const rec = d.recommendation && okName(d.recommendation.userName) ? d.recommendation : null;
-    if (rec && rec.previous && !okName(rec.previous)) rec.previous = null;
+    const pick = d.pick && okName(d.pick.userName) ? { ...d.pick } : null;
+    if (pick && pick.previous && !okName(pick.previous)) pick.previous = null;
     const ageDays = (Date.now() - new Date(d.updated)) / 864e5;
     $("dailyUpdated").textContent = `Stand: ${new Date(d.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })} Uhr · aktualisiert sich automatisch`;
     const acc = account();
     const notes = [];
     if (ageDays > 4) notes.push(`Die Daten sind ${fmt(ageDays, 0)} Tage alt – läuft die GitHub-Aktion „Tagesempfehlung“ noch?`);
-
-    let head;
-    if (rec) {
-      const amount = acc ? Math.floor(rec.amountPct * acc + 1e-9) : null;
-      const bindTxt = { share: `Ihren Max. Anteil von ${fmt((cfg.share || 0) * 100, 0)} % des Kontos`, loss: `das Verlustbudget von ${fmt((cfg.lossPct || 0) * 100, 0)} % des Kontos`, kelly: "das halbe Kelly-Kriterium" }[rec.bind] || "";
-      const status = rec.changed
-        ? `<p class="reco-sub"><b>Neu seit heute.</b> ${esc(rec.note || "")}</p>`
-        : `<p class="reco-sub">Unverändert seit ${dateDe(rec.since)} · ${esc(rec.note || "")}</p>`;
-      const steps = [];
-      if (rec.changed && rec.previous) steps.push(`Bisherige Kopie beenden: <b>„Portfolio“</b> → ${v(esc(rec.previous))} antippen → Zahnrad → <b>„Kopieren beenden“</b>.`);
-      steps.push(
-        `Profil von ${link(rec.userName)} öffnen und auf <b>„Kopieren“</b> tippen.`,
-        `<b>„Betrag“</b>: ${v(amount !== null ? `${fmt(amount, 0)} $` : `${fmt(rec.amountPct * 100, 0)} % Ihres Kontos`)} – begrenzt durch ${bindTxt}.`,
-        `<b>„Copy Stop Loss“</b>: ${v(rec.csl + " %")} (1,25 × bisher größter Rückgang von ${n1(rec.mdd)} %).`,
-        `Häkchen <b>„Offene Trades kopieren“</b>: ${v("nicht setzen")}, dann mit <b>„Kopieren“</b> bestätigen.`,
-      );
-      head = `
-        <div class="reco ok">
-          <div class="reco-head"><span class="icon-ok">✓</span> Heute kopieren: ${link(rec.userName)}</div>
-          ${status}
-          <div class="result">
-            ${kpi("Betrag", amount !== null ? `${fmt(amount, 0)} $` : `${fmt(rec.amountPct * 100, 0)} % vom Konto`)}
-            ${kpi("Copy Stop Loss", `${rec.csl} %`, "down")}
-            ${kpi("Können-Sicherheit", pct(rec.dsr), "up")}
-            ${kpi("Rendite p.a.", `${n1(rec.cagr)} %`, "up")}
-            ${kpi("Max. Drawdown", `${n1(rec.mdd)} %`, "down")}
-          </div>
-          <ol class="steps">${steps.map(s => `<li>${s}</li>`).join("")}</ol>
-          ${acc ? "" : `<p class="muted small">Kontostand im Trade-Setup eintragen, dann steht hier der Betrag in Dollar.</p>`}
-        </div>`;
-    } else {
-      head = `
-        <div class="reco no">
-          <div class="reco-head"><span class="icon-no">✗</span> Heute keine Empfehlung</div>
-          <p>${esc(d.notice || "Heute erfüllt kein Trader alle Bedingungen.")}</p>
-          <p class="muted small">Das ist kein Fehler: Kein geprüfter Trader erreicht nach der Glücks-Korrektur eine Können-Sicherheit von ${pct(cfg.threshold || 0.9)}. Lieber keine Empfehlung als eine geratene.</p>
-        </div>`;
-    }
+    const head = pick ? pickCard(pick, cfg, acc)
+      : d.pick === undefined
+        ? `<div class="reco no"><div class="reco-head"><span class="icon-no">●</span> Tageswahl wird berechnet</div><p>Die Tageswahl erscheint nach dem nächsten Lauf der Auswertung.</p></div>`
+        : `<div class="reco no"><div class="reco-head"><span class="icon-no">✗</span> Heute keine Tageswahl</div><p>Kein geprüfter Trader hält heute alle Grenzen ein (Risiko-Score, Drawdown, Historie) und lässt nach der Rechnung einen Gewinn erwarten. Lieber keine Wahl als eine riskante.</p></div>`;
 
     const check = d.dataCheck && Number.isFinite(d.dataCheck.medianDeviationPp)
       ? ` Datenkontrolle: Abweichung zu eToros eigenen Angaben im Median ${fmt(d.dataCheck.medianDeviationPp, 2)} Prozentpunkte; jede Zahl wurde unabhängig nachgerechnet.` : "";
@@ -242,9 +289,10 @@
             <input type="search" id="dailySearch" placeholder="Trader suchen …" aria-label="Trader suchen" value="${esc(search)}">
           </div>
         </div>
-        <p class="muted small">Auf eine Spaltenüberschrift tippen sortiert nach der höchsten Zahl, noch einmal tippen nach der niedrigsten. Auf einen Trader tippen öffnet seine Details mit allen Monatsrenditen.</p>
+        <p class="muted small">Auf eine Spaltenüberschrift tippen sortiert nach der höchsten Zahl, noch einmal tippen nach der niedrigsten. Auf einen Trader tippen öffnet die Details mit allen Monatsrenditen.</p>
         <div class="table-wrap"><table id="dailyTable"><thead></thead><tbody></tbody></table></div>
       </article>
+      ${RESEARCH}
       <p class="muted small">Vergangene Renditen garantieren nichts. Die Sicherheit gibt an, wie wahrscheinlich die bisherige Leistung Können statt Glück war – nicht, dass sie weitergeht.</p>`;
     renderTable();
     drawScatter();
@@ -285,7 +333,10 @@
         ${kpi("Sharpe", Number.isFinite(r.sharpe) ? fmt(r.sharpe, 2) : "–")}
         ${kpi("Risiko-Score", l && Number.isFinite(l.risk) ? l.risk : r.risk ?? "–")}
         ${kpi("Heute (live)", l && Number.isFinite(l.dailyGain) ? `${sign(l.dailyGain)} %` : "–", l && l.dailyGain < 0 ? "down" : "up")}
+        ${kpi("Gewinntag-Chance", pct(r.pDay))}
+        ${kpi("Erwartet pro Monat", Number.isFinite(r.postMean) ? `${sign(r.postMean)} %` : "–", r.postMean >= 0 ? "up" : "down")}
       </div>
+      ${Number.isFinite(r.postMean) && Number.isFinite(r.sdMonthly) ? `<div><h3 style="margin-top:0">Chancen nach Kosten, falls Sie diesen Trader kopieren</h3>${horizonTable(r, Number.isFinite(cfg.roundTripCostPct) ? cfg.roundTripCostPct : 0.3)}</div>` : ""}
       <div><h3 style="margin-top:0">Monatsrenditen</h3><div class="chart-host" id="trMonths"><p class="muted">Lade Monatsrenditen …</p></div></div>
       <div><h3>Wachstum von 100 $</h3><div class="chart-host" id="trGrowth"></div></div>
       <div id="trYears"></div>

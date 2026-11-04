@@ -104,5 +104,36 @@
     return Math.max(1, r + (1 - r) * M);
   }
 
-  root.TradeStats = { EULER, mean, normCdf, normInv, psr, luckBenchmark, monthsNeeded, metrics, allocation, correlation, effectiveTrials };
+  // Schrumpfung über alle Trader (Random-Effects-Modell, Schätzer nach DerSimonian & Laird), im Sinne von
+  // Jones & Shanken (2005) und Harvey & Liu (2018): Jeder Trader-Mittelwert wird zum gemeinsamen Mittel gezogen –
+  // umso stärker, je kürzer und schwankender seine Historie ist. items: [{ mean, se2 }] (Monatsrendite in %, Varianz des Mittelwerts)
+  function shrink(items) {
+    const k = items.length;
+    if (!k) return { prior: 0, tau2: 0, post: [] };
+    const w = items.map(it => 1 / Math.max(it.se2, 1e-12));
+    const sw = w.reduce((a, b) => a + b, 0);
+    const yw = items.reduce((s, it, j) => s + w[j] * it.mean, 0) / sw;
+    const Q = items.reduce((s, it, j) => s + w[j] * (it.mean - yw) ** 2, 0);
+    const c = sw - w.reduce((s, x) => s + x * x, 0) / sw;
+    const tau2 = k > 1 && c > 0 ? Math.max(0, (Q - (k - 1)) / c) : 0;
+    const ws = items.map(it => 1 / (Math.max(it.se2, 1e-12) + tau2));
+    const prior = items.reduce((s, it, j) => s + ws[j] * it.mean, 0) / ws.reduce((a, b) => a + b, 0);
+    const post = items.map(it => {
+      const B = tau2 > 0 ? tau2 / (tau2 + it.se2) : 0;   // Gewicht der eigenen Historie (0 = gar keins)
+      return { mean: prior + B * (it.mean - prior), sd: Math.sqrt(B * it.se2), weight: B };
+    });
+    return { prior, tau2, post };
+  }
+
+  // Vorhersage für einen Zeitraum von h Monaten (Normalnäherung, Monatsrenditen als unabhängig angenommen):
+  // erwartete Rendite nach Kosten und Wahrscheinlichkeit, nach Kosten im Plus zu liegen.
+  // Die Unsicherheit über den wahren Mittelwert (postSd) geht in die Streuung ein.
+  function horizon(postMean, sdMonthly, postSd, h, costPct = 0) {
+    const expected = postMean * h - costPct;
+    const sd = Math.sqrt(sdMonthly * sdMonthly * h + (postSd * h) ** 2);
+    return { expected, pProfit: sd > 0 ? normCdf(expected / sd) : (expected > 0 ? 1 : 0) };
+  }
+  const HORIZONS = { m30: 1 / (21 * 13), d1: 1 / 21, w1: 5 / 21, m1: 1, m3: 3 };   // 21 Börsentage, 13 halbe Stunden je Handelstag (USA)
+
+  root.TradeStats = { EULER, mean, normCdf, normInv, psr, luckBenchmark, monthsNeeded, metrics, allocation, correlation, effectiveTrials, shrink, horizon, HORIZONS };
 })(typeof globalThis !== "undefined" ? globalThis : window);

@@ -140,13 +140,13 @@
           ${kpi("Betrag", `${fmt(al.amount, 0)} $`)}
           ${kpi("Copy Stop Loss", `${al.csl} %`, "down")}
           ${kpi("Max. Verlust", `${fmt(al.maxLoss, 0)} $`, "down")}
-          ${kpi("Offene Trades kopieren", "Nein")}
+          ${kpi("Offene Trades kopieren", "Ja")}
         </div>
         <ol class="steps">
           <li>In eToro das Profil von ${v(name)} öffnen und auf <b>„Kopieren“</b> tippen.</li>
           <li><b>„Betrag“</b>: ${v(fmt(al.amount, 0) + " $")} – begrenzt durch ${al.why}.</li>
           <li><b>„Copy Stop Loss“</b>: ${v(al.csl + " %")} (1,25 × bisher größter Rückgang von ${fmt(best.mdd, 1)} %).</li>
-          <li>Häkchen <b>„Offene Trades kopieren“</b>: ${v("nicht setzen")}, dann mit <b>„Kopieren“</b> bestätigen.</li>
+          <li>Häkchen <b>„Offene Trades kopieren“</b>: ${v("anhaken")} (nur so läuft Ihre Kopie wie die Zahlen, nach denen der Trader ausgewählt wurde – ohne Häkchen starten Sie mit leerem Portfolio und bekommen nur neue Trades), dann mit <b>„Kopieren“</b> bestätigen.</li>
         </ol>
         <p class="muted small">So verlieren Sie mit dieser Kopie höchstens ca. ${fmt(al.maxLoss, 0)} $. Ein Rückgang wie der bisher schlimmste würde ca. ${fmt(al.ddLoss, 0)} $ kosten. ${basis}</p>
         ${others.length ? `<p class="small">Ebenfalls geeignet: ${others.join(", ")} – zum Verteilen des Risikos auf mehrere Trader.</p>` : ""}
