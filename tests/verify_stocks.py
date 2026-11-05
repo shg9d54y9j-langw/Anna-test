@@ -43,13 +43,7 @@ def close(a, b, tol):
 
 
 # Universum vom Test-Server: Beliebtheit aus der Suche, Typ nur aus der offiziellen Instrumentenliste
-universe = {}
-for page in range(1, 50):
-    items = get(f"{base}/api/v1/market-data/search?fields=x&pageSize=100&pageNumber={page}")["items"]
-    if not items:
-        break
-    for it in items:
-        universe[it["internalSymbolFull"].upper()] = it
+universe = {it["internalSymbolFull"].upper(): it for it in get(f"{base}/api/v1/market-data/search?fields=x&pageSize=10000")["items"]}
 official = {x["instrumentID"]: x for x in get(f"{base}/api/v1/market-data/instruments")["instrumentDisplayDatas"]}
 syms = {x["sym"] for x in d["items"]}
 if "BAD SYMBOL!" in syms:
@@ -74,7 +68,8 @@ def valid(it, t):
             and all(ch.isalnum() or ch in ".-_" for ch in it["internalSymbolFull"]))
 
 
-ranked = sorted(universe.values(), key=lambda it: (-it.get("popularityUniques7Day", -1), it["instrumentId"]))
+# Beliebtheit ist ein Rang: 1 = beliebteste, ohne Rang ans Ende
+ranked = sorted(universe.values(), key=lambda it: ("popularityUniques7Day" not in it, it.get("popularityUniques7Day", 0), it["instrumentId"]))
 for kind, t, env in (("Aktie", 5, "STOCK_COUNT"), ("ETF", 6, "ETF_COUNT")):
     want = {it["internalSymbolFull"].upper() for it in [it for it in ranked if valid(it, t)][:int(os.environ.get(env, "0") or 0)]}
     got = {x["sym"] for x in d["items"] if x["type"] == kind}

@@ -101,12 +101,14 @@ const UNIVERSE = [
   { instrumentId: 18, internalSymbolFull: "GOLD", displayname: "Gold", instrumentTypeID: 2, exchangeID: 2, buyHoldingPct: 80, popularityUniques7Day: 150000, isDelisted: false, isActiveInPlatform: true },
   { instrumentId: 27, internalSymbolFull: "SPX500", displayname: "US500", instrumentTypeID: 4, exchangeID: 3, buyHoldingPct: 85, popularityUniques7Day: 140000, isDelisted: false, isActiveInPlatform: true },
   { instrumentId: 1, internalSymbolFull: "EURUSD", displayname: "EUR/USD", instrumentTypeID: 1, exchangeID: 1, buyHoldingPct: 50, popularityUniques7Day: 130000, isDelisted: false, isActiveInPlatform: true },
-  ...Array.from({ length: 70 }, (_, i) => ({ instrumentId: 2000 + i, internalSymbolFull: i % 10 === 3 ? `DE${i}.DE` : `STK${String(i).padStart(3, "0")}`, displayname: `Testaktie ${i}`, instrumentTypeID: 5, exchangeID: i % 10 === 3 ? 6 : 4, buyHoldingPct: 60 + (i % 35), popularityUniques7Day: 100000 - i * 100, isDelisted: i === 5, isInternal: i === 7, isActiveInPlatform: true, isHiddenFromClient: false })),
+  ...Array.from({ length: 70 }, (_, i) => ({ instrumentId: 2000 + i, internalSymbolFull: ["AAPL", "MSFT", "NVDA"][i] || (i % 10 === 3 ? `DE${i}.DE` : `STK${String(i).padStart(3, "0")}`), displayname: `Testaktie ${i}`, instrumentTypeID: 5, exchangeID: i % 10 === 3 ? 6 : 4, buyHoldingPct: 60 + (i % 35), popularityUniques7Day: 100000 - i * 100, isDelisted: i === 5, isInternal: i === 7, isActiveInPlatform: true, isHiddenFromClient: false })),
   { instrumentId: 2999, internalSymbolFull: "BAD SYMBOL!", displayname: "Ungültig", instrumentTypeID: 5, exchangeID: 4, popularityUniques7Day: 99999, isDelisted: false, isActiveInPlatform: true },
   ...Array.from({ length: 15 }, (_, i) => ({ instrumentId: 3000 + i, internalSymbolFull: `ETF${String(i).padStart(2, "0")}`, displayname: `Test-ETF ${i}`, instrumentTypeID: 6, exchangeID: 5, buyHoldingPct: 90, popularityUniques7Day: 50000 - i * 100, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false })),
   { instrumentId: 2500, internalSymbolFull: "NOPOP", displayname: "Aktie ohne Beliebtheit", instrumentTypeID: 5, exchangeID: 4, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false },
 ];
-// Wie bei eToro: alte, nicht mehr handelbare Einträge ohne Beliebtheit – die echte Suche liefert sie zuerst
+// Wie bei eToro ist die Beliebtheit ein Rang (1 = beliebteste): aus den erfundenen Zahlen oben einen Rang machen
+UNIVERSE.filter(u => u.popularityUniques7Day !== undefined).sort((a, b) => b.popularityUniques7Day - a.popularityUniques7Day).forEach((u, i) => { u.popularityUniques7Day = i + 1; });
+// alte, nicht mehr handelbare Einträge ohne Rang
 const DEAD = Array.from({ length: 30 }, (_, i) => ({ instrumentId: 4000 + i, internalSymbolFull: `OLD${i}`, displayname: `Alt ${i}`, instrumentTypeID: i % 3 ? 5 : 6, exchangeID: 4, isDelisted: i % 2 === 0, isActiveInPlatform: i % 2 === 0 }));
 const SEARCH_ORDER = [...DEAD, ...[...UNIVERSE].sort((a, b) => (a.instrumentId * 7919) % 1009 - (b.instrumentId * 7919) % 1009)];
 const FRED_DATA = {
@@ -155,8 +157,13 @@ http.createServer(async (req, res) => {
       return send(200, { earningsCalendar: UNIVERSE.filter(u => u.instrumentTypeID === 5 && u.instrumentId % 3 === 0).map(u => ({ symbol: u.internalSymbolFull, date: new Date(Date.now() + (u.instrumentId % 40 + 3) * 864e5).toISOString().slice(0, 10), hour: "amc", epsEstimate: 1.23, quarter: 4, year: 2026 })) });
     }
     if (url.pathname === "/finnhub/stock/recommendation") {
-      const sym = url.searchParams.get("symbol");
-      return send(200, sym && sym.startsWith("STK") ? [{ symbol: sym, period: "2026-11-01", strongBuy: 5, buy: 10, hold: 7, sell: 1, strongSell: 0 }, { symbol: sym, period: "2026-10-01", strongBuy: 4, buy: 9, hold: 8, sell: 2, strongSell: 0 }] : []);
+      // US-Aktien (ohne Börsenkürzel): je Symbol andere, reproduzierbare Zahlen; Vormonat für Hoch-/Herabstufungen
+      const sym = url.searchParams.get("symbol"), u = UNIVERSE.find(x => x.internalSymbolFull === sym && x.instrumentTypeID === 5 && !sym.includes("."));
+      if (!u) return send(200, []);
+      const k = u.instrumentId;
+      const now = { symbol: sym, period: "2026-11-01", strongBuy: k % 7, buy: 4 + k % 9, hold: 3 + k % 5, sell: k % 4, strongSell: k % 3 === 0 ? 1 : 0 };
+      const prev = { symbol: sym, period: "2026-10-01", strongBuy: Math.max(0, now.strongBuy + (k % 5) - 2), buy: now.buy, hold: now.hold + (k % 3) - 1, sell: now.sell, strongSell: now.strongSell };
+      return send(200, [now, prev]);
     }
     return send(404, { error: "unknown finnhub endpoint" });
   }
@@ -176,10 +183,16 @@ http.createServer(async (req, res) => {
   }
   if (url.pathname === "/api/v1/market-data/search") {
     if (!url.searchParams.get("fields")) return send(400, { error: "fields is required" });
-    const size = Number(url.searchParams.get("pageSize") || 20), page = Number(url.searchParams.get("pageNumber") || 1);
-    // wie die echte API: Typ-Filter ignoriert, Typ-Feld nicht mitgeliefert, Reihenfolge nicht nach Beliebtheit
-    const list = SEARCH_ORDER;
-    return send(200, { items: list.slice((page - 1) * size, page * size).map(({ instrumentTypeID, exchangeID, isInternal, ...rest }) => rest), page, pageSize: size, totalItems: list.length });
+    // wie die echte API: Typ-Filter und Seitenzahl ignoriert, Typ-Feld nicht mitgeliefert; sortiert nach Rang,
+    // Einträge ohne Rang in beiden Richtungen am Ende; unbekannte Sortierfelder lassen die Abfrage scheitern
+    const size = Math.min(10000, Number(url.searchParams.get("pageSize") || 20)), sort = url.searchParams.get("sort") || "";
+    if (sort && !/^-?popularityUniques7Day$/.test(sort)) return send(400, { error: `cannot sort by ${sort}` });
+    let list = SEARCH_ORDER;
+    if (sort) {
+      const dir = sort.startsWith("-") ? -1 : 1, has = list.filter(u => u.popularityUniques7Day !== undefined);
+      list = [...has.sort((a, b) => dir * (a.popularityUniques7Day - b.popularityUniques7Day)), ...list.filter(u => u.popularityUniques7Day === undefined)];
+    }
+    return send(200, { items: list.slice(0, size).map(({ instrumentTypeID, exchangeID, isInternal, ...rest }) => rest), page: 1, pageSize: size, totalItems: list.length });
   }
   if (url.pathname === "/api/v1/market-data/instruments") {   // offizielle Liste mit Typ je Instrument
     const want = (url.searchParams.get("instrumentTypeIds") || "").split(",").filter(Boolean).map(Number);

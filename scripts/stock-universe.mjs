@@ -93,43 +93,63 @@ async function typeIndex(typeIds) {
   }
   return index;
 }
-// Beliebtheit: Die Suche ignoriert den Typ-Filter und sortiert nicht verlässlich (leere Werte zuerst).
-// Deshalb einmal alle Seiten lesen und selbst sortieren: beliebteste zuerst, bei Gleichstand kleinere ID.
-const PAGE = Number(process.env.SEARCH_PAGE_SIZE || 100), MAX_PAGES = 600;
+// Beliebtheit: Die Suche ignoriert Typ-Filter und Blättern (Seite 2 = Seite 1). popularityUniques7Day ist dort
+// ein Rang (1 = beliebteste), absteigend sortiert kämen die unbeliebtesten zuerst. Deshalb: aufsteigend sortiert
+// mit großer Seite holen, zur Sicherheit auch vom anderen Ende, und selbst sortieren. Ob der Wert ein Rang oder
+// eine Anzahl ist, entscheiden bekannte Großwerte (die beliebtesten müssen vorne stehen).
+const PAGE = Number(process.env.SEARCH_PAGE_SIZE || 5000), MAX_PAGES = 200;
+const KNOWN = ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "GOOG", "GOOGL", "SPY", "QQQ"];
 async function allInstruments() {
   const fields = "instrumentId,internalSymbolFull,displayname,buyHoldingPct,popularityUniques7Day,isDelisted,isActiveInPlatform,isHiddenFromClient";
   const all = new Map();
-  let total = null, page = 1;
-  for (; page <= MAX_PAGES; page++) {
-    const d = await call("/v1/market-data/search", { fields, sort: "-popularityUniques7Day", pageSize: PAGE, pageNumber: page });
-    const items = findArray(d);
-    if (page === 1) {
-      total = num(field(d, "totalItems"));
-      log(`Suche: ${total ?? "?"} Instrumente, ${items.length} je Seite, Felder ${Object.keys(items[0] || {}).join(", ")}; erste: ${items.slice(0, 3).map(x => `${field(x, "internalSymbolFull")} (${field(x, "popularityUniques7Day") ?? "–"})`).join(", ")}`);
+  let total = null, size = PAGE;
+  for (const dir of ["", "-"]) {
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      let d;
+      try {
+        d = await call("/v1/market-data/search", { fields, sort: `${dir}popularityUniques7Day`, pageSize: size, pageNumber: page, page });
+      } catch (e) {
+        // zu große Seite abgelehnt: kleiner versuchen
+        if (page === 1 && size > 100 && /HTTP 4\d\d/.test(e.message)) { warn(`Suche mit ${size} je Seite abgelehnt – versuche ${Math.max(100, size / 10)}`); size = Math.max(100, size / 10); page--; continue; }
+        throw e;
+      }
+      const items = findArray(d);
+      if (page <= 2) {
+        total = num(field(d, "totalItems")) ?? total;
+        log(`Suche ${dir || "+"}Rang Seite ${page}: ${items.length} Einträge (Server: Seite ${field(d, "page") ?? "?"}, Größe ${field(d, "pageSize") ?? "?"}, gesamt ${total ?? "?"}); erste: ${items.slice(0, 3).map(x => `${field(x, "internalSymbolFull")} (${field(x, "popularityUniques7Day") ?? "–"})`).join(", ")}`);
+      }
+      if (!items.length) break;
+      let fresh = 0;
+      for (const it of items) {
+        const id = num(field(it, "instrumentId"));
+        if (Number.isInteger(id) && !all.has(id)) { all.set(id, it); fresh++; }
+      }
+      if (!fresh || (Number.isFinite(total) && all.size >= total)) break;
     }
-    if (!items.length) break;
-    let fresh = 0;
-    for (const it of items) {
-      const id = num(field(it, "instrumentId"));
-      if (Number.isInteger(id) && !all.has(id)) { all.set(id, it); fresh++; }
-    }
-    if (!fresh) { warn(`Suche: Seite ${page} brachte nichts Neues – Blättern beendet.`); break; }
     if (Number.isFinite(total) && all.size >= total) break;
   }
-  log(`Suche: ${all.size} verschiedene Instrumente aus ${Math.min(page, MAX_PAGES)} Seiten`);
+  log(`Suche: ${all.size} von ${total ?? "?"} Instrumenten gelesen`);
   return [...all.values()];
 }
-const popScore = x => (Number.isFinite(x.pop) ? x.pop : -1);
-function popular(list, typeId, count, index) {
+const popVal = it => { const v = num(field(it, "popularityUniques7Day")); return Number.isFinite(v) ? v : null; };
+const median = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; };
+export function popularityIsRank(list) {
+  const vals = list.map(popVal).filter(v => v !== null);
+  const known = list.filter(it => KNOWN.includes(String(field(it, "internalSymbolFull") || "").toUpperCase())).map(popVal).filter(v => v !== null);
+  if (!known.length || !vals.length) return true;   // so beobachtet bei eToro
+  return median(known) <= median(vals);
+}
+function popular(list, typeId, count, index, isRank) {
   const out = [];
   for (const it of list) {
     const id = num(field(it, "instrumentId")), sym = field(it, "internalSymbolFull");
     if (index.get(id) !== typeId || typeof sym !== "string" || !/^[A-Za-z0-9.\-_]{1,20}$/.test(sym)) continue;
     if (field(it, "isDelisted") === true || field(it, "isHiddenFromClient") === true || field(it, "isActiveInPlatform") === false) continue;
-    out.push({ id, sym: sym.toUpperCase(), name: String(field(it, "displayname") || sym).slice(0, 60), crowd: num(field(it, "buyHoldingPct")) ?? null, pop: num(field(it, "popularityUniques7Day")) ?? null });
+    out.push({ id, sym: sym.toUpperCase(), name: String(field(it, "displayname") || sym).slice(0, 60), crowd: num(field(it, "buyHoldingPct")) ?? null, pop: popVal(it) });
   }
-  out.sort((a, b) => popScore(b) - popScore(a) || a.id - b.id);
-  log(`Typ ${typeId}: ${out.length} gültige, davon ${Math.min(count, out.length)} übernommen; beliebteste: ${out.slice(0, 5).map(x => x.sym).join(", ")}`);
+  // beliebteste zuerst, ohne Wert ans Ende, bei Gleichstand kleinere ID
+  out.sort((a, b) => (a.pop === null) - (b.pop === null) || (isRank ? a.pop - b.pop : b.pop - a.pop) || a.id - b.id);
+  log(`Typ ${typeId}: ${out.length} gültige, davon ${Math.min(count, out.length)} übernommen; beliebteste: ${out.slice(0, 6).map(x => x.sym).join(", ")}`);
   return out.slice(0, count);
 }
 async function dailyCandles(id) {
@@ -168,9 +188,11 @@ async function main() {
   log(`Offizielle Instrumentenliste: ${inIndex(types.stock)} Aktien, ${inIndex(types.etf)} ETFs`);
   if (!inIndex(types.stock)) throw new Error("Instrumentenliste ohne Aktien – Typ-Zuordnung nicht möglich.");
   const list = await allInstruments();
+  const isRank = popularityIsRank(list);
+  log(`Beliebtheit ist ${isRank ? "ein Rang (1 = beliebteste)" : "eine Anzahl (mehr = beliebter)"}`);
   const universe = [
-    ...popular(list, types.stock, CONFIG.stocks, index).map(x => ({ ...x, type: "Aktie" })),
-    ...(Number.isInteger(types.etf) ? popular(list, types.etf, CONFIG.etfs, index).map(x => ({ ...x, type: "ETF" })) : []),
+    ...popular(list, types.stock, CONFIG.stocks, index, isRank).map(x => ({ ...x, type: "Aktie" })),
+    ...(Number.isInteger(types.etf) ? popular(list, types.etf, CONFIG.etfs, index, isRank).map(x => ({ ...x, type: "ETF" })) : []),
   ];
   log(`${universe.length} Werte: ${universe.slice(0, 8).map(x => x.sym).join(", ")} …`);
 
