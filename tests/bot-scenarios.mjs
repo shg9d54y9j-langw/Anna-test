@@ -131,12 +131,12 @@ await withServer("Auftrag ohne Bestätigung wird nie doppelt gesendet", async ({
   check(ops(s, "register").length === 1 && !r.s.pending && r.s.managed.length === 1, "nächste Runde: nachgefragt, bestätigt, kein zweiter Auftrag");
 });
 
-await withServer("Echtgeld: Obergrenze 500 $ und eigenes Konto", async ({ run, ranking, state }) => {
+await withServer("Echtgeld ist gesperrt", async ({ run, ranking, state }) => {
   await ranking(pickOf(7));
-  await run({ BOT_MODE: "real" });
+  const r = await run({ BOT_MODE: "real" });
   const real = await state("real"), demo = await state("demo");
-  check(ops(real, "register").length === 1 && ops(real, "register")[0].amount === 500, "10 % von 20.000 $ wären 2.000 $ – gesendet werden höchstens 500 $");
-  check(demo.ops.length === 0, "Echtgeld-Auftrag geht nicht ans Demokonto");
+  check(real.ops.length === 0 && demo.ops.length === 0, "BOT_MODE=real: kein einziger Auftrag – weder Echtgeld noch Demo");
+  check(r.s.active === false && r.s.newEvents.some(e => /gesperrt/.test(e.text)), "Bot meldet: Echtgeld ist gesperrt");
 });
 
 await withServer("Veraltete Daten und falsche Kunden-ID", async ({ run, ranking, state }) => {

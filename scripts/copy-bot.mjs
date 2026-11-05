@@ -4,12 +4,14 @@
 // Abgleich in jeder Runde:  Soll = Tageswahl aus data/ranking.json (wird nur nach bestandener Gegenrechnung veröffentlicht)
 //                           Ist  = Kopien im eToro-Konto, die der Bot selbst angelegt hat
 // Sicherungen:
-//  - Schalter: Repository-Variable BOT_MODE = off | demo | real (ohne Variable: demo). Echtgeld nur mit eigenem Schlüssel.
+//  - Schalter: Repository-Variable BOT_MODE = off | demo (ohne Variable: demo).
+//  - Echtgeld ist im Programm gesperrt (REAL_MONEY_UNLOCKED = false): Der Bot handelt nur im Demokonto mit Spielgeld,
+//    auch wenn jemand BOT_MODE = real setzt. Freigabe nur auf ausdrücklichen Wunsch des Nutzers per Code-Änderung.
 //  - Der Bot fasst nur Kopien an, die er selbst gestartet hat; Ihre eigenen Kopien bleiben unberührt.
 //  - Höchstens eine Bot-Kopie gleichzeitig, höchstens zwei Starts pro Tag, nie Geld nachschießen.
 //  - Aufträge werden nie automatisch wiederholt (ein zweiter Versuch könnte doppelt kopieren); unklare Fälle werden geprüft.
 //  - Copy Stop Loss: Die eToro-API kann ihn nicht setzen – der Bot überwacht ihn selbst und beendet die Kopie.
-//  - Echtgeld: höchstens 500 $ pro Kopie (vom Nutzer festgelegt).
+//  - Für später vorbereitet: Echtgeld höchstens 500 $ pro Kopie (vom Nutzer festgelegt).
 //  - Datenschutz: Das Repository ist öffentlich. Deshalb stehen in Protokoll, bot.json und Meldungen keine Dollar-Beträge
 //    und keine Ihrer eigenen Kopien – nur die Bot-Kopie mit Anteilen in Prozent.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -24,6 +26,10 @@ const RANKING = process.env.RANKING_IN || here("../data/ranking.json");
 const STATE_IN = process.env.BOT_STATE_IN || "";
 const OUT = process.env.BOT_OUT || here("../data/bot.json");
 const POLL_MS = Number(process.env.BOT_POLL_MS ?? 4000);
+
+// Echtgeld gesperrt – der Nutzer möchte zuerst nur mit Spielgeld (Demokonto) handeln.
+// Zum Freigeben müssten diese Zeile, die Workflows (Echtgeld-Schlüssel) und die Tests geändert werden.
+export const REAL_MONEY_UNLOCKED = false;
 
 export const LIMITS = {
   realMaxUsd: 500,          // Echtgeld: höchstens 500 $ pro Kopie
@@ -105,6 +111,11 @@ async function main() {
   if (!["demo", "real"].includes(MODE)) {
     st.active = false;
     once("mode", "fehler", `Unbekannter Wert „${MODE}“ für BOT_MODE – erlaubt sind off, demo und real. Der Bot tut nichts.`);
+    return save();
+  }
+  if (MODE === "real" && !REAL_MONEY_UNLOCKED) {
+    st.active = false;
+    once("real-locked", "hinweis", "Echtgeld ist im Bot gesperrt – er handelt nur im Demokonto mit Spielgeld. Bitte BOT_MODE auf demo setzen.");
     return save();
   }
   if (!hasKeys) { st.active = false; st.setup = false; log("Kein Bot-Schlüssel hinterlegt – Bot übersprungen."); return save(); }

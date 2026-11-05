@@ -97,18 +97,20 @@
         <li>Fertig. Der Bot startet in der nächsten 15-Minuten-Runde an einem Börsentag (etwa 7–23 Uhr).</li>
         <li>Ausschalten jederzeit: dort Reiter <b>„Variables“</b> → <b>„New repository variable“</b> ${v("BOT_MODE")} = ${v("off")}. Wieder einschalten: ${v("demo")}.</li>
       </ol>
-      <p class="muted small">Der Schlüssel funktioniert nur im Demokonto – mit ihm kann kein echtes Geld bewegt werden. Echtgeld wäre ein eigener Schritt mit eigenem Schlüssel und höchstens 500 $ pro Kopie.</p>
+      <p class="muted small">Der Bot handelt nur mit Spielgeld im eToro-Demokonto: Der Schlüssel funktioniert nur dort, und Echtgeld ist im Bot zusätzlich gesperrt.</p>
     </details>`;
   }
   function botBox() {
     if (!bot || bot.setup === false) return botSetup();
     const age = (Date.now() - new Date(bot.updated)) / 6e4;
     const time = new Date(bot.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
-    const mode = !bot.active ? `<span class="chip">aus</span>` : bot.mode === "real" ? `<span class="chip caution">Echtgeld</span>` : `<span class="chip open">Demo</span>`;
+    const mode = !bot.active ? `<span class="chip">aus</span>` : `<span class="chip open">Demo · Spielgeld</span>`;
     const copies = (bot.copies || []).filter(c => c && okName(c.userName));
     let html = `<div class="live">
       <div class="live-head"><span class="dot ${bot.active && age < 40 ? "on" : ""}"></span> Copy-Bot ${mode} <span class="muted small">Stand ${time} Uhr</span></div>`;
-    if (!bot.active) html += `<p class="small muted">Ausgeschaltet (Variable BOT_MODE = off). Einschalten: BOT_MODE = demo.</p>`;
+    if (!bot.active) html += bot.mode === "real"
+      ? `<p class="small muted">Echtgeld ist im Bot gesperrt – bitte die Variable BOT_MODE auf demo setzen.</p>`
+      : `<p class="small muted">Ausgeschaltet (Variable BOT_MODE = off). Einschalten: BOT_MODE = demo.</p>`;
     for (const c of copies) {
       if (c.justStarted) { html += `<p class="small">Kopie von ${link(c.userName)} gerade gestartet – die Werte erscheinen in der nächsten Runde.</p>`; continue; }
       const state = c.closing ? " · <b>wird beendet</b>" : c.aligning ? " · wird an das Portfolio des Traders angepasst" : c.paused ? " · pausiert" : "";

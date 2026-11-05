@@ -16,13 +16,9 @@ on:
         required: true
       ETORO_USER_KEY:
         required: true
-      ETORO_BOT_API_KEY:          # Bot im Demokonto: Schlüssel mit „Trading – Demo → Write“
+      ETORO_BOT_API_KEY:          # Bot im Demokonto (Spielgeld): Schlüssel nur mit „Trading – Demo → Write“
         required: false
       ETORO_BOT_USER_KEY:
-        required: false
-      ETORO_REAL_BOT_API_KEY:     # nur für BOT_MODE = real: Schlüssel mit „Trading – Real → Write“
-        required: false
-      ETORO_REAL_BOT_USER_KEY:
         required: false
 
 permissions: {}
@@ -130,9 +126,9 @@ jobs:
         id: bot
         env:
           BOT_MODE: ${{ vars.BOT_MODE }}
-          # Echtgeld nur mit dem eigenen Echtgeld-Schlüssel; sonst der Demo-Schlüssel
-          ETORO_API_KEY: ${{ vars.BOT_MODE == 'real' && secrets.ETORO_REAL_BOT_API_KEY || vars.BOT_MODE != 'real' && secrets.ETORO_BOT_API_KEY || '' }}
-          ETORO_USER_KEY: ${{ vars.BOT_MODE == 'real' && secrets.ETORO_REAL_BOT_USER_KEY || vars.BOT_MODE != 'real' && secrets.ETORO_BOT_USER_KEY || '' }}
+          # Nur der Demo-Schlüssel: Echtgeld ist gesperrt, ein Echtgeld-Schlüssel wird gar nicht erst übergeben
+          ETORO_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
+          ETORO_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
           BOT_STATE_IN: ${{ runner.temp }}/bot-prev.json
         run: |
           code=0

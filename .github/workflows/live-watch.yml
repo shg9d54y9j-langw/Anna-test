@@ -27,8 +27,6 @@ jobs:
       ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
       ETORO_BOT_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
       ETORO_BOT_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
-      ETORO_REAL_BOT_API_KEY: ${{ secrets.ETORO_REAL_BOT_API_KEY }}
-      ETORO_REAL_BOT_USER_KEY: ${{ secrets.ETORO_REAL_BOT_USER_KEY }}
 
   round2:
     needs: round1
@@ -44,8 +42,6 @@ jobs:
       ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
       ETORO_BOT_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
       ETORO_BOT_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
-      ETORO_REAL_BOT_API_KEY: ${{ secrets.ETORO_REAL_BOT_API_KEY }}
-      ETORO_REAL_BOT_USER_KEY: ${{ secrets.ETORO_REAL_BOT_USER_KEY }}
 
   round3:
     needs: round2
@@ -61,8 +57,6 @@ jobs:
       ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
       ETORO_BOT_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
       ETORO_BOT_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
-      ETORO_REAL_BOT_API_KEY: ${{ secrets.ETORO_REAL_BOT_API_KEY }}
-      ETORO_REAL_BOT_USER_KEY: ${{ secrets.ETORO_REAL_BOT_USER_KEY }}
 
   round4:
     needs: round3
@@ -78,5 +72,3 @@ jobs:
       ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
       ETORO_BOT_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
       ETORO_BOT_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
-      ETORO_REAL_BOT_API_KEY: ${{ secrets.ETORO_REAL_BOT_API_KEY }}
-      ETORO_REAL_BOT_USER_KEY: ${{ secrets.ETORO_REAL_BOT_USER_KEY }}
