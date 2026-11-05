@@ -588,3 +588,21 @@ details.info .calc { margin-top: 12px; }
 @media (max-width: 360px) { .bottomnav button { font-size: 8px; letter-spacing: .02em; } .bottomnav button svg { width: 18px; height: 18px; } }
 .wbar { display: inline-block; width: 46px; height: 6px; border: 1px solid var(--line-2); vertical-align: middle; margin-right: 6px; }
 .wbar > span { display: block; height: 100%; background: var(--text); }
+
+/* ---------- Ziehen zum Aktualisieren (pull.js) ---------- */
+html { overscroll-behavior-y: contain; }   /* eigene Geste statt der des Browsers – überall gleich, auch als App */
+.ptr {
+  position: fixed; left: 50%; top: env(safe-area-inset-top, 0px); z-index: 60;
+  display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px;
+  background: #000; color: var(--text); border: 1px solid var(--line-2);
+  font: 700 11px var(--font); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;
+  transform: translate(-50%, -64px); opacity: 0; pointer-events: none;
+  transition: transform .22s var(--ease), opacity .18s;
+}
+.ptr.on { opacity: 1; }
+.ptr.dragging, .ptr.dragging .ptr-icon { transition: none; }
+.ptr.armed, .ptr.busy { border-color: var(--text); }
+.ptr-icon { display: grid; place-items: center; width: 18px; height: 18px; transition: transform .15s; }
+.ptr-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; }
+.ptr.busy .ptr-icon { animation: ptrspin .9s linear infinite; }
+@keyframes ptrspin { to { transform: rotate(360deg); } }
