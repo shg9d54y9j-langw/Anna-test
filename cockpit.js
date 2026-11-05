@@ -121,11 +121,14 @@
     const t = Date.now();
     const [local, raw] = await Promise.all([get(`data/market.json?t=${t}`), get(`${RAW}?t=${t}`)]);
     const next = [local, raw].filter(d => d && d.updated && d.overall).sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
+    if (loadedOnce && (!next || (market && next.updated === market.updated))) return;   // nichts Neues → nichts neu zeichnen
+    loadedOnce = true;
     if (next) market = next;
     window.DTD.market = market;
     window.dispatchEvent(new Event("dtd:market"));
     render();
   }
+  let loadedOnce = false;
   window.DTD.loadMarketLive = () => tvWidget("marketOverview", "market-overview", {
     ...COMMON, dateRange: "1D", showChart: true, width: "100%", height: "100%", showSymbolLogo: true, showFloatingTooltip: true,
     plotLineColorGrowing: PAL.up, plotLineColorFalling: PAL.down, gridLineColor: "rgba(255,255,255,0.06)", scaleFontColor: "#8d8d96",
@@ -141,6 +144,6 @@
 
   render();
   load();
-  setInterval(load, 5 * 60 * 1000);
+  setInterval(() => { if (!document.hidden) load(); }, 60 * 1000);   // jede Minute auf Neues prüfen
   document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
 })();

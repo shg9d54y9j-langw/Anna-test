@@ -1,4 +1,4 @@
-/* ===================== DayTrade Desk – Design „Raw Grid“ =====================
+/* ===================== RojkoMoney – Design „Raw Grid“ =====================
    Schwarz, matt, harte Haarlinien und ein sichtbares Raster. Weiß und Grautöne für alles,
    Grün und Rot ausschließlich für Gewinn und Verlust. Keine Leuchteffekte, keine Verläufe. */
 @font-face {
@@ -71,10 +71,10 @@ strong, b { font-weight: 700; }
 }
 .brand { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 .brand b { font-weight: 800; color: var(--muted); }
-.logo { width: 30px; height: 30px; border: 1px solid var(--line-2); padding: 4px; background: #000; }
-.logo .c-up { fill: #fff; stroke: #fff; }
-.logo .c-down { fill: #000; stroke: #fff; stroke-width: 1.4; }
-.logo .wick { stroke: #fff; stroke-width: 1.4; stroke-linecap: square; }
+.logo { width: 32px; height: 32px; flex: none; }
+.logo rect { fill: #000; stroke: var(--text); stroke-width: 1.5; }
+.logo path { fill: none; stroke: var(--text); stroke-width: 2.6; stroke-linecap: square; stroke-linejoin: miter; }
+.wordmark { font-size: 16px; letter-spacing: .16em; }
 .sessions { margin-left: auto; display: flex; gap: 0; flex-wrap: wrap; border: 1px solid var(--line); }
 .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 12px; color: var(--text-2); white-space: nowrap; }
 .pill + .pill { border-left: 1px solid var(--line); }
@@ -473,13 +473,13 @@ details.info .calc { margin-top: 12px; }
   body { font-size: 14.5px; padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
   .tabs { display: none; }
   .bottomnav {
-    display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
     background: #000; border-top: 1px solid var(--line-2); padding-bottom: env(safe-area-inset-bottom);
   }
   .bottomnav button {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 62px;
     background: #000; color: var(--muted); border: none; border-right: 1px solid var(--line); cursor: pointer;
-    font: 800 9.5px var(--font); letter-spacing: .08em; text-transform: uppercase;
+    font: 800 9px var(--font); letter-spacing: .06em; text-transform: uppercase; min-width: 0;
   }
   .bottomnav button:last-child { border-right: none; }
   .bottomnav button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: square; }
@@ -501,8 +501,9 @@ details.info .calc { margin-top: 12px; }
   .view-head { grid-template-columns: 1fr; gap: 14px; }
   .view-head > :last-child:not(:first-child) { justify-self: start; }
   .appbar { padding-top: calc(10px + env(safe-area-inset-top)); }
-  .sessions { margin-left: 0; width: 100%; }
-  .pill { flex: 1; justify-content: center; }
+  .sessions { margin-left: 0; width: 100%; min-width: 0; }
+  .pill { flex: 1 1 100%; justify-content: flex-start; white-space: normal; min-width: 0; font-size: 11.5px; }
+  .pill + .pill { border-left: none; border-top: 1px solid var(--line); }
   main { padding-top: 22px; }
   .card, .block { padding: 16px; }
   .hero { padding: 20px 16px; }
@@ -539,3 +540,48 @@ details.info .calc { margin-top: 12px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Trend-Bot ---------- */
+.sq-row { display: inline-flex; gap: 3px; vertical-align: middle; }
+.sq { width: 11px; height: 11px; border: 1px solid var(--line-2); display: inline-block; }
+.sq.on { background: var(--text); border-color: var(--text); }
+.journal-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); }
+.jr { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 14px; padding: 12px 14px; }
+.jr + .jr { border-top: 1px solid var(--line); }
+.jr-day { font-family: var(--mono); font-size: 13px; }
+.jr-body { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .jr { grid-template-columns: 1fr; gap: 6px; } }
+
+/* ---------- HotStuff ---------- */
+.ideas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 0; border: 1px solid var(--line); }
+.ideas > .idea { box-shadow: 0 0 0 1px var(--line); }
+.idea { display: grid; gap: 8px; align-content: start; padding: 16px; min-width: 0; background: var(--panel); }
+.idea-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.idea-head .light { margin-left: auto; font-size: 10px; padding: 3px 8px; white-space: nowrap; }
+.idea-sym { background: none; border: none; padding: 0; color: var(--text); font: 800 18px var(--mono); letter-spacing: -.02em; cursor: pointer; }
+.idea-sym:hover { text-decoration: underline; }
+.idea-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+.idea-levels { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; padding: 8px 10px; border: 1px solid var(--line-2); background: #000; }
+.idea-why { margin: 0; color: var(--text-2); }
+.idea-open { justify-self: start; padding: 6px 12px; font-size: 11px; }
+
+/* ---------- Live-Anzeige ---------- */
+.livechip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; border: 1px solid var(--line-2); font-size: 11.5px; white-space: nowrap; margin-left: 12px; }
+.livechip b { font: 800 10.5px var(--font); letter-spacing: .14em; text-transform: uppercase; }
+.livechip .dot { width: 7px; height: 7px; background: var(--text); display: inline-block; animation: lcblink 2s steps(1) infinite; }
+.livechip .lc-clock { font-size: 12px; }
+@keyframes lcblink { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .livechip .dot { animation: none; } }
+@media (max-width: 760px) { .livechip .lc-age { display: none; } .livechip { margin-left: auto; } }
+
+/* ---------- Theorie: Zukunftstrends ---------- */
+.future-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); border: 1px solid var(--line); margin-top: 12px; }
+.future { display: grid; gap: 8px; align-content: start; padding: 16px; background: var(--panel); box-shadow: 0 0 0 1px var(--line); min-width: 0; }
+.future h3 { margin: 2px 0 0; font-size: 17px; }
+.future .core { margin: 0; color: var(--text-2); font-size: 14px; }
+.future .small { margin: 0; }
+.future .topic-kicker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.future .topic-kicker .light { font-size: 10px; padding: 3px 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.nowrap { white-space: nowrap; }
+@media (max-width: 360px) { .bottomnav button { font-size: 8px; letter-spacing: .02em; } .bottomnav button svg { width: 18px; height: 18px; } }

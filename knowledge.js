@@ -219,6 +219,81 @@
     },
   ];
 
+  // ================= Zukunft: Trend-Empfehlung und Ideen mit sehr großem Potenzial =================
+  // Einstufung dieser Seite nach Beleglage der Nachfrage (offizielle Prognosen) und Reife der Technik – keine Kaufempfehlung.
+  const FUTURE = [
+    { title: "KI-Rechenleistung und Halbleiter", level: "stark", why: "Der Strombedarf von Rechenzentren steigt laut IEA von rund 415 TWh (2024) auf etwa 945 TWh bis 2030 – vor allem wegen KI-Servern. Chips, Speicher und Fertigungsanlagen sind der Engpass.", sparten: "Chips, Speicherchips, Chipfertigung und -maschinen, Netzwerktechnik", ex: ["NVDA", "TSM", "ASML", "AMD", "MU", "AVGO"], risk: "Stark zyklisch: Wenn die Investitionen der großen Tech-Firmen langsamer wachsen, fallen diese Aktien schnell um 30–50 %.", src: [A("https://www.iea.org/reports/energy-and-ai", "IEA: Energy and AI (2025)")] },
+    { title: "Stromnetze und Elektrifizierung", level: "stark", why: "Strom wächst in allen Szenarien des World Energy Outlook 2025 schneller als der übrige Energiebedarf. Netze, Transformatoren, Kabel und Speicher werden zum Nadelöhr – unabhängig davon, welche Kraftwerke gebaut werden.", sparten: "Netzausrüster, Kabel, Schaltanlagen, Kühlung für Rechenzentren, Gasturbinen", ex: ["SIE.DE", "ENR.DE", "ABBN.ZU", "SU.PA", "PRY.MI", "GEV", "ETN", "VRT"], risk: "Viele dieser Aktien sind seit 2023 stark gestiegen; Lieferengpässe und Zinsen bestimmen die Gewinne.", src: [A("https://www.iea.org/reports/world-energy-outlook-2025", "IEA: World Energy Outlook 2025")] },
+    { title: "Verteidigung und Cybersicherheit", level: "stark", why: "Die NATO-Staaten haben im Juni 2025 beschlossen, bis 2035 jährlich 5 % der Wirtschaftsleistung für Verteidigung und Sicherheit auszugeben (3,5 % Kernverteidigung, 1,5 % Infrastruktur, Cyber, Resilienz; Überprüfung 2029). Die weltweiten Militärausgaben steigen seit elf Jahren.", sparten: "Rüstung und Munition, Sensorik, Luftfahrt, Cybersicherheit, Datenanalyse", ex: ["RHM.DE", "HAG.DE", "BA.L", "LMT", "AIR.PA", "CRWD", "PANW", "PLTR"], risk: "Politisch getrieben und viel ist schon im Preis: Rheinmetall hat sich nach dem Höhenflug zeitweise halbiert.", src: [A("https://www.ncia.nato.int/newsroom/news/the-hague-summit-declaration", "NATO: The Hague Summit Declaration (25.6.2025)"), A("https://www.sipri.org/publications/2026/sipri-fact-sheets/trends-world-military-expenditure-2025", "SIPRI 2026")] },
+    { title: "Gesundheit: Abnehmmittel und alternde Gesellschaft", level: "stark", why: "Weltweit leben mehr als eine Milliarde Menschen mit Adipositas (Lancet 2024). Bis Mitte der 2030er gibt es mehr Über-80-Jährige als Säuglinge (UN). Neue Abnehmmittel (GLP-1) gehören zu den umsatzstärksten Medikamenten.", sparten: "Pharma, Medizintechnik, Roboter-Chirurgie, Telemedizin, Pflege", ex: ["LLY", "NOVO-B.CO", "ISRG", "HIMS"], risk: "Preisdruck durch Politik und Konkurrenz: Novo Nordisk fiel trotz Wachstum deutlich, weil Konkurrenten aufholten.", src: [A("https://doi.org/10.1016/S0140-6736(23)02750-2", "NCD-RisC, The Lancet 2024"), A("https://population.un.org/WPP/Publications/Files/WPP2024_Key-Messages.pdf", "UN: World Population Prospects 2024")] },
+    { title: "Robotik und Automatisierung", level: "mittel", why: "2024 wurden weltweit rund 542.000 Industrieroboter installiert – doppelt so viele wie vor zehn Jahren; der Verband IFR erwartet über 700.000 pro Jahr bis 2028. Fachkräftemangel und KI treiben die Nachfrage; humanoide Roboter stehen noch am Anfang.", sparten: "Industrieroboter, Antriebe und Sensoren, Lager-Automatisierung, humanoide Roboter", ex: ["ABBN.ZU", "SIE.DE", "ISRG", "TSLA"], risk: "Abhängig von Industriekonjunktur und China; ob humanoide Roboter bald Geld verdienen, ist offen.", src: [A("https://ifr.org/ifr-press-releases/news/global-robot-demand-in-factories-doubles-over-10-years", "IFR: World Robotics 2025")] },
+    { title: "Kernenergie und kleine Reaktoren", level: "mittel", why: "Die IEA sieht eine „neue Ära“ der Kernkraft: Viele Staaten und Tech-Konzerne setzen auf rund um die Uhr verfügbaren, CO₂-armen Strom; kleine modulare Reaktoren (SMR) sollen ab etwa 2030 ans Netz gehen.", sparten: "Kraftwerksbetreiber, Uran, Reaktorbauer, SMR-Entwickler", ex: ["RR.L", "VST", "OKLO"], risk: "SMR-Firmen haben oft noch keinen Umsatz; Zulassung, Kosten und Bauzeiten sind die großen Unbekannten (Oklo: −80 % in 12 Monaten).", src: [A("https://www.iea.org/reports/the-path-to-a-new-era-for-nuclear-energy", "IEA: The Path to a New Era for Nuclear Energy (2025)")] },
+    { title: "Raumfahrt und Satelliten", level: "mittel", why: "Laut Weltwirtschaftsforum und McKinsey wächst die Weltraumwirtschaft von 630 Mrd. $ (2023) auf rund 1,8 Billionen $ bis 2035 – etwa doppelt so schnell wie die Weltwirtschaft. Treiber sind billigere Starts und Satelliten-Internet.", sparten: "Raketenstarts, Satelliten-Internet (auch direkt aufs Handy), Erdbeobachtung, Luft- und Raumfahrt", ex: ["RKLB", "ASTS", "AIR.PA"], risk: "Kapitalintensiv, viele Firmen verbrennen Geld und geben laufend neue Aktien aus (Verwässerung).", src: [A("https://www.weforum.org/publications/space-the-1-8-trillion-opportunity-for-global-economic-growth/", "WEF & McKinsey: Space – The $1.8 Trillion Opportunity (2024)")] },
+    { title: "Quantencomputer", level: "spekulativ", why: "McKinsey schätzt im Quantum Technology Monitor 2026 den Umsatz mit Quantencomputern bis 2035 auf 43–71 Mrd. $. Heute ist der Umsatz noch klein – je nach Abgrenzung 1 bis 4 Mrd. $; nützliche, fehlerkorrigierte Rechner gibt es noch nicht.", sparten: "Quantenhardware, Software, Verschlüsselung; große Tech-Konzerne forschen mit", ex: ["IONQ", "RGTI", "QBTS", "IBM", "GOOG"], risk: "Technik unreif, Umsätze winzig im Verhältnis zur Bewertung – die reinen Quanten-Aktien haben sich nach dem Hype 2025 mehr als halbiert.", src: [A("https://www.mckinsey.com/no/our-insights/mckinsey-quantum-technology-monitor-2026-a-commercial-tipping-point", "McKinsey: Quantum Technology Monitor 2026")] },
+  ];
+  const LEVEL = { stark: ["Stark belegt", "green", "Nachfrage durch offizielle Prognosen gut abgesichert"], mittel: ["Belegt, unsicherer", "yellow", "Wachstum wahrscheinlich, Gewinner noch offen"], spekulativ: ["Spekulativ", "red", "Technik oder Geschäftsmodell noch unreif"] };
+  const MOON = [
+    ["Quantencomputer", "Erste nützliche Anwendungen in Chemie, Logistik und Verschlüsselung.", ["IONQ", "RGTI", "QBTS"]],
+    ["Kleine Reaktoren und Kernfusion", "Rund um die Uhr Strom für Rechenzentren ohne CO₂.", ["OKLO", "RR.L"]],
+    ["Satelliten-Internet direkt aufs Handy", "Netz überall, ohne Funkmasten.", ["ASTS", "RKLB"]],
+    ["Humanoide Roboter", "Maschinen, die Arbeiten in Fabrik, Lager und Haushalt übernehmen.", ["TSLA"]],
+    ["KI-Software für Firmen", "Programme, die ganze Arbeitsabläufe selbst erledigen.", ["PLTR"]],
+    ["Telemedizin und Abnehmmittel", "Behandlung per App, neue Medikamente für Volkskrankheiten.", ["HIMS"]],
+  ];
+  let stockMap = null, stockLoading = false;
+  async function loadStocks() {
+    if (stockMap || stockLoading) return;
+    stockLoading = true;
+    const shared = window.DTD.stockData && window.DTD.stockData();
+    let d = shared;
+    if (!d) {
+      const t = Date.now(), get = u => fetch(u, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
+      const list = (await Promise.all([get(`data/stocks.json?t=${t}`), get(`https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/stock-data/stocks.json?t=${t}`)])).filter(x => x && Array.isArray(x.items));
+      d = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
+    }
+    stockMap = d ? new Map(d.items.map(x => [x.sym, x])) : new Map();
+    stockLoading = false;
+    if (!$("theorie").hidden) renderTheory();
+  }
+  const chipFor = sym => {
+    const x = stockMap && stockMap.get(sym);
+    const r = x && Number.isFinite(x.ret12m) ? ` <span class="${x.ret12m < 0 ? "down" : "up"}">${x.ret12m > 0 ? "+" : ""}${fmt(x.ret12m, 0)} %</span>` : "";
+    return `<button type="button" class="chip-btn" data-open="${esc(sym)}" title="${x ? `${esc(x.name)} – 12-Monats-Rendite, im Aktien-Check öffnen` : "im Aktien-Check öffnen"}">${esc(sym)}${r}</button>`;
+  };
+  function futureHtml() {
+    const moonRet = MOON.flatMap(m => m[2]).map(sym => stockMap && stockMap.get(sym)).filter(x => x && Number.isFinite(x.ret12m));
+    const worst = moonRet.filter(x => x.ret12m < -20).sort((a, b) => a.ret12m - b.ret12m).slice(0, 4);
+    return `<article class="card" data-section="Trend-Empfehlung">
+        <div class="card-head"><h2 class="card-title">Trend-Empfehlung: Welche Sparten in den nächsten Jahren wachsen</h2><span class="muted small">12-Monats-Renditen live aus den Tagesdaten</span></div>
+        <p class="small">Eingestuft nach zwei Fragen: Ist die Nachfrage durch offizielle Prognosen abgesichert? Und verdienen die Firmen schon Geld damit? Die Beispiele sind große, bei eToro handelbare Firmen aus der Sparte – <b>keine Kaufempfehlung</b>. Ein Klick öffnet den Wert im Aktien-Check.</p>
+        <div class="future-grid">${FUTURE.map(f => { const L = LEVEL[f.level]; return `
+          <article class="future">
+            <div class="topic-kicker"><span class="light ${L[1]}">${L[0]}</span><span class="muted small">${L[2]}</span></div>
+            <h3>${f.title}</h3>
+            <p class="core">${f.why}</p>
+            <p class="small"><b>Welche Sparten profitieren:</b> ${f.sparten}</p>
+            <div class="chips">${f.ex.map(chipFor).join("")}</div>
+            <p class="small risk"><b>Risiko:</b> ${f.risk}</p>
+            <ul class="srcs">${f.src.map(x => `<li>${x}</li>`).join("")}</ul>
+          </article>`; }).join("")}</div>
+        <p class="hint"><b>Unsere Einschätzung:</b> Am sichersten wachsen die „Schaufel-Verkäufer“ – Netze, Chips, Strom – und Bereiche mit fest beschlossenem Geld wie Verteidigung. Am meisten Fantasie, aber auch am meisten Totalverlust-Risiko steckt in Quanten, kleinen Reaktoren und Raumfahrt. Wichtig: Ein wachsender Markt heißt nicht, dass die Aktie steigt – bekannte Themen sind oft schon im Preis; Themen-ETFs verloren nach Auflage im Schnitt rund 30 % gegenüber dem Markt in fünf Jahren (${A("https://doi.org/10.1093/rfs/hhac048", "Ben-David u. a., RFS 2023")}).</p>
+      </article>
+      <article class="card" data-section="1000-%-Ideen">
+        <h2 class="card-title">Ideen mit 1000 %-Potenzial – und was die Forschung dazu sagt</h2>
+        <p><b>Kann eine Aktie 1000 % steigen? Ja – aber es ist selten, und vorher weiß es niemand.</b> Von 64.000 Aktien weltweit (1990–2020) haben nur 2,4 % den gesamten Netto-Vermögenszuwachs geschaffen; mehr als die Hälfte brachte über ihre Laufzeit weniger als US-Geldmarktzinsen (${A("https://rpc.cfainstitute.org/research/financial-analysts-journal/2023/long-term-shareholder-returns-evidence-from-64000-global-stocks", "Bessembinder u. a., Financial Analysts Journal 2023")}; für die USA 1926–2016: 4 %, ${A("https://doi.org/10.1016/j.jfineco.2018.06.004", "Bessembinder, JFE 2018")}). Aktien, die wie Lotterielose wirken, bringen im Schnitt sogar weniger (${A("https://doi.org/10.1016/j.jfineco.2010.08.014", "Bali, Cakici &amp; Whitelaw 2011")}).</p>
+        <div class="table-wrap" style="margin-top:12px"><table>
+          <thead><tr><th>Feld</th><th>Warum es riesig werden könnte</th><th>Beispiele bei eToro (12 Monate)</th></tr></thead>
+          <tbody>${MOON.map(m => `<tr><td><b>${m[0]}</b></td><td>${m[1]}</td><td><div class="chips">${m[2].map(chipFor).join("")}</div></td></tr>`).join("")}</tbody></table></div>
+        ${worst.length ? `<p class="small" style="margin-top:12px"><b>Die Lehre aus 2025/26:</b> Genau solche Werte waren 2025 die großen Stars – in den letzten 12 Monaten: ${worst.map(x => `${esc(x.sym)} <span class="down">${fmt(x.ret12m, 0)} %</span>`).join(", ")}. Wer 1000 % will, muss −80 % aushalten können.</p>` : ""}
+        <ul class="checklist">
+          <li><b>Nur ein kleiner „Moonshot-Korb“:</b> höchstens 5–10 % Ihres Geldes, verteilt auf 10–20 Werte mit je höchstens 1 %. Ein einziger Treffer mit +1000 % gleicht viele Totalverluste aus – ein Einzelwert nicht.</li>
+          <li><b>Langsam kaufen, lange halten:</b> in mehreren Schritten über Monate; solche Werte brauchen Jahre, nicht Wochen.</li>
+          <li><b>Nie mit Hebel und nie mit geliehenem Geld.</b> Schwankungen von 60–70 % pro Jahr sind hier normal.</li>
+          <li><b>Verkaufen, wenn die Geschichte nicht mehr stimmt</b> – etwa wenn das Geld knapp wird und laufend neue Aktien ausgegeben werden –, nicht wegen eines schlechten Tages.</li>
+        </ul>
+      </article>`;
+  }
+
   // ================= Termine mit belegtem Muster =================
   // Zinsentscheide der US-Notenbank (2. Sitzungstag, Bekanntgabe 14:00 Uhr New York). 2027: vorläufiger Kalender der Fed.
   const FOMC = [["2026-12-09", false], ["2027-01-27", true], ["2027-03-17", true], ["2027-04-28", true], ["2027-06-09", true], ["2027-07-28", true]];
@@ -274,7 +349,9 @@
     if (!host) return;
     const cats = ["Alle", ...new Set(THEORY.map(t => t.cat))];
     const list = THEORY.filter(t => theoryFilter === "Alle" || t.cat === theoryFilter);
-    host.innerHTML = `
+    loadStocks();
+    host.innerHTML = futureHtml() + `
+      <article class="card" data-section="Theorien"><h2 class="card-title">Die wichtigsten Theorien</h2>
       <div class="filter-row">
         <div class="seg" role="group" aria-label="Themen filtern">${cats.map(c => `<button type="button" data-cat="${c}" aria-pressed="${c === theoryFilter}">${c}</button>`).join("")}</div>
         <span class="muted small">${list.length} Theorien · Beweisstärke: ${evidence(3)} ${evidence(2)} ${evidence(1)}</span>
@@ -289,8 +366,10 @@
           <ul class="srcs">${t.src.map(s => `<li>${s}</li>`).join("")}</ul>
         </article>`).join("")}
       </div>
-      <p class="muted small">Auswahl nach Bedeutung in Fachzeitschriften und aktueller Forschung (Stand November 2026). Beweisstärke ist eine Einschätzung dieser Seite anhand der Studienlage, keine amtliche Bewertung.</p>`;
+      <p class="muted small">Auswahl nach Bedeutung in Fachzeitschriften und aktueller Forschung (Stand November 2026). Beweisstärke ist eine Einschätzung dieser Seite anhand der Studienlage, keine amtliche Bewertung.</p></article>`;
     host.querySelectorAll("[data-cat]").forEach(b => b.addEventListener("click", () => { theoryFilter = b.dataset.cat; renderTheory(); }));
+    host.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => window.DTD.openStock && window.DTD.openStock(b.dataset.open)));
+    window.dispatchEvent(new Event("dtd:sections"));
   }
 
   function renderIdeas() {

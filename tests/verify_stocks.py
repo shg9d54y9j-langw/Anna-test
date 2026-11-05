@@ -132,6 +132,16 @@ if "an:" in d.get("finnhub", ""):
         errors.append("Analysten-Übersicht fehlt bei US-Aktien")
     if not any("earn" in x for x in d["items"]):
         errors.append("keine Quartalszahlen-Termine übernommen")
+    if not all("recPrev" in x for x in us):
+        errors.append("Vormonat der Analysten fehlt (für Hoch- und Herabstufungen)")
+    surprises = [x for x in d["items"] if "lastEarn" in x]
+    if not surprises:
+        errors.append("keine gemeldeten Quartalszahlen übernommen")
+    for x in surprises:
+        e = x["lastEarn"]
+        want = (e["actual"] - e["estimate"]) / abs(e["estimate"]) * 100
+        if abs(e["surprisePct"] - want) > 0.011:
+            errors.append(f"{x['sym']}: Überraschung {e['surprisePct']} statt {want:.2f}")
 
 if errors:
     print(f"::error::Gegenrechnung Aktien-Daten fehlgeschlagen – {len(errors)} Abweichung(en):")

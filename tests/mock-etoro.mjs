@@ -35,7 +35,16 @@ const traders = Array.from({ length: 180 }, (_, i) => {
 // ---------- Copy-Trading wie die echte API (Demo- und Echtgeld-Konto getrennt) ----------
 // Kopie starten ist asynchron: Antwort { token }, Ergebnis über GET …/copy/{referenceID}.
 // Beenden ist asynchron: die Kopie steht beim nächsten Abruf als „wird geschlossen“ da und ist danach weg.
-const accounts = { demo: { credit: 100000, mirrors: [], ops: [], statuses: {} }, real: { credit: 20000, mirrors: [], ops: [], statuses: {} } };
+const accounts = { demo: { credit: 100000, mirrors: [], ops: [], statuses: {}, positions: [], pendingOpen: [], orders: {}, tradeOps: [] }, real: { credit: 20000, mirrors: [], ops: [], statuses: {}, positions: [], pendingOpen: [], orders: {}, tradeOps: [] } };
+const realTradeOps = [];   // Aufrufe an Echtgeld-Handelsadressen (müssen in den Tests leer bleiben)
+let nextPosition = 70000, nextOrder = 50000;
+const trendFlags = { failNextOpen: false, pendingNextOpen: false };
+function openPosition(acc, instrumentID, amount, orderID, mirrorID = 0) {
+  const price = trendPrice(instrumentID), pos = { positionID: nextPosition++, instrumentID, orderID, mirrorID, amount, units: amount / price, openRate: price, isBuy: true, leverage: 1, openDateTime: new Date().toISOString() };
+  acc.credit -= amount; acc.positions.push(pos);
+  acc.orders[orderID] = { orderId: orderID, executed: true, positionId: pos.positionID };
+  return pos;
+}
 let nextMirror = 900;
 const testFlags = { failNextRegister: false, mirrorStopLossPct: 40 };
 const byCid = cid => traders.find(t => t.cid === cid);
@@ -61,7 +70,9 @@ function portfolio(acc) {
   for (const m of acc.mirrors) { if (m.closing) m.closing++; else if (m.mirrorStatusID === 3) m.mirrorStatusID = 0; }
   return {
     clientPortfolio: {
-      accountCurrencyId: 1, credit: acc.credit, bonusCredit: 0, positions: [], orders: [],
+      accountCurrencyId: 1, credit: acc.credit, bonusCredit: 0, orders: [],
+      positions: acc.positions.map(x => ({ ...x, amount: Math.round(x.amount * 100) / 100, unrealizedPnL: { pnL: Math.round(x.units * (trendPrice(x.instrumentID) - x.openRate) * 100) / 100, closeRate: trendPrice(x.instrumentID) } })),
+      ordersForOpen: acc.pendingOpen.map(o => ({ orderID: o.orderID, instrumentId: o.instrumentID, amount: o.amount, isBuy: true })),
       unrealizedPnL: acc.mirrors.reduce((x, m) => x + mirrorInvested(m) * m.pnlPct / 100, 0),
       mirrors: acc.mirrors.map(m => {
         const inv = mirrorInvested(m), value = mirrorValue(m);
@@ -94,6 +105,38 @@ function series(id, n) {   // erfundene, reproduzierbare Tagesschlusskurse, ält
   }
   return out;
 }
+// ---------- ETFs für den Trend-Bot (erfundene Kurse, werktags bis heute) ----------
+// EFA meldet absichtlich den falschen Typ – der Bot muss auf VEA ausweichen.
+const TREND_ETFS = { SPY: 3201, VEA: 3202, IEF: 3203, GLD: 3204, DBC: 3205, VNQ: 3206 };
+const TREND_PARAMS = { 3201: [0.0005, 0.011], 3202: [0.0003, 0.012], 3203: [0.0001, 0.005], 3204: [0.0004, 0.010], 3205: [-0.0004, 0.013], 3206: [0.0002, 0.014] };
+const trendSeries = {};
+function makeTrend(id, recentDrift = null) {
+  const [drift, vol] = TREND_PARAMS[id];
+  let s = id * 2654435761 % 4294967296, x = 50 + id % 50;
+  const r = () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
+  const days = [];
+  const end = new Date(); end.setUTCHours(0, 0, 0, 0);
+  for (let d = new Date(end); days.length < 3000; d = new Date(d - 864e5)) if (d.getUTCDay() % 6 !== 0) days.push(d.toISOString().slice(0, 10));
+  days.reverse();
+  trendSeries[id] = days.map((d, i) => {
+    const mu = recentDrift !== null && i >= days.length - 80 ? recentDrift : drift;
+    x *= Math.exp(mu + vol * (r() + r() + r() - 1.5) * 2);
+    return { d, c: Math.round(x * 10000) / 10000 };
+  });
+}
+for (const id of Object.values(TREND_ETFS)) makeTrend(id);
+const trendPrice = id => trendSeries[id][trendSeries[id].length - 1].c;
+function trendCandles(id, interval, n) {
+  const daily = trendSeries[id];
+  let list = daily;
+  if (interval === "OneWeek") {   // Wochenkerzen mit dem Montag der Woche als Datum
+    const weeks = new Map();
+    for (const x of daily) { const t = new Date(`${x.d}T00:00:00Z`), mon = new Date(t - ((t.getUTCDay() + 6) % 7) * 864e5).toISOString().slice(0, 10); weeks.set(mon, x.c); }
+    list = [...weeks.entries()].map(([d, c]) => ({ d, c }));
+  }
+  return list.slice(-n).map(x => ({ fromDate: `${x.d}T00:00:00Z`, open: x.c, high: x.c * 1.004, low: x.c * 0.996, close: x.c, volume: 1000 }));
+}
+
 // Beliebte Instrumente für den Aktien-Check (erfunden): Typ 5 = Aktien, 6 = ETFs. Ganz oben stehen – wie bei eToro –
 // Bitcoin, Gold, ein Index und eine Währung; sie dürfen nie als Aktie erscheinen. STK007 ist nicht öffentlich.
 const UNIVERSE = [
@@ -143,6 +186,13 @@ http.createServer(async (req, res) => {
     const body = req.method === "POST" ? await readBody(req) : {};
     const acc = accounts[(body && body.account) || url.searchParams.get("account") || "demo"];
     if (url.pathname === "/__test/state") return send(200, { credit: acc.credit, mirrors: acc.mirrors, ops: acc.ops });
+    if (url.pathname === "/__test/trend") return send(200, { credit: acc.credit, positions: acc.positions, pendingOpen: acc.pendingOpen, tradeOps: acc.tradeOps, realTradeOps, prices: Object.fromEntries(Object.entries(TREND_ETFS).map(([k, id]) => [k, trendPrice(id)])) });
+    if (url.pathname === "/__test/fail-next-open") { trendFlags.failNextOpen = true; return send(200, { ok: true }); }
+    if (url.pathname === "/__test/pending-next-open") { trendFlags.pendingNextOpen = true; return send(200, { ok: true }); }
+    if (url.pathname === "/__test/fill-pending") { for (const o of acc.pendingOpen.splice(0)) openPosition(acc, o.instrumentID, o.amount, o.orderID); return send(200, { ok: true }); }
+    if (url.pathname === "/__test/manual-position") { openPosition(acc, TREND_ETFS[body.sym], body.amount, nextOrder++); return send(200, { ok: true }); }
+    if (url.pathname === "/__test/remove-position") { const x = acc.positions.find(y => y.positionID === body.positionID); if (x) { acc.credit += x.units * trendPrice(x.instrumentID); acc.positions = acc.positions.filter(y => y !== x); } return send(200, { ok: true }); }
+    if (url.pathname === "/__test/regime") { makeTrend(TREND_ETFS[body.sym], body.drift); return send(200, { ok: true }); }
     if (url.pathname === "/__test/pnl") { for (const m of acc.mirrors) if (m.parentUsername === body.userName) m.pnlPct = body.pnlPct; return send(200, { ok: true }); }
     if (url.pathname === "/__test/manual-copy") { const t = traders.find(x => x.username === body.userName); register(acc, { parentCID: t.cid, amount: body.amount, referenceID: `manual-${Date.now()}` }); return send(200, { ok: true }); }
     if (url.pathname === "/__test/fail-next-register") { testFlags.failNextRegister = true; return send(200, { ok: true }); }
@@ -154,6 +204,8 @@ http.createServer(async (req, res) => {
   if (url.pathname.startsWith("/finnhub/")) {
     if (url.searchParams.get("token") !== "test-finnhub-0000") return send(401, { error: "invalid token" });
     if (url.pathname === "/finnhub/calendar/earnings") {
+      const past = (url.searchParams.get("to") || "9999") < new Date().toISOString().slice(0, 10);
+      if (past) return send(200, { earningsCalendar: UNIVERSE.filter(u => u.instrumentTypeID === 5 && u.instrumentId % 3 === 1).map(u => ({ symbol: u.internalSymbolFull, date: new Date(Date.now() - (u.instrumentId % 50 + 2) * 864e5).toISOString().slice(0, 10), hour: "amc", epsEstimate: 1.0, epsActual: 1.0 + (u.instrumentId % 7 - 2) / 20, quarter: 3, year: 2026 })) });
       return send(200, { earningsCalendar: UNIVERSE.filter(u => u.instrumentTypeID === 5 && u.instrumentId % 3 === 0).map(u => ({ symbol: u.internalSymbolFull, date: new Date(Date.now() + (u.instrumentId % 40 + 3) * 864e5).toISOString().slice(0, 10), hour: "amc", epsEstimate: 1.23, quarter: 4, year: 2026 })) });
     }
     if (url.pathname === "/finnhub/stock/recommendation") {
@@ -201,8 +253,15 @@ http.createServer(async (req, res) => {
   }
   if (url.pathname === "/api/v2/market-data/instruments") {
     const sym = url.searchParams.get("symbols");
+    if (TREND_ETFS[sym]) return send(200, { results: [{ instrumentId: TREND_ETFS[sym], symbol: sym, displayName: `${sym} ETF`, type: "ETF" }], pagination: { hasNext: false } });
+    if (sym === "EFA") return send(200, { results: [{ instrumentId: 3299, symbol: "EFA", displayName: "falscher Typ", type: "Stocks" }], pagination: { hasNext: false } });
     const id = INSTRUMENTS[sym];
     return send(200, { results: id ? [{ instrumentId: id, symbol: sym, displayName: sym, type: "Indices" }] : [], pagination: { hasNext: false } });
+  }
+  const tc = /^\/api\/v1\/market-data\/instruments\/(\d+)\/history\/candles\/(asc|desc)\/(OneDay|OneWeek)\/(\d+)$/.exec(url.pathname);
+  if (tc && trendSeries[Number(tc[1])]) {
+    const list = trendCandles(Number(tc[1]), tc[3], Math.min(1000, Number(tc[4])));
+    return send(200, { interval: tc[3], candles: [{ instrumentId: Number(tc[1]), candles: tc[2] === "desc" ? list.reverse() : list }] });
   }
   const candles = /^\/api\/v1\/market-data\/instruments\/(\d+)\/history\/candles\/(asc|desc)\/OneDay\/(\d+)$/.exec(url.pathname);
   if (candles) {
@@ -245,6 +304,40 @@ http.createServer(async (req, res) => {
       return st ? send(200, st) : send(404, { error: "Reference not found" });
     }
     return send(405, { error: "method not allowed" });
+  }
+  const exec = /^\/api\/v1\/trading\/execution\/(demo\/)?(market-open-orders\/by-amount|market-close-orders\/positions\/(\d+))$/.exec(url.pathname);
+  if (exec && req.method === "POST") {
+    const b = await readBody(req) || {};
+    if (!exec[1]) { realTradeOps.push({ path: url.pathname, body: b }); return send(403, { error: "real-money trading is not allowed in tests" }); }
+    const acc = accounts.demo;
+    acc.tradeOps.push({ path: url.pathname, body: b });
+    if (exec[2].startsWith("market-open")) {
+      if (!TREND_PARAMS[b.InstrumentID]) return send(400, { error: "unknown instrument" });
+      if (!Number.isInteger(b.Leverage) || b.Leverage < 1) return send(400, { error: "Leverage must be at least 1" });
+      if (typeof b.IsBuy !== "boolean" || !(b.Amount >= 10)) return send(400, { error: "IsBuy and Amount >= 10 required" });
+      if (b.Amount > acc.credit) return send(400, { error: "Insufficient funds" });
+      if (b.StopLossRate !== undefined && b.StopLossRate !== null && !(b.StopLossRate < trendPrice(b.InstrumentID))) return send(400, { error: "StopLoss must be worse than current price" });
+      const orderID = nextOrder++;
+      if (trendFlags.pendingNextOpen) { trendFlags.pendingNextOpen = false; acc.pendingOpen.push({ orderID, instrumentID: b.InstrumentID, amount: b.Amount }); acc.orders[orderID] = { orderId: orderID, executed: false }; }
+      else openPosition(acc, b.InstrumentID, b.Amount, orderID);
+      if (trendFlags.failNextOpen) { trendFlags.failNextOpen = false; return send(503, { error: "temporarily unavailable" }); }   // angekommen, aber keine Bestätigung
+      return send(200, { orderForOpen: { orderID, instrumentID: b.InstrumentID, amount: b.Amount, isBuy: b.IsBuy, leverage: b.Leverage, statusID: 1, openDateTime: new Date().toISOString() }, token: "22222222-2222-4222-8222-222222222222" });
+    }
+    const pos = acc.positions.find(x => x.positionID === Number(exec[3]));
+    if (!pos) return send(404, { error: "Position not found" });
+    if (b.InstrumentID !== pos.instrumentID) return send(400, { error: "InstrumentID does not match the position" });
+    const price = trendPrice(pos.instrumentID), cut = b.UnitsToDeduct === undefined || b.UnitsToDeduct === null ? pos.units : Math.min(pos.units, Number(b.UnitsToDeduct));
+    acc.credit += cut * price;
+    if (cut >= pos.units - 1e-9) acc.positions = acc.positions.filter(x => x !== pos);
+    else { pos.amount *= 1 - cut / pos.units; pos.units -= cut; }
+    return send(200, { orderForClose: { orderID: nextOrder++, positionID: pos.positionID, instrumentID: pos.instrumentID, unitsToDeduct: cut }, token: "33333333-3333-4333-8333-333333333333" });
+  }
+  if (/^\/api\/v[0-9]\/trading\/execution\//.test(url.pathname)) { realTradeOps.push({ path: url.pathname }); return send(403, { error: "not available in tests" }); }
+  const orderInfo = /^\/api\/v1\/trading\/info\/demo\/orders\/(\d+)$/.exec(url.pathname);
+  if (orderInfo) {
+    const o = accounts.demo.orders[Number(orderInfo[1])];
+    if (!o) return send(404, { error: "Order not found" });
+    return send(200, { orderId: o.orderId, action: "open", positionExecutions: o.executed ? [{ positionId: o.positionId, state: "open" }] : [] });
   }
   const pnl = /^\/api\/v1\/trading\/info\/(demo|real)\/pnl$/.exec(url.pathname);
   if (pnl && req.method === "GET") return send(200, portfolio(accounts[pnl[1]]));

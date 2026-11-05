@@ -97,7 +97,7 @@
     return out;
   }
   function draw(host, res) {
-    const W = Math.max(300, host.clientWidth), H = W < 520 ? 240 : 300, m = { l: 54, r: W < 520 ? 12 : 128, t: 14, b: 26 };
+    const W = Math.max(240, host.clientWidth), H = W < 520 ? 240 : 300, m = { l: 54, r: W < 520 ? 12 : 128, t: 14, b: 26 };
     const pw = W - m.l - m.r, ph = H - m.t - m.b;
     const S = [
       { key: "method", name: "Tageswahl-Methode", short: "Methode", color: PAL.series1, width: 2.5, dash: "" },

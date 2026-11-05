@@ -20,11 +20,15 @@
   const account = () => { const x = parseFloat(($("sAccount") || {}).value); return Number.isFinite(x) && x > 0 ? x : null; };
   const get = url => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
 
+  let lastStamp = null;
   async function load() {
     const t = Date.now();
     const [local, raw, lv, bt] = await Promise.all([get(`data/ranking.json?t=${t}`), get(`${RAW}?t=${t}`), get(`${LIVE}?t=${t}`), get(`${BOT}?t=${t}`)]);
     const list = [local, raw].filter(d => d && d.updated);
     const next = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
+    const stamp = [next && next.updated, lv && lv.updated, bt && bt.updated].join("|");
+    if (stamp === lastStamp) return;   // nichts Neues → nichts neu zeichnen
+    lastStamp = stamp;
     if (next && data && next.updated !== data.updated) returns = null;   // neue Auswertung → Monatsrenditen neu laden
     data = next;
     live = lv && lv.updated && Array.isArray(lv.entries) ? lv : null;
@@ -521,7 +525,7 @@
       legend.append(item);
     }
 
-    const W = Math.max(300, host.clientWidth), H = W < 560 ? 320 : 400;
+    const W = Math.max(240, host.clientWidth), H = W < 560 ? 320 : 400;
     const m = { l: 56, r: 18, t: 26, b: 44 };
     const pw = W - m.l - m.r, ph = H - m.t - m.b;
     const yt = niceTicks(Math.min(0, ...pts.map(p => p.cagr)), Math.max(0, ...pts.map(p => p.cagr)), 5);
@@ -615,7 +619,7 @@
   let rt;
   window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawScatter, 150); });
   load();
-  setInterval(() => { if (!document.hidden) load(); }, 5 * 60 * 1000);   // automatisch alle 5 Minuten neu laden
+  setInterval(() => { if (!document.hidden) load(); }, 60 * 1000);   // jede Minute auf Neues prüfen
   document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
   window.DTD.openTrader = openTrader;
 })();

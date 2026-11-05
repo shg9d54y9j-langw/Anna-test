@@ -1,7 +1,7 @@
 {
-  "name": "DayTrade Desk",
-  "short_name": "DayTrade",
-  "description": "Daytrading-Cockpit: Heatmap, News, Trade-Setup, geprüfte Copy-Trading-Empfehlung und Journal.",
+  "name": "RojkoMoney",
+  "short_name": "RojkoMoney",
+  "description": "RojkoMoney – Trading-Cockpit: Marktlage, Aktien-Check, HotStuff, Trend-Bot, Heatmap, News, Copy-Trading und Journal.",
   "lang": "de",
   "start_url": "./#home",
   "scope": "./",

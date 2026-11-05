@@ -1,5 +1,5 @@
 // =====================================================================
-// DayTrade Desk – Grundfunktionen: Hilfsfunktionen, Reiter, Börsenzeiten,
+// RojkoMoney – Grundfunktionen: Hilfsfunktionen, Reiter, Börsenzeiten,
 // TradingView-Grafiken, Setup- und Copy-Rechner, Journal.
 // =====================================================================
 
@@ -151,13 +151,15 @@ $("symbolBtn").addEventListener("click", () => loadSymbol(symIn.value.trim().toU
 symIn.addEventListener("keydown", e => { if (e.key === "Enter") loadSymbol(symIn.value.trim().toUpperCase()); });
 
 // ---------- Reiter-Navigation ----------
-const VIEWS = ["home", "markt", "aktie", "news", "ideen", "setup", "daily", "copy", "compare", "journal", "theorie"];
-const TITLES = { home: "Übersicht", markt: "Markt", aktie: "Aktien-Check", news: "News", ideen: "Trade-Ideen", setup: "Trade-Setup", daily: "Tagesempfehlung", copy: "Copy-Trading", compare: "Trader-Vergleich", journal: "Journal", theorie: "Theorie" };
+const VIEWS = ["home", "markt", "aktie", "news", "ideen", "hot", "bot", "setup", "daily", "copy", "compare", "journal", "theorie"];
+const TITLES = { home: "Übersicht", markt: "Markt", aktie: "Aktien-Check", news: "News", ideen: "Trade-Ideen", hot: "HotStuff", bot: "Trend-Bot", setup: "Trade-Setup", daily: "Tagesempfehlung", copy: "Copy-Trading", compare: "Trader-Vergleich", journal: "Journal", theorie: "Theorie" };
 const VIEW_INIT = {
   markt: () => { loadHeatmap(heatSel.value); loadHotlist(); window.DTD.loadMarketLive(); },
   news: () => { loadNews(); loadCalendar(); },
   aktie: () => window.DTD.startStock(),
   ideen: () => window.DTD.renderIdeas(),
+  hot: () => window.DTD.startHot(),
+  bot: () => window.DTD.startBot(),
   setup: () => loadSymbol(symIn.value.trim().toUpperCase()),
   daily: () => window.DTD.startBacktest(),
   theorie: () => window.DTD.renderTheory(),
@@ -173,7 +175,7 @@ function showView(id, { scrollTo = null } = {}) {
     tab.tabIndex = on ? 0 : -1;
   }
   store.set("dtd-tab", id);
-  document.title = `${TITLES[id]} · DayTrade Desk`;
+  document.title = `${TITLES[id]} · RojkoMoney`;
   if (!initialized.has(id)) { initialized.add(id); if (VIEW_INIT[id]) VIEW_INIT[id](); }
   // Diagramme kennen ihre Breite erst, wenn der Bereich sichtbar ist
   requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
@@ -181,6 +183,8 @@ function showView(id, { scrollTo = null } = {}) {
   if (scrollTo && $(scrollTo)) $(scrollTo).scrollIntoView({ behavior: "smooth", block: "start" });
   else window.scrollTo({ top: 0 });
 }
+// Beim Öffnen springt der Browser sonst zum Anker (#home …) und schiebt Kopfzeile mit Logo und Live-Uhr aus dem Bild
+window.addEventListener("load", () => { const h = decodeURIComponent(location.hash.slice(1)); if (!h || VIEWS.includes(h)) setTimeout(() => window.scrollTo(0, 0), 0); });
 function route() {
   const h = decodeURIComponent(location.hash.slice(1));
   if (VIEWS.includes(h)) return showView(h);
@@ -239,7 +243,7 @@ function renderSessions() {
   window.dispatchEvent(new Event("dtd:clock"));
 }
 renderSessions();
-setInterval(renderSessions, 30000);
+setInterval(renderSessions, 1000);   // Börsenzeiten im Sekundentakt
 
 // ---------- Setup-Rechner ----------
 const STYLES = {
@@ -458,7 +462,7 @@ function renderEquity() {
   if (trades.length < 2) { host.innerHTML = `<p class="muted">Ab zwei eingetragenen Trades erscheint hier die Verlaufskurve.</p>`; return; }
   let run = 0;
   const pts = [{ i: 0, y: 0, t: null }, ...trades.map((t, i) => ({ i: i + 1, y: (run += pl(t)), t }))];
-  const W = Math.max(300, host.clientWidth), H = 220, m = { l: 64, r: 14, t: 12, b: 26 };
+  const W = Math.max(240, host.clientWidth), H = 220, m = { l: 64, r: 14, t: 12, b: 26 };
   const pw = W - m.l - m.r, ph = H - m.t - m.b;
   const ys = pts.map(p => p.y);
   const raw = (Math.max(0, ...ys) - Math.min(0, ...ys) || 1) / 4, mag = 10 ** Math.floor(Math.log10(raw));

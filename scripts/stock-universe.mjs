@@ -12,7 +12,7 @@ import { call, field, findArray, num, log, warn, fail, hasKeys, sleep } from "./
 
 const here = p => fileURLToPath(new URL(p, import.meta.url));
 const OUT = process.env.STOCKS_OUT || here("../data/stocks.json");
-export const CONFIG = { stocks: Number(process.env.STOCK_COUNT || 400), etfs: Number(process.env.ETF_COUNT || 100), candles: 300 };
+export const CONFIG = { stocks: Number(process.env.STOCK_COUNT || 700), etfs: Number(process.env.ETF_COUNT || 150), candles: 300 };
 const FINNHUB_KEY = process.env.FINNHUB_API_KEY || "";
 const FINNHUB = (process.env.FINNHUB_BASE || "https://finnhub.io/api/v1").replace(/\/$/, "");
 if (!["finnhub.io", "localhost", "127.0.0.1"].includes(new URL(FINNHUB).hostname)) fail("Unzulässige Finnhub-Adresse – der Schlüssel geht nur an finnhub.io.");
@@ -228,17 +228,31 @@ async function main() {
         const sym = String(e.symbol || "").toUpperCase();
         if (!next.has(sym) || e.date < next.get(sym).date) next.set(sym, { date: e.date, hour: e.hour || "", eps: Number.isFinite(e.epsEstimate) ? e.epsEstimate : null });
       }
+      // Zuletzt gemeldete Quartalszahlen (60 Tage zurück): Ist gegen Schätzung → Überraschung in %
+      const last = new Map();
+      try {
+        const pastFrom = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10), pastTo = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+        const past = await finnhub("/calendar/earnings", { from: pastFrom, to: pastTo });
+        for (const e of (past && past.earningsCalendar) || []) {
+          const sym = String(e.symbol || "").toUpperCase();
+          if (!Number.isFinite(e.epsActual) || !Number.isFinite(e.epsEstimate) || !e.date) continue;
+          if (!last.has(sym) || e.date > last.get(sym).date) last.set(sym, { date: e.date, actual: e.epsActual, estimate: e.epsEstimate, surprisePct: Math.abs(e.epsEstimate) >= 0.01 ? r2((e.epsActual - e.epsEstimate) / Math.abs(e.epsEstimate) * 100) : null });
+        }
+      } catch (e) { warn(`Finnhub vergangene Quartalszahlen: ${e.message}`); }
+      const toRec = x => ({ period: x.period, sb: x.strongBuy | 0, b: x.buy | 0, h: x.hold | 0, s: x.sell | 0, ss: x.strongSell | 0 });
       let recs = 0;
       for (const it of items) {
         if (next.has(it.sym)) it.earn = next.get(it.sym);
+        if (last.has(it.sym)) it.lastEarn = last.get(it.sym);
         if (it.type !== "Aktie" || it.sym.includes(".")) continue;
         try {
           const r = await finnhub("/stock/recommendation", { symbol: it.sym });
-          const cur = Array.isArray(r) && r[0];
-          if (cur) { it.rec = { period: cur.period, sb: cur.strongBuy | 0, b: cur.buy | 0, h: cur.hold | 0, s: cur.sell | 0, ss: cur.strongSell | 0 }; recs++; }
+          const list = Array.isArray(r) ? [...r].sort((a, b) => String(b.period).localeCompare(String(a.period))) : [];
+          if (list[0]) { it.rec = toRec(list[0]); recs++; }
+          if (list[1]) it.recPrev = toRec(list[1]);   // Vormonat: Hoch- und Herabstufungen
         } catch (e) { if (/HTTP 429/.test(e.message)) { await sleep(20000); } }
       }
-      finn = `an: ${next.size} Termine, ${recs} Analysten-Übersichten`;
+      finn = `an: ${next.size} Termine, ${last.size} gemeldete Quartalszahlen, ${recs} Analysten-Übersichten`;
     } catch (e) { finn = `Fehler: ${e.message}`; warn(`Finnhub: ${e.message}`); }
   }
 

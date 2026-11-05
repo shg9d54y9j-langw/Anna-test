@@ -232,4 +232,19 @@
     if (current) show(current.query, false);
   };
   window.addEventListener("dtd:market", () => { if (current && !$("aktie").hidden) show(current.query, false); });
+  // Von anderen Bereichen (HotStuff) direkt einen Wert öffnen
+  window.DTD.openStock = sym => { store.set("dtd-stock", sym); $("stockInput").value = sym; current = { query: sym }; location.hash = "aktie"; if (data) show(sym); };
+  window.DTD.stockData = () => data;
+  window.DTD.reloadStocks = async () => {
+    const t = Date.now();
+    const list = (await Promise.all([get(`data/stocks.json?t=${t}`), get(`${RAW}?t=${t}`)])).filter(d => d && Array.isArray(d.items));
+    const next = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0];
+    if (!next || (data && next.updated === data.updated)) return false;
+    data = next;
+    const dl = $("stockList");
+    if (dl) dl.innerHTML = data.items.map(x => `<option value="${esc(x.sym)}">${esc(x.name)}</option>`).join("");
+    renderQuick();
+    if (current && !$("aktie").hidden) show(current.query, false);
+    return true;
+  };
 })();

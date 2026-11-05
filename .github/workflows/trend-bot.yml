@@ -1,0 +1,120 @@
+name: Trend-Bot
+
+# Einmal an jedem US-Börsentag während der Handelszeit (16:40 bzw. 17:40 Uhr deutscher Zeit) – nur im Demokonto.
+# Starten und Stoppen: auf GitHub unter Actions → Trend-Bot → „Run workflow“ → Befehl wählen.
+on:
+  schedule:
+    - cron: "40 15 * * 1-5"   # 15:40 UTC = 10:40 Uhr New York im Winter, 11:40 Uhr im Sommer
+  workflow_dispatch:
+    inputs:
+      befehl:
+        description: "Was soll der Trend-Bot tun?"
+        type: choice
+        options: [status, starten, stoppen]
+        default: status
+
+permissions:
+  contents: read
+
+# Nie zwei Läufe gleichzeitig (sonst könnte doppelt gekauft werden); wartende Läufe werden nicht abgebrochen
+concurrency:
+  group: trend-bot
+  cancel-in-progress: false
+
+jobs:
+  # Kurse holen, Signale und Rückblick-Test rechnen – mit dem Lese-Schlüssel, ohne Handelsrechte
+  signals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      signals: ${{ steps.s.outputs.signals }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Signale und Rückblick-Test berechnen
+        id: s
+        env:
+          ETORO_API_KEY: ${{ secrets.ETORO_API_KEY }}
+          ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
+        run: |
+          node scripts/trend-bot.mjs signals
+          echo "signals=$(gzip -9c data/trend-signals.json | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+  # Demokonto abgleichen – nur mit dem Demo-Bot-Schlüssel; Echtgeld ist im Programm gesperrt
+  trade:
+    needs: signals
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      state: ${{ steps.t.outputs.state }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Letzten Bot-Stand holen
+        run: |
+          if git fetch -q --depth=1 origin trend-data 2>/dev/null; then
+            git show FETCH_HEAD:trend-bot.json > "$RUNNER_TEMP/trend-prev.json" || true
+          else
+            echo "Noch kein Bot-Stand vorhanden."
+          fi
+      - name: Demokonto mit den Zielanteilen abgleichen
+        id: t
+        env:
+          SIGNALS_B64: ${{ needs.signals.outputs.signals }}
+          ETORO_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
+          ETORO_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
+          TREND_BOT_COMMAND: ${{ inputs.befehl || 'status' }}
+          TREND_BOT_SHARE: ${{ vars.TREND_BOT_SHARE }}
+          TREND_STATE_IN: ${{ runner.temp }}/trend-prev.json
+          TREND_SIGNALS_IN: ${{ runner.temp }}/trend-signals.json
+        run: |
+          printf '%s' "$SIGNALS_B64" | base64 -d | gunzip > "$TREND_SIGNALS_IN"
+          code=0
+          node scripts/trend-bot.mjs trade || code=$?
+          if [ -f data/trend-bot.json ]; then
+            echo "state=$(gzip -9c data/trend-bot.json | base64 -w0)" >> "$GITHUB_OUTPUT"
+          fi
+          exit $code
+
+  # Veröffentlicht Stand und Tagebuch (nur Prozentwerte) auf dem Zweig trend-data und meldet wichtige Ereignisse
+  save:
+    needs: trade
+    if: ${{ !cancelled() && needs.trade.outputs.state != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Bot-Stand veröffentlichen
+        env:
+          STATE_B64: ${{ needs.trade.outputs.state }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir out && cd out
+          printf '%s' "$STATE_B64" | base64 -d | gunzip > trend-bot.json
+          node -e 'const d = JSON.parse(require("fs").readFileSync("trend-bot.json", "utf8")); if (!Array.isArray(d.journal)) process.exit(1);'
+          git init -q -b trend-data
+          git add trend-bot.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Trend-Bot $(date -u +%FT%TZ)"
+          git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:trend-data
+      - name: Wichtige Ereignisse melden
+        env:
+          STATE_B64: ${{ needs.trade.outputs.state }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          printf '%s' "$STATE_B64" | base64 -d | gunzip | node -e '
+            const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+            for (const e of d.newEvents || []) console.log(String(e.text).replace(/\s+/g, " "));
+          ' > events.txt
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            gh issue create --repo "$REPO" --title "Trend-Bot: ${line:0:140}" \
+              --body "$line
+
+          Bot-Stand und Tagebuch: https://shg9d54y9j-langw.github.io/Anna-test/#bot"
+          done < events.txt

@@ -3,9 +3,10 @@
   const tabs = [...document.querySelectorAll(".tabs .tab")];
   const DESC = {
     home: "Tag auf einen Blick", markt: "Ampeln, Heatmap", aktie: "Symbol prüfen", news: "Nachrichten, Termine", ideen: "Belegte Muster",
+    hot: "Experten, Swing-Trades", bot: "Handelt selbst, Tagebuch",
     setup: "Stop, Ziel, Stück", daily: "Wen kopieren?", copy: "Kopie einrichten", compare: "Eigene Kandidaten", journal: "Trades, Limit", theorie: "Forschung",
   };
-  const MAIN = ["home", "markt", "aktie", "daily"];
+  const MAIN = ["home", "markt", "aktie", "hot", "bot"];
   const icon = id => { const t = $(`tab-${id}`); const svg = t && t.querySelector("svg"); return svg ? svg.outerHTML : ""; };
   const label = id => { const t = $(`tab-${id}`); return t ? t.querySelector("span").textContent : id; };
   const go = id => { location.hash = id; };
@@ -14,7 +15,7 @@
   const bar = document.createElement("nav");
   bar.className = "bottomnav";
   bar.setAttribute("aria-label", "Hauptbereiche");
-  bar.innerHTML = MAIN.map(id => `<button type="button" data-go="${id}">${icon(id)}<span>${({ home: "Start", markt: "Markt", aktie: "Aktie", daily: "Tageswahl" })[id]}</span></button>`).join("")
+  bar.innerHTML = MAIN.map(id => `<button type="button" data-go="${id}">${icon(id)}<span>${({ home: "Start", markt: "Markt", aktie: "Aktie", hot: "Hot", bot: "Bot" })[id]}</span></button>`).join("")
     + `<button type="button" data-more><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Alle</span></button>`;
   document.body.append(bar);
 

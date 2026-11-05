@@ -74,6 +74,21 @@ jobs:
       - name: Copy-Bot gegen den Test-Server (Start, Wechsel, Stop Loss, eigene Kopien, Echtgeld-Obergrenze)
         run: node tests/bot-scenarios.mjs
 
+      - name: Trend-Bot – Signale gegen den Test-Server, unabhängige Gegenrechnung
+        env:
+          ETORO_API_BASE: http://localhost:8793/api
+          ETORO_THROTTLE_MS: "0"
+          ETORO_API_KEY: test-public-key-0000
+          ETORO_USER_KEY: test-user-key-0000
+          TREND_SIGNALS_OUT: /tmp/trend-signals.json
+        run: |
+          node tests/mock-etoro.mjs 8793 & sleep 1
+          node scripts/trend-bot.mjs signals
+          python3 tests/verify_trend.py /tmp/trend-signals.json http://localhost:8793
+
+      - name: Trend-Bot – Handel im Demokonto (Start, Ausstieg, offene und unklare Aufträge, Stopp, nie Echtgeld)
+        run: node tests/trend-bot-scenarios.mjs
+
       - name: Schlüssel gehen nur an eToro
         run: |
           if ETORO_API_BASE=https://example.com/api ETORO_API_KEY=x-123456789 ETORO_USER_KEY=y-123456789 node scripts/daily-ranking.mjs; then
