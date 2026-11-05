@@ -63,13 +63,7 @@ jobs:
           node tests/mock-etoro.mjs 8792 & sleep 1
           node scripts/stock-universe.mjs
           python3 tests/verify_stocks.py /tmp/stocks.json http://localhost:8792
-          node --input-type=module -e '
-            import { popularityIsRank } from "./scripts/stock-universe.mjs";
-            const mk = (s, v) => ({ internalSymbolFull: s, popularityUniques7Day: v });
-            const rest = Array.from({ length: 50 }, (_, i) => mk(`X${i}`, 10 + i));
-            if (!popularityIsRank([mk("AAPL", 1), mk("TSLA", 2), ...rest])) throw new Error("Rang nicht erkannt");
-            if (popularityIsRank([mk("AAPL", 90000), mk("TSLA", 80000), ...rest])) throw new Error("Anzahl nicht erkannt");
-            console.log("Rang und Anzahl richtig erkannt.");
+          node tests/check-popularity.mjs
 
       - name: Copy-Bot gegen den Test-Server (Start, Wechsel, Stop Loss, eigene Kopien, Echtgeld-Obergrenze)
         run: node tests/bot-scenarios.mjs

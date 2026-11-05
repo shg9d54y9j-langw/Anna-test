@@ -112,6 +112,8 @@ jobs:
             const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
             for (const a of d.newAlerts || []) console.log(a.text);
           ' > new-alerts.txt
+          # Deutsche Anführungszeichen im Nachrichtentext sind gewollt:
+          # shellcheck disable=SC1111
           while IFS= read -r line; do
             [ -z "$line" ] && continue
             gh issue create --repo "$REPO" --title "Warnung: $line" \

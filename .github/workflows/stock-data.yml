@@ -57,6 +57,8 @@ jobs:
         run: |
           mkdir out && cd out
           printf '%s' "$STOCKS_B64" | base64 -d | gunzip > stocks.json
+          # ${…} gehört zum JavaScript, nicht zur Shell:
+          # shellcheck disable=SC2016
           node -e '
             const d = JSON.parse(require("fs").readFileSync("stocks.json", "utf8"));
             if (!Array.isArray(d.items) || d.items.length < 50) { console.log("::error::Zu wenige Werte – nichts veröffentlicht"); process.exit(1); }
