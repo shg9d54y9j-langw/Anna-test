@@ -80,24 +80,41 @@ async function instrumentTypes() {
   }
   return ids;
 }
-async function popular(typeId, count) {
+// Offizielle Typ-Zuordnung: Die Suche liefert das Typ-Feld nicht mit und ignoriert womöglich den Typ-Filter.
+// Die Instrumentenliste nennt zu jedem Instrument den Typ – nur so ist sicher, dass „Aktie“ wirklich eine Aktie ist
+// (und nicht Bitcoin, Gold oder ein Index). Nicht öffentliche Instrumente fallen heraus.
+async function typeIndex(typeIds) {
+  const d = await call("/v1/market-data/instruments", { instrumentTypeIds: typeIds.join(",") });
+  const list = [field(d, "instrumentDisplayDatas"), findArray(d)].find(a => Array.isArray(a) && a.length) || [];
+  const index = new Map();
+  for (const x of list) {
+    const id = num(field(x, "instrumentID", "instrumentId")), t = num(field(x, "instrumentTypeID", "instrumentTypeId"));
+    if (Number.isInteger(id) && Number.isInteger(t) && field(x, "isInternalInstrument") !== true) index.set(id, t);
+  }
+  return index;
+}
+const PAGE = Number(process.env.SEARCH_PAGE_SIZE || 100), MAX_SCAN = 5000;   // höchstens 5000 Suchtreffer je Typ
+async function popular(typeId, count, index) {
   const out = [], seen = new Set();
-  const fields = "instrumentId,internalSymbolFull,displayname,instrumentTypeID,exchangeID,internalExchangeName,buyHoldingPct,popularityUniques7Day,isDelisted,isActiveInPlatform,isHiddenFromClient";
-  for (let page = 1; out.length < count && page <= Math.ceil(count / 100) + 3; page++) {
-    const d = await call("/v1/market-data/search", { fields, instrumentTypeID: typeId, sort: "-popularityUniques7Day", pageSize: 100, pageNumber: page });
+  const fields = "instrumentId,internalSymbolFull,displayname,instrumentType,buyHoldingPct,popularityUniques7Day,isDelisted,isActiveInPlatform,isHiddenFromClient";
+  let scanned = 0;
+  for (let page = 1; out.length < count && scanned < MAX_SCAN; page++) {
+    const d = await call("/v1/market-data/search", { fields, instrumentTypeID: typeId, sort: "-popularityUniques7Day", pageSize: PAGE, pageNumber: page });
     const items = findArray(d);
-    if (page === 1) log(`Suche Typ ${typeId}: ${items.length} Einträge, Felder: ${Object.keys(items[0] || {}).join(", ")}`);
+    if (page === 1) log(`Suche Typ ${typeId}: Felder ${Object.keys(items[0] || {}).join(", ")}; erste: ${items.slice(0, 5).map(x => field(x, "internalSymbolFull")).join(", ")}`);
     if (!items.length) break;
+    scanned += items.length;
     for (const it of items) {
       const id = num(field(it, "instrumentId")), sym = field(it, "internalSymbolFull");
-      if (!Number.isInteger(id) || seen.has(id) || typeof sym !== "string" || !/^[A-Za-z0-9.\-_]{1,20}$/.test(sym)) continue;
-      if (num(field(it, "instrumentTypeID")) !== typeId) continue;
+      if (!Number.isInteger(id) || seen.has(id) || index.get(id) !== typeId) continue;
+      if (typeof sym !== "string" || !/^[A-Za-z0-9.\-_]{1,20}$/.test(sym)) continue;
       if (field(it, "isDelisted") === true || field(it, "isHiddenFromClient") === true || field(it, "isActiveInPlatform") === false) continue;
       seen.add(id);
       out.push({ id, sym: sym.toUpperCase(), name: String(field(it, "displayname") || sym).slice(0, 60), crowd: num(field(it, "buyHoldingPct")) ?? null, pop: num(field(it, "popularityUniques7Day")) ?? null });
       if (out.length >= count) break;
     }
   }
+  log(`Typ ${typeId}: ${out.length} übernommen aus ${scanned} Suchtreffern`);
   return out;
 }
 async function dailyCandles(id) {
@@ -131,9 +148,13 @@ async function main() {
   const types = await instrumentTypes();
   log(`Instrument-Typen: Aktien ${types.stock}, ETFs ${types.etf}`);
   if (!Number.isInteger(types.stock)) throw new Error("Instrument-Typ „Aktien“ nicht gefunden.");
+  const index = await typeIndex([types.stock, types.etf].filter(Number.isInteger));
+  const inIndex = t => [...index.values()].filter(x => x === t).length;
+  log(`Offizielle Instrumentenliste: ${inIndex(types.stock)} Aktien, ${inIndex(types.etf)} ETFs`);
+  if (!inIndex(types.stock)) throw new Error("Instrumentenliste ohne Aktien – Typ-Zuordnung nicht möglich.");
   const universe = [
-    ...(await popular(types.stock, CONFIG.stocks)).map(x => ({ ...x, type: "Aktie" })),
-    ...(Number.isInteger(types.etf) ? (await popular(types.etf, CONFIG.etfs)).map(x => ({ ...x, type: "ETF" })) : []),
+    ...(await popular(types.stock, CONFIG.stocks, index)).map(x => ({ ...x, type: "Aktie" })),
+    ...(Number.isInteger(types.etf) ? (await popular(types.etf, CONFIG.etfs, index)).map(x => ({ ...x, type: "ETF" })) : []),
   ];
   log(`${universe.length} Werte: ${universe.slice(0, 8).map(x => x.sym).join(", ")} …`);
 

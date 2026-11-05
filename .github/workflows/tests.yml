@@ -57,6 +57,7 @@ jobs:
           FINNHUB_THROTTLE_MS: "0"
           STOCK_COUNT: "60"
           ETF_COUNT: "10"
+          SEARCH_PAGE_SIZE: "20"
           STOCKS_OUT: /tmp/stocks.json
         run: |
           node tests/mock-etoro.mjs 8792 & sleep 1

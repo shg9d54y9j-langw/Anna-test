@@ -6,6 +6,7 @@ Aufruf: python3 tests/verify_stocks.py <stocks.json> <http://localhost:PORT>
 """
 import json
 import math
+import os
 import sys
 import urllib.request
 
@@ -41,18 +42,41 @@ def close(a, b, tol):
     return abs(a - b) <= tol
 
 
-# Universum vom Test-Server: gültige Symbole, nicht gelistete und ungültige ausgeschlossen
+# Universum vom Test-Server: Beliebtheit aus der Suche, Typ nur aus der offiziellen Instrumentenliste
 universe = {}
-for t in (5, 6):
-    for page in (1, 2):
-        for it in get(f"{base}/api/v1/market-data/search?fields=x&instrumentTypeID={t}&pageSize=100&pageNumber={page}")["items"]:
-            universe[it["internalSymbolFull"].upper()] = it
+for page in (1, 2):
+    for it in get(f"{base}/api/v1/market-data/search?fields=x&pageSize=100&pageNumber={page}")["items"]:
+        universe[it["internalSymbolFull"].upper()] = it
+official = {x["instrumentID"]: x for x in get(f"{base}/api/v1/market-data/instruments")["instrumentDisplayDatas"]}
 syms = {x["sym"] for x in d["items"]}
 if "BAD SYMBOL!" in syms:
     errors.append("ungültiges Symbol nicht herausgefiltert")
 for sym, it in universe.items():
     if it.get("isDelisted") and sym in syms:
         errors.append(f"{sym}: nicht mehr gelistet, trotzdem enthalten")
+TYPE = {"Aktie": 5, "ETF": 6}
+for x in d["items"]:
+    o = official.get(universe[x["sym"]]["instrumentId"])
+    if not o or o["instrumentTypeID"] != TYPE.get(x["type"]):
+        errors.append(f"{x['sym']}: als {x['type']} geführt, offiziell Typ {o and o['instrumentTypeID']}")
+    elif o["isInternalInstrument"]:
+        errors.append(f"{x['sym']}: nicht öffentlich, trotzdem enthalten")
+
+
+# Genau die beliebtesten gültigen Werte je Typ, in der gewünschten Anzahl
+def valid(it, t):
+    o = official.get(it["instrumentId"])
+    return (o and o["instrumentTypeID"] == t and not o["isInternalInstrument"] and not it.get("isDelisted")
+            and it.get("isActiveInPlatform") is not False and not it.get("isHiddenFromClient")
+            and all(ch.isalnum() or ch in ".-_" for ch in it["internalSymbolFull"]))
+
+
+ranked = sorted(universe.values(), key=lambda it: -it["popularityUniques7Day"])
+for kind, t, env in (("Aktie", 5, "STOCK_COUNT"), ("ETF", 6, "ETF_COUNT")):
+    want = {it["internalSymbolFull"].upper() for it in [it for it in ranked if valid(it, t)][:int(os.environ.get(env, "0") or 0)]}
+    got = {x["sym"] for x in d["items"] if x["type"] == kind}
+    if want and got != want:
+        errors.append(f"{kind}: {len(got)} statt {len(want)} der beliebtesten gültigen Werte (fehlen {sorted(want - got)[:5]}, zu viel {sorted(got - want)[:5]})")
 
 spx = get(f"{base}/api/v2/market-data/instruments?symbols=SPX500")["results"][0]["instrumentId"]
 sc = candles(spx)

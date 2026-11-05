@@ -94,9 +94,14 @@ function series(id, n) {   // erfundene, reproduzierbare Tagesschlusskurse, ält
   }
   return out;
 }
-// Beliebte Aktien und ETFs für den Aktien-Check (erfunden): Typ 5 = Aktien, 6 = ETFs
+// Beliebte Instrumente für den Aktien-Check (erfunden): Typ 5 = Aktien, 6 = ETFs. Ganz oben stehen – wie bei eToro –
+// Bitcoin, Gold, ein Index und eine Währung; sie dürfen nie als Aktie erscheinen. STK007 ist nicht öffentlich.
 const UNIVERSE = [
-  ...Array.from({ length: 70 }, (_, i) => ({ instrumentId: 2000 + i, internalSymbolFull: i % 10 === 3 ? `DE${i}.DE` : `STK${String(i).padStart(3, "0")}`, displayname: `Testaktie ${i}`, instrumentTypeID: 5, exchangeID: i % 10 === 3 ? 6 : 4, buyHoldingPct: 60 + (i % 35), popularityUniques7Day: 100000 - i * 100, isDelisted: i === 5, isActiveInPlatform: true, isHiddenFromClient: false })),
+  { instrumentId: 100000, internalSymbolFull: "BTC", displayname: "Bitcoin", instrumentTypeID: 10, exchangeID: 8, buyHoldingPct: 95, popularityUniques7Day: 200000, isDelisted: false, isActiveInPlatform: true },
+  { instrumentId: 18, internalSymbolFull: "GOLD", displayname: "Gold", instrumentTypeID: 2, exchangeID: 2, buyHoldingPct: 80, popularityUniques7Day: 150000, isDelisted: false, isActiveInPlatform: true },
+  { instrumentId: 27, internalSymbolFull: "SPX500", displayname: "US500", instrumentTypeID: 4, exchangeID: 3, buyHoldingPct: 85, popularityUniques7Day: 140000, isDelisted: false, isActiveInPlatform: true },
+  { instrumentId: 1, internalSymbolFull: "EURUSD", displayname: "EUR/USD", instrumentTypeID: 1, exchangeID: 1, buyHoldingPct: 50, popularityUniques7Day: 130000, isDelisted: false, isActiveInPlatform: true },
+  ...Array.from({ length: 70 }, (_, i) => ({ instrumentId: 2000 + i, internalSymbolFull: i % 10 === 3 ? `DE${i}.DE` : `STK${String(i).padStart(3, "0")}`, displayname: `Testaktie ${i}`, instrumentTypeID: 5, exchangeID: i % 10 === 3 ? 6 : 4, buyHoldingPct: 60 + (i % 35), popularityUniques7Day: 100000 - i * 100, isDelisted: i === 5, isInternal: i === 7, isActiveInPlatform: true, isHiddenFromClient: false })),
   { instrumentId: 2999, internalSymbolFull: "BAD SYMBOL!", displayname: "Ungültig", instrumentTypeID: 5, exchangeID: 4, popularityUniques7Day: 99999, isDelisted: false, isActiveInPlatform: true },
   ...Array.from({ length: 15 }, (_, i) => ({ instrumentId: 3000 + i, internalSymbolFull: `ETF${String(i).padStart(2, "0")}`, displayname: `Test-ETF ${i}`, instrumentTypeID: 6, exchangeID: 5, buyHoldingPct: 90, popularityUniques7Day: 50000 - i * 100, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false })),
 ];
@@ -163,13 +168,19 @@ http.createServer(async (req, res) => {
   if (!req.headers["x-api-key"] || !req.headers["x-user-key"] || !req.headers["x-request-id"]) return send(401, { error: "missing auth headers" });
 
   if (url.pathname === "/api/v1/market-data/instrument-types") {
-    return send(200, { instrumentTypes: [{ instrumentTypeID: 1, instrumentTypeDescription: "Currencies" }, { instrumentTypeID: 4, instrumentTypeDescription: "Indices" }, { instrumentTypeID: 5, instrumentTypeDescription: "Stocks" }, { instrumentTypeID: 6, instrumentTypeDescription: "ETF" }, { instrumentTypeID: 10, instrumentTypeDescription: "Crypto" }] });
+    return send(200, { instrumentTypes: [{ instrumentTypeID: 1, instrumentTypeDescription: "Currencies" }, { instrumentTypeID: 2, instrumentTypeDescription: "Commodities" }, { instrumentTypeID: 4, instrumentTypeDescription: "Indices" }, { instrumentTypeID: 5, instrumentTypeDescription: "Stocks" }, { instrumentTypeID: 6, instrumentTypeDescription: "ETF" }, { instrumentTypeID: 10, instrumentTypeDescription: "Crypto" }] });
   }
   if (url.pathname === "/api/v1/market-data/search") {
     if (!url.searchParams.get("fields")) return send(400, { error: "fields is required" });
-    const type = Number(url.searchParams.get("instrumentTypeID")), size = Number(url.searchParams.get("pageSize") || 20), page = Number(url.searchParams.get("pageNumber") || 1);
-    const list = UNIVERSE.filter(u => !type || u.instrumentTypeID === type).sort((a, b) => b.popularityUniques7Day - a.popularityUniques7Day);
-    return send(200, { items: list.slice((page - 1) * size, page * size), page, pageSize: size, totalItems: list.length });
+    const size = Number(url.searchParams.get("pageSize") || 20), page = Number(url.searchParams.get("pageNumber") || 1);
+    // schlechtester Fall wie bei der echten API: Typ-Filter wird ignoriert, Typ-Feld nicht mitgeliefert
+    const list = [...UNIVERSE].sort((a, b) => b.popularityUniques7Day - a.popularityUniques7Day);
+    return send(200, { items: list.slice((page - 1) * size, page * size).map(({ instrumentTypeID, exchangeID, isInternal, ...rest }) => rest), page, pageSize: size, totalItems: list.length });
+  }
+  if (url.pathname === "/api/v1/market-data/instruments") {   // offizielle Liste mit Typ je Instrument
+    const want = (url.searchParams.get("instrumentTypeIds") || "").split(",").filter(Boolean).map(Number);
+    const list = UNIVERSE.filter(u => !want.length || want.includes(u.instrumentTypeID));
+    return send(200, { instrumentDisplayDatas: list.map(u => ({ instrumentID: u.instrumentId, instrumentDisplayName: u.displayname, instrumentTypeID: u.instrumentTypeID, exchangeID: u.exchangeID, symbolFull: u.internalSymbolFull, isInternalInstrument: Boolean(u.isInternal) })) });
   }
   if (url.pathname === "/api/v2/market-data/instruments") {
     const sym = url.searchParams.get("symbols");
