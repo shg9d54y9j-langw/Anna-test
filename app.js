@@ -5,6 +5,8 @@
 
 // ---------- Hilfsfunktionen (auch von compare.js, daily.js, overview.js genutzt) ----------
 const $ = id => document.getElementById(id);
+// Farben für Diagramme und Widgets (gleiche Werte wie in style.css; Reihenfarben gegen die schwarze Fläche geprüft)
+const PAL = { up: "#00e676", down: "#ff3d57", surface: "#0a0a0b", series1: "#3987e5", series2: "#d95926", gray: "#8d8d96", ink: "#f5f5f7" };
 const fmt = (n, d = 2) => (Number.isFinite(n) ? n.toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d }) : "–");
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const kpi = (lbl, val, cls = "") => `<div class="kpi"><div class="lbl">${lbl}</div><div class="val ${cls}">${val}</div></div>`;
@@ -139,7 +141,7 @@ const loadCalendar = () => tvWidget("calendarWidget", "events", { ...COMMON, imp
 const symIn = $("symbolInput");
 function loadSymbol(sym) {
   tvWidget("chartWidget", "advanced-chart", {
-    ...COMMON, isTransparent: false, backgroundColor: "#10151d", gridColor: "rgba(255,255,255,0.04)", autosize: true, symbol: sym, interval: "15",
+    ...COMMON, isTransparent: false, backgroundColor: "#0a0a0b", gridColor: "rgba(255,255,255,0.05)", autosize: true, symbol: sym, interval: "15",
     timezone: "Europe/Berlin", style: "1", studies: ["STD;VWAP", "STD;Average_True_Range"], allow_symbol_change: true, hide_side_toolbar: false,
   });
   tvWidget("taWidget", "technical-analysis", { ...COMMON, interval: "15m", symbol: sym, showIntervalTabs: true, displayMode: "single", width: "100%", height: "100%" });
@@ -148,12 +150,15 @@ $("symbolBtn").addEventListener("click", () => loadSymbol(symIn.value.trim().toU
 symIn.addEventListener("keydown", e => { if (e.key === "Enter") loadSymbol(symIn.value.trim().toUpperCase()); });
 
 // ---------- Reiter-Navigation ----------
-const VIEWS = ["home", "markt", "news", "setup", "daily", "copy", "compare", "journal"];
-const TITLES = { home: "Übersicht", markt: "Markt", news: "News", setup: "Trade-Setup", daily: "Tagesempfehlung", copy: "Copy-Trading", compare: "Trader-Vergleich", journal: "Journal" };
+const VIEWS = ["home", "markt", "news", "ideen", "setup", "daily", "copy", "compare", "journal", "theorie"];
+const TITLES = { home: "Übersicht", markt: "Markt", news: "News", ideen: "Trade-Ideen", setup: "Trade-Setup", daily: "Tagesempfehlung", copy: "Copy-Trading", compare: "Trader-Vergleich", journal: "Journal", theorie: "Theorie" };
 const VIEW_INIT = {
-  markt: () => { loadHeatmap(heatSel.value); loadHotlist(); },
+  markt: () => { loadHeatmap(heatSel.value); loadHotlist(); window.DTD.loadMarketLive(); },
   news: () => { loadNews(); loadCalendar(); },
+  ideen: () => window.DTD.renderIdeas(),
   setup: () => loadSymbol(symIn.value.trim().toUpperCase()),
+  daily: () => window.DTD.startBacktest(),
+  theorie: () => window.DTD.renderTheory(),
 };
 const initialized = new Set();
 function showView(id, { scrollTo = null } = {}) {
@@ -460,7 +465,7 @@ function renderEquity() {
   const ticks = [];
   for (let t = lo; t <= hi + step / 2; t += step) ticks.push(+t.toFixed(10));
   const X = i => m.l + i / (pts.length - 1) * pw, Y = y => m.t + (hi - y) / (hi - lo || 1) * ph;
-  const cur = jCur(), last = pts[pts.length - 1].y, color = last >= 0 ? "#22c55e" : "#f05252";
+  const cur = jCur(), last = pts[pts.length - 1].y, color = last >= 0 ? PAL.up : PAL.down;
   const line = pts.map((p, k) => `${k ? "L" : "M"}${X(p.i).toFixed(1)},${Y(p.y).toFixed(1)}`).join("");
   const area = `${line}L${X(pts.length - 1).toFixed(1)},${Y(0).toFixed(1)}L${X(0).toFixed(1)},${Y(0).toFixed(1)}Z`;
   host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Verlauf des Gewinns über ${trades.length} Trades, zuletzt ${fmt(last)} ${cur}">
@@ -468,7 +473,7 @@ function renderEquity() {
     <line class="base" x1="${m.l}" x2="${m.l + pw}" y1="${Y(0)}" y2="${Y(0)}"/>
     <path d="${area}" fill="${color}" opacity=".10"/>
     <path d="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="${X(pts.length - 1)}" cy="${Y(last)}" r="4.5" fill="${color}" stroke="#10151d" stroke-width="2"/>
+    <circle cx="${X(pts.length - 1)}" cy="${Y(last)}" r="4.5" fill="${color}" stroke="${PAL.surface}" stroke-width="2"/>
     <text class="tick" x="${m.l}" y="${H - 6}">1. Trade</text><text class="tick" x="${m.l + pw}" y="${H - 6}" text-anchor="end">${trades.length}. Trade</text>
   </svg>`;
 }
@@ -511,4 +516,5 @@ $("cAccount").addEventListener("input", renderJ);
 renderJ();
 
 // Erst ganz am Ende: den passenden Reiter anzeigen
-route();
+// Erst starten, wenn alle Skripte geladen sind (Cockpit, Wissen, Rückblick-Test, Psychologie-Check)
+document.addEventListener("DOMContentLoaded", route);

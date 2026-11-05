@@ -246,7 +246,7 @@
       ? `<p class="reco-sub"><b>Neu seit heute.</b> ${esc(p.note || "")}</p>`
       : p.since === String(updated || "").slice(0, 10)
         ? `<p class="reco-sub"><b>Seit heute.</b> ${esc(p.note || "")}</p>`
-        : `<p class="reco-sub">Unverändert seit ${dateDe(p.since)} · ${esc(p.note || "")}</p>`;
+        : `<p class="reco-sub">Seit ${dateDe(p.since)} · ${esc(p.note || "")}</p>`;
     const steps = [];
     if (p.changed && p.previous) steps.push(`Bisherige Kopie beenden: <b>„Portfolio“</b> → ${v(esc(p.previous))} antippen → Zahnrad → <b>„Kopieren beenden“</b>.`);
     steps.push(
@@ -439,7 +439,7 @@
     }
     months.forEach(([ym, g], i) => {
       const x = m.l + i * bw + Math.max(0.5, bw * 0.12), w = Math.max(1, bw * 0.76);
-      svgEl("rect", { x, y: Math.min(Y(g), Y(0)), width: w, height: Math.max(1, Math.abs(Y(g) - Y(0))), rx: Math.min(2, w / 2), fill: g >= 0 ? "#22c55e" : "#f05252", opacity: 0.9 }, svg);
+      svgEl("rect", { x, y: Math.min(Y(g), Y(0)), width: w, height: Math.max(1, Math.abs(Y(g) - Y(0))), rx: Math.min(2, w / 2), fill: g >= 0 ? PAL.up : PAL.down, opacity: 0.9 }, svg);
       if (ym.endsWith("-01")) svgEl("text", { x: x + w / 2, y: H - 6, "text-anchor": "middle", class: "tick" }, svg).textContent = ym.slice(0, 4);
     });
     const hit = svgEl("rect", { x: m.l, y: m.t, width: pw, height: ph, fill: "transparent", class: "hit" }, svg);
@@ -473,8 +473,8 @@
     const line = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p).toFixed(1)}`).join("");
     host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Aus 100 $ wurden ${fmt(pts[pts.length - 1], 0)} $">
       ${ticks.map(t => `<line class="${t === 100 ? "base" : "grid"}" x1="${m.l}" x2="${m.l + pw}" y1="${Y(t)}" y2="${Y(t)}"/><text class="tick" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${fmt(t, 0)} $</text>`).join("")}
-      <path d="${line}" fill="none" stroke="#4f8cff" stroke-width="2" stroke-linejoin="round"/>
-      <circle cx="${X(pts.length - 1)}" cy="${Y(pts[pts.length - 1])}" r="4.5" fill="#4f8cff" stroke="#0a0e14" stroke-width="2"/>
+      <path d="${line}" fill="none" stroke="${PAL.series1}" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="${X(pts.length - 1)}" cy="${Y(pts[pts.length - 1])}" r="4.5" fill="${PAL.series1}" stroke="${PAL.surface}" stroke-width="2"/>
       <text class="tick" x="${m.l}" y="${H - 5}">${monthLabel(months[0][0])}</text>
       <text class="tick" x="${m.l + pw}" y="${H - 5}" text-anchor="end">${monthLabel(months[months.length - 1][0])}: ${fmt(pts[pts.length - 1], 0)} $</text>
     </svg>`;
@@ -491,7 +491,7 @@
   }
 
   // ---------- Abbildung: Können-Sicherheit (x) gegen Rendite p.a. (y) ----------
-  const BLUE = "#3987e5", GRAY = "#8b949e", INK = "#e8eef6", SURFACE = "#10151d";
+  const BLUE = PAL.series1, GRAY = "#6d6d76", INK = PAL.ink, SURFACE = PAL.surface;
   const STYLE = {
     rec:    { r: 7,   fill: BLUE,   stroke: INK,     sw: 2,   label: "Tagesempfehlung" },
     safe:   { r: 4.5, fill: BLUE,   stroke: SURFACE, sw: 1.5, label: "Sicher – alle Bedingungen erfüllt" },

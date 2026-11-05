@@ -5,7 +5,7 @@
 (() => {
   const STORE = "daytrade-traders-v1";
   const COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
-  const SURFACE = "#10151d";
+  const SURFACE = PAL.surface;
   const MAX_TRADERS = COLORS.length;
   const MIN_COPY = 200; // eToro-Mindestbetrag pro kopiertem Trader ($)
 

@@ -50,7 +50,7 @@
       const green = pick.light === "green";
       const acc = account();
       const amount = acc ? `${fmt(Math.floor(pick.amountPct * acc + 1e-9), 0)} $` : `${fmt(pick.amountPct * 100, 0)} % des Kontos`;
-      box.innerHTML = `<p class="big-number ${green ? "up" : ""}">${green ? "✓" : "●"} ${esc(pick.userName)}</p>
+      box.innerHTML = `<p class="big-number ${green ? "up" : ""}"><span class="${green ? "icon-ok" : "icon-no"}">${green ? "✓" : "●"}</span> ${esc(pick.userName)}</p>
         <p class="chips"><span class="chip ${green ? "open" : "caution"}">${green ? "gesichert" : "nicht gesichert · halber Betrag"}</span>
           ${pick.changed ? `<span class="chip">neu seit heute</span>` : ""}</p>
         <p class="muted">Betrag ${amount} · Copy Stop Loss ${pick.csl} % · Gewinntag-Chance des Traders ${pct(pick.pDay)}</p>

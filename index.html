@@ -6,12 +6,12 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://s3.tradingview.com; frame-src https://*.tradingview.com https://*.tradingview-widget.com; connect-src 'self' https://raw.githubusercontent.com https://*.tradingview.com; img-src 'self' data: https://*.tradingview.com; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#07090d">
+  <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DayTrade Desk">
-  <meta name="description" content="Daytrading-Cockpit: Heatmap, News, Trade-Setup, geprüfte Copy-Trading-Empfehlung und Journal.">
+  <meta name="description" content="Daytrading-Cockpit: Marktlage mit Ampeln, Heatmap, News, wissenschaftlich belegte Trade-Ideen, Finanztheorie, geprüfte Copy-Trading-Empfehlung und Journal.">
   <title>DayTrade Desk</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -24,7 +24,7 @@
 
   <header class="appbar">
     <div class="brand">
-      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18M12 2v20M18 5v14"/><rect x="4" y="7" width="4" height="8" rx="1.2"/><rect x="10" y="5" width="4" height="11" rx="1.2"/><rect x="16" y="9" width="4" height="6" rx="1.2"/></svg>
+      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path class="wick c-up" d="M7.5 3v18"/><rect class="c-up" x="5" y="7" width="5" height="9" rx="1.2"/><path class="wick c-down" d="M16.5 4v15"/><rect class="c-down" x="14" y="8" width="5" height="7" rx="1.2"/></svg>
       <span>DayTrade <b>Desk</b></span>
     </div>
     <div class="sessions" id="sessions" aria-label="Börsenzeiten"></div>
@@ -39,6 +39,8 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Markt</span></button>
     <button class="tab" role="tab" id="tab-news" aria-controls="news" data-tab="news">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M19 9h1a1 1 0 0 1 1 1v8a2 2 0 0 1-2 2M8 9h7M8 13h7M8 17h4"/></svg><span>News</span></button>
+    <button class="tab" role="tab" id="tab-ideen" aria-controls="ideen" data-tab="ideen">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"/></svg><span>Trade-Ideen</span> <span class="new">neu</span></button>
     <button class="tab" role="tab" id="tab-setup" aria-controls="setup" data-tab="setup">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span>Trade-Setup</span></button>
     <button class="tab" role="tab" id="tab-daily" aria-controls="daily" data-tab="daily">
@@ -49,6 +51,8 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V4M16 20v-7M21 20H3"/></svg><span>Trader-Vergleich</span></button>
     <button class="tab" role="tab" id="tab-journal" aria-controls="journal" data-tab="journal">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z"/><path d="M5 19.5A2.5 2.5 0 0 1 7.5 17H20"/></svg><span>Journal</span></button>
+    <button class="tab" role="tab" id="tab-theorie" aria-controls="theorie" data-tab="theorie">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 9 12 4 2 9l10 5 10-5z"/><path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5M22 9v6"/></svg><span>Theorie</span> <span class="new">neu</span></button>
   </nav>
 
   <main id="views">
@@ -59,8 +63,9 @@
           <p class="eyebrow" id="ovDate"></p>
           <h1 id="ovGreeting">Übersicht</h1>
         </div>
-        <p class="lead">Ihr Handelstag auf einen Blick: Börsenzeiten, geprüfte Tagesempfehlung, Live-Wächter und Ihr Journal.</p>
+        <p class="lead">Ihr Handelstag auf einen Blick: Marktlage, Börsenzeiten, geprüfte Tagesempfehlung, Live-Wächter und Ihr Journal.</p>
       </div>
+      <div id="ovMarket"></div>
       <div class="dash">
         <article class="card">
           <h2 class="card-title">Börsen</h2>
@@ -96,6 +101,8 @@
             <a class="quick-btn" href="#markt"><span>Heatmap</span><small>Wer bewegt den Markt?</small></a>
             <a class="quick-btn" href="#news"><span>News &amp; Termine</span><small>Was steht heute an?</small></a>
             <a class="quick-btn" href="#journal"><span>Trade eintragen</span><small>Journal und Tageslimit</small></a>
+            <a class="quick-btn" href="#ideen"><span>Trade-Ideen</span><small>Belegte Muster und Termine</small></a>
+            <a class="quick-btn" href="#theorie"><span>Theorie</span><small>Was die Forschung weiß</small></a>
           </div>
         </article>
       </div>
@@ -104,9 +111,14 @@
     <!-- MARKT -->
     <section id="markt" class="view" role="tabpanel" aria-labelledby="tab-markt" hidden>
       <div class="view-head">
-        <div><p class="eyebrow">Markt</p><h1>Was bewegt sich heute?</h1></div>
-        <p class="lead">Die Heatmap zeigt Gewinner und Verlierer nach Sektoren, darunter die stärksten Bewegungen in den USA.</p>
+        <div><p class="eyebrow">Markt · Ampeln aus belegten Regeln</p><h1>Marktlage &amp; Heatmap</h1></div>
+        <p class="lead">Oben die Marktlage mit Trend, Schwankung, Zinskurve und Finanzbedingungen – darunter Live-Kurse, die Heatmap nach Sektoren und die stärksten Bewegungen in den USA.</p>
       </div>
+      <div id="cockpit" class="stack"></div>
+      <article class="card">
+        <div class="card-head"><h2 class="card-title">Live-Kurse</h2><span class="badge">TradingView</span></div>
+        <div id="marketOverview" class="widget mini"></div>
+      </article>
       <article class="card">
         <div class="card-head">
           <h2 class="card-title">Heatmap</h2>
@@ -141,6 +153,15 @@
           <div id="calendarWidget" class="widget tall"></div>
         </article>
       </div>
+    </section>
+
+    <!-- TRADE-IDEEN -->
+    <section id="ideen" class="view" role="tabpanel" aria-labelledby="tab-ideen" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Trade-Ideen · wissenschaftlich geprüft</p><h1>Ideen für die nächsten Wochen</h1></div>
+        <p class="lead">Nur Muster und Trends mit Belegen aus Fachzeitschriften oder offiziellen Berichten – jeweils mit Beweisstärke, aktuellem Signal, Umsetzung und Risiken.</p>
+      </div>
+      <div id="ideasBody" class="stack"></div>
     </section>
 
     <!-- TRADE-SETUP -->
@@ -186,6 +207,8 @@
         <div class="result" id="calcResult"></div>
       </article>
 
+      <article class="card" id="psychCheck"></article>
+
       <article class="card etoro">
         <h2 class="card-title">So tragen Sie den Trade in eToro ein</h2>
         <p class="legend"><b>Fett</b> = Button oder Feld in eToro · <span class="v">blau hinterlegt</span> = Wert, den Sie eintragen</p>
@@ -203,6 +226,7 @@
         <p class="lead" id="dailyUpdated"></p>
       </div>
       <div id="dailyBody"><p class="muted">Lade Daten …</p></div>
+      <div id="backtest"></div>
     </section>
 
     <!-- COPY-TRADING -->
@@ -392,6 +416,7 @@
         </form>
       </article>
       <div class="stats" id="jStats"></div>
+      <article class="card" id="psychJournal"></article>
       <article class="card">
         <h2 class="card-title">Gewinn und Verlust über alle Trades</h2>
         <div class="chart-host" id="jChart"></div>
@@ -403,11 +428,20 @@
         </div>
       </article>
     </section>
+
+    <!-- THEORIE -->
+    <section id="theorie" class="view" role="tabpanel" aria-labelledby="tab-theorie" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Finanztheorie · Stand November 2026</p><h1>Was die Forschung über Märkte weiß</h1></div>
+        <p class="lead">Die wichtigsten und aktuell meistdiskutierten Theorien – kurz erklärt, mit Begründung, Bedeutung für Ihr Trading und Quellen aus Fachzeitschriften.</p>
+      </div>
+      <div id="theoryBody" class="stack"></div>
+    </section>
   </main>
 
   <footer class="disclaimer">
     <strong>Risikohinweis:</strong> Keine Anlageberatung. Alle Vorschläge sind mechanische Rechenregeln, keine Empfehlung zum Kauf oder Verkauf. Die große Mehrheit privater Daytrader verliert langfristig Geld. Handeln Sie nur mit Geld, dessen Verlust Sie verkraften können, und üben Sie zuerst mit einem Demokonto.
-    Marktdaten &amp; Widgets: TradingView. Schrift: Inter (SIL Open Font License).
+    Marktdaten &amp; Widgets: TradingView, eToro. Makrodaten: FRED, Federal Reserve Bank of St. Louis. Schrift: Inter (SIL Open Font License).
   </footer>
 
   <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
@@ -425,5 +459,9 @@
   <script src="compare.js"></script>
   <script src="daily.js"></script>
   <script src="overview.js"></script>
+  <script src="cockpit.js"></script>
+  <script src="knowledge.js"></script>
+  <script src="backtest.js"></script>
+  <script src="psych.js"></script>
 </body>
 </html>
