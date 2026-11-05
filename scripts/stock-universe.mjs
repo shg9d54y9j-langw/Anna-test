@@ -23,11 +23,11 @@ const r2 = x => (Number.isFinite(x) ? Math.round(x * 100) / 100 : null);
 const r4 = x => (Number.isFinite(x) ? Math.round(x * 10000) / 10000 : null);
 
 // TradingView-Symbol aus dem eToro-Symbol ableiten (beste Schätzung; ohne Präfix sucht TradingView selbst)
-const SUFFIX = { DE: "XETR", L: "LSE", PA: "EURONEXT", AS: "EURONEXT", BR: "EURONEXT", LSB: "EURONEXT", MI: "MIL", MC: "BME", ZU: "SIX", SW: "SIX", HK: "HKEX", OL: "OSL", ST: "OMXSTO", CO: "OMXCOP", HE: "OMXHEX", VI: "VIE", LS: "EURONEXT" };
+const SUFFIX = { DE: "XETR", L: "LSE", PA: "EURONEXT", AS: "EURONEXT", NV: "EURONEXT", BR: "EURONEXT", LSB: "EURONEXT", MI: "MIL", MC: "BME", ZU: "SIX", SW: "SIX", HK: "HKEX", OL: "OSL", ST: "OMXSTO", CO: "OMXCOP", HE: "OMXHEX", VI: "VIE", LS: "EURONEXT" };
 export function tvSymbol(sym) {
   const m = /^([A-Z0-9-]+)\.([A-Z]+)$/.exec(sym || "");
   if (m && SUFFIX[m[2]]) return `${SUFFIX[m[2]]}:${m[1].replace(/-/g, "_")}`;
-  return (sym || "").replace(/\./g, "_");
+  return sym || "";   // US-Aktien unverändert, auch Aktiengattungen wie BRK.B
 }
 
 export function stockStats(candles, spxByDay) {
