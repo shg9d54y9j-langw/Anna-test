@@ -94,6 +94,12 @@ function series(id, n) {   // erfundene, reproduzierbare Tagesschlusskurse, ält
   }
   return out;
 }
+// Beliebte Aktien und ETFs für den Aktien-Check (erfunden): Typ 5 = Aktien, 6 = ETFs
+const UNIVERSE = [
+  ...Array.from({ length: 70 }, (_, i) => ({ instrumentId: 2000 + i, internalSymbolFull: i % 10 === 3 ? `DE${i}.DE` : `STK${String(i).padStart(3, "0")}`, displayname: `Testaktie ${i}`, instrumentTypeID: 5, exchangeID: i % 10 === 3 ? 6 : 4, buyHoldingPct: 60 + (i % 35), popularityUniques7Day: 100000 - i * 100, isDelisted: i === 5, isActiveInPlatform: true, isHiddenFromClient: false })),
+  { instrumentId: 2999, internalSymbolFull: "BAD SYMBOL!", displayname: "Ungültig", instrumentTypeID: 5, exchangeID: 4, popularityUniques7Day: 99999, isDelisted: false, isActiveInPlatform: true },
+  ...Array.from({ length: 15 }, (_, i) => ({ instrumentId: 3000 + i, internalSymbolFull: `ETF${String(i).padStart(2, "0")}`, displayname: `Test-ETF ${i}`, instrumentTypeID: 6, exchangeID: 5, buyHoldingPct: 90, popularityUniques7Day: 50000 - i * 100, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false })),
+];
 const FRED_DATA = {
   T10Y3M: d => (0.4 - 0.002 * d).toFixed(2),
   NFCI: d => (-0.45 + 0.001 * d).toFixed(3),
@@ -133,6 +139,19 @@ http.createServer(async (req, res) => {
     return send(404, { error: "unknown test endpoint" });
   }
 
+  // Finnhub (Token in der Adresse, keine eToro-Schlüssel)
+  if (url.pathname.startsWith("/finnhub/")) {
+    if (url.searchParams.get("token") !== "test-finnhub-0000") return send(401, { error: "invalid token" });
+    if (url.pathname === "/finnhub/calendar/earnings") {
+      return send(200, { earningsCalendar: UNIVERSE.filter(u => u.instrumentTypeID === 5 && u.instrumentId % 3 === 0).map(u => ({ symbol: u.internalSymbolFull, date: new Date(Date.now() + (u.instrumentId % 40 + 3) * 864e5).toISOString().slice(0, 10), hour: "amc", epsEstimate: 1.23, quarter: 4, year: 2026 })) });
+    }
+    if (url.pathname === "/finnhub/stock/recommendation") {
+      const sym = url.searchParams.get("symbol");
+      return send(200, sym && sym.startsWith("STK") ? [{ symbol: sym, period: "2026-11-01", strongBuy: 5, buy: 10, hold: 7, sell: 1, strongSell: 0 }, { symbol: sym, period: "2026-10-01", strongBuy: 4, buy: 9, hold: 8, sell: 2, strongSell: 0 }] : []);
+    }
+    return send(404, { error: "unknown finnhub endpoint" });
+  }
+
   // FRED braucht keine Schlüssel – deshalb vor der Schlüsselprüfung
   if (url.pathname === "/fred") {
     const csv = fredCsv(url.searchParams.get("id"));
@@ -143,6 +162,15 @@ http.createServer(async (req, res) => {
 
   if (!req.headers["x-api-key"] || !req.headers["x-user-key"] || !req.headers["x-request-id"]) return send(401, { error: "missing auth headers" });
 
+  if (url.pathname === "/api/v1/market-data/instrument-types") {
+    return send(200, { instrumentTypes: [{ instrumentTypeID: 1, instrumentTypeDescription: "Currencies" }, { instrumentTypeID: 4, instrumentTypeDescription: "Indices" }, { instrumentTypeID: 5, instrumentTypeDescription: "Stocks" }, { instrumentTypeID: 6, instrumentTypeDescription: "ETF" }, { instrumentTypeID: 10, instrumentTypeDescription: "Crypto" }] });
+  }
+  if (url.pathname === "/api/v1/market-data/search") {
+    if (!url.searchParams.get("fields")) return send(400, { error: "fields is required" });
+    const type = Number(url.searchParams.get("instrumentTypeID")), size = Number(url.searchParams.get("pageSize") || 20), page = Number(url.searchParams.get("pageNumber") || 1);
+    const list = UNIVERSE.filter(u => !type || u.instrumentTypeID === type).sort((a, b) => b.popularityUniques7Day - a.popularityUniques7Day);
+    return send(200, { items: list.slice((page - 1) * size, page * size), page, pageSize: size, totalItems: list.length });
+  }
   if (url.pathname === "/api/v2/market-data/instruments") {
     const sym = url.searchParams.get("symbols");
     const id = INSTRUMENTS[sym];
@@ -151,7 +179,7 @@ http.createServer(async (req, res) => {
   const candles = /^\/api\/v1\/market-data\/instruments\/(\d+)\/history\/candles\/(asc|desc)\/OneDay\/(\d+)$/.exec(url.pathname);
   if (candles) {
     const id = Number(candles[1]), n = Math.min(1000, Number(candles[3]));
-    if (!Object.values(INSTRUMENTS).includes(id)) return send(404, { error: "unknown instrument" });
+    if (!Object.values(INSTRUMENTS).includes(id) && !UNIVERSE.some(u => u.instrumentId === id)) return send(404, { error: "unknown instrument" });
     const list = series(id, n);
     return send(200, { interval: "OneDay", candles: [{ instrumentId: id, candles: candles[2] === "desc" ? list.reverse() : list }] });
   }

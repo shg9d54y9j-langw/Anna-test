@@ -46,6 +46,23 @@ jobs:
           node scripts/market-cockpit.mjs
           python3 tests/verify_market.py /tmp/market.json http://localhost:8791
 
+      - name: Aktien-Daten gegen den Test-Server, unabhängige Gegenrechnung
+        env:
+          ETORO_API_BASE: http://localhost:8792/api
+          ETORO_THROTTLE_MS: "0"
+          ETORO_API_KEY: test-public-key-0000
+          ETORO_USER_KEY: test-user-key-0000
+          FINNHUB_BASE: http://localhost:8792/finnhub
+          FINNHUB_API_KEY: test-finnhub-0000
+          FINNHUB_THROTTLE_MS: "0"
+          STOCK_COUNT: "60"
+          ETF_COUNT: "10"
+          STOCKS_OUT: /tmp/stocks.json
+        run: |
+          node tests/mock-etoro.mjs 8792 & sleep 1
+          node scripts/stock-universe.mjs
+          python3 tests/verify_stocks.py /tmp/stocks.json http://localhost:8792
+
       - name: Copy-Bot gegen den Test-Server (Start, Wechsel, Stop Loss, eigene Kopien, Echtgeld-Obergrenze)
         run: node tests/bot-scenarios.mjs
 
