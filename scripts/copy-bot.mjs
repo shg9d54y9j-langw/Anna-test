@@ -248,7 +248,12 @@ async function main() {
     try { ok = await send("POST", `${P.copy}/eligibility`, { parentCID: cid, amount }); }
     catch (e) { once(`elig-err:${p.userName}`, "fehler", `Probelauf für ${p.userName} fehlgeschlagen: ${e.message}`); return; }
     if (field(ok, "isSuccess") !== true) {
-      once(`elig:${p.userName}`, "abgelehnt", `eToro würde die Kopie von ${p.userName} mit ${de(sharePct, 0)} % des Kontos nicht erlauben: ${field(ok, "errorMessage") || "ohne Begründung"}.`);
+      // Begründung aus allen bekannten Feldern; die Feldnamen ins Protokoll, um neue Antworten zu verstehen (keine Beträge)
+      const why = ["errorMessage", "failReason", "reason", "message", "errorMessageCode", "errorCode", "errors"].map(k => field(ok, k))
+        .filter(x => x !== undefined && x !== null && x !== "").map(x => (typeof x === "object" ? JSON.stringify(x) : String(x))).join(" · ")
+        .replace(/\d{4,}(?:[.,]\d+)?|\d+[.,]\d+/g, "#").slice(0, 200);
+      log(`Probelauf ${p.userName}: Antwort-Felder ${Object.keys(ok || {}).join(", ") || "–"}`);
+      once(`elig:${p.userName}`, "abgelehnt", `eToro würde die Kopie von ${p.userName} mit ${de(sharePct, 0)} % des Kontos nicht erlauben: ${why || "ohne Begründung"}.`);
       return;
     }
 
