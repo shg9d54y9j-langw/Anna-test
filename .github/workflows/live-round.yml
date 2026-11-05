@@ -32,6 +32,7 @@ jobs:
       contents: read
     outputs:
       live: ${{ steps.watch.outputs.live }}
+      market: ${{ steps.market.outputs.market }}
     steps:
       - name: Bis zur nächsten Runde warten
         if: inputs.delay > 0
@@ -56,6 +57,18 @@ jobs:
             echo "live=$(base64 -w0 data/live.json)" >> "$GITHUB_OUTPUT"
           fi
 
+      # Marktlage-Cockpit: Trend, Schwankung, Zinskurve, Finanzbedingungen. Ein Fehler hier stoppt den Live-Wächter nicht.
+      - name: Marktlage berechnen
+        id: market
+        env:
+          ETORO_API_KEY: ${{ secrets.ETORO_API_KEY }}
+          ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
+        run: |
+          node scripts/market-cockpit.mjs || echo "::warning::Marktlage-Cockpit fehlgeschlagen – der letzte Stand bleibt stehen."
+          if [ -f data/market.json ]; then
+            echo "market=$(base64 -w0 data/market.json)" >> "$GITHUB_OUTPUT"
+          fi
+
   # Veröffentlicht den Live-Stand auf dem Zweig live-data und meldet neue Warnungen – ohne eToro-Schlüssel.
   save:
     needs: fetch
@@ -69,14 +82,23 @@ jobs:
       - name: Live-Stand veröffentlichen
         env:
           LIVE_B64: ${{ needs.fetch.outputs.live }}
+          MARKET_B64: ${{ needs.fetch.outputs.market }}
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
           mkdir live && cd live
           printf '%s' "$LIVE_B64" | base64 -d > live.json
           node -e 'JSON.parse(require("fs").readFileSync("live.json", "utf8"))'
+          if [ -n "$MARKET_B64" ]; then
+            printf '%s' "$MARKET_B64" | base64 -d > market.json
+          else
+            # Cockpit diesmal ohne Ergebnis: letzten veröffentlichten Stand behalten
+            curl -fsS --max-time 20 "https://raw.githubusercontent.com/${REPO}/live-data/market.json" -o market.json || rm -f market.json
+          fi
+          if [ -f market.json ]; then node -e 'JSON.parse(require("fs").readFileSync("market.json", "utf8"))' || rm -f market.json; fi
           git init -q -b live-data
           git add live.json
+          if [ -f market.json ]; then git add market.json; fi
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Live-Stand $(date -u +%FT%TZ)"
           git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:live-data
 

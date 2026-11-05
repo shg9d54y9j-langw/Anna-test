@@ -33,6 +33,19 @@ jobs:
           node scripts/live-watch.mjs
           node -e 'const d = JSON.parse(require("fs").readFileSync("/tmp/live.json", "utf8")); if (!d.entries.length) throw new Error("Live-Stand leer");'
 
+      - name: Marktlage-Cockpit gegen den Test-Server, unabhängige Gegenrechnung
+        env:
+          ETORO_API_BASE: http://localhost:8791/api
+          ETORO_THROTTLE_MS: "0"
+          ETORO_API_KEY: test-public-key-0000
+          ETORO_USER_KEY: test-user-key-0000
+          FRED_BASE: http://localhost:8791/fred
+          MARKET_OUT: /tmp/market.json
+        run: |
+          node tests/mock-etoro.mjs 8791 & sleep 1
+          node scripts/market-cockpit.mjs
+          python3 tests/verify_market.py /tmp/market.json http://localhost:8791
+
       - name: Copy-Bot gegen den Test-Server (Start, Wechsel, Stop Loss, eigene Kopien, Echtgeld-Obergrenze)
         run: node tests/bot-scenarios.mjs
 

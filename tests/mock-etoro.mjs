@@ -78,6 +78,41 @@ function portfolio(acc) {
     },
   };
 }
+// ---------- Marktdaten (Tageskerzen) und FRED-Reihen für das Marktlage-Cockpit ----------
+const INSTRUMENTS = { SPX500: 27, NSDQ100: 28, GER40: 32, GOLD: 18, OIL: 17, BTC: 100000 };
+function series(id, n) {   // erfundene, reproduzierbare Tagesschlusskurse, älteste zuerst
+  let x = 1000 + id % 997, s = id * 7919 % 4294967296;
+  const r = () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
+  const drift = id === 17 ? -0.0006 : 0.0004, vol = id === 100000 ? 0.035 : 0.011;
+  const out = [];
+  const day0 = Date.UTC(2025, 0, 2);
+  for (let i = 0, d = 0; out.length < n; d++) {
+    const t = new Date(day0 + d * 864e5);
+    if (id !== 100000 && (t.getUTCDay() === 0 || t.getUTCDay() === 6)) continue;   // Krypto auch am Wochenende
+    x *= Math.exp(drift + vol * (r() + r() + r() - 1.5) * 2);
+    out.push({ fromDate: t.toISOString(), open: x, high: x * 1.005, low: x * 0.995, close: Math.round(x * 100) / 100, volume: 1000 + i++ });
+  }
+  return out;
+}
+const FRED_DATA = {
+  T10Y3M: d => (0.4 - 0.002 * d).toFixed(2),
+  NFCI: d => (-0.45 + 0.001 * d).toFixed(3),
+  DTWEXBGS: d => (120 + Math.sin(d / 40) * 3 + d * 0.01).toFixed(4),
+};
+function fredCsv(id) {
+  const f = FRED_DATA[id];
+  if (!f) return null;
+  const rows = ["observation_date," + id];
+  const start = Date.UTC(2025, 8, 1);
+  for (let d = 0; d < 430; d++) {
+    const t = new Date(start + d * 864e5);
+    if (id === "NFCI" && t.getUTCDay() !== 5) continue;                       // wöchentlich (freitags)
+    if (id !== "NFCI" && (t.getUTCDay() === 0 || t.getUTCDay() === 6)) continue;
+    rows.push(`${t.toISOString().slice(0, 10)},${d % 37 === 5 ? "." : f(d)}`);   // „.“ = fehlender Wert wie bei FRED
+  }
+  return rows.join("\n") + "\n";
+}
+
 const mirrorInvested = m => m.initialInvestment + m.depositSummary - m.withdrawalSummary;
 const mirrorValue = m => mirrorInvested(m) * (1 + m.pnlPct / 100);
 const readBody = req => new Promise(resolve => { let b = ""; req.on("data", c => (b += c)); req.on("end", () => { try { resolve(b ? JSON.parse(b) : {}); } catch { resolve(null); } }); });
@@ -98,7 +133,28 @@ http.createServer(async (req, res) => {
     return send(404, { error: "unknown test endpoint" });
   }
 
+  // FRED braucht keine Schlüssel – deshalb vor der Schlüsselprüfung
+  if (url.pathname === "/fred") {
+    const csv = fredCsv(url.searchParams.get("id"));
+    if (!csv) { res.writeHead(404); return res.end("not found"); }
+    res.writeHead(200, { "content-type": "text/csv" });
+    return res.end(csv);
+  }
+
   if (!req.headers["x-api-key"] || !req.headers["x-user-key"] || !req.headers["x-request-id"]) return send(401, { error: "missing auth headers" });
+
+  if (url.pathname === "/api/v2/market-data/instruments") {
+    const sym = url.searchParams.get("symbols");
+    const id = INSTRUMENTS[sym];
+    return send(200, { results: id ? [{ instrumentId: id, symbol: sym, displayName: sym, type: "Indices" }] : [], pagination: { hasNext: false } });
+  }
+  const candles = /^\/api\/v1\/market-data\/instruments\/(\d+)\/history\/candles\/(asc|desc)\/OneDay\/(\d+)$/.exec(url.pathname);
+  if (candles) {
+    const id = Number(candles[1]), n = Math.min(1000, Number(candles[3]));
+    if (!Object.values(INSTRUMENTS).includes(id)) return send(404, { error: "unknown instrument" });
+    const list = series(id, n);
+    return send(200, { interval: "OneDay", candles: [{ instrumentId: id, candles: candles[2] === "desc" ? list.reverse() : list }] });
+  }
 
   const copy = /^\/api\/v2\/trading\/copy(\/demo)?(\/eligibility|\/close|\/[A-Za-z0-9_-]+)?$/.exec(url.pathname);
   if (copy) {
