@@ -25,6 +25,28 @@ import { call, send, field, num, findArray, log, warn, hasKeys, sleep } from "./
 
 const here = p => fileURLToPath(new URL(p, import.meta.url));
 export const REAL_MONEY_UNLOCKED = false;
+// Finanzlage von FRED (Federal Reserve Bank of St. Louis, ohne Schlüssel) – nur an fred.stlouisfed.org
+const FRED = (process.env.FRED_BASE || "https://fred.stlouisfed.org/graph/fredgraph.csv").replace(/\/$/, "");
+if (!["fred.stlouisfed.org", "localhost", "127.0.0.1"].includes(new URL(FRED).hostname)) throw new Error(`Unzulässige FRED-Adresse ${new URL(FRED).hostname}`);
+async function fredSeries(id, from) {
+  const res = await fetch(`${FRED}?id=${encodeURIComponent(id)}&cosd=${from}`, { redirect: "error", signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error(`FRED ${id}: HTTP ${res.status}`);
+  const rows = (await res.text()).trim().split(/\r?\n/).slice(1).map(l => l.split(",")).map(([d, v]) => ({ d, v: Number(v) }))
+    .filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.d) && Number.isFinite(r.v)).sort((a, b) => (a.d < b.d ? -1 : 1));
+  if (!rows.length) throw new Error(`FRED ${id}: keine Werte`);
+  return rows;
+}
+// Wert je Kurstag: letzter NFCI-Stand, der mindestens 7 Tage alt ist (so spät wird er veröffentlicht – kein Blick in die Zukunft)
+export function macroAt(dates, rows) {
+  const out = [];
+  let j = -1;
+  for (const d of dates) {
+    const cut = new Date(new Date(`${d}T12:00:00Z`) - 7 * 864e5).toISOString().slice(0, 10);
+    while (rows && j + 1 < rows.length && rows[j + 1].d <= cut) j++;
+    out.push(rows && j >= 0 ? rows[j].v : null);
+  }
+  return out;
+}
 const DEMO = {
   pnl: "/v1/trading/info/demo/pnl",
   open: "/v1/trading/execution/demo/market-open-orders/by-amount",
@@ -111,33 +133,93 @@ export function ddMultiplier(ddPct) {
   if (ddPct >= RULES.ddFull) return RULES.ddFloor;
   return 1 - (1 - RULES.ddFloor) * (ddPct - RULES.ddStart) / (RULES.ddFull - RULES.ddStart);
 }
-// Zielanteile: Grundgewicht nach Schwankung × Trend, gedeckelt; dann Schwankungs- und Verlustbremse
-export function targetWeights(sigs, ppy, ddPct) {
-  const ok = sigs.map(s => Boolean(s && s.vol > 0));
-  const inv = sigs.map((s, i) => (ok[i] ? 1 / s.vol : 0));
-  const sumInv = inv.reduce((a, b) => a + b, 0);
-  let w = sigs.map((s, i) => (ok[i] && sumInv > 0 ? Math.min(RULES.maxWeight, inv[i] / sumInv * s.score) : 0));
-  // Schwankung des ganzen Depots aus den gemeinsamen Tagesrenditen (Kovarianz)
+// ---------- Strategie-Familie: fünf erforschte Regeln, der Bot lernt, welche gerade besser trägt ----------
+// Alle Varianten sind vorab festgelegt (nicht auf die Vergangenheit optimiert). Der Bot verteilt sein Geld auf alle und
+// verschiebt die Gewichte einmal im Monat zu den Varianten mit mehr Rendite je Risiko in den letzten 36 Monaten –
+// stark zur Gleichverteilung geschrumpft und höchstens 10 Prozentpunkte pro Monat. Grundlagen: Kombinieren schlägt
+// Einzelmodelle (Rapach, Strauss & Zhou 2010), geschätzte Gewichte nur mit Schrumpfung (DeMiguel, Garlappi & Uppal 2009),
+// Strategien mit gutem Lauf laufen eher weiter (Faktor-Momentum, Ehsani & Linnainmaa 2022).
+export const LEARN = { lookbackMonths: 36, minMonths: 12, shrink: 0.5, temp: 2, maxStep: 0.10 };
+const RISKY = new Set(["us", "intl", "commod", "reits"]);
+const share = checks => checks.filter(Boolean).length / checks.length;
+export const VARIANTS = [
+  { key: "t3612", name: "Trend 3–6–12 Monate", src: "Moskowitz, Ooi & Pedersen 2012", doi: "10.1016/j.jfineco.2011.11.003",
+    raw: (F, b) => F.map((f, i) => (f ? b[i] * share([f.r3 > 0, f.r6 > 0, f.r12 > 0, f.p > f.sma]) : 0)) },
+  { key: "t1312", name: "Trend 1–3–12 Monate (schneller)", src: "Hurst, Ooi & Pedersen 2017", doi: "10.3905/jpm.2017.44.1.015",
+    raw: (F, b) => F.map((f, i) => (f ? b[i] * share([f.r1 > 0, f.r3 > 0, f.r12 > 0, f.p > f.sma]) : 0)) },
+  { key: "faber", name: "10-Monats-Linie", src: "Faber 2007", doi: "10.3905/jwm.2007.674809",
+    raw: (F, b) => F.map((f, i) => (f && f.p > f.sma10 ? b[i] : 0)) },
+  { key: "dual", name: "Dual Momentum: die 3 stärksten", src: "Antonacci 2012", url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2042750",
+    raw: (F, b) => {
+      const top = F.map((f, i) => ({ i, r: f ? f.r12 : NaN })).filter(x => x.r > 0).sort((x, y) => y.r - x.r || x.i - y.i).slice(0, 3);
+      const sum = top.reduce((t, x) => t + b[x.i], 0);
+      return F.map((_, i) => (sum > 0 && top.some(x => x.i === i) ? b[i] / sum : 0));
+    } },
+  { key: "macro", name: "Trend + Finanzlage (NFCI)", src: "Adrian, Boyarchenko & Giannone 2019", doi: "10.1257/aer.20161923",
+    raw: (F, b, ctx) => {
+      const w = VARIANTS[0].raw(F, b, ctx);
+      return Number.isFinite(ctx.nfci) && ctx.nfci > 0 ? w.map((x, i) => (RISKY.has(ctx.keys[i]) ? x / 2 : x)) : w;
+    } },
+];
+// Kennzahlen eines ETF am Zeitpunkt t (nur Kurse bis einschließlich t)
+export function featuresAt(closes, t, ppy) {
+  const k = days => Math.max(1, Math.round(days * ppy / 252));
+  const L = { r1: k(21), r3: k(63), r6: k(126), r12: k(252), sma: k(200), sma10: k(210), vol: k(60) };
+  const need = Math.max(L.r12, L.sma10, L.vol);
+  if (t < need || !(closes[t] > 0) || !(closes[t - need] > 0)) return null;
+  const p = closes[t], r = n => p / closes[t - n] - 1;
+  const avg = n => { let x = 0; for (let i = t - n + 1; i <= t; i++) x += closes[i]; return x / n; };
+  const lr = [];
+  for (let i = t - L.vol + 1; i <= t; i++) lr.push(Math.log(closes[i] / closes[i - 1]));
+  return { p, r1: r(L.r1), r3: r(L.r3), r6: r(L.r6), r12: r(L.r12), sma: avg(L.sma), sma10: avg(L.sma10), vol: sd(lr) * Math.sqrt(ppy), lr };
+}
+export function inverseVol(F) {
+  const inv = F.map(f => (f && f.vol > 0 ? 1 / f.vol : 0)), sum = inv.reduce((a, b) => a + b, 0);
+  return inv.map(x => (sum > 0 ? x / sum : 0));
+}
+// Gemeinsame Risiko-Schicht: höchstens 35 % je ETF, Depot-Schwankung höchstens 10 % pro Jahr, Verlustbremse
+export function riskLayer(raw, F, ppy, ddPct) {
+  const w = raw.map((x, i) => (F[i] ? Math.min(RULES.maxWeight, Math.max(0, x)) : 0));
   let pv = 0;
   for (let i = 0; i < w.length; i++) for (let j = 0; j < w.length; j++) {
     if (!w[i] || !w[j]) continue;
-    const a = sigs[i].lr, b = sigs[j].lr, ma = mean(a), mb = mean(b);
+    const a = F[i].lr, b = F[j].lr, ma = mean(a), mb = mean(b);
     let c = 0;
-    for (let k = 0; k < a.length; k++) c += (a[k] - ma) * (b[k] - mb);
+    for (let q = 0; q < a.length; q++) c += (a[q] - ma) * (b[q] - mb);
     pv += w[i] * w[j] * c / (a.length - 1);
   }
   pv = Math.sqrt(Math.max(0, pv) * ppy);
-  const volMult = pv > RULES.targetVol / 100 ? RULES.targetVol / 100 / pv : 1;
-  const ddMult = ddMultiplier(ddPct);
-  w = w.map(x => x * volMult * ddMult);
-  return { w, portVol: pv * volMult * ddMult, volMult, ddMult };
+  const volMult = pv > RULES.targetVol / 100 ? RULES.targetVol / 100 / pv : 1, ddMult = ddMultiplier(ddPct);
+  return { w: w.map(x => x * volMult * ddMult), portVol: pv * volMult * ddMult, volMult, ddMult };
+}
+// Ein Lernschritt: Rendite je Risiko der letzten 36 Monate → Gewichte (geschrumpft, Schritt gedeckelt)
+export function learnStep(monthly, prev) {
+  const V = monthly.length, n = monthly[0].length - 1;
+  if (n < LEARN.minMonths) return { w: Array(V).fill(1 / V), scores: null };
+  const scores = monthly.map(e => {
+    const m = [];
+    for (let q = Math.max(1, e.length - LEARN.lookbackMonths); q < e.length; q++) m.push(e[q] / e[q - 1] - 1);
+    const v = m.length > 1 ? sd(m) : 0;
+    return v > 0 ? mean(m) / v * Math.sqrt(12) : 0;
+  });
+  const ex = scores.map(x => Math.exp(LEARN.temp * x)), tot = ex.reduce((a, b) => a + b, 0);
+  const goal = ex.map(x => LEARN.shrink / V + (1 - LEARN.shrink) * x / tot);
+  const step = goal.map((g, i) => prev[i] + Math.max(-LEARN.maxStep, Math.min(LEARN.maxStep, g - prev[i])));
+  const sum = step.reduce((a, b) => a + b, 0);
+  return { w: step.map(x => x / sum), scores };
+}
+// Monatsend-Werte einer Kurve bis vor Index k (abgeschlossene Monate), mit dem Startwert vorneweg
+function monthEnds(curve, k) {
+  const out = [curve[0].eq];
+  for (let j = 0; j < k && j + 1 < curve.length; j++) if (curve[j].d.slice(0, 7) !== curve[j + 1].d.slice(0, 7)) out.push(curve[j].eq);
+  return out;
 }
 
 // ---------- Rückblick-Test ----------
 const equal = (closes, t) => { const ok = closes.map(c => c[t] > 0 && c[t - 1] > 0), n = ok.filter(Boolean).length; return ok.map(x => (x ? 1 / n : 0)); };
 export const weekOf = day => { const t = new Date(`${day}T12:00:00Z`); return new Date(t - ((t.getUTCDay() + 6) % 7) * 864e5).toISOString().slice(0, 10); };
 // Gehandelt wird einen Zeitschritt nach dem Signal (wie im echten Betrieb: Signal aus dem Schlusskurs, Kauf am nächsten Tag).
-export function backtest(series, ppy) {
+export function runBacktest(series, ppy, targetsAt) {
   const { dates, closes } = series, n = dates.length, A = closes.length;
   const start = warmup(ppy);
   if (n < start + 2) return null;
@@ -172,14 +254,36 @@ export function backtest(series, ppy) {
       turnover += traded;
     }
     peak = Math.max(peak, eq);
-    const dd = (1 - eq / peak) * 100;
-    const sigs = closes.map(c => signalAt(c, t, ppy));
-    pending = targetWeights(sigs, ppy, dd).w;
+    pending = targetsAt(t, (1 - eq / peak) * 100, curve.length);
     curve.push({ d: dates[t], eq, ew, spy, exp: cur.reduce((a, b) => a + b, 0) });
   }
   const years = (n - start) / ppy;
   return { curve, next: pending, dd: (1 - eq / peak) * 100, turnoverPerYear: turnover / Math.max(years, 1e-9) };
 }
+// Alle Varianten einzeln und das lernende Gesamt-Depot (Gewichte nur aus der Vergangenheit, monatlich neu)
+export function familyBacktest(series, ppy, ctxAt) {
+  const { dates, closes } = series;
+  const F = dates.map((_, t) => closes.map(c => featuresAt(c, t, ppy)));
+  const B = F.map(inverseVol);
+  const raws = dates.map((_, t) => VARIANTS.map(v => v.raw(F[t], B[t], ctxAt(t))));
+  const singles = VARIANTS.map((_, v) => runBacktest(series, ppy, (t, dd) => riskLayer(raws[t][v], F[t], ppy, dd).w));
+  if (singles.some(x => !x)) return null;
+  let lw = Array(VARIANTS.length).fill(1 / VARIANTS.length), lastMonth = null, scores = null;
+  const history = [];
+  const ens = runBacktest(series, ppy, (t, dd, k) => {
+    const m = dates[t].slice(0, 7);
+    if (m !== lastMonth) {
+      const res = learnStep(singles.map(x => monthEnds(x.curve, k)), lw);
+      lw = res.w; scores = res.scores; lastMonth = m;
+      history.push([dates[t], ...lw.map(x => round(x, 4))]);
+    }
+    const raw = closes.map((_, i) => VARIANTS.reduce((sum, _v, v) => sum + lw[v] * raws[t][v][i], 0));
+    return riskLayer(raw, F[t], ppy, dd).w;
+  });
+  return { ens, singles, history, weights: lw, scores, F, raws };
+}
+// Kombiniertes Rohziel mit festen Lerngewichten (für heute)
+export const combine = (lw, rawsT) => rawsT[0].map((_, i) => rawsT.reduce((sum, r, v) => sum + lw[v] * r[i], 0));
 export function perf(values, dates, ppy) {
   const rets = [];
   for (let i = 1; i < values.length; i++) rets.push(values[i] / values[i - 1] - 1);
@@ -279,14 +383,20 @@ async function signalsMain() {
     if (found.length >= 4 && found[0].key === "us") {
       const weekCut = new Date(now - 6 * 864e5).toISOString().slice(0, 10);   // laufende Woche weglassen, egal ob Mo- oder So-datiert
       const D = align(found.map(f => f.daily), today), W = align(found.map(f => f.weekly), weekCut);
-      const bt = backtest(D, 252), btW = backtest(W, 52);
-      if (!bt) out.errors.push(`Zu wenige gemeinsame Handelstage (${D.dates.length}) für die Signale.`);
+      // Finanzlage (Chicago Fed NFCI, wöchentlich) für die Variante „Trend + Finanzlage“
+      let nfci = null;
+      try { nfci = await fredSeries("NFCI", "2008-01-01"); } catch (e) { out.errors.push(`Finanzlage (FRED): ${e.message} – die Variante „Trend + Finanzlage“ rechnet vorerst wie die Grundregel.`); }
+      const keys = found.map(f => f.key);
+      const ctxOf = dates => { const m = macroAt(dates, nfci); return t => ({ nfci: m[t], keys }); };
+      const fam = familyBacktest(D, 252, ctxOf(D.dates)), famW = familyBacktest(W, 52, ctxOf(W.dates));
+      if (!fam) out.errors.push(`Zu wenige gemeinsame Handelstage (${D.dates.length}) für die Signale.`);
       else {
-        const t = D.dates.length - 1, sigs = found.map((_, i) => signalAt(D.closes[i], t, 252));
-        if (sigs.some(x => !x)) out.errors.push(`Zu kurze Historie für ${found.filter((_, i) => !sigs[i]).map(f => f.sym).join(", ")} – diese ETFs bleiben vorerst bei 0 %.`);
-        const base = targetWeights(sigs, 252, 0), tw = targetWeights(sigs, 252, bt.dd);   // ohne / mit Verlustbremse laut Rückblick
+        const t = D.dates.length - 1, sigs = found.map((_, i) => signalAt(D.closes[i], t, 252)), F = fam.F[t];
+        if (F.some(x => !x)) out.errors.push(`Zu kurze Historie für ${found.filter((_, i) => !F[i]).map(f => f.sym).join(", ")} – diese ETFs bleiben vorerst bei 0 %.`);
+        const rawT = fam.raws[t], mix = combine(fam.weights, rawT);
+        const base = riskLayer(mix, F, 252, 0), tw = riskLayer(mix, F, 252, fam.ens.dd);   // ohne / mit Verlustbremse laut Rückblick
         out.asOf = D.dates[t];
-        out.assets = found.map((f, i) => sigs[i] ? ({
+        out.assets = found.map((f, i) => sigs[i] && F[i] ? ({
           key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: round(sigs[i].last, 4), r3: round(sigs[i].r3 * 100, 2), r6: round(sigs[i].r6 * 100, 2),
           r12: round(sigs[i].r12 * 100, 2), dSma: round(sigs[i].dSma * 100, 2), checks: sigs[i].checks, score: sigs[i].score, vol: round(sigs[i].vol * 100, 2),
           weightBase: round(base.w[i], 4), weight: round(tw.w[i], 4),
@@ -294,9 +404,23 @@ async function signalsMain() {
         const m = D.dates.length, k0 = m - Math.min(15, m);
         out.recent = D.dates.slice(k0).map((d, k) => [d, ...D.closes.map(c => round(c[k0 + k], 6))]);   // für das Modell-Depot des Bots
         out.exposure = round(tw.w.reduce((a, b) => a + b, 0), 4);
-        out.portVol = round(tw.portVol * 100, 2); out.volMult = round(tw.volMult, 3); out.ddMult = round(tw.ddMult, 3); out.modelDd = round(bt.dd, 2);
-        out.backtest = { daily: summarize(bt, 252, 5), weekly: btW ? summarize(btW, 52, 2) : null };
+        out.portVol = round(tw.portVol * 100, 2); out.volMult = round(tw.volMult, 3); out.ddMult = round(tw.ddMult, 3); out.modelDd = round(fam.ens.dd, 2);
+        out.backtest = { daily: summarize(fam.ens, 252, 5), weekly: famW ? summarize(famW.ens, 52, 2) : null };
+        const vstats = (fb, ppy) => (fb ? fb.singles.map(x => { const q = perf(x.curve.map(y => y.eq), x.curve.map(y => y.d), ppy); return { cagr: q.cagr, vol: q.vol, maxDD: q.maxDD, sharpe: q.sharpe, worst12: q.worst12, pos12: q.pos12 }; }) : null);
+        const vd = vstats(fam, 252), vw = vstats(famW, 52);
+        out.learning = {
+          rules: LEARN,
+          weights: Object.fromEntries(VARIANTS.map((v, i) => [v.key, round(fam.weights[i], 4)])),
+          variants: VARIANTS.map((v, i) => ({
+            key: v.key, name: v.name, src: v.src, doi: v.doi || null, url: v.url || null, weight: round(fam.weights[i], 4), score: fam.scores ? round(fam.scores[i], 3) : null,
+            exposure: round(riskLayer(rawT[i], F, 252, 0).w.reduce((a, b) => a + b, 0), 4), daily: vd && vd[i], weekly: vw && vw[i],
+          })),
+          history: fam.history.slice(-24),
+          historyWeekly: famW ? famW.history.filter((_, i, arr) => i % 3 === 0 || i === arr.length - 1) : null,
+          nfci: nfci ? { value: nfci[nfci.length - 1].v, asOf: nfci[nfci.length - 1].d } : null,
+        };
         log(`Signale ${out.asOf}: ${out.assets.map(a => `${a.sym} ${de(a.score * 4)}/4 → ${de(a.weight * 100, 1)} %`).join(", ")}; investiert ${de(out.exposure * 100, 0)} %`);
+        log(`Gelernte Gewichte: ${VARIANTS.map((v, i) => `${v.name} ${de(fam.weights[i] * 100, 0)} %`).join(", ")}${out.learning.nfci ? `; NFCI ${out.learning.nfci.value} (${out.learning.nfci.asOf})` : ""}`);
         if (out.errors.length) log(`Hinweise: ${out.errors.join(" | ")}`);
         const b = out.backtest.daily.bot;
         log(`Rückblick täglich ${out.backtest.daily.start}–${out.backtest.daily.end}: ${de(b.cagr, 1)} % p. a., größter Rückgang ${de(b.maxDD, 1)} %, 12-Monats-Fenster im Plus ${de(b.pos12, 0)} %`);
@@ -363,6 +487,7 @@ async function tradeMain() {
     // Website: Signale und Rückblick-Test mitliefern (nur Prozentwerte)
     if (sig && sig.assets && sig.assets.length) st.signals = { asOf: sig.asOf, updated: sig.updated, assets: sig.assets, exposure: sig.exposure, portVol: sig.portVol, volMult: sig.volMult, ddMult: sig.ddMult, modelDd: sig.modelDd };
     if (sig && sig.backtest) st.backtest = sig.backtest;
+    if (sig && sig.learning) st.learning = sig.learning;
     if (sig && sig.errors) st.signalErrors = sig.errors;
     await mkdir(dirname(OUT), { recursive: true });
     await writeFile(OUT, JSON.stringify(st));
@@ -375,8 +500,15 @@ async function tradeMain() {
   st.setup = true;
 
   // 1. Konto lesen und eigene Positionen abgleichen (nur Positionen, die der Bot selbst eröffnet hat)
-  const acc = readAccount(await call(DEMO.pnl));
+  const pnlRaw = await call(DEMO.pnl);
+  const acc = readAccount(pnlRaw);
   st.checkedAt = now.toISOString();
+  { // Aufbau der Kontoantwort (nur Listen-Namen und Anzahlen, keine Beträge)
+    const cp = field(pnlRaw, "clientPortfolio") || pnlRaw || {};
+    log(`Kontoantwort: ${Object.entries(cp).map(([k, v]) => (Array.isArray(v) ? `${k}=${v.length}` : null)).filter(Boolean).join(", ")}`);
+    const so = Array.isArray(field(cp, "stockOrders")) ? field(cp, "stockOrders") : [];
+    if (so.length) log(`Ausstehende Aktien-Aufträge: ${so.slice(0, 8).map(o => `${num(field(o, "orderID", "orderId")) ?? "?"}/${num(field(o, "instrumentID", "instrumentId")) ?? "?"}/Status ${field(o, "statusID", "status") ?? "?"}`).join(", ")}`);
+  }
   // Nur Anzahlen und Nummern ins (öffentliche) Protokoll – keine Beträge
   log(`Konto: ${acc.positions.length} eigene Positionen (Instrumente ${[...new Set(acc.positions.map(p => p.instrumentID))].join(", ") || "–"}; Auftragsnummern ${acc.positions.map(p => p.orderID).filter(Number.isInteger).slice(0, 12).join(", ") || "–"}), offene Kaufaufträge für ${[...acc.pendingInstruments].join(", ") || "–"}; vom Bot geführt ${st.positions.length}, unbestätigt ${st.orders.length}.`);
   const byId = new Map(acc.positions.map(p => [p.positionID, p]));
@@ -396,7 +528,13 @@ async function tradeMain() {
     try {
       const info = await call(DEMO.order(o.orderID));
       const ex = Array.isArray(field(info, "positionExecutions")) ? field(info, "positionExecutions") : [];
-      log(`Auftrag ${o.orderID} (${o.key}): Status ${JSON.stringify(field(info, "status") ?? null).slice(0, 160)}, Ausführungen ${ex.length}${ex.length ? ` (Position ${ex.map(e => num(field(e, "positionId", "positionID"))).join(", ")})` : ""}`);
+      // nur Zustandsfelder, bei verschachtelten Werten nur deren Namen und in Texten keine Zahlen – das Protokoll ist öffentlich
+      const safe = (k, v) => (v === null || typeof v === "number" || typeof v === "boolean" ? v
+        : typeof v === "string" ? (/message|reason/i.test(k) ? v.replace(/\d+(?:[.,]\d+)*/g, "#") : v).slice(0, 120)
+        : Array.isArray(v) ? `[${v.length}]` : `{${Object.keys(v).join(",")}}`);
+      const pick = Object.fromEntries(["status", "statusID", "state", "action", "type", "transaction", "requestType", "errorCode", "errorMessage", "reason", "lastUpdate"]
+        .map(k => [k, field(info, k)]).filter(([, v]) => v !== undefined).map(([k, v]) => [k, safe(k, v)]));
+      log(`Auftrag ${o.orderID} (${o.key}): Felder ${Object.keys(info || {}).join(", ").slice(0, 300)}; ${JSON.stringify(pick).slice(0, 300)}; Ausführungen ${ex.length}${ex.length ? ` (Position ${ex.map(e => num(field(e, "positionId", "positionID"))).join(", ")})` : ""}`);
       for (const e of ex) {
         const pid = num(field(e, "positionId", "positionID"));
         if (Number.isInteger(pid) && byId.has(pid) && !st.positions.some(x => x.positionID === pid)) {
@@ -516,7 +654,8 @@ async function tradeMain() {
         StopLossRate: round(a.last * (1 - RULES.stopLossPct / 100), 4), IsNoStopLoss: false, IsNoTakeProfit: true, IsTslEnabled: false,
       });
       orders++; credit -= amount;
-      const orderID = num(field(field(r, "orderForOpen") || {}, "orderID"));
+      const ofo = field(r, "orderForOpen") || {}, orderID = num(field(ofo, "orderID"));
+      log(`Kauf ${a.sym}: Auftrag ${orderID ?? "?"}, Status ${field(ofo, "statusID") ?? "?"}, Antwort-Felder ${Object.keys(r || {}).join(", ")}`);
       if (Number.isInteger(orderID)) st.orders.push({ orderID, key: a.key, instrumentID: a.instrumentId, at });
       else st.uncertain.push({ key: a.key, sym: a.sym, instrumentID: a.instrumentId, at });
       trades.push({ key: a.key, sym: a.sym, side: "kauf", pct: round(amount / sleeve * 100, 2), reason: have === 0 ? "Trend intakt – Einstieg" : "Anteil erhöht" });
@@ -553,11 +692,22 @@ async function tradeMain() {
   async function finish(trades = null, force = false) {
     if ((st.enabled || force) && sig && sig.assets && sig.assets.length) {
       const old = st.journal.find(j => j.day === today) || {};
+      // Lernen: geänderte Gewichte der Varianten im Tagebuch vermerken
+      const lw = sig.learning && sig.learning.weights;
+      let learnNote = old.learnNote || null;
+      if (lw) {
+        const prev = st.learnWeights, names = Object.fromEntries((sig.learning.variants || []).map(v => [v.key, v.name]));
+        if (prev) {
+          const ch = Object.keys(lw).map(k => [k, (lw[k] - (prev[k] || 0)) * 100]).filter(([, d]) => Math.abs(d) >= 0.5);
+          if (ch.length) learnNote = `Gelernt: ${ch.map(([k, d]) => `${names[k] || k} ${d > 0 ? "+" : "−"}${de(Math.abs(d), 0)} Prozentpunkte`).join(", ")}`;
+        }
+        st.learnWeights = lw;
+      }
       const entry = {
         day: today, enabled: st.enabled, asOf: sig.asOf, exposureTarget: st.target ? round(Object.values(st.target).reduce((a, b) => a + b, 0), 4) : sig.exposure,
         exposure: st.exposure ?? null, target: st.target || null, scores: Object.fromEntries(sig.assets.map(a => [a.key, a.score])),
         model: st.model ? round(st.model.index, 4) : null, liveDd: st.liveDd ?? null, ddMult: st.ddMult ?? null, openPnlPct: st.openPnlPct ?? null,
-        trades: trades || old.trades || [], note: st.waiting || null,
+        trades: trades || old.trades || [], note: st.waiting || null, learn: lw || null, learnNote,
       };
       st.journal = [...st.journal.filter(j => j.day !== today), entry];
     }

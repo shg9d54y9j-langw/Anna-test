@@ -32,7 +32,7 @@ async function withServer(name, fn) {
   const files = { sig: join(dir, `${p}-signals.json`), state: join(dir, `${p}-state.json`) };
   let n = 0;
   const exec = (args, env) => new Promise(resolve => execFile(process.execPath, [join(root, "scripts/trend-bot.mjs"), ...args], {
-    env: { PATH: process.env.PATH, ETORO_API_BASE: `http://localhost:${p}/api`, ETORO_THROTTLE_MS: "0", TREND_POLL_MS: "5", ETORO_API_KEY: "test-key-0000", ETORO_USER_KEY: "test-user-0000", ...env },
+    env: { PATH: process.env.PATH, ETORO_API_BASE: `http://localhost:${p}/api`, FRED_BASE: `http://localhost:${p}/fred`, ETORO_THROTTLE_MS: "0", TREND_POLL_MS: "5", ETORO_API_KEY: "test-key-0000", ETORO_USER_KEY: "test-user-0000", ...env },
   }, (err, stdout) => resolve({ code: err ? err.code : 0, log: stdout })));
   // Ein Lauf wie im Workflow: Signale mit dem Lese-Schlüssel, dann Handel mit dem Bot-Schlüssel
   const run = async (now, command = "status", env = {}) => {

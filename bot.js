@@ -174,6 +174,25 @@
     </article>`;
   }
 
+  function learnCard() {
+    const L = st && st.learning;
+    if (!L || !L.variants) return `<article class="card" data-section="Lernen"><h2 class="card-title">Lernen</h2><p class="muted">Erscheint nach dem nächsten Lauf des Workflows „Trend-Bot“.</p></article>`;
+    const src = v => (v.doi ? DOI(v.doi, esc(v.src)) : v.url ? SRC(v.url, esc(v.src)) : esc(v.src));
+    const hist = (L.history || []).slice(-6).reverse();
+    const bar = w => `<span class="wbar"><span style="width:${Math.max(0, Math.min(100, w * 100 / 0.4))}%"></span></span>`;
+    return `<article class="card" data-section="Lernen">
+      <div class="card-head"><h2 class="card-title">Lernen: fünf erforschte Regeln, der Bot gewichtet selbst</h2><span class="muted small">Gewichte neu am ersten Handelstag jedes Monats</span></div>
+      <p class="small">Statt sich auf eine Regel zu verlassen, verteilt der Bot sein Geld auf fünf vorab festgelegte, belegte Regeln. Einmal im Monat schaut er, welche in den letzten 36 Monaten mehr Rendite je Risiko gebracht hat, und gibt ihr etwas mehr Gewicht – höchstens 10 Prozentpunkte pro Monat und immer zur Hälfte gleich verteilt. So passt er sich an, ohne einer Glückssträhne hinterherzulaufen. Die Gewichte entstehen nur aus vergangenen Daten; im Rückblick-Test unten ist genau dieses Lernen schon eingerechnet.</p>
+      <div class="table-wrap" style="margin-top:12px"><table>
+        <thead><tr><th>Regel</th><th class="num">Gewicht</th><th class="num">Rendite je Risiko (36 M)</th><th class="num">Rückblick ${esc((st.backtest && st.backtest.weekly && st.backtest.weekly.start || "").slice(0, 4))}–heute</th><th class="num">Größter Rückgang</th><th class="num">Heute investiert</th><th>Quelle</th></tr></thead>
+        <tbody>${L.variants.map(v => `<tr><td><b>${esc(v.name)}</b></td><td class="num">${bar(v.weight)} ${pct(v.weight, 0)}</td><td class="num">${Number.isFinite(v.score) ? fmt(v.score, 2) : "–"}</td>
+          <td class="num ${cls(v.weekly && v.weekly.cagr)}">${v.weekly ? `${sign(v.weekly.cagr)} %` : "–"}</td><td class="num down">${v.weekly ? `−${fmt(v.weekly.maxDD, 1)} %` : "–"}</td><td class="num">${pct(v.exposure, 0)}</td><td class="small">${src(v)}</td></tr>`).join("")}</tbody></table></div>
+      ${hist.length ? `<details class="info"><summary>Lernverlauf der letzten Monate</summary><div class="table-wrap"><table><thead><tr><th>Monat</th>${L.variants.map(v => `<th class="num">${esc(v.name.split(" (")[0].split(":")[0])}</th>`).join("")}</tr></thead>
+        <tbody>${hist.map(h => `<tr><td>${esc(h[0].slice(0, 7))}</td>${h.slice(1).map(w => `<td class="num">${fmt(w * 100, 0)} %</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>` : ""}
+      <p class="hint">Neueste Informationen: täglich die eToro-Kurse aller sechs Märkte, Schwankung und Zusammenhang der Märkte, wöchentlich die Finanzlage der US-Notenbank Chicago (NFCI${L.nfci ? `, zuletzt ${fmt(L.nfci.value, 2).replace("-", "−")} am ${dateDe(L.nfci.asOf)} – ${L.nfci.value > 0 ? "<b>angespannt</b>: die Finanzlage-Regel halbiert riskante Anlagen" : "entspannt"}` : ""}). Einmal im Monat prüft zusätzlich Claude Leistung, Fehler und neue Forschung und schlägt Verbesserungen vor – geändert wird der Bot nur nach Ihrer Freigabe.</p>
+    </article>`;
+  }
+
   function journalCard() {
     const J = (st && st.journal) || [];
     const name = k => (st && st.signals && st.signals.assets || []).find(a => a.key === k)?.sym || k;
@@ -185,6 +204,7 @@
         <div class="jr-day"><b>${dateDe(j.day)}</b>${chg !== null ? ` <span class="nowrap ${cls(chg)}">${sign(chg, 2)} %</span>` : ""}</div>
         <div class="jr-body">
           <div>${trades.length ? trades.join("<br>") : `<span class="muted">Keine Umschichtung – alles im Band${j.note ? ` · ${esc(j.note)}` : ""}.</span>`}</div>
+          ${j.learnNote ? `<div class="small"><b>${esc(j.learnNote)}</b></div>` : ""}
           <div class="muted small">Modell-Depot ${Number.isFinite(j.model) ? fmt(j.model, 2) : "–"} · Rückgang vom Hoch ${Number.isFinite(j.liveDd) ? `${fmt(j.liveDd, 1)} %` : "–"}${j.ddMult < 1 ? ` · Verlustbremse ${fmt(j.ddMult * 100, 0)} %` : ""} · Ziel investiert ${pct(j.exposureTarget)}${tgt ? ` (${tgt})` : ""}</div>
         </div></li>`;
     }).join("");
@@ -216,7 +236,8 @@
       <h2 class="card-title">Was der Bot tut – und warum genau so</h2>
       <ul class="checklist">
         <li><b>Sechs breite Märkte statt Einzelaktien:</b> US-Aktien (SPY), Aktien anderer Industrieländer (EFA), US-Staatsanleihen (IEF), Gold (GLD), Rohstoffe (DBC), Immobilien (VNQ). Breite Streuung ist der einzige „kostenlose“ Risikoschutz; die Märkte laufen oft gegeneinander.</li>
-        <li><b>Trend je Markt aus vier Prüfungen:</b> Rendite über 3, 6 und 12 Monate positiv, Kurs über dem 200-Tage-Schnitt. Je mehr erfüllt, desto größer der Anteil; bei 0 von 4 wird sofort verkauft. Zeitreihen-Momentum ist über mehr als 100 Jahre und viele Märkte belegt (${DOI("10.1016/j.jfineco.2011.11.003", "Moskowitz, Ooi &amp; Pedersen 2012")}, ${DOI("10.3905/jpm.2017.44.1.015", "Hurst, Ooi &amp; Pedersen 2017")}, ${DOI("10.3905/jwm.2007.674809", "Faber 2007")}).</li>
+        <li><b>Fünf Regeln statt einer:</b> Trend 3–6–12 Monate, schneller Trend 1–3–12, die 10-Monats-Linie, Dual Momentum (nur die drei stärksten Märkte) und Trend plus Finanzlage. Kombinieren ist robuster als jede Einzelregel (${DOI("10.1093/rfs/hhp063", "Rapach, Strauss &amp; Zhou 2010")}); die Gewichte lernt der Bot nur vorsichtig, weil geschätzte Gewichte sonst mehr schaden als nützen (${DOI("10.1093/rfs/hhm075", "DeMiguel, Garlappi &amp; Uppal 2009")}) und Regeln mit gutem Lauf eher weiterlaufen (${DOI("10.1111/jofi.13131", "Ehsani &amp; Linnainmaa 2022")}).</li>
+        <li><b>Trend je Markt aus vier Prüfungen (Grundregel):</b> Rendite über 3, 6 und 12 Monate positiv, Kurs über dem 200-Tage-Schnitt. Je mehr erfüllt, desto größer der Anteil; bei 0 von 4 wird sofort verkauft. Zeitreihen-Momentum ist über mehr als 100 Jahre und viele Märkte belegt (${DOI("10.1016/j.jfineco.2011.11.003", "Moskowitz, Ooi &amp; Pedersen 2012")}, ${DOI("10.3905/jpm.2017.44.1.015", "Hurst, Ooi &amp; Pedersen 2017")}, ${DOI("10.3905/jwm.2007.674809", "Faber 2007")}).</li>
         <li><b>Passt sich dem Markt an – automatisch:</b> Ruhige Märkte bekommen mehr Gewicht, unruhige weniger; steigt die Schwankung des ganzen Depots über 10 % pro Jahr, wird alles kleiner (${DOI("10.1111/jofi.12513", "Moreira &amp; Muir 2017")}, ${DOI("10.3905/jpm.2018.45.1.014", "Harvey u. a. 2018")}). Fällt das Modell-Depot mehr als 5 % unter sein Hoch, sinkt der Einsatz schrittweise bis auf die Hälfte (${DOI("10.1111/j.1467-9965.1993.tb00044.x", "Grossman &amp; Zhou 1993")}). In Abwärtsphasen ist der Bot so großteils in Geld.</li>
         <li><b>Täglich prüfen, selten handeln:</b> Voll umgeschichtet wird einmal pro Woche und erst ab 3 Prozentpunkten Abweichung; Ausstiege bei gebrochenem Trend sofort. Wer viel handelt, verliert vor allem an Kosten (${DOI("10.1111/0022-1082.00226", "Barber &amp; Odean 2000")}).</li>
         <li><b>Warum nicht „mit möglichst vielen Informationen füttern“?</b> Jede zusätzliche Regel lässt sich auf die Vergangenheit passend machen – und versagt dann in der Zukunft. Von hunderten veröffentlichten „Erfolgsfaktoren“ halten die meisten strengen Tests nicht stand (${DOI("10.1093/rfs/hhv059", "Harvey, Liu &amp; Zhu 2016")}, ${DOI("10.1090/noti1105", "Bailey u. a. 2014")}). Deshalb nutzt der Bot nur die robustesten Größen: Trend, Schwankung, Zusammenhang der Märkte und den eigenen Verlust. Die Regeln wurden vor dem Test festgelegt und nicht auf gute Rückblick-Zahlen getrimmt.</li>
@@ -264,7 +285,7 @@
     const host = $("botBody");
     if (!host) return;
     if (!st && loading) { host.innerHTML = `<article class="card"><p class="muted">Lade den Stand des Trend-Bots …</p></article>`; return; }
-    host.innerHTML = hero() + signalsCard() + backtestCard() + journalCard() + guideCard() + rulesCard() + researchCard() + honestCard();
+    host.innerHTML = hero() + signalsCard() + learnCard() + backtestCard() + journalCard() + guideCard() + rulesCard() + researchCard() + honestCard();
     const B = st && st.backtest;
     if (B && B.daily && $("botChart")) chart($("botChart"), range === "weekly" && B.weekly ? B.weekly : B.daily);
     host.querySelectorAll("[data-range]").forEach(b => b.addEventListener("click", () => { range = b.dataset.range; render(); }));

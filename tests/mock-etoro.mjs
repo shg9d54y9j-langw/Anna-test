@@ -162,15 +162,24 @@ const FRED_DATA = {
   NFCI: d => (-0.45 + 0.001 * d).toFixed(3),
   DTWEXBGS: d => (120 + Math.sin(d / 40) * 3 + d * 0.01).toFixed(4),
 };
-function fredCsv(id) {
+function fredCsv(id, cosd) {
   const f = FRED_DATA[id];
   if (!f) return null;
   const rows = ["observation_date," + id];
+  if (id === "NFCI") {
+    // wöchentlich (freitags) ab dem angefragten Datum bis heute; wechselt in Wellen über und unter null
+    const from = Math.max(Date.UTC(2005, 0, 7), cosd ? Date.parse(`${cosd}T00:00:00Z`) : Date.UTC(2025, 8, 1));
+    for (let t = new Date(from); t <= new Date(); t = new Date(t.getTime() + 864e5)) {
+      if (t.getUTCDay() !== 5) continue;
+      const k = Math.round((t - Date.UTC(2000, 0, 7)) / 864e5);
+      rows.push(`${t.toISOString().slice(0, 10)},${k % 37 === 5 ? "." : (0.32 * Math.sin(k / 160) - 0.12).toFixed(3)}`);   // „.“ = fehlender Wert wie bei FRED
+    }
+    return rows.join("\n") + "\n";
+  }
   const start = Date.UTC(2025, 8, 1);
   for (let d = 0; d < 430; d++) {
     const t = new Date(start + d * 864e5);
-    if (id === "NFCI" && t.getUTCDay() !== 5) continue;                       // wöchentlich (freitags)
-    if (id !== "NFCI" && (t.getUTCDay() === 0 || t.getUTCDay() === 6)) continue;
+    if (t.getUTCDay() === 0 || t.getUTCDay() === 6) continue;
     rows.push(`${t.toISOString().slice(0, 10)},${d % 37 === 5 ? "." : f(d)}`);   // „.“ = fehlender Wert wie bei FRED
   }
   return rows.join("\n") + "\n";
@@ -227,7 +236,7 @@ http.createServer(async (req, res) => {
 
   // FRED braucht keine Schlüssel – deshalb vor der Schlüsselprüfung
   if (url.pathname === "/fred") {
-    const csv = fredCsv(url.searchParams.get("id"));
+    const csv = fredCsv(url.searchParams.get("id"), url.searchParams.get("cosd"));
     if (!csv) { res.writeHead(404); return res.end("not found"); }
     res.writeHead(200, { "content-type": "text/csv" });
     return res.end(csv);

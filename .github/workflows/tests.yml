@@ -71,6 +71,7 @@ jobs:
       - name: Trend-Bot – Signale gegen den Test-Server, unabhängige Gegenrechnung
         env:
           ETORO_API_BASE: http://localhost:8793/api
+          FRED_BASE: http://localhost:8793/fred
           ETORO_THROTTLE_MS: "0"
           ETORO_API_KEY: test-public-key-0000
           ETORO_USER_KEY: test-user-key-0000
