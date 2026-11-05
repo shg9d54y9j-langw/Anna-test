@@ -1,0 +1,94 @@
+name: Live-Runde
+
+# Eine Runde des Live-Wächters: Werte holen (mit Schlüssel, ohne Schreibrechte),
+# dann veröffentlichen (mit Schreibrechten, ohne Schlüssel). Wird vom Live-Wächter mehrmals hintereinander aufgerufen.
+on:
+  workflow_call:
+    inputs:
+      delay:
+        description: Wartezeit vor dieser Runde in Sekunden
+        type: number
+        default: 0
+    secrets:
+      ETORO_API_KEY:
+        required: true
+      ETORO_USER_KEY:
+        required: true
+
+permissions: {}
+
+jobs:
+  # Kennt die eToro-Schlüssel, darf aber nichts verändern.
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    outputs:
+      live: ${{ steps.watch.outputs.live }}
+    steps:
+      - name: Bis zur nächsten Runde warten
+        if: inputs.delay > 0
+        env:
+          DELAY: ${{ inputs.delay }}
+        run: sleep "$DELAY"
+
+      # Erst nach dem Warten auschecken, damit eine neue Tageswahl sofort verfolgt wird
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Live-Werte holen
+        id: watch
+        env:
+          ETORO_API_KEY: ${{ secrets.ETORO_API_KEY }}
+          ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
+          LIVE_PREV_URL: https://raw.githubusercontent.com/${{ github.repository }}/live-data/live.json
+        run: |
+          node scripts/live-watch.mjs
+          if [ -f data/live.json ]; then
+            echo "live=$(base64 -w0 data/live.json)" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Veröffentlicht den Live-Stand auf dem Zweig live-data und meldet neue Warnungen – ohne eToro-Schlüssel.
+  save:
+    needs: fetch
+    if: needs.fetch.outputs.live != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Live-Stand veröffentlichen
+        env:
+          LIVE_B64: ${{ needs.fetch.outputs.live }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir live && cd live
+          printf '%s' "$LIVE_B64" | base64 -d > live.json
+          node -e 'JSON.parse(require("fs").readFileSync("live.json", "utf8"))'
+          git init -q -b live-data
+          git add live.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Live-Stand $(date -u +%FT%TZ)"
+          git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:live-data
+
+      - name: Bei neuen Warnungen benachrichtigen
+        env:
+          LIVE_B64: ${{ needs.fetch.outputs.live }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          printf '%s' "$LIVE_B64" | base64 -d | node -e '
+            const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+            for (const a of d.newAlerts || []) console.log(a.text);
+          ' > new-alerts.txt
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            gh issue create --repo "$REPO" --title "Warnung: $line" \
+              --body "$line
+
+          Prüfen Sie die Kopie in eToro (Portfolio → Trader → Zahnrad → „Kopieren pausieren“).
+          Live-Stand: https://shg9d54y9j-langw.github.io/Anna-test/#daily"
+          done < new-alerts.txt

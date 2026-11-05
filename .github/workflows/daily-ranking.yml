@@ -2,6 +2,8 @@ name: Tagesempfehlung
 
 on:
   schedule:
+    # GitHub startet geplante Läufe oft bis zu einer Stunde später – deshalb zwei Versuche vor der Handy-Nachricht um 8:12 Uhr
+    - cron: "41 4 * * 1-5"    # Mo–Fr früh (05:41 Uhr Winterzeit / 06:41 Uhr Sommerzeit)
     - cron: "17 5 * * 1-5"    # Mo–Fr vor Xetra-Eröffnung (06:17 Uhr Winterzeit / 07:17 Uhr Sommerzeit)
     - cron: "47 12 * * 1-5"   # Mo–Fr vor US-Eröffnung (13:47 Uhr Winterzeit / 14:47 Uhr Sommerzeit)
   workflow_dispatch:
