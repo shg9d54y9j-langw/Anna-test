@@ -6,8 +6,9 @@
   const RAW = `${BASE}/claude/daytrade-website/data/ranking.json`;
   const RAW_RETURNS = `${BASE}/claude/daytrade-website/data/returns.json`;
   const LIVE = `${BASE}/live-data/live.json`;
+  const BOT = `${BASE}/bot-data/bot.json`;
   const body = $("dailyBody");
-  let data = null, live = null, returns = null, returnsLoading = null;
+  let data = null, live = null, bot = null, returns = null, returnsLoading = null;
 
   const pct = p => (!Number.isFinite(p) ? "–" : p > 0.995 ? "über 99 %" : p < 0.005 ? "unter 1 %" : `${fmt(p * 100, 0)} %`);
   const n1 = x => (Number.isFinite(x) ? fmt(x, 1) : "–");
@@ -21,14 +22,16 @@
 
   async function load() {
     const t = Date.now();
-    const [local, raw, lv] = await Promise.all([get(`data/ranking.json?t=${t}`), get(`${RAW}?t=${t}`), get(`${LIVE}?t=${t}`)]);
+    const [local, raw, lv, bt] = await Promise.all([get(`data/ranking.json?t=${t}`), get(`${RAW}?t=${t}`), get(`${LIVE}?t=${t}`), get(`${BOT}?t=${t}`)]);
     const list = [local, raw].filter(d => d && d.updated);
     const next = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
     if (next && data && next.updated !== data.updated) returns = null;   // neue Auswertung → Monatsrenditen neu laden
     data = next;
     live = lv && lv.updated && Array.isArray(lv.entries) ? lv : null;
+    bot = bt && bt.updated ? bt : null;
     window.DTD.ranking = data;
     window.DTD.live = live;
+    window.DTD.bot = bot;
     window.dispatchEvent(new Event("dtd:data"));
     notifyAlerts();
     render();
@@ -81,6 +84,42 @@
     }
     for (const a of alerts) html += `<p class="warn">⚠ ${esc(a.text)} Kopie in eToro prüfen: Portfolio → Trader → Zahnrad → „Kopieren pausieren“.</p>`;
     if (!f && !alerts.length) html += `<p class="muted small">Zurzeit wird kein Trader kopiert. Die Tagesergebnisse stehen in der Tabelle unter „Heute (live)“.</p>`;
+    return html + `</div>`;
+  }
+
+  // ---------- Copy-Bot ----------
+  function botSetup() {
+    return `<details class="info card" ${bot && bot.setup === false ? "open" : ""}>
+      <summary>Copy-Bot einrichten: Tageswahl automatisch im Demokonto kopieren</summary>
+      <ol class="steps">
+        <li>In eToro: <b>Einstellungen</b> → <b>Trading</b> → <b>API-Key-Verwaltung</b> → <b>„Neuen Schlüssel erstellen“</b>. Nur ${v("Trading – Demo → Write")} ankreuzen – nichts bei „Trading – Real“ und nichts unter „Geld“.</li>
+        <li>In GitHub: Repository → <b>Settings</b> → <b>Secrets and variables</b> → <b>Actions</b> → <b>„New repository secret“</b>: ${v("ETORO_BOT_API_KEY")} (öffentlicher Schlüssel) und ${v("ETORO_BOT_USER_KEY")} (privater Schlüssel).</li>
+        <li>Fertig. Der Bot startet in der nächsten 15-Minuten-Runde an einem Börsentag (etwa 7–23 Uhr).</li>
+        <li>Ausschalten jederzeit: dort Reiter <b>„Variables“</b> → <b>„New repository variable“</b> ${v("BOT_MODE")} = ${v("off")}. Wieder einschalten: ${v("demo")}.</li>
+      </ol>
+      <p class="muted small">Der Schlüssel funktioniert nur im Demokonto – mit ihm kann kein echtes Geld bewegt werden. Echtgeld wäre ein eigener Schritt mit eigenem Schlüssel und höchstens 500 $ pro Kopie.</p>
+    </details>`;
+  }
+  function botBox() {
+    if (!bot || bot.setup === false) return botSetup();
+    const age = (Date.now() - new Date(bot.updated)) / 6e4;
+    const time = new Date(bot.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+    const mode = !bot.active ? `<span class="chip">aus</span>` : bot.mode === "real" ? `<span class="chip caution">Echtgeld</span>` : `<span class="chip open">Demo</span>`;
+    const copies = (bot.copies || []).filter(c => c && okName(c.userName));
+    let html = `<div class="live">
+      <div class="live-head"><span class="dot ${bot.active && age < 40 ? "on" : ""}"></span> Copy-Bot ${mode} <span class="muted small">Stand ${time} Uhr</span></div>`;
+    if (!bot.active) html += `<p class="small muted">Ausgeschaltet (Variable BOT_MODE = off). Einschalten: BOT_MODE = demo.</p>`;
+    for (const c of copies) {
+      if (c.justStarted) { html += `<p class="small">Kopie von ${link(c.userName)} gerade gestartet – die Werte erscheinen in der nächsten Runde.</p>`; continue; }
+      const state = c.closing ? " · <b>wird beendet</b>" : c.aligning ? " · wird an das Portfolio des Traders angepasst" : c.paused ? " · pausiert" : "";
+      html += `<p class="small">Kopiert ${link(c.userName)} seit ${dateDe(c.since)} · Stand <b class="${c.pnlPct < 0 ? "down" : "up"}">${sign(c.pnlPct)} %</b>
+        · ${Number.isFinite(c.sharePct) ? `${fmt(c.sharePct, 0)} % des Kontos` : ""}${state}</p>
+        <p class="muted small">Copy Stop Loss: Der Bot beendet die Kopie bei −${c.botStopLossPct} % (geprüft alle 15 Minuten an Börsentagen, eToros Schnittstelle kann ihn nicht direkt setzen).${Number.isFinite(c.etoroStopBelowPct) ? ` eToros eigene Grenze greift, wenn der Wert um weitere ${fmt(c.etoroStopBelowPct, 0)} % fällt.` : ""}</p>`;
+    }
+    if (bot.active && !copies.length && !bot.pending) html += `<p class="small muted">Zurzeit keine Bot-Kopie. Der Bot startet die Tageswahl in der nächsten Runde, wenn nichts dagegen spricht.</p>`;
+    if (bot.pending && okName(bot.pending.userName)) html += `<p class="small">Auftrag für ${link(bot.pending.userName)} gesendet, wartet auf Bestätigung.</p>`;
+    const events = (bot.events || []).filter(e => e && typeof e.text === "string").slice(-4).reverse();
+    if (events.length) html += `<ul class="bot-log">${events.map(e => `<li><span class="muted">${new Date(e.at).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span> ${esc(e.text)}</li>`).join("")}</ul>`;
     return html + `</div>`;
   }
 
@@ -271,6 +310,7 @@
     body.innerHTML = `
       ${head}
       ${liveBox()}
+      ${botBox()}
       ${warnBox(notes)}
       ${stats}
       <p class="hint">Geprüft werden die ${d.screened} meistkopierten Popular Investors mit Risiko-Score bis ${cfg.maxRisk} und mindestens ${cfg.minMonths} Monaten Historie. Sicher heißt: Können-Sicherheit ab ${pct(cfg.threshold || 0.9)} und Drawdown bis ${cfg.maxDd} %. Die Glücks-Korrektur berücksichtigt, dass sich viele Trader ähnlich bewegen (mittlere Korrelation ${fmt(d.avgCorrelation, 2)}).${check}</p>

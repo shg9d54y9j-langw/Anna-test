@@ -1,7 +1,9 @@
 name: Live-Runde
 
 # Eine Runde des Live-Wächters: Werte holen (mit Schlüssel, ohne Schreibrechte),
-# dann veröffentlichen (mit Schreibrechten, ohne Schlüssel). Wird vom Live-Wächter mehrmals hintereinander aufgerufen.
+# dann veröffentlichen (mit Schreibrechten, ohne Schlüssel). Danach gleicht der Copy-Bot die Tageswahl
+# mit dem eToro-Konto ab (eigener Schlüssel, ebenfalls ohne Schreibrechte im Repository).
+# Wird vom Live-Wächter mehrmals hintereinander aufgerufen.
 on:
   workflow_call:
     inputs:
@@ -14,6 +16,14 @@ on:
         required: true
       ETORO_USER_KEY:
         required: true
+      ETORO_BOT_API_KEY:          # Bot im Demokonto: Schlüssel mit „Trading – Demo → Write“
+        required: false
+      ETORO_BOT_USER_KEY:
+        required: false
+      ETORO_REAL_BOT_API_KEY:     # nur für BOT_MODE = real: Schlüssel mit „Trading – Real → Write“
+        required: false
+      ETORO_REAL_BOT_USER_KEY:
+        required: false
 
 permissions: {}
 
@@ -92,3 +102,84 @@ jobs:
           Prüfen Sie die Kopie in eToro (Portfolio → Trader → Zahnrad → „Kopieren pausieren“).
           Live-Stand: https://shg9d54y9j-langw.github.io/Anna-test/#daily"
           done < new-alerts.txt
+
+  # Copy-Bot: kopiert die geprüfte Tageswahl im eToro-Konto. Kennt nur den Bot-Schlüssel, darf im Repository nichts ändern.
+  bot:
+    needs: fetch
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      bot: ${{ steps.bot.outputs.bot }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Letzten Bot-Stand holen
+        run: |
+          if git fetch -q --depth=1 origin bot-data 2>/dev/null; then
+            git show FETCH_HEAD:bot.json > "$RUNNER_TEMP/bot-prev.json" || true
+          else
+            echo "Noch kein Bot-Stand vorhanden."
+          fi
+
+      - name: Tageswahl im eToro-Konto abgleichen
+        id: bot
+        env:
+          BOT_MODE: ${{ vars.BOT_MODE }}
+          # Echtgeld nur mit dem eigenen Echtgeld-Schlüssel; sonst der Demo-Schlüssel
+          ETORO_API_KEY: ${{ vars.BOT_MODE == 'real' && secrets.ETORO_REAL_BOT_API_KEY || vars.BOT_MODE != 'real' && secrets.ETORO_BOT_API_KEY || '' }}
+          ETORO_USER_KEY: ${{ vars.BOT_MODE == 'real' && secrets.ETORO_REAL_BOT_USER_KEY || vars.BOT_MODE != 'real' && secrets.ETORO_BOT_USER_KEY || '' }}
+          BOT_STATE_IN: ${{ runner.temp }}/bot-prev.json
+        run: |
+          code=0
+          node scripts/copy-bot.mjs || code=$?
+          if [ -f data/bot.json ]; then
+            echo "bot=$(base64 -w0 data/bot.json)" >> "$GITHUB_OUTPUT"
+          fi
+          exit $code
+
+  # Veröffentlicht den Bot-Stand (ohne Beträge) auf dem Zweig bot-data und meldet wichtige Ereignisse – ohne eToro-Schlüssel.
+  bot-save:
+    needs: bot
+    if: ${{ !cancelled() && needs.bot.outputs.bot != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Bot-Stand veröffentlichen
+        env:
+          BOT_B64: ${{ needs.bot.outputs.bot }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir bot && cd bot
+          printf '%s' "$BOT_B64" | base64 -d > bot.json
+          node -e 'JSON.parse(require("fs").readFileSync("bot.json", "utf8"))'
+          git init -q -b bot-data
+          git add bot.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Bot-Stand $(date -u +%FT%TZ)"
+          git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:bot-data
+
+      - name: Wichtige Bot-Ereignisse melden
+        env:
+          BOT_B64: ${{ needs.bot.outputs.bot }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          printf '%s' "$BOT_B64" | base64 -d | node -e '
+            const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+            for (const e of d.newEvents || []) console.log(String(e.text).replace(/\s+/g, " "));
+          ' > events.txt
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            gh issue create --repo "$REPO" --title "Bot: ${line:0:150}" \
+              --body "$line
+
+          Bot-Stand: https://shg9d54y9j-langw.github.io/Anna-test/#daily"
+          done < events.txt

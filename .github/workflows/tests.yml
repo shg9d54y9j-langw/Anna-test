@@ -33,6 +33,9 @@ jobs:
           node scripts/live-watch.mjs
           node -e 'const d = JSON.parse(require("fs").readFileSync("/tmp/live.json", "utf8")); if (!d.entries.length) throw new Error("Live-Stand leer");'
 
+      - name: Copy-Bot gegen den Test-Server (Start, Wechsel, Stop Loss, eigene Kopien, Echtgeld-Obergrenze)
+        run: node tests/bot-scenarios.mjs
+
       - name: Schlüssel gehen nur an eToro
         run: |
           if ETORO_API_BASE=https://example.com/api ETORO_API_KEY=x-123456789 ETORO_USER_KEY=y-123456789 node scripts/daily-ranking.mjs; then

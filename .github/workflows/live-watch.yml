@@ -1,7 +1,7 @@
 name: Live-Wächter
 
 # GitHub startet geplante Läufe oft nur etwa einmal pro Stunde statt viertelstündlich.
-# Deshalb macht jeder Lauf vier Runden im Abstand von etwa 15 Minuten.
+# Deshalb macht jeder Lauf vier Runden im Abstand von etwa 15 Minuten. In jeder Runde gleicht auch der Copy-Bot ab.
 on:
   schedule:
     - cron: "4,19,34,49 6-21 * * 1-5"   # Mo–Fr, etwa 7–23 Uhr deutscher Zeit
@@ -25,6 +25,10 @@ jobs:
     secrets:
       ETORO_API_KEY: ${{ secrets.ETORO_API_KEY }}
       ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
+      ETORO_BOT_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
+      ETORO_BOT_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
+      ETORO_REAL_BOT_API_KEY: ${{ secrets.ETORO_REAL_BOT_API_KEY }}
+      ETORO_REAL_BOT_USER_KEY: ${{ secrets.ETORO_REAL_BOT_USER_KEY }}
 
   round2:
     needs: round1
@@ -38,6 +42,10 @@ jobs:
     secrets:
       ETORO_API_KEY: ${{ secrets.ETORO_API_KEY }}
       ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
+      ETORO_BOT_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
+      ETORO_BOT_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
+      ETORO_REAL_BOT_API_KEY: ${{ secrets.ETORO_REAL_BOT_API_KEY }}
+      ETORO_REAL_BOT_USER_KEY: ${{ secrets.ETORO_REAL_BOT_USER_KEY }}
 
   round3:
     needs: round2
@@ -51,6 +59,10 @@ jobs:
     secrets:
       ETORO_API_KEY: ${{ secrets.ETORO_API_KEY }}
       ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
+      ETORO_BOT_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
+      ETORO_BOT_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
+      ETORO_REAL_BOT_API_KEY: ${{ secrets.ETORO_REAL_BOT_API_KEY }}
+      ETORO_REAL_BOT_USER_KEY: ${{ secrets.ETORO_REAL_BOT_USER_KEY }}
 
   round4:
     needs: round3
@@ -64,3 +76,7 @@ jobs:
     secrets:
       ETORO_API_KEY: ${{ secrets.ETORO_API_KEY }}
       ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
+      ETORO_BOT_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
+      ETORO_BOT_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
+      ETORO_REAL_BOT_API_KEY: ${{ secrets.ETORO_REAL_BOT_API_KEY }}
+      ETORO_REAL_BOT_USER_KEY: ${{ secrets.ETORO_REAL_BOT_USER_KEY }}

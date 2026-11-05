@@ -206,6 +206,12 @@ def main(ranking_file, returns_file):
         elif names.index(pick["userName"]) >= cfg["keepWithinTop"]:
             errors.append(f"Tageswahl {pick['userName']} liegt nur auf Platz {names.index(pick['userName']) + 1}")
         row = published.get(pick["userName"], {})
+        # Kunden-ID (zum Kopieren über die API): muss eine positive ganze Zahl sein und zum selben Trader gehören
+        if pick.get("cid") is not None:
+            if not isinstance(pick["cid"], int) or isinstance(pick["cid"], bool) or pick["cid"] <= 0:
+                errors.append(f"Tageswahl hat eine ungültige Kunden-ID {pick['cid']!r}")
+            elif row.get("cid") != pick["cid"]:
+                errors.append(f"Kunden-ID der Tageswahl {pick['cid']} passt nicht zu {pick['userName']} ({row.get('cid')})")
         want = row.get("amountPct", 0) * (1 if light == "green" else 0.5)
         if abs((pick.get("amountPct") or 0) - want) > 1e-3:
             errors.append(f"Tageswahl-Betrag {pick.get('amountPct')} statt {want}")

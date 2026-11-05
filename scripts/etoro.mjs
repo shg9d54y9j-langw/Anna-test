@@ -1,5 +1,5 @@
 // Gemeinsamer, abgesicherter Zugriff auf die offizielle eToro-API für die GitHub-Jobs
-// (daily-ranking.mjs und live-watch.mjs). Die Schlüssel kommen nur aus den GitHub-Secrets.
+// (daily-ranking.mjs, live-watch.mjs und copy-bot.mjs). Die Schlüssel kommen nur aus den GitHub-Secrets.
 import { randomUUID } from "node:crypto";
 
 export const API = (process.env.ETORO_API_BASE || "https://public-api.etoro.com/api").replace(/\/$/, "");
@@ -51,6 +51,34 @@ export async function call(path, params = {}) {
   throw new Error(`Keine Antwort von ${url.pathname} nach 4 Versuchen`);
 }
 
+// Aufträge (POST/DELETE). Werden NIE automatisch wiederholt: Ein zweiter Versuch könnte eine zweite Kopie anlegen
+// oder Geld nachschießen. Kommt keine Antwort, ist unklar, ob der Auftrag angekommen ist (err.uncertain).
+export async function send(method, path, body) {
+  const url = new URL(API + path);
+  const wait = lastCall + THROTTLE_MS - Date.now();
+  if (wait > 0) await sleep(wait);
+  lastCall = Date.now();
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: { "x-api-key": KEY, "x-user-key": USER_KEY, "x-request-id": randomUUID(), accept: "application/json", "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      redirect: "error",
+      signal: AbortSignal.timeout(30000),
+    });
+  } catch (e) {
+    throw Object.assign(new Error(`Keine Antwort bei ${url.pathname} (${e.message}) – ob der Auftrag angekommen ist, ist unklar.`), { uncertain: true });
+  }
+  const text = await res.text();
+  let json = null;
+  try { json = text ? JSON.parse(text) : null; } catch { json = null; }
+  if (!res.ok) {
+    throw Object.assign(new Error(`HTTP ${res.status} bei ${url.pathname}: ${text.slice(0, 300)}`), { status: res.status, uncertain: res.status >= 500 });
+  }
+  return json;
+}
+
 // Feld unabhängig von der Schreibweise lesen (userName, UserName, username …)
 export function field(obj, ...names) {
   if (!obj || typeof obj !== "object") return undefined;
@@ -73,8 +101,10 @@ export function toTrader(raw) {
   const name = field(it, "userName", "username", "customerName", "nickName");
   const p2v = num(field(it, "peakToValley", "maxDrawdown", "drawdown"));
   const holdMin = num(field(it, "avgHoldingTimeInMinutes", "avgHoldingTimeMinutes"));
+  const cid = num(field(it, "cid", "gcid", "customerId"));
   return {
     userName: typeof name === "string" && VALID_NAME.test(name) ? name : undefined,
+    cid: Number.isInteger(cid) && cid > 0 ? cid : undefined,          // öffentliche Kunden-ID, nötig zum Kopieren über die API
     risk: finite(num(field(it, "riskScore", "risk"))),
     copiers: finite(num(field(it, "copiers", "copiersCount", "numberOfCopiers"))),
     peakToValley: Number.isFinite(p2v) ? Math.abs(p2v) : undefined,

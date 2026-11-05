@@ -156,7 +156,7 @@ function decidePick(prev, rows) {
   if (!pool.length) return null;
   const light = green.length ? "green" : "yellow";
   const take = r => ({
-    userName: r.userName, light, score: r.score, postMean: r.postMean, postSd: r.postSd, sdMonthly: r.sdMonthly, pDay: r.pDay,
+    userName: r.userName, cid: r.cid, light, score: r.score, postMean: r.postMean, postSd: r.postSd, sdMonthly: r.sdMonthly, pDay: r.pDay,
     dsr: r.dsr, cagr: r.cagr, mdd: r.mdd, risk: r.risk, csl: r.csl, bind: r.bind, breakEvenDays: r.breakEvenDays,
     amountPct: light === "green" ? r.amountPct : r.amountPct / 2,     // nicht gesichert → nur halber Betrag
   });
@@ -253,7 +253,7 @@ async function main() {
     if (inLimits && !qualified) fails.push(`Können-Sicherheit ${m.dsr < 0.005 ? "unter 1" : Math.round(m.dsr * 100)} % < ${CONFIG.threshold * 100} %`);
     const alloc = S.allocation(m, { share: CONFIG.share, lossPct: CONFIG.lossPct });
     return {
-      userName: u.userName, risk: u.risk ?? null, copiers: u.copiers ?? null,
+      userName: u.userName, cid: u.cid ?? null, risk: u.risk ?? null, copiers: u.copiers ?? null,
       avgHoldHours: u.avgHoldHours ?? null, profitableMonthsPct: u.profitableMonthsPct ?? null,
       months: m.n, lastMonth: keyToMonth(u.months[u.months.length - 1].k),
       cagr: m.cagr, sharpe: m.sharpe, sortino: m.sortino, mdd: m.mdd, dsr: m.dsr, halfKelly: m.halfKelly,
@@ -284,7 +284,7 @@ async function main() {
     recommendation, notice, lastRecommended, pick, top, history,
     shrinkage: { priorMonthly: shr.prior, tau2: shr.tau2, noiseFactor },
     // alle ausgewerteten Trader (kompakt) für Abbildung, Tabelle und Detail-Fenster
-    all: rows.map(r => ({ userName: r.userName, cagr: r.cagr, mdd: r.mdd, dsr: r.dsr, sharpe: r.sharpe, risk: r.risk, copiers: r.copiers, months: r.months,
+    all: rows.map(r => ({ userName: r.userName, cid: r.cid, cagr: r.cagr, mdd: r.mdd, dsr: r.dsr, sharpe: r.sharpe, risk: r.risk, copiers: r.copiers, months: r.months,
       qualified: r.qualified, inLimits: r.inLimits, reason: r.reason, postMean: r.postMean, postSd: r.postSd, sdMonthly: r.sdMonthly, score: r.score, pDay: r.pDay,
       csl: r.csl, amountPct: r.amountPct, breakEvenDays: r.breakEvenDays })),
   });

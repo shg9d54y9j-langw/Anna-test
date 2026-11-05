@@ -56,6 +56,7 @@
         <p class="muted">Betrag ${amount} · Copy Stop Loss ${pick.csl} % · Gewinntag-Chance des Traders ${pct(pick.pDay)}</p>
         ${pick.changed && okName(pick.previous) ? `<p class="small warn">Zuerst die Kopie von <b>${esc(pick.previous)}</b> beenden.</p>` : ""}
         <p class="small muted">${stand}${Number.isFinite(pick.breakEvenDays) ? ` · mindestens ${Math.ceil(pick.breakEvenDays)} Börsentage laufen lassen` : ""}</p>
+        ${botLine()}
         ${goto("daily", "Anleitung für eToro")}`;
       return;
     }
@@ -72,6 +73,15 @@
       ${best ? `<p class="small">Am nächsten dran: <b>${esc(best.userName)}</b> mit ${pct(best.dsr)}</p>
         <div class="meter warn-bar" title="${pct(best.dsr)} von ${pct(thr)}"><span style="width:${fill.toFixed(0)}%"></span></div>` : ""}
       <p class="small muted">${stand} · ${d.evaluated} Trader geprüft</p>${goto("daily", "Top 25 ansehen")}`;
+  }
+
+  function botLine() {
+    const b = window.DTD.bot;
+    if (!b || b.setup === false) return `<p class="small muted">Copy-Bot noch nicht eingerichtet – Anleitung unter „Tagesempfehlung“.</p>`;
+    if (!b.active) return `<p class="small muted">Copy-Bot ausgeschaltet.</p>`;
+    const c = (b.copies || []).find(x => x && okName(x.userName) && Number.isFinite(x.pnlPct));
+    return c ? `<p class="small">Bot (${b.mode === "real" ? "Echtgeld" : "Demo"}) kopiert <b>${esc(c.userName)}</b>: <b class="${c.pnlPct < 0 ? "down" : "up"}">${sign(c.pnlPct)} %</b>${c.closing ? " · wird beendet" : ""}</p>`
+      : `<p class="small muted">Bot (${b.mode === "real" ? "Echtgeld" : "Demo"}) aktiv, zurzeit keine Kopie.</p>`;
   }
 
   function renderLive() {
