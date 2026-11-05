@@ -15,7 +15,7 @@ d = json.load(open(path, encoding="utf-8"))
 HEAD = {"x-api-key": "test", "x-user-key": "test", "x-request-id": "00000000-0000-4000-8000-000000000000"}
 errors = []
 R = d["rules"]
-CANDIDATES = [["SPY", "VOO", "IVV"], ["EFA", "VEA", "IEFA"], ["IEF", "GOVT", "TLT"], ["GLD", "IAU"], ["DBC", "PDBC", "GSG"], ["VNQ", "IYR", "XLRE"]]
+CANDIDATES = [["SPY", "VOO", "IVV"], ["EFA", "VEA", "IEFA"], ["IEF", "GOVT", "TLT"], ["GLD", "IAU"], ["DBC", "PDBC", "GSG", "COMT", "BCI"], ["VNQ", "IYR", "XLRE"]]
 
 
 def get(url):
@@ -38,14 +38,16 @@ def near(a, b, tol):
     return abs(a - b) <= tol
 
 
-# ETFs wie der Bot auswählen: erster Kandidat mit Typ ETF
+# ETFs wie der Bot auswählen: erster Kandidat mit Typ ETF und mindestens 300 Tageskursen
 chosen = []
 for cands in CANDIDATES:
     for sym in cands:
         res = get(f"{base}/api/v2/market-data/instruments?symbols={sym}")["results"]
         if res and "etf" in res[0].get("type", "").lower():
-            chosen.append((sym, res[0]["instrumentId"]))
-            break
+            n = len(get(f"{base}/api/v1/market-data/instruments/{res[0]['instrumentId']}/history/candles/desc/OneDay/1000")["candles"][0]["candles"])
+            if n >= 300:
+                chosen.append((sym, res[0]["instrumentId"]))
+                break
 if [a["sym"] for a in d["assets"]] != [c[0] for c in chosen]:
     errors.append(f"ETF-Auswahl {[a['sym'] for a in d['assets']]} statt {[c[0] for c in chosen]}")
 
@@ -55,12 +57,21 @@ cut_week = (now - datetime.timedelta(days=6)).date().isoformat()
 
 
 def series(interval, cutoff):
+    # Kalender des ersten (US-)ETF; Lücken mit dem letzten Kurs, vor dem ersten Kurs eines ETF leer (None)
     maps = []
     for _, iid in chosen:
         raw = get(f"{base}/api/v1/market-data/instruments/{iid}/history/candles/desc/{interval}/1000")["candles"][0]["candles"]
         maps.append({c["fromDate"][:10]: c["close"] for c in raw if c["fromDate"][:10] < cutoff})
-    dates = sorted(set.intersection(*[set(m) for m in maps]))
-    return dates, [[m[x] for x in dates] for m in maps]
+    dates = sorted(maps[0])
+    out = []
+    for m in maps:
+        first, last, col = min(m) if m else "9999", None, []
+        for x in dates:
+            if x in m:
+                last = m[x]
+            col.append(last if x >= first else None)
+        out.append(col)
+    return dates, out
 
 
 def look(ppy):
@@ -70,7 +81,7 @@ def look(ppy):
 
 def signal(c, t, ppy):
     m1, m3, m12, sma_n, vol_n = look(ppy)
-    if t < max(m12, sma_n, vol_n):
+    if t < max(m12, sma_n, vol_n) or not c[t] or not c[t - max(m12, sma_n, vol_n)]:
         return None
     last = c[t]
     sma = sum(c[t - sma_n + 1:t + 1]) / sma_n
@@ -114,16 +125,23 @@ def backtest(dates, closes, ppy):
     A = len(closes)
     eq = peak = ew = spy = 1.0
     cur, pending, turnover, curve = [0.0] * A, None, 0.0, []
-    eww = [1 / A] * A
+
+    def equal(t):
+        ok = [bool(closes[i][t] and closes[i][t - 1]) for i in range(A)]
+        return [1 / sum(ok) if x else 0.0 for x in ok]
+
+    def ratio(i, t):
+        return closes[i][t] / closes[i][t - 1] if closes[i][t] and closes[i][t - 1] else 1.0
+    eww = equal(start)
     for t in range(start, len(dates)):
         if t > start:
-            grow = [cur[i] * closes[i][t] / closes[i][t - 1] for i in range(A)]
+            grow = [cur[i] * ratio(i, t) for i in range(A)]
             total = sum(grow) + 1 - sum(cur)
             eq *= total
             cur = [g / total for g in grow]
-            eg = [eww[i] * closes[i][t] / closes[i][t - 1] for i in range(A)]
+            eg = [eww[i] * ratio(i, t) for i in range(A)]
             ew *= sum(eg)
-            eww = [1 / A] * A if (t - start) % round(ppy / 12) == 0 else [g / sum(eg) for g in eg]
+            eww = equal(t) if (t - start) % round(ppy / 12) == 0 else [g / sum(eg) for g in eg]
             spy *= closes[0][t] / closes[0][t - 1]
         if pending:
             full = ppy < 100 or week(dates[t]) != week(dates[t - 1])

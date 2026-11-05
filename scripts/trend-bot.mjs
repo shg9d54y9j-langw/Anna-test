@@ -55,7 +55,7 @@ export const ASSETS = [
   { key: "intl", name: "Aktien anderer Industrieländer", symbols: ["EFA", "VEA", "IEFA"] },
   { key: "bonds", name: "US-Staatsanleihen 7–10 Jahre", symbols: ["IEF", "GOVT", "TLT"] },
   { key: "gold", name: "Gold", symbols: ["GLD", "IAU"] },
-  { key: "commod", name: "Rohstoffe", symbols: ["DBC", "PDBC", "GSG"] },
+  { key: "commod", name: "Rohstoffe", symbols: ["DBC", "PDBC", "GSG", "COMT", "BCI"] },
   { key: "reits", name: "Immobilien (REITs)", symbols: ["VNQ", "IYR", "XLRE"] },
 ];
 // NYSE-Feiertage (an diesen Tagen handelt der Bot nicht)
@@ -95,7 +95,7 @@ export const warmup = ppy => { const L = lookbacks(ppy); return Math.max(L.m12, 
 // Signal eines ETF am Zeitpunkt t (nur Kurse bis einschließlich t)
 export function signalAt(closes, t, ppy) {
   const L = lookbacks(ppy);
-  if (t < warmup(ppy) - 1 || !(closes[t] > 0)) return null;
+  if (t < warmup(ppy) - 1 || !(closes[t] > 0) || !(closes[t - Math.max(L.m12, L.sma, L.vol)] > 0)) return null;   // noch zu kurze Historie
   const last = closes[t];
   const r = k => last / closes[t - k] - 1;
   let s = 0;
@@ -134,6 +134,7 @@ export function targetWeights(sigs, ppy, ddPct) {
 }
 
 // ---------- Rückblick-Test ----------
+const equal = (closes, t) => { const ok = closes.map(c => c[t] > 0 && c[t - 1] > 0), n = ok.filter(Boolean).length; return ok.map(x => (x ? 1 / n : 0)); };
 export const weekOf = day => { const t = new Date(`${day}T12:00:00Z`); return new Date(t - ((t.getUTCDay() + 6) % 7) * 864e5).toISOString().slice(0, 10); };
 // Gehandelt wird einen Zeitschritt nach dem Signal (wie im echten Betrieb: Signal aus dem Schlusskurs, Kauf am nächsten Tag).
 export function backtest(series, ppy) {
@@ -141,18 +142,20 @@ export function backtest(series, ppy) {
   const start = warmup(ppy);
   if (n < start + 2) return null;
   let eq = 1, peak = 1, ew = 1, spy = 1, cur = Array(A).fill(0), pending = null, turnover = 0;
-  let ewW = Array(A).fill(1 / A);
+  let ewW = equal(closes, start);
   const curve = [];
   for (let t = start; t < n; t++) {
     if (t > start) {
-      // Wertentwicklung von t−1 nach t
-      const grow = cur.map((w, i) => w * closes[i][t] / closes[i][t - 1]);
+      // Wertentwicklung von t−1 nach t (ein ETF ohne Kurs zählt nicht)
+      const ratio = i => (closes[i][t] > 0 && closes[i][t - 1] > 0 ? closes[i][t] / closes[i][t - 1] : 1);
+      const grow = cur.map((w, i) => w * ratio(i));
       const total = grow.reduce((a, b) => a + b, 0) + (1 - cur.reduce((a, b) => a + b, 0));
       eq *= total;
       cur = grow.map(v => v / total);
-      const ewGrow = ewW.map((w, i) => w * closes[i][t] / closes[i][t - 1]), ewTotal = ewGrow.reduce((a, b) => a + b, 0);
+      const ewGrow = ewW.map((w, i) => w * ratio(i)), ewTotal = ewGrow.reduce((a, b) => a + b, 0);
       ew *= ewTotal;
-      ewW = (t - start) % Math.round(ppy / 12) === 0 ? Array(A).fill(1 / A) : ewGrow.map(v => v / ewTotal);   // monatlich neu gleichgewichtet
+      // monatlich neu gleichgewichtet über alle ETFs, die schon Kurse haben
+      ewW = (t - start) % Math.round(ppy / 12) === 0 ? equal(closes, t) : ewGrow.map(v => v / ewTotal);
       spy *= closes[0][t] / closes[0][t - 1];
     }
     // gestern berechnete Ziele heute umsetzen: volle Umschichtung am ersten Handelstag der Woche, sonst nur Ausstiege
@@ -236,11 +239,18 @@ async function candles(id, interval, count) {
     .filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x.d) && Number.isFinite(x.c) && x.c > 0)
     .sort((a, b) => (a.d < b.d ? -1 : 1));
 }
-// Gemeinsame Tage aller ETFs; nur abgeschlossene Kerzen (die laufende Kerze von heute bzw. dieser Woche fällt weg)
+// Kalender des US-Aktien-ETF; nur abgeschlossene Kerzen (die laufende Kerze von heute bzw. dieser Woche fällt weg).
+// Fehlt ein Tag bei einem anderen ETF, gilt sein letzter Kurs; vor seinem ersten Kurs bleibt er leer (null) und nimmt nicht teil.
 export function align(lists, cutoff) {
-  const maps = lists.map(l => new Map(l.filter(x => x.d < cutoff).map(x => [x.d, x.c])));
-  const dates = [...maps[0].keys()].filter(d => maps.every(m => m.has(d))).sort();
-  return { dates, closes: maps.map(m => dates.map(d => m.get(d))) };
+  const clean = lists.map(l => l.filter(x => x.d < cutoff));
+  const dates = clean[0].map(x => x.d);
+  const closes = clean.map(l => {
+    const m = new Map(l.map(x => [x.d, x.c]));
+    let lastC = null;
+    const first = l.length ? l[0].d : "9999";
+    return dates.map(d => { if (m.has(d)) lastC = m.get(d); return d >= first ? lastC : null; });
+  });
+  return { dates, closes };
 }
 
 async function signalsMain() {
@@ -251,14 +261,20 @@ async function signalsMain() {
   else {
     const found = [];
     for (const a of ASSETS) {
-      const r = await resolve(a);
-      if (!r) { out.errors.push(`${a.name}: kein passender ETF bei eToro gefunden`); continue; }
-      try {
-        const daily = await candles(r.id, "OneDay", 1000);
-        const weekly = await candles(r.id, "OneWeek", 1000);
-        found.push({ ...a, ...r, daily, weekly });
-        log(`${a.name}: ${r.sym} (${r.id}), ${daily.length} Tage ab ${daily[0] && daily[0].d}, ${weekly.length} Wochen ab ${weekly[0] && weekly[0].d}`);
-      } catch (e) { out.errors.push(`${a.name}: ${e.message}`); }
+      let ok = null;
+      for (const sym of a.symbols) {
+        const r = await resolve({ symbols: [sym] });
+        if (!r) continue;
+        try {
+          const daily = await candles(r.id, "OneDay", 1000);
+          if (daily.length < 300) { log(`${a.name}: ${sym} (${r.id}) hat nur ${daily.length} Tageskurse – nächster Kandidat.`); continue; }
+          const weekly = await candles(r.id, "OneWeek", 1000);
+          ok = { ...a, ...r, daily, weekly };
+          log(`${a.name}: ${r.sym} (${r.id}), ${daily.length} Tage ab ${daily[0].d}, ${weekly.length} Wochen ab ${weekly[0] && weekly[0].d}`);
+          break;
+        } catch (e) { log(`${a.name}: ${sym}: ${e.message}`); }
+      }
+      if (ok) found.push(ok); else out.errors.push(`${a.name}: kein ETF mit ausreichender Kurshistorie bei eToro – der Bot lässt diesen Markt weg.`);
     }
     if (found.length >= 4 && found[0].key === "us") {
       const weekCut = new Date(now - 6 * 864e5).toISOString().slice(0, 10);   // laufende Woche weglassen, egal ob Mo- oder So-datiert
@@ -267,19 +283,21 @@ async function signalsMain() {
       if (!bt) out.errors.push(`Zu wenige gemeinsame Handelstage (${D.dates.length}) für die Signale.`);
       else {
         const t = D.dates.length - 1, sigs = found.map((_, i) => signalAt(D.closes[i], t, 252));
+        if (sigs.some(x => !x)) out.errors.push(`Zu kurze Historie für ${found.filter((_, i) => !sigs[i]).map(f => f.sym).join(", ")} – diese ETFs bleiben vorerst bei 0 %.`);
         const base = targetWeights(sigs, 252, 0), tw = targetWeights(sigs, 252, bt.dd);   // ohne / mit Verlustbremse laut Rückblick
         out.asOf = D.dates[t];
-        out.assets = found.map((f, i) => ({
+        out.assets = found.map((f, i) => sigs[i] ? ({
           key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: round(sigs[i].last, 4), r3: round(sigs[i].r3 * 100, 2), r6: round(sigs[i].r6 * 100, 2),
           r12: round(sigs[i].r12 * 100, 2), dSma: round(sigs[i].dSma * 100, 2), checks: sigs[i].checks, score: sigs[i].score, vol: round(sigs[i].vol * 100, 2),
           weightBase: round(base.w[i], 4), weight: round(tw.w[i], 4),
-        }));
+        }) : ({ key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: null, checks: [false, false, false, false], score: 0, vol: null, weightBase: 0, weight: 0, short: true }));
         const m = D.dates.length, k0 = m - Math.min(15, m);
         out.recent = D.dates.slice(k0).map((d, k) => [d, ...D.closes.map(c => round(c[k0 + k], 6))]);   // für das Modell-Depot des Bots
         out.exposure = round(tw.w.reduce((a, b) => a + b, 0), 4);
         out.portVol = round(tw.portVol * 100, 2); out.volMult = round(tw.volMult, 3); out.ddMult = round(tw.ddMult, 3); out.modelDd = round(bt.dd, 2);
         out.backtest = { daily: summarize(bt, 252, 5), weekly: btW ? summarize(btW, 52, 2) : null };
         log(`Signale ${out.asOf}: ${out.assets.map(a => `${a.sym} ${de(a.score * 4)}/4 → ${de(a.weight * 100, 1)} %`).join(", ")}; investiert ${de(out.exposure * 100, 0)} %`);
+        if (out.errors.length) log(`Hinweise: ${out.errors.join(" | ")}`);
         const b = out.backtest.daily.bot;
         log(`Rückblick täglich ${out.backtest.daily.start}–${out.backtest.daily.end}: ${de(b.cagr, 1)} % p. a., größter Rückgang ${de(b.maxDD, 1)} %, 12-Monats-Fenster im Plus ${de(b.pos12, 0)} %`);
         if (out.backtest.weekly) { const w = out.backtest.weekly.bot; log(`Rückblick wöchentlich ${out.backtest.weekly.start}–${out.backtest.weekly.end}: ${de(w.cagr, 1)} % p. a., größter Rückgang ${de(w.maxDD, 1)} %, 12-Monats-Fenster im Plus ${de(w.pos12, 0)} %`); }

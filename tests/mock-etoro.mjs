@@ -107,8 +107,10 @@ function series(id, n) {   // erfundene, reproduzierbare Tagesschlusskurse, ält
 }
 // ---------- ETFs für den Trend-Bot (erfundene Kurse, werktags bis heute) ----------
 // EFA meldet absichtlich den falschen Typ – der Bot muss auf VEA ausweichen.
-const TREND_ETFS = { SPY: 3201, VEA: 3202, IEF: 3203, GLD: 3204, DBC: 3205, VNQ: 3206 };
-const TREND_PARAMS = { 3201: [0.0005, 0.011], 3202: [0.0003, 0.012], 3203: [0.0001, 0.005], 3204: [0.0004, 0.010], 3205: [-0.0004, 0.013], 3206: [0.0002, 0.014] };
+// Wie bei eToro: DBC gibt es, aber ohne Kurshistorie (der Bot muss auf PDBC ausweichen); VNQ hat eine kürzere Historie.
+const TREND_ETFS = { SPY: 3201, VEA: 3202, IEF: 3203, GLD: 3204, DBC: 3205, VNQ: 3206, PDBC: 3207 };
+const TREND_PARAMS = { 3201: [0.0005, 0.011], 3202: [0.0003, 0.012], 3203: [0.0001, 0.005], 3204: [0.0004, 0.010], 3205: [-0.0004, 0.013], 3206: [0.0002, 0.014], 3207: [-0.0004, 0.013] };
+const NO_CANDLES = new Set([3205]), SHORT_HISTORY = { 3206: 1500 };
 const trendSeries = {};
 function makeTrend(id, recentDrift = null) {
   const [drift, vol] = TREND_PARAMS[id];
@@ -122,7 +124,7 @@ function makeTrend(id, recentDrift = null) {
     const mu = recentDrift !== null && i >= days.length - 80 ? recentDrift : drift;
     x *= Math.exp(mu + vol * (r() + r() + r() - 1.5) * 2);
     return { d, c: Math.round(x * 10000) / 10000 };
-  });
+  }).slice(-(SHORT_HISTORY[id] || 3000));
 }
 for (const id of Object.values(TREND_ETFS)) makeTrend(id);
 const trendPrice = id => trendSeries[id][trendSeries[id].length - 1].c;
@@ -260,7 +262,7 @@ http.createServer(async (req, res) => {
   }
   const tc = /^\/api\/v1\/market-data\/instruments\/(\d+)\/history\/candles\/(asc|desc)\/(OneDay|OneWeek)\/(\d+)$/.exec(url.pathname);
   if (tc && trendSeries[Number(tc[1])]) {
-    const list = trendCandles(Number(tc[1]), tc[3], Math.min(1000, Number(tc[4])));
+    const list = NO_CANDLES.has(Number(tc[1])) ? [] : trendCandles(Number(tc[1]), tc[3], Math.min(1000, Number(tc[4])));
     return send(200, { interval: tc[3], candles: [{ instrumentId: Number(tc[1]), candles: tc[2] === "desc" ? list.reverse() : list }] });
   }
   const candles = /^\/api\/v1\/market-data\/instruments\/(\d+)\/history\/candles\/(asc|desc)\/OneDay\/(\d+)$/.exec(url.pathname);
