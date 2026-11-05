@@ -4,7 +4,9 @@
 // Nutzt fmt, esc, kpi, v, warnBox und $ aus app.js.
 (() => {
   const STORE = "daytrade-traders-v1";
-  const COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
+  // Kein Grün und kein Rot: diese Farben sind Gewinn und Verlust vorbehalten
+  // Reihenfolge mit dem Farbprüfer bestätigt (Nachbarn auch bei Farbsehschwäche unterscheidbar); Weiß und Grau zuletzt
+  const COLORS = ["#3987e5", "#d95926", "#9085e9", "#c98500", "#d55181", "#f2f2f2", "#9a9a9a", "#5f5f5f"];
   const SURFACE = PAL.surface;
   const MAX_TRADERS = COLORS.length;
   const MIN_COPY = 200; // eToro-Mindestbetrag pro kopiertem Trader ($)

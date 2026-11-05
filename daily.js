@@ -265,9 +265,9 @@
         ${status}
         ${green ? "" : `<p class="small">Kein Trader erreicht heute die geforderte Können-Sicherheit von ${pct(cfg.threshold || 0.9)}. Das ist die beste verfügbare Wahl nach der Rechnung unten – deshalb nur mit halbem Betrag oder zuerst im Demokonto üben.</p>`}
         <div class="result">
-          ${kpi("Gewinntag-Chance des Traders", pct(p.pDay), p.pDay >= 0.5 ? "up" : "down")}
+          ${kpi("Gewinntag-Chance des Traders", pct(p.pDay))}
           ${kpi("Erwartet pro Monat", `${sign(p.postMean)} %`, p.postMean >= 0 ? "up" : "down")}
-          ${kpi("Können-Sicherheit", pct(p.dsr), green ? "up" : "")}
+          ${kpi("Können-Sicherheit", pct(p.dsr))}
           ${kpi("Max. Drawdown", `${n1(p.mdd)} %`, "down")}
           ${kpi("Betrag", amount !== null ? `${fmt(amount, 0)} $` : `${fmt(p.amountPct * 100, 0)} %`)}
           ${kpi("Copy Stop Loss", `${p.csl} %`, "down")}
@@ -305,7 +305,7 @@
       <div class="stats">
         ${kpi("Geprüfte Trader", d.evaluated)}
         ${kpi("Innerhalb der Grenzen", (d.all || []).filter(r => r.inLimits).length)}
-        ${kpi("Sicher (ab " + pct(cfg.threshold || 0.9) + ")", d.qualifiedCount, d.qualifiedCount ? "up" : "")}
+        ${kpi("Sicher (ab " + pct(cfg.threshold || 0.9) + ")", d.qualifiedCount)}
         ${kpi("Glücks-Korrektur für", `${fmt(d.nEff, 0)} Trader`)}
       </div>`;
 
@@ -371,7 +371,7 @@
     const html = `
       <div>${resultCell(r, true)}</div>
       <div class="result" style="margin-top:0">
-        ${kpi("Können-Sicherheit", pct(r.dsr), r.qualified ? "up" : "")}
+        ${kpi("Können-Sicherheit", pct(r.dsr))}
         ${kpi("Rendite p.a.", `${n1(r.cagr)} %`, r.cagr >= 0 ? "up" : "down")}
         ${kpi("Max. Drawdown", `${n1(r.mdd)} %`, "down")}
         ${kpi("Sharpe", Number.isFinite(r.sharpe) ? fmt(r.sharpe, 2) : "–")}
@@ -531,7 +531,7 @@
 
     const svg = svgEl("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img",
       "aria-label": `Streudiagramm: ${pts.length} Trader nach Können-Sicherheit und Rendite pro Jahr, davon ${pts.filter(p => p.k === "safe" || p.k === "rec").length} sicher.` });
-    svgEl("rect", { x: X(thr), y: m.t, width: X(1) - X(thr), height: ph, fill: "rgba(57,135,229,.08)" }, svg);
+    svgEl("rect", { x: X(thr), y: m.t, width: X(1) - X(thr), height: ph, fill: "rgba(255,255,255,.05)" }, svg);
     for (const t of yt) {
       svgEl("line", { x1: m.l, x2: m.l + pw, y1: Y(t), y2: Y(t), class: t === 0 ? "base" : "grid" }, svg);
       svgEl("text", { x: m.l - 8, y: Y(t) + 4, "text-anchor": "end", class: "tick" }, svg).textContent = `${fmt(t, 0)} %`;

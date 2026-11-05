@@ -177,7 +177,7 @@
           <button type="button" data-naive="0" aria-pressed="${!showNaive}">Methode und Schnitt</button>
           <button type="button" data-naive="1" aria-pressed="${showNaive}">Mit naiver Wahl</button>
         </div></div>
-      <div class="legend-row"><span class="legend-item"><span class="lkey" style="background:${PAL.series1}"></span>Tageswahl-Methode</span>${showNaive ? `<span class="legend-item"><span class="lkey" style="background:${PAL.series2}"></span>Höchste bisherige Rendite (naiv)</span>` : ""}<span class="legend-item"><span class="lkey" style="background:${PAL.gray}"></span>Durchschnitt aller Trader</span></div>
+      <div class="legend-row"><span class="legend-item"><span class="lkey" style="background:${PAL.series1}"></span>Tageswahl-Methode</span>${showNaive ? `<span class="legend-item"><span class="lkey" style="background:${PAL.series2}"></span>Höchste bisherige Rendite (naiv)</span>` : ""}<span class="legend-item"><span class="lkey dash" style="color:${PAL.gray}"></span>Durchschnitt aller Trader</span></div>
       <div class="chart-host" id="btChart"></div>
       <details class="info">
         <summary>Was der Test aussagt – und was nicht</summary>

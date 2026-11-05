@@ -11,7 +11,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DayTrade Desk">
-  <meta name="description" content="Daytrading-Cockpit: Marktlage mit Ampeln, Heatmap, News, wissenschaftlich belegte Trade-Ideen, Finanztheorie, geprüfte Copy-Trading-Empfehlung und Journal.">
+  <meta name="description" content="Daytrading-Cockpit: Marktlage, Aktien-Check mit Kauf- und Verkaufsmarken, Heatmap, News, belegte Trade-Ideen, Finanztheorie, geprüfte Copy-Trading-Empfehlung und Journal.">
   <title>DayTrade Desk</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -37,10 +37,12 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Übersicht</span></button>
     <button class="tab" role="tab" id="tab-markt" aria-controls="markt" data-tab="markt">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Markt</span></button>
+    <button class="tab" role="tab" id="tab-aktie" aria-controls="aktie" data-tab="aktie">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M7.5 12l2-2.5 2 1.5 2.5-3"/></svg><span>Aktien-Check</span> <span class="new">neu</span></button>
     <button class="tab" role="tab" id="tab-news" aria-controls="news" data-tab="news">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M19 9h1a1 1 0 0 1 1 1v8a2 2 0 0 1-2 2M8 9h7M8 13h7M8 17h4"/></svg><span>News</span></button>
     <button class="tab" role="tab" id="tab-ideen" aria-controls="ideen" data-tab="ideen">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"/></svg><span>Trade-Ideen</span> <span class="new">neu</span></button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"/></svg><span>Trade-Ideen</span></button>
     <button class="tab" role="tab" id="tab-setup" aria-controls="setup" data-tab="setup">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span>Trade-Setup</span></button>
     <button class="tab" role="tab" id="tab-daily" aria-controls="daily" data-tab="daily">
@@ -52,7 +54,7 @@
     <button class="tab" role="tab" id="tab-journal" aria-controls="journal" data-tab="journal">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z"/><path d="M5 19.5A2.5 2.5 0 0 1 7.5 17H20"/></svg><span>Journal</span></button>
     <button class="tab" role="tab" id="tab-theorie" aria-controls="theorie" data-tab="theorie">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 9 12 4 2 9l10 5 10-5z"/><path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5M22 9v6"/></svg><span>Theorie</span> <span class="new">neu</span></button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 9 12 4 2 9l10 5 10-5z"/><path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5M22 9v6"/></svg><span>Theorie</span></button>
   </nav>
 
   <main id="views">
@@ -114,12 +116,12 @@
         <div><p class="eyebrow">Markt · Ampeln aus belegten Regeln</p><h1>Marktlage &amp; Heatmap</h1></div>
         <p class="lead">Oben die Marktlage mit Trend, Schwankung, Zinskurve und Finanzbedingungen – darunter Live-Kurse, die Heatmap nach Sektoren und die stärksten Bewegungen in den USA.</p>
       </div>
-      <div id="cockpit" class="stack"></div>
-      <article class="card">
+      <div id="cockpit" class="stack" data-section="Marktlage"></div>
+      <article class="card" data-section="Live-Kurse">
         <div class="card-head"><h2 class="card-title">Live-Kurse</h2><span class="badge">TradingView</span></div>
         <div id="marketOverview" class="widget mini"></div>
       </article>
-      <article class="card">
+      <article class="card" data-section="Heatmap">
         <div class="card-head">
           <h2 class="card-title">Heatmap</h2>
           <select id="heatmapSource" aria-label="Index für die Heatmap">
@@ -131,10 +133,25 @@
         </div>
         <div id="heatmapWidget" class="widget tall"></div>
       </article>
-      <article class="card">
+      <article class="card" data-section="Bewegungen">
         <div class="card-head"><h2 class="card-title">Top-Gewinner, -Verlierer und meistgehandelt (USA)</h2></div>
         <div id="hotlistWidget" class="widget tall"></div>
       </article>
+    </section>
+
+    <!-- AKTIEN-CHECK -->
+    <section id="aktie" class="view" role="tabpanel" aria-labelledby="tab-aktie" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Aktien-Check · Aktie oder ETF</p><h1>Wert prüfen</h1></div>
+        <p class="lead">Symbol eingeben: Termine, was Analysten, Anleger und Nachrichten sagen, was die Forschung für die Zukunft erwarten lässt – und wo Kauf, Stop und Ziel nach belegten Regeln liegen.</p>
+      </div>
+      <form id="stockForm" class="stock-search" role="search">
+        <input id="stockInput" list="stockList" placeholder="AAPL · NVDA · SAP.DE · SPY" autocomplete="off" spellcheck="false" aria-label="Aktie oder ETF, z. B. AAPL">
+        <datalist id="stockList"></datalist>
+        <button type="submit" class="btn">Prüfen</button>
+      </form>
+      <div id="stockQuick" class="chips"></div>
+      <div id="stockBody" class="stack"><p class="muted">Symbol eingeben oder einen der beliebten Werte antippen.</p></div>
     </section>
 
     <!-- NEWS -->
@@ -144,11 +161,11 @@
         <p class="lead">Wichtige Wirtschaftsdaten bewegen die Kurse – davor und danach nicht handeln.</p>
       </div>
       <div class="grid-2">
-        <article class="card">
+        <article class="card" data-section="News">
           <div class="card-head"><h2 class="card-title">Top-News Aktienmarkt</h2></div>
           <div id="newsWidget" class="widget tall"></div>
         </article>
-        <article class="card">
+        <article class="card" data-section="Kalender">
           <div class="card-head"><h2 class="card-title">Wirtschaftskalender (wichtige Termine)</h2></div>
           <div id="calendarWidget" class="widget tall"></div>
         </article>
@@ -173,12 +190,12 @@
           <button id="symbolBtn" class="btn">Laden</button>
         </div>
       </div>
-      <div class="grid-chart">
+      <div class="grid-chart" data-section="Chart">
         <article class="card flush"><div id="chartWidget" class="widget chart"></div></article>
         <article class="card flush"><div id="taWidget" class="widget chart"></div></article>
       </div>
 
-      <article class="card">
+      <article class="card" data-section="Rechner">
         <h2 class="card-title">Setup-Rechner</h2>
         <p class="muted">Werte eintragen – darunter steht genau, was Sie in eToro in welches Feld eintragen. Die Technik-Anzeige oben (15-Minuten-Kerzen) ist ein Richtungshinweis, keine Garantie.</p>
         <form id="calc" class="calc">
@@ -207,9 +224,9 @@
         <div class="result" id="calcResult"></div>
       </article>
 
-      <article class="card" id="psychCheck"></article>
+      <article class="card" id="psychCheck" data-section="Psychologie-Check"></article>
 
-      <article class="card etoro">
+      <article class="card etoro" data-section="eToro">
         <h2 class="card-title">So tragen Sie den Trade in eToro ein</h2>
         <p class="legend"><b>Fett</b> = Button oder Feld in eToro · <span class="v">blau hinterlegt</span> = Wert, den Sie eintragen</p>
         <ol class="steps" id="etoroSteps"></ol>
@@ -226,7 +243,7 @@
         <p class="lead" id="dailyUpdated"></p>
       </div>
       <div id="dailyBody"><p class="muted">Lade Daten …</p></div>
-      <div id="backtest"></div>
+      <div id="backtest" data-section="Rückblick-Test"></div>
     </section>
 
     <!-- COPY-TRADING -->
@@ -236,7 +253,7 @@
         <p class="lead">eToro übernimmt automatisch die Trades eines anderen Traders, anteilig zu Ihrem Betrag. Wie lange eine Position offen bleibt, entscheidet der kopierte Trader.</p>
       </div>
       <div class="grid-2">
-        <article class="card">
+        <article class="card" data-section="Rechner">
           <h2 class="card-title">1. Copy-Rechner</h2>
           <form id="copyCalc" class="calc">
             <label>Kontostand bei eToro ($)<input type="number" id="kAccount" value="5000" min="0" step="any" data-account></label>
@@ -251,7 +268,7 @@
         </article>
       </div>
 
-      <article class="card">
+      <article class="card" data-section="Trader finden">
         <h2 class="card-title">3. Passenden Trader finden</h2>
         <ol class="steps">
           <li>Am einfachsten: die geprüfte <a href="#daily">Tagesempfehlung</a> nutzen – sie wird an jedem Börsentag automatisch berechnet.</li>
@@ -275,7 +292,7 @@
         </ol>
       </article>
 
-      <article class="card">
+      <article class="card" data-section="Überwachen">
         <h2 class="card-title">4. Überwachen und beenden</h2>
         <ul class="checklist">
           <li>Laufende Kopie ansehen: <b>„Portfolio“</b> → Trader antippen. Dort stehen alle kopierten Positionen.</li>
@@ -299,15 +316,15 @@
       </div>
       <p class="lead">Tragen Sie bis zu 8 Trader mit den Werten aus ihrem eToro-Profil ein. Die Seite rechnet für jeden aus, wie sicher seine Rendite auf Können statt auf Glück beruht, und empfiehlt den besten – oder ehrlicherweise keinen.</p>
 
-      <div class="reco" id="cmpReco"></div>
+      <div class="reco" id="cmpReco" data-section="Empfehlung"></div>
 
-      <article class="card">
+      <article class="card" data-section="Wachstum">
         <h2 class="card-title">Wachstum von 100 $</h2>
         <div class="legend-row" id="cmpLegend"></div>
         <div class="chart-host" id="cmpChart"></div>
       </article>
 
-      <article class="card">
+      <article class="card" data-section="Tabelle">
         <h2 class="card-title">Vergleich</h2>
         <p class="muted small">Auf eine Spaltenüberschrift tippen, um zu sortieren – noch einmal tippen kehrt die Reihenfolge um.</p>
         <div class="table-wrap">
@@ -315,7 +332,7 @@
         </div>
       </article>
 
-      <article class="card">
+      <article class="card" data-section="Eintragen">
         <h2 class="card-title" id="tFormTitle">Trader eintragen</h2>
         <form id="tForm" class="calc">
           <label>Name des Traders<input id="tName" required maxlength="40" placeholder="eToro-Benutzername"></label>
@@ -402,8 +419,8 @@
           <button type="button" class="btn ghost" id="jExport">Als CSV exportieren</button>
         </div>
       </div>
-      <div id="jToday"></div>
-      <article class="card">
+      <div id="jToday" data-section="Heute"></div>
+      <article class="card" data-section="Eintragen">
         <h2 class="card-title">Trade eintragen</h2>
         <form id="jForm" class="calc">
           <label>Symbol<input id="jSym" required placeholder="AAPL" maxlength="20"></label>
@@ -416,12 +433,12 @@
         </form>
       </article>
       <div class="stats" id="jStats"></div>
-      <article class="card" id="psychJournal"></article>
-      <article class="card">
+      <article class="card" id="psychJournal" data-section="Verhalten"></article>
+      <article class="card" data-section="Kurve">
         <h2 class="card-title">Gewinn und Verlust über alle Trades</h2>
         <div class="chart-host" id="jChart"></div>
       </article>
-      <article class="card">
+      <article class="card" data-section="Alle Trades">
         <h2 class="card-title">Alle Trades</h2>
         <div class="table-wrap">
           <table id="jTable"><thead></thead><tbody></tbody></table>
@@ -463,5 +480,7 @@
   <script src="knowledge.js"></script>
   <script src="backtest.js"></script>
   <script src="psych.js"></script>
+  <script src="stock.js"></script>
+  <script src="nav.js"></script>
 </body>
 </html>

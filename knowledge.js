@@ -311,7 +311,7 @@
           <p class="core">${s.core}</p>
           ${sig ? `<p class="means"><b>Jetzt:</b> ${sig}</p>` : ""}
           <p class="now"><b>Umsetzung:</b> ${s.how}</p>
-          <p class="now" style="color:var(--down-ink)"><span class="down">▲</span> <b style="color:var(--down-ink)">Risiko:</b> ${s.risk}</p>
+          <p class="risk"><b>Risiko:</b> ${s.risk}</p>
           <ul class="srcs">${s.src.map(x => `<li>${x}</li>`).join("")}</ul>
         </article>`; }).join("")}
       </div>
@@ -322,10 +322,10 @@
           <h3>${t.title}</h3>
           <p class="core">${t.core}</p>
           <p class="means"><b>Wer profitieren könnte:</b> ${t.who}</p>
-          <p class="now" style="color:var(--down-ink)"><span class="down">▲</span> <b style="color:var(--down-ink)">Risiko:</b> ${t.risk}</p>
+          <p class="risk"><b>Risiko:</b> ${t.risk}</p>
           <ul class="srcs">${t.src.map(x => `<li>${x}</li>`).join("")}</ul>
         </article>`).join("")}
-        <article class="topic" style="border-color:var(--warn-line)">
+        <article class="topic" style="box-shadow:inset 0 3px 0 var(--text)">
           <div class="topic-kicker"><span>Wichtig</span>${evidence(3)}</div>
           <h3>Bekannte Trends sind oft schon im Preis</h3>
           <p class="core">Spezial- und Themen-ETFs verloren in ihren ersten fünf Jahren risikobereinigt rund 30 %. Grund ist nicht die Gebühr, sondern der Zeitpunkt: Sie werden aufgelegt, wenn die Themen-Aktien schon überbewertet sind. Grüne Aktien liefen zuletzt vor allem wegen überraschend gestiegener Klimasorge gut.</p>
@@ -336,6 +336,17 @@
       <p class="muted small">Keine Anlageberatung: Die Ideen beschreiben, was Studien gefunden haben, und wie es sich grundsätzlich umsetzen ließe. Einzelne Wertpapiere werden bewusst nicht empfohlen.</p>`;
   }
 
+  // Für den Aktien-Check: die nächsten marktweiten Termine
+  window.DTD.nextMarketDates = () => {
+    const now = new Date(), items = [];
+    const tom = turnOfMonth(now);
+    if (tom) { const l = dLabel(tom.start); items.push({ date: tom.start, ...l, title: "Monatswechsel-Fenster", text: `${longDate(tom.start)} bis ${longDate(tom.end)} · im Schnitt stärkere Indexrenditen (gemischt belegt)` }); }
+    for (const f of FOMC.map(([d, tentative]) => ({ at: nyTime(d, 14), tentative })).filter(f => f.at > now).slice(0, 2)) {
+      const l = dLabel(f.at), berlin = f.at.toLocaleTimeString("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit" });
+      items.push({ date: f.at, ...l, title: `Zinsentscheid der US-Notenbank${f.tentative ? " (vorläufig)" : ""}`, text: `${longDate(f.at)}, ${berlin} Uhr · starke Schwankungen rund um die Bekanntgabe` });
+    }
+    return items.sort((a, b) => a.date - b.date);
+  };
   window.DTD.renderTheory = renderTheory;
   window.DTD.renderIdeas = renderIdeas;
   window.addEventListener("dtd:market", () => { if ($("ideen") && !$("ideen").hidden) renderIdeas(); });

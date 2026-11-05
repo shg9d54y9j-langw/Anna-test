@@ -79,9 +79,9 @@
       <div class="hero-title" style="margin-top:14px">${o.light === "green" ? "Rückenwind für Käufer" : o.light === "red" ? "Gegenwind – vorsichtig sein" : o.light === "yellow" ? "Gemischte Lage" : "Noch keine Marktdaten"}</div>
       <p class="hero-sub">${reason.join(" · ") || "Die Werte erscheinen nach der nächsten Runde des Live-Wächters."}</p>
       ${compact ? "" : `<div class="hero-grid">
-        ${kpi("Empfohlene Positionsgröße", size !== null ? `${size} %` : "–", size !== null && size < 50 ? "down" : "")}
+        ${kpi("Empfohlene Positionsgröße", size !== null ? `${size} %` : "–")}
         ${kpi("S&P 500 Trend", Number.isFinite(spx.distSma200) ? `${sign1(spx.distSma200)} %` : "–", spx.distSma200 < 0 ? "down" : "up")}
-        ${kpi("Schwankung 20 Tage", Number.isFinite(spx.vol20) ? `${n1(spx.vol20)} %` : "–", spx.vol20 > d.rules.volHigh ? "down" : "")}
+        ${kpi("Schwankung 20 Tage", Number.isFinite(spx.vol20) ? `${n1(spx.vol20)} %` : "–")}
         ${kpi("Punkte", Number.isFinite(o.score) ? `${o.score > 0 ? "+" : ""}${o.score} von ±${o.parts}` : "–")}
       </div>
       <p class="hint">Positionsgröße: Anteil Ihrer normalen Größe, damit das Risiko gleich bleibt – bei doppelter Schwankung nur halb so groß (${SRC("https://doi.org/10.1111/jofi.12513", "Moreira &amp; Muir, Journal of Finance 2017")}). Trend: Kurs über dem 200-Tage-Durchschnitt und positive 12-Monats-Rendite (${SRC("https://doi.org/10.1016/j.jfineco.2011.11.003", "Moskowitz, Ooi &amp; Pedersen 2012")}, ${SRC("https://www.aqr.com/Insights/Research/Journal-Article/A-Century-of-Evidence-on-Trend-Following-Investing", "Hurst, Ooi &amp; Pedersen 2017")}).</p>`}

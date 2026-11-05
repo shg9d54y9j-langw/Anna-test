@@ -6,7 +6,8 @@
 // ---------- Hilfsfunktionen (auch von compare.js, daily.js, overview.js genutzt) ----------
 const $ = id => document.getElementById(id);
 // Farben für Diagramme und Widgets (gleiche Werte wie in style.css; Reihenfarben gegen die schwarze Fläche geprüft)
-const PAL = { up: "#00e676", down: "#ff3d57", surface: "#0a0a0b", series1: "#3987e5", series2: "#d95926", gray: "#8d8d96", ink: "#f5f5f7" };
+// Grün und Rot nur für Gewinn und Verlust; Linien sonst in Weiß und Grau (unterschieden durch Strichart und Beschriftung)
+const PAL = { up: "#1ed760", down: "#ff4545", surface: "#070707", series1: "#f2f2f2", series2: "#9a9a9a", gray: "#6a6a6a", ink: "#f2f2f2" };
 const fmt = (n, d = 2) => (Number.isFinite(n) ? n.toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d }) : "–");
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const kpi = (lbl, val, cls = "") => `<div class="kpi"><div class="lbl">${lbl}</div><div class="val ${cls}">${val}</div></div>`;
@@ -141,7 +142,7 @@ const loadCalendar = () => tvWidget("calendarWidget", "events", { ...COMMON, imp
 const symIn = $("symbolInput");
 function loadSymbol(sym) {
   tvWidget("chartWidget", "advanced-chart", {
-    ...COMMON, isTransparent: false, backgroundColor: "#0a0a0b", gridColor: "rgba(255,255,255,0.05)", autosize: true, symbol: sym, interval: "15",
+    ...COMMON, isTransparent: false, backgroundColor: "#000000", gridColor: "rgba(255,255,255,0.06)", autosize: true, symbol: sym, interval: "15",
     timezone: "Europe/Berlin", style: "1", studies: ["STD;VWAP", "STD;Average_True_Range"], allow_symbol_change: true, hide_side_toolbar: false,
   });
   tvWidget("taWidget", "technical-analysis", { ...COMMON, interval: "15m", symbol: sym, showIntervalTabs: true, displayMode: "single", width: "100%", height: "100%" });
@@ -150,11 +151,12 @@ $("symbolBtn").addEventListener("click", () => loadSymbol(symIn.value.trim().toU
 symIn.addEventListener("keydown", e => { if (e.key === "Enter") loadSymbol(symIn.value.trim().toUpperCase()); });
 
 // ---------- Reiter-Navigation ----------
-const VIEWS = ["home", "markt", "news", "ideen", "setup", "daily", "copy", "compare", "journal", "theorie"];
-const TITLES = { home: "Übersicht", markt: "Markt", news: "News", ideen: "Trade-Ideen", setup: "Trade-Setup", daily: "Tagesempfehlung", copy: "Copy-Trading", compare: "Trader-Vergleich", journal: "Journal", theorie: "Theorie" };
+const VIEWS = ["home", "markt", "aktie", "news", "ideen", "setup", "daily", "copy", "compare", "journal", "theorie"];
+const TITLES = { home: "Übersicht", markt: "Markt", aktie: "Aktien-Check", news: "News", ideen: "Trade-Ideen", setup: "Trade-Setup", daily: "Tagesempfehlung", copy: "Copy-Trading", compare: "Trader-Vergleich", journal: "Journal", theorie: "Theorie" };
 const VIEW_INIT = {
   markt: () => { loadHeatmap(heatSel.value); loadHotlist(); window.DTD.loadMarketLive(); },
   news: () => { loadNews(); loadCalendar(); },
+  aktie: () => window.DTD.startStock(),
   ideen: () => window.DTD.renderIdeas(),
   setup: () => loadSymbol(symIn.value.trim().toUpperCase()),
   daily: () => window.DTD.startBacktest(),
