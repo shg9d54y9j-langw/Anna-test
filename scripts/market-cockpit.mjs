@@ -39,21 +39,29 @@ export const MACRO = [
 ];
 
 const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
-export function stats(closes) {
-  // closes: älteste zuerst
+// Kerzen pro Jahr: Krypto wird auch am Wochenende gehandelt (365), Börsenwerte nur werktags (252).
+// Erkennung an Samstags-Kerzen – samstags ist jede Börse und jeder CFD-Markt geschlossen.
+export function perYearOf(dates) {
+  const sat = dates.filter(t => new Date(t).getUTCDay() === 6).length;
+  return dates.length && sat / dates.length > 0.05 ? 365 : 252;
+}
+export function stats(closes, perYear = 252) {
+  // closes: älteste zuerst. Fristen in Handelstagen, bei Krypto in Kalendertage umgerechnet (1 Monat = 30, 12 Monate = 365);
+  // die 200-Tage-Linie bleibt bei 200 Kerzen – so zeigt sie auch TradingView.
   const n = closes.length;
   if (n < 30) return null;
+  const k = d => Math.round(d * perYear / 252);
   const last = closes[n - 1];
-  const at = k => (n > k ? closes[n - 1 - k] : null);
+  const at = j => (n > j ? closes[n - 1 - j] : null);
   const sma200 = n >= 200 ? mean(closes.slice(-200)) : null;
   const rets = [];
-  for (let i = Math.max(1, n - 20); i < n; i++) rets.push(Math.log(closes[i] / closes[i - 1]));
+  for (let i = Math.max(1, n - k(20)); i < n; i++) rets.push(Math.log(closes[i] / closes[i - 1]));
   const mr = mean(rets);
-  const vol20 = Math.sqrt(rets.reduce((s, r) => s + (r - mr) ** 2, 0) / (rets.length - 1)) * Math.sqrt(252) * 100;
+  const vol20 = Math.sqrt(rets.reduce((s, r) => s + (r - mr) ** 2, 0) / (rets.length - 1)) * Math.sqrt(perYear) * 100;
   const pct = (a, b) => (a && b ? (a / b - 1) * 100 : null);
   return {
-    last, chg1d: pct(last, at(1)), ret1m: pct(last, at(21)), ret12m: pct(last, at(252)),
-    distSma200: sma200 ? (last / sma200 - 1) * 100 : null, vol20, points: n,
+    last, chg1d: pct(last, at(1)), ret1m: pct(last, at(k(21))), ret12m: pct(last, at(k(252))),
+    distSma200: sma200 ? (last / sma200 - 1) * 100 : null, vol20, points: n, perYear,
   };
 }
 export function trendLight(s) {
@@ -83,12 +91,12 @@ async function resolveInstrument(symbols) {
   return null;
 }
 async function dailyCloses(id) {
-  const d = await call(`/v1/market-data/instruments/${id}/history/candles/desc/OneDay/300`);
+  const d = await call(`/v1/market-data/instruments/${id}/history/candles/desc/OneDay/420`);   // reicht auch für 365 Krypto-Tage
   const groups = Array.isArray(field(d, "candles")) ? field(d, "candles") : [];
   const list = (groups.find(g => num(field(g, "instrumentId")) === id) || groups[0] || {}).candles || [];
   const rows = list.map(c => ({ t: field(c, "fromDate"), c: num(field(c, "close")) })).filter(r => r.t && Number.isFinite(r.c) && r.c > 0);
   rows.sort((a, b) => new Date(a.t) - new Date(b.t));
-  return { closes: rows.map(r => r.c), asOf: rows.length ? rows[rows.length - 1].t : null };
+  return { closes: rows.map(r => r.c), asOf: rows.length ? rows[rows.length - 1].t : null, perYear: perYearOf(rows.map(r => r.t)) };
 }
 async function fredSeries(id) {
   const from = new Date(Date.now() - 420 * 864e5).toISOString().slice(0, 10);
@@ -108,8 +116,8 @@ async function main() {
       try {
         const inst = await resolveInstrument(a.symbols);
         if (!inst) { out.errors.push(`${a.name}: bei eToro nicht gefunden`); out.assets.push({ key: a.key, name: a.name, tv: a.tv, light: "unknown" }); continue; }
-        const { closes, asOf } = await dailyCloses(inst.id);
-        const s = stats(closes);
+        const { closes, asOf, perYear } = await dailyCloses(inst.id);
+        const s = stats(closes, perYear);
         out.assets.push({ key: a.key, name: a.name, tv: a.tv, symbol: inst.symbol, asOf, ...(s || {}), light: trendLight(s) });
       } catch (e) {
         out.errors.push(`${a.name}: ${e.message}`);

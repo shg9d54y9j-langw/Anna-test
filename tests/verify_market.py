@@ -4,6 +4,7 @@ Holt dieselben Tageskerzen und FRED-Reihen direkt vom Test-Server, rechnet Trend
 Ampeln in Python nach und vergleicht mit market.json.
 Aufruf: python3 tests/verify_market.py <market.json> <http://localhost:PORT>
 """
+import datetime
 import json
 import math
 import sys
@@ -21,17 +22,19 @@ def get(url, headers=None):
         return r.read().decode("utf-8")
 
 
-def stats(closes):
+def stats(closes, per_year):
+    # Krypto (Kerzen auch samstags): 1 Monat = 30, 12 Monate = 365 Kerzen, Schwankung mit Wurzel aus 365
     n = len(closes)
     last = closes[-1]
     at = lambda k: closes[n - 1 - k] if n > k else None
     pct = lambda a, b: (a / b - 1) * 100 if a and b else None
+    month, year, vol_n = (30, 365, 29) if per_year == 365 else (21, 252, 20)
     sma = sum(closes[-200:]) / 200 if n >= 200 else None
-    rets = [math.log(closes[i] / closes[i - 1]) for i in range(max(1, n - 20), n)]
+    rets = [math.log(closes[i] / closes[i - 1]) for i in range(max(1, n - vol_n), n)]
     mr = sum(rets) / len(rets)
-    vol = math.sqrt(sum((r - mr) ** 2 for r in rets) / (len(rets) - 1)) * math.sqrt(252) * 100
-    return {"last": last, "chg1d": pct(last, at(1)), "ret1m": pct(last, at(21)), "ret12m": pct(last, at(252)),
-            "distSma200": (last / sma - 1) * 100 if sma else None, "vol20": vol}
+    vol = math.sqrt(sum((r - mr) ** 2 for r in rets) / (len(rets) - 1)) * math.sqrt(per_year) * 100
+    return {"last": last, "chg1d": pct(last, at(1)), "ret1m": pct(last, at(month)), "ret12m": pct(last, at(year)),
+            "distSma200": (last / sma - 1) * 100 if sma else None, "vol20": vol, "perYear": per_year}
 
 
 def close(a, b, tol=1e-6):
@@ -46,9 +49,13 @@ for a in m["assets"]:
         continue
     found = json.loads(get(f"{base}/api/v2/market-data/instruments?symbols={a['symbol']}", HEAD))["results"]
     iid = found[0]["instrumentId"]
-    data = json.loads(get(f"{base}/api/v1/market-data/instruments/{iid}/history/candles/desc/OneDay/300", HEAD))
+    data = json.loads(get(f"{base}/api/v1/market-data/instruments/{iid}/history/candles/desc/OneDay/420", HEAD))
     rows = sorted(data["candles"][0]["candles"], key=lambda c: c["fromDate"])
-    s = stats([c["close"] for c in rows])
+    saturdays = sum(1 for c in rows if datetime.date.fromisoformat(c["fromDate"][:10]).weekday() == 5)
+    per_year = 365 if saturdays > 0.05 * len(rows) else 252
+    if (a["key"] == "btc") != (per_year == 365):
+        errors.append(f"{a['name']}: Wochenend-Handel falsch erkannt")
+    s = stats([c["close"] for c in rows], per_year)
     for k, v in s.items():
         if not close(v, a.get(k)):
             errors.append(f"{a['name']} {k}: Cockpit {a.get(k)}, Gegenrechnung {v}")
