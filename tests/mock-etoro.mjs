@@ -38,7 +38,9 @@ const traders = Array.from({ length: 180 }, (_, i) => {
 const accounts = { demo: { credit: 100000, mirrors: [], ops: [], statuses: {}, positions: [], pendingOpen: [], orders: {}, tradeOps: [] }, real: { credit: 20000, mirrors: [], ops: [], statuses: {}, positions: [], pendingOpen: [], orders: {}, tradeOps: [] } };
 const realTradeOps = [];   // Aufrufe an Echtgeld-Handelsadressen (müssen in den Tests leer bleiben)
 let nextPosition = 70000, nextOrder = 50000;
-const trendFlags = { failNextOpen: false, pendingNextOpen: false, slowConfirm: false, foreignOrderIds: false };
+// cfdBlocked: wie das echte Konto – CFD-Handel gesperrt, US-ETFs (für EU-Kunden nur als CFD) werden nach dem Absenden abgelehnt.
+// rejectIds: weitere Instrumente, die eToro für dieses Konto ablehnt (z. B. nicht handelbar)
+const trendFlags = { failNextOpen: false, pendingNextOpen: false, slowConfirm: false, foreignOrderIds: false, cfdBlocked: true, rejectIds: [] };
 function openPosition(acc, instrumentID, amount, orderID, mirrorID = 0) {
   // Wie im echten Betrieb beobachtet: Bestätigung kann auf sich warten lassen, die Position eine andere Auftragsnummer tragen
   const price = trendPrice(instrumentID), pos = { positionID: nextPosition++, instrumentID, orderID: trendFlags.foreignOrderIds ? orderID + 900000000 : orderID, mirrorID, amount, units: amount / price, openRate: price, isBuy: true, leverage: 1, openDateTime: new Date().toISOString() };
@@ -128,6 +130,33 @@ function makeTrend(id, recentDrift = null) {
   }).slice(-(SHORT_HISTORY[id] || 3000));
 }
 for (const id of Object.values(TREND_ETFS)) makeTrend(id);
+// Europäische UCITS-Gegenstücke (wie bei eToro für EU-Kunden als echte Anteile kaufbar). Kurse folgen dem US-ETF (of)
+// auf anderem Niveau. Fallen: CSPX.L läuft absichtlich gegenläufig, IBTM.L und IUSA.L sind währungsgesichert,
+// IUSA.DE11 hat eine unsaubere Endung, IUSP.L liefert keine Kurse, ICOM.L hat keinen sprechenden Namen (läuft aber gleich).
+// Für Immobilien gibt es sonst kein Gegenstück – der Bot muss auf den US-ETF ausweichen, den eToro ablehnt.
+const UCITS = [
+  { id: 3311, sym: "CSPX.L", name: "iShares Core S&P 500 UCITS ETF USD (Acc)", of: 3201, inverse: true },
+  { id: 3301, sym: "VUAA.L", name: "Vanguard S&P 500 UCITS ETF (USD) Accumulating", of: 3201, scale: 1.7 },
+  { id: 3312, sym: "SXR8.DE", name: "iShares Core S&P 500 UCITS ETF", of: 3201, scale: 9.3 },
+  { id: 3314, sym: "IUSA.L", name: "iShares S&P 500 EUR Hedged UCITS ETF", of: 3201, scale: 1.2 },
+  { id: 3315, sym: "IUSA.DE11", name: "iShares S&P 500 UCITS ETF", of: 3201, scale: 0.8 },
+  { id: 3316, sym: "EXUS.DE", name: "Xtrackers MSCI World ex USA UCITS ETF 1C", of: 3202, scale: 0.55 },   // Xetra nach London
+  { id: 3302, sym: "EXUS.L", name: "Xtrackers MSCI World ex USA UCITS ETF 1C", of: 3202, scale: 0.6 },
+  { id: 3313, sym: "IBTM.L", name: "iShares $ Treasury Bond 7-10yr UCITS ETF GBP Hedged", of: 3203, scale: 0.05 },
+  { id: 3303, sym: "CBU0.L", name: "iShares $ Treasury Bond 7-10yr UCITS ETF USD (Acc)", of: 3203, scale: 1.9 },
+  { id: 3304, sym: "IGLN.L", name: "iShares Physical Gold ETC", of: 3204, scale: 0.25 },
+  { id: 3308, sym: "SGLD.L", name: "Invesco Physical Gold ETC", of: 3204, scale: 1.1 },
+  { id: 3305, sym: "CMOD.L", name: "Invesco Bloomberg Commodity UCITS ETF", of: 3207, scale: 1.4 },
+  { id: 3306, sym: "ICOM.L", name: "ICOM", of: 3207, scale: 0.3 },
+  { id: 3309, sym: "IUSP.L", name: "iShares US Property Yield UCITS ETF", of: 3206, scale: 0.4 },
+];
+const UCITS_BY_SYM = Object.fromEntries(UCITS.map(v => [v.sym, v.id]));
+NO_CANDLES.add(3309);
+const CFD_ONLY = new Set([...Object.values(TREND_ETFS), 3299]);   // US-ETFs: für Kunden in der EU nur als CFD
+function deriveVehicles() {
+  for (const v of UCITS) trendSeries[v.id] = trendSeries[v.of].map(x => ({ d: x.d, c: Math.round((v.inverse ? 5000 / x.c : x.c * v.scale) * 10000) / 10000 }));
+}
+deriveVehicles();
 const trendPrice = id => trendSeries[id][trendSeries[id].length - 1].c;
 function trendCandles(id, interval, n) {
   const daily = trendSeries[id];
@@ -198,15 +227,16 @@ http.createServer(async (req, res) => {
     const body = req.method === "POST" ? await readBody(req) : {};
     const acc = accounts[(body && body.account) || url.searchParams.get("account") || "demo"];
     if (url.pathname === "/__test/state") return send(200, { credit: acc.credit, mirrors: acc.mirrors, ops: acc.ops });
-    if (url.pathname === "/__test/trend") return send(200, { credit: acc.credit, positions: acc.positions, pendingOpen: acc.pendingOpen, tradeOps: acc.tradeOps, realTradeOps, prices: Object.fromEntries(Object.entries(TREND_ETFS).map(([k, id]) => [k, trendPrice(id)])) });
+    if (url.pathname === "/__test/trend") return send(200, { credit: acc.credit, positions: acc.positions, pendingOpen: acc.pendingOpen, tradeOps: acc.tradeOps, realTradeOps, prices: Object.fromEntries([...Object.entries(TREND_ETFS), ...Object.entries(UCITS_BY_SYM)].map(([k, id]) => [k, trendPrice(id)])), ids: { ...TREND_ETFS, ...UCITS_BY_SYM } });
     if (url.pathname === "/__test/fail-next-open") { trendFlags.failNextOpen = true; return send(200, { ok: true }); }
     if (url.pathname === "/__test/pending-next-open") { trendFlags.pendingNextOpen = true; return send(200, { ok: true }); }
     if (url.pathname === "/__test/trend-flags") { Object.assign(trendFlags, body); return send(200, { ok: true }); }
     if (url.pathname === "/__test/confirm-orders") { for (const o of Object.values(acc.orders)) if (o.positionId) o.executed = true; return send(200, { ok: true }); }
     if (url.pathname === "/__test/fill-pending") { for (const o of acc.pendingOpen.splice(0)) openPosition(acc, o.instrumentID, o.amount, o.orderID); return send(200, { ok: true }); }
-    if (url.pathname === "/__test/manual-position") { openPosition(acc, TREND_ETFS[body.sym], body.amount, nextOrder++); return send(200, { ok: true }); }
+    if (url.pathname === "/__test/manual-position") { openPosition(acc, TREND_ETFS[body.sym] ?? UCITS_BY_SYM[body.sym], body.amount, nextOrder++); return send(200, { ok: true }); }
+    if (url.pathname === "/__test/rejected-order") { const orderID = nextOrder++; acc.orders[orderID] = { orderId: orderID, executed: false, instrumentID: body.instrumentID, error: [797, "User is blocked from CFD - opening position."] }; return send(200, { orderID }); }
     if (url.pathname === "/__test/remove-position") { const x = acc.positions.find(y => y.positionID === body.positionID); if (x) { acc.credit += x.units * trendPrice(x.instrumentID); acc.positions = acc.positions.filter(y => y !== x); } return send(200, { ok: true }); }
-    if (url.pathname === "/__test/regime") { makeTrend(TREND_ETFS[body.sym], body.drift); return send(200, { ok: true }); }
+    if (url.pathname === "/__test/regime") { makeTrend(TREND_ETFS[body.sym], body.drift); deriveVehicles(); return send(200, { ok: true }); }
     if (url.pathname === "/__test/pnl") { for (const m of acc.mirrors) if (m.parentUsername === body.userName) m.pnlPct = body.pnlPct; return send(200, { ok: true }); }
     if (url.pathname === "/__test/manual-copy") { const t = traders.find(x => x.username === body.userName); register(acc, { parentCID: t.cid, amount: body.amount, referenceID: `manual-${Date.now()}` }); return send(200, { ok: true }); }
     if (url.pathname === "/__test/fail-next-register") { testFlags.failNextRegister = true; return send(200, { ok: true }); }
@@ -262,7 +292,8 @@ http.createServer(async (req, res) => {
   }
   if (url.pathname === "/api/v1/market-data/instruments") {   // offizielle Liste mit Typ je Instrument
     const want = (url.searchParams.get("instrumentTypeIds") || "").split(",").filter(Boolean).map(Number);
-    const list = [...UNIVERSE, ...DEAD].filter(u => !want.length || want.includes(u.instrumentTypeID));
+    const ucits = UCITS.map(v => ({ instrumentId: v.id, displayname: v.name, instrumentTypeID: 6, exchangeID: v.sym.endsWith(".L") ? 7 : 6, internalSymbolFull: v.sym }));
+    const list = [...UNIVERSE, ...DEAD, ...ucits].filter(u => !want.length || want.includes(u.instrumentTypeID));
     return send(200, { instrumentDisplayDatas: list.map(u => ({ instrumentID: u.instrumentId, instrumentDisplayName: u.displayname, instrumentTypeID: u.instrumentTypeID, exchangeID: u.exchangeID, symbolFull: u.internalSymbolFull, isInternalInstrument: Boolean(u.isInternal) })) });
   }
   if (url.pathname === "/api/v2/market-data/instruments") {
@@ -326,13 +357,16 @@ http.createServer(async (req, res) => {
     const acc = accounts.demo;
     acc.tradeOps.push({ path: url.pathname, body: b });
     if (exec[2].startsWith("market-open")) {
-      if (!TREND_PARAMS[b.InstrumentID]) return send(400, { error: "unknown instrument" });
+      if (!trendSeries[b.InstrumentID]) return send(400, { error: "unknown instrument" });
       if (!Number.isInteger(b.Leverage) || b.Leverage < 1) return send(400, { error: "Leverage must be at least 1" });
       if (typeof b.IsBuy !== "boolean" || !(b.Amount >= 10)) return send(400, { error: "IsBuy and Amount >= 10 required" });
       if (b.Amount > acc.credit) return send(400, { error: "Insufficient funds" });
       if (b.StopLossRate !== undefined && b.StopLossRate !== null && !(b.StopLossRate < trendPrice(b.InstrumentID))) return send(400, { error: "StopLoss must be worse than current price" });
       const orderID = nextOrder++;
-      if (trendFlags.pendingNextOpen) { trendFlags.pendingNextOpen = false; acc.pendingOpen.push({ orderID, instrumentID: b.InstrumentID, amount: b.Amount }); acc.orders[orderID] = { orderId: orderID, executed: false }; }
+      const refuse = trendFlags.cfdBlocked && CFD_ONLY.has(b.InstrumentID) ? [797, "User is blocked from CFD - opening position."]
+        : trendFlags.rejectIds.includes(b.InstrumentID) ? [744, "Instrument is not available for trading"] : null;
+      if (refuse) acc.orders[orderID] = { orderId: orderID, executed: false, instrumentID: b.InstrumentID, error: refuse };
+      else if (trendFlags.pendingNextOpen) { trendFlags.pendingNextOpen = false; acc.pendingOpen.push({ orderID, instrumentID: b.InstrumentID, amount: b.Amount }); acc.orders[orderID] = { orderId: orderID, executed: false }; }
       else openPosition(acc, b.InstrumentID, b.Amount, orderID);
       if (trendFlags.failNextOpen) { trendFlags.failNextOpen = false; return send(503, { error: "temporarily unavailable" }); }   // angekommen, aber keine Bestätigung
       return send(200, { orderForOpen: { orderID, instrumentID: b.InstrumentID, amount: b.Amount, isBuy: b.IsBuy, leverage: b.Leverage, statusID: 1, openDateTime: new Date().toISOString() }, token: "22222222-2222-4222-8222-222222222222" });
@@ -351,7 +385,8 @@ http.createServer(async (req, res) => {
   if (orderInfo) {
     const o = accounts.demo.orders[Number(orderInfo[1])];
     if (!o) return send(404, { error: "Order not found" });
-    return send(200, { orderId: o.orderId, action: "open", positionExecutions: o.executed ? [{ positionId: o.positionId, state: "open" }] : [] });
+    return send(200, { orderID: o.orderId, statusID: o.error ? 4 : o.executed ? 2 : 1, errorCode: o.error ? o.error[0] : 0, errorMessage: o.error ? o.error[1] : "",
+      instrumentID: o.instrumentID ?? null, positionExecutions: o.executed ? [{ positionId: o.positionId, state: "open" }] : [] });
   }
   const pnl = /^\/api\/v1\/trading\/info\/(demo|real)\/pnl$/.exec(url.pathname);
   if (pnl && req.method === "GET") return send(200, portfolio(accounts[pnl[1]]));

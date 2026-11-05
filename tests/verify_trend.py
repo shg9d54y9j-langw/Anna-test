@@ -8,6 +8,7 @@ Aufruf: python3 tests/verify_trend.py <trend-signals.json> <http://localhost:POR
 import datetime
 import json
 import math
+import re
 import sys
 import urllib.request
 
@@ -335,10 +336,79 @@ if [r[0] for r in d["recent"]] != dates[-15:]:
 if L["nfci"]["asOf"] != nfci_rows[-1][0]:
     errors.append("Finanzlage (NFCI) nicht aktuell übernommen")
 
+# ---------- Gegenstücke wie der Bot wählen: UCITS-ETFs aus der offiziellen Liste, zuletzt der US-ETF ----------
+# Regeln (unabhängig nachgebaut): Kürzel-Stamm in Wunschreihenfolge, saubere Börsenendung, London vor Xetra; Name passt
+# und ist keine andere Anlage; Kurs höchstens 7 Tage alt; 5-Tages-Renditen laufen mit dem Signal-ETF (Korrelation ≥ 0,3,
+# ohne passenden Namen ≥ 0,8); höchstens drei je Markt.
+TRADE = {
+    "us": (["CSPX", "VUAA", "SXR8", "IUSA", "VUSA", "SPY5", "SPXS", "I500"], r"S&P\s*500",
+           r"equal|esg|sri|paris|climate|screened|sector|info|tech|financ|health|energy|consumer|industr|utilit|material|communic|real estate|dividend|growth|value|momentum|quality|low vol|buyback|covered|premium"),
+    "intl": (["EXUS", "IMEU", "SMEA", "VEUR", "MEUD", "EXSA", "XMEU"], r"ex[\s-]*US|EAFE|Europe|STOXX\s*600",
+             r"ex[\s-]*Europe|emerging|small|esg|sri|paris|climate|dividend|value|momentum|quality|low vol|sector|bank|financ|health|energy|tech|real estate|property"),
+    "bonds": (["IBTM", "CBU0", "IUSM", "SXRM", "VUTY", "VDTY"], r"treasur", r"0\s*-\s*1|1\s*-\s*3|3\s*-\s*7|20\s*\+|short|ultra|tips|inflation|float|esg"),
+    "gold": (["IGLN", "SGLD", "PHAU", "SGLN", "PPFB", "8PSG", "4GLD", "EWG2"], r"gold", r"miner|mining|esg|silver|platin|precious metals|basket"),
+    "commod": (["CMOD", "ICOM", "AIGC", "WCOA", "EXXY", "CRBL"], r"commodit|rohstoff|\bCRB\b", r"ex[\s-]*(agri|energy)|agricult|energy|precious|industrial metal|gold|esg|carbon"),
+    "reits": (["IUSP", "IDUP", "IQQ7", "IWDP", "IQQ6", "GLRE", "SPYJ", "TRET"], r"property|real estate|REIT|EPRA|immobil", r"europe|asia|china|japan|\buk\b|esg|mortgage"),
+}
+BAD = re.compile(r"hedged|leverag|short|inverse|\b[23]x\b|daily|ultra|bear|bull", re.I)
+etf_type = next(t["instrumentTypeID"] for t in get(f"{base}/api/v1/market-data/instrument-types")["instrumentTypes"] if "etf" in t["instrumentTypeDescription"].lower())
+etfs = [x for x in get(f"{base}/api/v1/market-data/instruments?instrumentTypeIds={etf_type}")["instrumentDisplayDatas"]
+        if not x.get("isInternalInstrument") and x.get("instrumentTypeID") in (None, etf_type)]
+
+
+def daily_map(iid, n):
+    raw = get(f"{base}/api/v1/market-data/instruments/{iid}/history/candles/desc/OneDay/{n}")["candles"][0]["candles"]
+    return {c["fromDate"][:10]: c["close"] for c in raw if c["fromDate"][:10] < cut_day and c["close"] and c["close"] > 0}
+
+
+def corr5(sig_map, veh_map):
+    common = [x for x in sorted(veh_map) if x in sig_map][-121:]
+    if len(common) < 45:
+        return None
+    a = [math.log(sig_map[common[i]] / sig_map[common[i - 5]]) for i in range(5, len(common))]
+    b = [math.log(veh_map[common[i]] / veh_map[common[i - 5]]) for i in range(5, len(common))]
+    ma, mb = mean(a), mean(b)
+    ab = sum((x - ma) * (y - mb) for x, y in zip(a, b))
+    aa, bb = sum((x - ma) ** 2 for x in a), sum((y - mb) ** 2 for y in b)
+    return ab / math.sqrt(aa * bb) if aa > 0 and bb > 0 else None
+
+
+for (sym, iid, key), a in zip(chosen, d["assets"]):
+    bases, match, avoid = TRADE[key]
+    cands = []
+    for b in bases:
+        hits = [x for x in etfs if x["symbolFull"].upper().split(".")[0] == b and re.fullmatch(r"[A-Z0-9]+\.[A-Z]{1,3}", x["symbolFull"].upper())]
+        hits.sort(key=lambda x: ({".L": 0, ".DE": 1}.get(x["symbolFull"].upper()[x["symbolFull"].rfind("."):], 2), x["instrumentID"]))
+        cands += [h for h in hits if h not in cands]
+    sig_map, want = daily_map(iid, 1000), []
+    for v in cands:
+        if len(want) >= 3:
+            break
+        name = v["instrumentDisplayName"]
+        if BAD.search(name) or re.search(avoid, name, re.I):
+            continue
+        m = daily_map(v["instrumentID"], 150)
+        if not m or (now.date() - datetime.date.fromisoformat(max(m))).days > 7:
+            continue
+        c = corr5(sig_map, m)
+        ok = re.search(match, name, re.I) is not None
+        if (ok if c is None else c >= 0.3 and (ok or c >= 0.8)):
+            want.append((v["symbolFull"].upper(), v["instrumentID"], m[max(m)], c))
+    got = a.get("trade") or []
+    if [t["sym"] for t in got] != [w[0] for w in want] + [sym]:
+        errors.append(f"{key}: Gegenstücke {[t['sym'] for t in got]} statt {[w[0] for w in want] + [sym]}")
+        continue
+    for t, w in zip(got, want):
+        if t["id"] != w[1] or not near(t["last"], round(w[2], 4), 1e-4) or (w[3] is not None and not near(t["corr"], w[3], 0.006)):
+            errors.append(f"{key}: {t['sym']} Kurs/Gleichlauf {t['last']}/{t['corr']} statt {w[2]}/{w[3]}")
+    if got[-1]["id"] != iid or not got[-1].get("us"):
+        errors.append(f"{key}: letzte Wahl muss der US-ETF {sym} sein")
+
 if errors:
     print(f"::error::Gegenrechnung Trend-Bot fehlgeschlagen – {len(errors)} Abweichung(en):")
     for e in errors[:30]:
         print("  -", e)
     sys.exit(1)
-print(f"Gegenrechnung Trend-Bot bestanden: {len(d['assets'])} ETFs, 5 Regel-Varianten, Lerngewichte "
+print(f"Gegenrechnung Trend-Bot bestanden: {len(d['assets'])} ETFs, Gegenstücke "
+      f"({', '.join(t['sym'] for a in d['assets'] for t in a['trade'][:1])}), 5 Regel-Varianten, Lerngewichte "
       f"({', '.join(f'{x * 100:.0f} %' for x in lw)}), Bremsen und alle Rückblick-Tests stimmen.")

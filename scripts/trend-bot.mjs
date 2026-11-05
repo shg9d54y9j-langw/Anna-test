@@ -1,8 +1,10 @@
-// Trend-Bot (GitHub Actions, an US-Börsentagen einmal täglich während der Handelszeit) – NUR im Demokonto.
+// Trend-Bot (GitHub Actions, an Börsentagen einmal täglich während der Handelszeit in London/Frankfurt) – NUR im Demokonto.
 //
 // Regel – gut erforscht, einfach und bewusst nicht „optimiert“ (Optimieren auf die Vergangenheit ist die häufigste
 // Ursache, warum Handelssysteme später versagen: Bailey u. a. 2014, Sullivan, Timmermann & White 1999):
-//  - Sechs breite ETFs: US-Aktien, Aktien anderer Industrieländer, US-Staatsanleihen, Gold, Rohstoffe, Immobilien.
+//  - Sechs breite Märkte: US-Aktien, Aktien anderer Industrieländer, US-Staatsanleihen, Gold, Rohstoffe, Immobilien.
+//    Signale aus den langen Kursreihen der US-ETFs; gekauft werden gleichwertige europäische UCITS-ETFs (für EU-Kunden
+//    gibt es US-ETFs nur als CFD). Was eToro für das Konto ablehnt, sperrt der Bot und nimmt das nächste Gegenstück.
 //  - Trend je ETF aus vier Prüfungen: Rendite über 3, 6 und 12 Monate positiv, Kurs über dem 200-Tage-Schnitt
 //    (Zeitreihen-Momentum: Moskowitz, Ooi & Pedersen 2012; Hurst, Ooi & Pedersen 2017; Faber 2007).
 //    Anteil = Grundgewicht × erfüllte Prüfungen / 4. Grundgewicht nach Schwankung: ruhige Werte bekommen mehr.
@@ -72,18 +74,43 @@ export const RULES = {
   staleDays: 4,            // ältere Kurse → kein Handel
   keepJournal: 400, keepEvents: 60,
 };
+// symbols: US-ETFs mit langer Kurshistorie – aus ihnen kommen Signale und Rückblick-Test.
+// trade: Gekauft werden gleichwertige europäische UCITS-ETFs als echte Anteile. US-ETFs haben kein Basisinformationsblatt
+// (PRIIPs-Verordnung) und sind für Privatkunden in der EU und in Großbritannien nur als CFD zu haben; ist CFD-Handel im
+// Konto gesperrt, lehnt eToro solche Käufe ab (Fehler 797). Kürzel ohne Börsenendung in Wunschreihenfolge – gesucht in
+// der offiziellen ETF-Liste (CSPX → CSPX.L). match: so muss der Name lauten; avoid: Namen einer anderen Anlage.
 export const ASSETS = [
-  { key: "us", name: "US-Aktien (S&P 500)", symbols: ["SPY", "VOO", "IVV"] },
-  { key: "intl", name: "Aktien anderer Industrieländer", symbols: ["EFA", "VEA", "IEFA"] },
-  { key: "bonds", name: "US-Staatsanleihen 7–10 Jahre", symbols: ["IEF", "GOVT", "TLT"] },
-  { key: "gold", name: "Gold", symbols: ["GLD", "IAU"] },
-  { key: "commod", name: "Rohstoffe", symbols: ["DBC", "PDBC", "GSG", "COMT", "BCI"] },
-  { key: "reits", name: "Immobilien (REITs)", symbols: ["VNQ", "IYR", "XLRE"] },
+  { key: "us", name: "US-Aktien (S&P 500)", symbols: ["SPY", "VOO", "IVV"],
+    trade: ["CSPX", "VUAA", "SXR8", "IUSA", "VUSA", "SPY5", "SPXS", "I500"], match: /S&P\s*500/i,
+    avoid: /equal|esg|sri|paris|climate|screened|sector|info|tech|financ|health|energy|consumer|industr|utilit|material|communic|real estate|dividend|growth|value|momentum|quality|low vol|buyback|covered|premium/i },
+  { key: "intl", name: "Aktien anderer Industrieländer", symbols: ["EFA", "VEA", "IEFA"],
+    trade: ["EXUS", "IMEU", "SMEA", "VEUR", "MEUD", "EXSA", "XMEU"], match: /ex[\s-]*US|EAFE|Europe|STOXX\s*600/i,
+    avoid: /ex[\s-]*Europe|emerging|small|esg|sri|paris|climate|dividend|value|momentum|quality|low vol|sector|bank|financ|health|energy|tech|real estate|property/i },
+  { key: "bonds", name: "US-Staatsanleihen 7–10 Jahre", symbols: ["IEF", "GOVT", "TLT"],
+    trade: ["IBTM", "CBU0", "IUSM", "SXRM", "VUTY", "VDTY"], match: /treasur/i,
+    avoid: /0\s*-\s*1|1\s*-\s*3|3\s*-\s*7|20\s*\+|short|ultra|tips|inflation|float|esg/i },
+  { key: "gold", name: "Gold", symbols: ["GLD", "IAU"],
+    trade: ["IGLN", "SGLD", "PHAU", "SGLN", "PPFB", "8PSG", "4GLD", "EWG2"], match: /gold/i,
+    avoid: /miner|mining|esg|silver|platin|precious metals|basket/i },
+  { key: "commod", name: "Rohstoffe", symbols: ["DBC", "PDBC", "GSG", "COMT", "BCI"],
+    trade: ["CMOD", "ICOM", "AIGC", "WCOA", "EXXY", "CRBL"], match: /commodit|rohstoff|\bCRB\b/i,
+    avoid: /ex[\s-]*(agri|energy)|agricult|energy|precious|industrial metal|gold|esg|carbon/i },
+  { key: "reits", name: "Immobilien (REITs)", symbols: ["VNQ", "IYR", "XLRE"],
+    trade: ["IUSP", "IDUP", "IQQ7", "IWDP", "IQQ6", "GLRE", "SPYJ", "TRET"], match: /property|real estate|REIT|EPRA|immobil/i,
+    avoid: /europe|asia|china|japan|\buk\b|esg|mortgage/i },
 ];
-// NYSE-Feiertage (an diesen Tagen handelt der Bot nicht)
+// nie: gehebelt, umgekehrt, währungsgesichert (dann wäre es eine andere Anlage als im Signal)
+export const BAD_VEHICLE = /hedged|leverag|short|inverse|\b[23]x\b|daily|ultra|bear|bull/i;
+export const VEHICLE = { keep: 3, minCorr: 0.3, nameFreeCorr: 0.8, freshDays: 7, corrDays: 120 };
+// NYSE-Feiertage (keine neuen US-Kurse)
 export const HOLIDAYS = new Set([
   "2026-01-01", "2026-01-19", "2026-02-16", "2026-04-03", "2026-05-25", "2026-06-19", "2026-07-03", "2026-09-07", "2026-11-26", "2026-12-25",
   "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24",
+]);
+// Börsenfeiertage in London und Frankfurt (Xetra), wo die UCITS-ETFs gehandelt werden: an diesen Tagen handelt der Bot nicht
+export const EU_HOLIDAYS = new Set([
+  "2026-01-01", "2026-04-03", "2026-04-06", "2026-05-01", "2026-05-04", "2026-05-25", "2026-08-31", "2026-12-24", "2026-12-25", "2026-12-28", "2026-12-31",
+  "2027-01-01", "2027-03-26", "2027-03-29", "2027-05-03", "2027-05-31", "2027-08-30", "2027-12-24", "2027-12-27", "2027-12-28", "2027-12-31",
 ]);
 
 const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
@@ -93,19 +120,20 @@ const de = (x, d = 0) => Number(x).toLocaleString("de-DE", { minimumFractionDigi
 const nowDate = () => (process.env.TREND_NOW ? new Date(process.env.TREND_NOW) : new Date());
 
 // ---------- Börsenzeit ----------
-export function nyClock(d) {
-  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour12: false, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short" })
+export function zoneClock(d, timeZone) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone, hour12: false, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short" })
     .formatToParts(d).map(p => [p.type, p.value]));
   return { day: `${parts.year}-${parts.month}-${parts.day}`, minutes: (Number(parts.hour) % 24) * 60 + Number(parts.minute), weekday: parts.weekday };
 }
-export function isTradingDay(day) {
-  const wd = new Date(`${day}T12:00:00Z`).getUTCDay();
-  return wd !== 0 && wd !== 6 && !HOLIDAYS.has(day);
-}
-// US-Börse offen (mit Abstand zu Eröffnung und Schluss): 9:45 bis 15:45 Uhr New Yorker Zeit
+export const nyClock = d => zoneClock(d, "America/New_York");
+const weekend = day => [0, 6].includes(new Date(`${day}T12:00:00Z`).getUTCDay());
+export const isTradingDay = day => !weekend(day) && !HOLIDAYS.has(day);
+export const isEuTradingDay = day => !weekend(day) && !EU_HOLIDAYS.has(day);
+// Börse offen (mit Abstand zu Eröffnung und Schluss): 8:15 bis 16:00 Uhr Londoner Zeit = 9:15 bis 17:00 Uhr deutscher Zeit
+// (London 8:00–16:30, Xetra 9:00–17:30 Uhr deutscher Zeit)
 export function marketOpen(d) {
-  const c = nyClock(d);
-  return isTradingDay(c.day) && c.minutes >= 9 * 60 + 45 && c.minutes <= 15 * 60 + 45;
+  const c = zoneClock(d, "Europe/London");
+  return isEuTradingDay(c.day) && c.minutes >= 8 * 60 + 15 && c.minutes <= 16 * 60;
 }
 
 // ---------- Signale ----------
@@ -357,6 +385,78 @@ export function align(lists, cutoff) {
   return { dates, closes };
 }
 
+// ---------- Handelbare Gegenstücke (UCITS-ETFs) ----------
+// Offizielle ETF-Liste von eToro (Typ laut Liste, ohne interne Instrumente)
+async function etfList() {
+  let typeId = 6;
+  try {
+    const d = await call("/v1/market-data/instrument-types");
+    const t = findArray(field(d, "instrumentTypes") ? { items: field(d, "instrumentTypes") } : d).find(x => /etf/i.test(String(field(x, "instrumentTypeDescription") || "")));
+    if (t && Number.isInteger(num(field(t, "instrumentTypeID")))) typeId = num(field(t, "instrumentTypeID"));
+  } catch (e) { warn(`Instrument-Typen: ${e.message} – nehme Typ 6 für ETFs.`); }
+  const d = await call("/v1/market-data/instruments", { instrumentTypeIds: String(typeId) });
+  const list = [field(d, "instrumentDisplayDatas"), findArray(d)].find(a => Array.isArray(a) && a.length) || [];
+  return list.map(x => ({
+    id: num(field(x, "instrumentID", "instrumentId")), sym: String(field(x, "symbolFull", "internalSymbolFull", "symbol") || "").toUpperCase(),
+    name: String(field(x, "instrumentDisplayName", "displayname", "displayName", "name") || ""), type: num(field(x, "instrumentTypeID", "instrumentTypeId")),
+    internal: field(x, "isInternalInstrument") === true,
+  })).filter(x => Number.isInteger(x.id) && x.sym && !x.internal && (x.type === null || x.type === typeId));
+}
+const SUFFIX_RANK = [".L", ".DE"];   // London zuerst (meist in US-Dollar wie das Signal), dann Xetra
+const suffixRank = s => { const i = SUFFIX_RANK.indexOf(s.slice(s.lastIndexOf("."))); return i < 0 ? SUFFIX_RANK.length : i; };
+// Kandidaten aus der Liste: gleicher Kürzel-Stamm mit sauberer Börsenendung (CSPX.L, SXR8.DE), in Wunschreihenfolge
+export function vehicleCandidates(asset, list) {
+  const out = [];
+  for (const base of asset.trade || []) {
+    const hits = list.filter(x => x.sym.split(".")[0] === base && /^[A-Z0-9]+\.[A-Z]{1,3}$/.test(x.sym))
+      .sort((a, b) => suffixRank(a.sym) - suffixRank(b.sym) || a.id - b.id);
+    for (const h of hits) if (!out.some(o => o.id === h.id)) out.push({ ...h, nameOk: asset.match.test(h.name), nameBad: BAD_VEHICLE.test(h.name) || Boolean(asset.avoid && asset.avoid.test(h.name)) });
+  }
+  return out;
+}
+// Gleichlauf mit dem Signal-ETF: Korrelation der 5-Tages-Renditen an den letzten gemeinsamen Handelstagen
+// (5 Tage, weil London und New York zu verschiedenen Zeiten schließen)
+export function trackCorr(sigList, vehList, days = VEHICLE.corrDays) {
+  const m = new Map(sigList.map(x => [x.d, x.c]));
+  const both = vehList.filter(x => m.has(x.d)).slice(-(days + 1)).map(x => [m.get(x.d), x.c]);
+  if (both.length < 45) return null;
+  const a = [], b = [];
+  for (let i = 5; i < both.length; i++) { a.push(Math.log(both[i][0] / both[i - 5][0])); b.push(Math.log(both[i][1] / both[i - 5][1])); }
+  const ma = mean(a), mb = mean(b);
+  let ab = 0, aa = 0, bb = 0;
+  for (let i = 0; i < a.length; i++) { ab += (a[i] - ma) * (b[i] - mb); aa += (a[i] - ma) ** 2; bb += (b[i] - mb) ** 2; }
+  return aa > 0 && bb > 0 ? ab / Math.sqrt(aa * bb) : null;
+}
+// Je Markt bis zu drei geeignete UCITS-ETFs: Name passt (oder läuft fast genau gleich), keine andere Anlage, aktuelle Kurse,
+// läuft mit dem Signal-ETF. Der Handel nimmt das erste, das im Konto kaufbar ist.
+async function resolveVehicles(found, today) {
+  let list;
+  try { list = await etfList(); log(`ETF-Liste von eToro: ${list.length} ETFs`); }
+  catch (e) { warn(`ETF-Liste: ${e.message}`); return null; }
+  const byKey = {};
+  for (const f of found) {
+    const ok = [], sigDaily = f.daily.filter(x => x.d < today);
+    for (const v of vehicleCandidates(f, list)) {
+      if (ok.length >= VEHICLE.keep) break;
+      if (v.nameBad) { log(`${f.name}: ${v.sym} („${v.name}“) ist eine andere Anlage – übersprungen.`); continue; }
+      let daily;
+      try { daily = (await candles(v.id, "OneDay", VEHICLE.corrDays + 30)).filter(x => x.d < today); }
+      catch (e) { log(`${f.name}: ${v.sym}: ${e.message}`); continue; }
+      const last = daily[daily.length - 1];
+      if (!last || (Date.parse(`${today}T12:00:00Z`) - Date.parse(`${last.d}T12:00:00Z`)) / 864e5 > VEHICLE.freshDays) { log(`${f.name}: ${v.sym} hat keine aktuellen Kurse – übersprungen.`); continue; }
+      const corr = trackCorr(sigDaily, daily);
+      const pass = corr === null ? v.nameOk : corr >= VEHICLE.minCorr && (v.nameOk || corr >= VEHICLE.nameFreeCorr);
+      log(`${f.name}: ${v.sym} („${v.name}“), Gleichlauf mit ${f.sym} ${corr === null ? "–" : de(corr, 2)}${v.nameOk ? "" : ", Name passt nicht"} → ${pass ? "geeignet" : "nicht geeignet"}`);
+      if (pass) ok.push({ id: v.id, sym: v.sym, name: v.name, last: round(last.c, 4), asOf: last.d, corr: corr === null ? null : round(corr, 2) });
+    }
+    // Hilfe für Erweiterungen (Monats-Check): verwandte Namen in der eToro-Liste
+    const kin = list.filter(x => x.sym.includes(".") && f.match.test(x.name) && !BAD_VEHICLE.test(x.name) && !ok.some(o => o.id === x.id)).slice(0, 12);
+    log(`${f.name}: ${ok.length ? `gehandelt wird ${ok.map(o => o.sym).join(" / ")}` : "kein UCITS-Gegenstück gefunden"}; weitere mit passendem Namen: ${kin.map(x => `${x.sym} (${x.name})`).join(", ") || "keine"}`);
+    byKey[f.key] = ok;
+  }
+  return byKey;
+}
+
 async function signalsMain() {
   const OUT = process.env.TREND_SIGNALS_OUT || here("../data/trend-signals.json");
   const now = nowDate(), today = now.toISOString().slice(0, 10);
@@ -386,6 +486,10 @@ async function signalsMain() {
       // Finanzlage (Chicago Fed NFCI, wöchentlich) für die Variante „Trend + Finanzlage“
       let nfci = null;
       try { nfci = await fredSeries("NFCI", "2008-01-01"); } catch (e) { out.errors.push(`Finanzlage (FRED): ${e.message} – die Variante „Trend + Finanzlage“ rechnet vorerst wie die Grundregel.`); }
+      // Was der Bot tatsächlich kauft: UCITS-Gegenstücke, zuletzt der US-ETF selbst (für Konten, die ihn kaufen dürfen)
+      const veh = await resolveVehicles(found, today);
+      if (!veh) out.errors.push("Die ETF-Liste von eToro war nicht lesbar – der Bot versucht vorerst die US-ETFs (in der EU nur als CFD erlaubt).");
+      else if (found.some(f => !veh[f.key].length)) out.errors.push(`Ohne europäisches Gegenstück: ${found.filter(f => !veh[f.key].length).map(f => f.name).join(", ")} – dafür versucht der Bot den US-ETF.`);
       const keys = found.map(f => f.key);
       const ctxOf = dates => { const m = macroAt(dates, nfci); return t => ({ nfci: m[t], keys }); };
       const fam = familyBacktest(D, 252, ctxOf(D.dates)), famW = familyBacktest(W, 52, ctxOf(W.dates));
@@ -396,11 +500,12 @@ async function signalsMain() {
         const rawT = fam.raws[t], mix = combine(fam.weights, rawT);
         const base = riskLayer(mix, F, 252, 0), tw = riskLayer(mix, F, 252, fam.ens.dd);   // ohne / mit Verlustbremse laut Rückblick
         out.asOf = D.dates[t];
+        const trade = (f, i) => [...(veh ? veh[f.key] : []), { id: f.id, sym: f.sym, name: `${f.sym} (US-ETF)`, last: sigs[i] ? round(sigs[i].last, 4) : null, asOf: D.dates[t], us: true }];
         out.assets = found.map((f, i) => sigs[i] && F[i] ? ({
           key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: round(sigs[i].last, 4), r3: round(sigs[i].r3 * 100, 2), r6: round(sigs[i].r6 * 100, 2),
           r12: round(sigs[i].r12 * 100, 2), dSma: round(sigs[i].dSma * 100, 2), checks: sigs[i].checks, score: sigs[i].score, vol: round(sigs[i].vol * 100, 2),
-          weightBase: round(base.w[i], 4), weight: round(tw.w[i], 4),
-        }) : ({ key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: null, checks: [false, false, false, false], score: 0, vol: null, weightBase: 0, weight: 0, short: true }));
+          weightBase: round(base.w[i], 4), weight: round(tw.w[i], 4), trade: trade(f, i),
+        }) : ({ key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: null, checks: [false, false, false, false], score: 0, vol: null, weightBase: 0, weight: 0, short: true, trade: trade(f, i) }));
         const m = D.dates.length, k0 = m - Math.min(15, m);
         out.recent = D.dates.slice(k0).map((d, k) => [d, ...D.closes.map(c => round(c[k0 + k], 6))]);   // für das Modell-Depot des Bots
         out.exposure = round(tw.w.reduce((a, b) => a + b, 0), 4);
@@ -471,7 +576,7 @@ async function tradeMain() {
   const prev = (await readJson(STATE_IN)) || {};
   const sig = await readJson(SIGNALS);
   const st = {
-    version: 1, enabled: false, positions: [], orders: [], uncertain: [], journal: [], events: [], notices: {},
+    version: 1, enabled: false, positions: [], orders: [], uncertain: [], journal: [], events: [], notices: {}, blocked: {},
     ...prev, updated: now.toISOString(), mode: "demo", share, newEvents: [],
   };
   const event = (kind, text, notify = true) => {
@@ -494,10 +599,29 @@ async function tradeMain() {
   };
 
   if (command === "starten" && !st.enabled && !hasKeys) { event("fehler", "Start abgelehnt: Der Bot-Schlüssel fehlt. Bitte zuerst den Demo-Schlüssel als GitHub-Secret hinterlegen (Anleitung auf der Seite „Trend-Bot“), dann erneut starten."); }
-  else if (command === "starten" && !st.enabled) { st.enabled = true; st.startedAt = now.toISOString(); st.model = null; st.lastFullWeek = null; delete st.stoppedAt; event("gestartet", `Trend-Bot gestartet (Demokonto, ${de(share * 100, 0)} % des Kontos). Er handelt ab jetzt an jedem US-Börsentag selbstständig.`); }
+  else if (command === "starten" && !st.enabled) { st.enabled = true; st.startedAt = now.toISOString(); st.model = null; st.lastFullWeek = null; delete st.stoppedAt; event("gestartet", `Trend-Bot gestartet (Demokonto, ${de(share * 100, 0)} % des Kontos). Er handelt ab jetzt an jedem Börsentag selbstständig.`); }
   if (command === "stoppen" && st.enabled) st.stopRequested = true;
   if (!hasKeys) { st.setup = false; log("Kein Bot-Schlüssel hinterlegt – Trend-Bot übersprungen."); return save(); }
   st.setup = true;
+
+  // Was der Bot kaufen darf: je Markt die UCITS-Gegenstücke aus den Signalen; was eToro für dieses Konto ablehnt, wird gesperrt
+  const addDays = (day, n) => new Date(Date.parse(`${day}T12:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+  const mask = s => String(s || "").replace(/\d{4,}(?:[.,]\d+)?|\d+[.,]\d+/g, "#").slice(0, 200);   // keine Beträge ins öffentliche Protokoll
+  for (const [id, b] of Object.entries(st.blocked)) if (!b.until || b.until <= today) delete st.blocked[id];   // Sperre abgelaufen → wieder versuchen
+  const assetList = (sig && sig.assets) || [];
+  const vehiclesOf = a => (Array.isArray(a.trade) && a.trade.length ? a.trade : [{ id: a.instrumentId, sym: a.sym, last: a.last, us: true }]);
+  const idsOf = a => new Set([a.instrumentId, ...vehiclesOf(a).map(v => v.id)]);
+  const symOf = id => { for (const a of assetList) { const v = vehiclesOf(a).find(x => x.id === id); if (v) return v.sym; } return String(id); };
+  // via: worüber der Bot diesen Markt hält bzw. als Nächstes kaufen würde (für die Website)
+  const viaOf = a => { const held = [...new Set(st.positions.filter(p => p.key === a.key && !p.closing).map(p => symOf(p.instrumentID)))]; return held.length ? held.join(" / ") : (vehiclesOf(a).find(v => !st.blocked[v.id]) || {}).sym || null; };
+  const isRejected = info => { const c = num(field(info, "errorCode")); return Number.isFinite(c) && c > 0; };
+  const reject = (o, info) => {   // CFD-Sperre: ein halbes Jahr nicht mehr versuchen, sonst eine Woche
+    const code = num(field(info, "errorCode")), msg = mask(field(info, "errorMessage")), sym = o.sym || symOf(o.instrumentID);
+    const cfd = code === 797 || /CFD/i.test(msg);
+    st.blocked[o.instrumentID] = { sym, key: o.key, code: Number.isFinite(code) ? code : null, msg, at: now.toISOString(), until: addDays(today, cfd ? 182 : 7) };
+    st.orders = st.orders.filter(x => x !== o);
+    event("abgelehnt", `eToro hat den Kauf von ${sym} abgelehnt${msg ? ` („${msg}“)` : ""}.${cfd ? " Ihr Konto darf keine CFDs handeln – und US-ETFs gibt es für Kunden in der EU nur als CFD." : ""} Der Bot versucht dieses Instrument ${cfd ? "ein halbes Jahr" : "eine Woche"} lang nicht mehr und weicht, wo es geht, auf ein gleichwertiges europäisches ETF aus.`);
+  };
 
   // 1. Konto lesen und eigene Positionen abgleichen (nur Positionen, die der Bot selbst eröffnet hat)
   const pnlRaw = await call(DEMO.pnl);
@@ -524,10 +648,12 @@ async function tradeMain() {
     for (const p of hits) st.positions.push({ positionID: p.positionID, instrumentID: p.instrumentID, key: o.key, since: today });
     if (hits.length || (now - new Date(o.at)) / 864e5 > 2) st.orders = st.orders.filter(x => x !== o);
   }
+  let rejectedBefore = 0;
   for (const o of st.orders.slice(0, 6)) {   // Stand unbestätigter Aufträge bei eToro nachfragen
     try {
       const info = await call(DEMO.order(o.orderID));
       const ex = Array.isArray(field(info, "positionExecutions")) ? field(info, "positionExecutions") : [];
+      if (!ex.length && isRejected(info)) { reject(o, info); rejectedBefore++; continue; }
       // nur Zustandsfelder, bei verschachtelten Werten nur deren Namen und in Texten keine Zahlen – das Protokoll ist öffentlich
       const safe = (k, v) => (v === null || typeof v === "number" || typeof v === "boolean" ? v
         : typeof v === "string" ? (/message|reason/i.test(k) ? v.replace(/\d+(?:[.,]\d+)*/g, "#") : v).slice(0, 120)
@@ -544,6 +670,8 @@ async function tradeMain() {
       }
     } catch (e) { log(`Auftrag ${o.orderID}: ${e.message}`); }
   }
+  // Abgelehnte Käufe gelten als nie geschehen: heute voll neu abgleichen, mit gleichwertigen ETFs
+  if (rejectedBefore) { st.lastFullWeek = null; delete st.lastTradeDay; }
   for (const u of [...st.uncertain]) {  // unklare Aufträge: passende neue Position übernehmen, sonst nach einem Tag vergessen
     const t0 = new Date(u.at).getTime();
     const p = acc.positions.find(x => x.instrumentID === u.instrumentID && !st.positions.some(y => y.positionID === x.positionID)
@@ -578,7 +706,7 @@ async function tradeMain() {
   st.exposure = sleeve > 0 ? round([...holdings.values()].reduce((a, b) => a + b, 0) / sleeve, 4) : 0;
   const pnlOpen = mine().reduce((s, p) => s + p.pnl, 0), investedOpen = mine().reduce((s, p) => s + p.amount, 0);
   st.openPnlPct = investedOpen > 0 ? round(pnlOpen / investedOpen * 100, 2) : null;
-  st.holdings = (sig && sig.assets || []).map(a => ({ key: a.key, sym: a.sym, pct: sleeve > 0 ? round((holdings.get(a.key) || 0) / sleeve, 4) : 0, target: a.weight }));
+  st.holdings = (sig && sig.assets || []).map(a => ({ key: a.key, sym: a.sym, via: viaOf(a), pct: sleeve > 0 ? round((holdings.get(a.key) || 0) / sleeve, 4) : 0, target: a.weight }));
 
   if (!st.enabled) { log("Trend-Bot ist nicht gestartet – er rechnet nur die Signale."); return finish(); }
   if (!fresh) { once("stale", "warten", `Die Kurse sind nicht aktuell (Stand ${sig && sig.asOf || "unbekannt"}) – heute keine Käufe oder Verkäufe.`); return finish(); }
@@ -611,20 +739,49 @@ async function tradeMain() {
     }
     M.index *= 1 - traded * RULES.costPct / 100; M.appliedFor = sig.asOf;
   }
-  if (!marketOpen(now)) { log("US-Börse geschlossen – gehandelt wird beim nächsten Lauf während der Handelszeit."); st.waiting = "Börse geschlossen"; return finish(); }
+  if (!marketOpen(now)) { log("Börse geschlossen (London/Frankfurt) – gehandelt wird beim nächsten Lauf während der Handelszeit."); st.waiting = "Börse geschlossen"; return finish(); }
   delete st.waiting;
   if (st.lastTradeDay === today) { log("Heute schon abgeglichen."); return finish(); }
-  const busy = sig.assets.filter(a => acc.pendingInstruments.has(a.instrumentId));
+  const busy = sig.assets.filter(a => [...idsOf(a)].some(id => acc.pendingInstruments.has(id)));
   if (busy.length || st.orders.length) { once("pending", "warten", `Es gibt noch offene Aufträge (${busy.map(a => a.sym).join(", ") || "in Prüfung"}) – der Bot wartet, damit nichts doppelt gekauft wird.`, false); return finish(); }
 
   // 4. Umschichten: erst verkaufen (macht Geld frei), dann kaufen
   const trades = [];
   let orders = 0, credit = acc.credit - acc.equity * RULES.reservePct / 100;
+  // Kaufen über das erste kaufbare Gegenstück; Aufstocken möglichst im schon gehaltenen ETF
+  const chooseVehicle = a => {
+    const held = new Set(mine().filter(p => p.key === a.key).map(p => p.instrumentID)), list = vehiclesOf(a).filter(v => !st.blocked[v.id]);
+    return list.find(v => held.has(v.id)) || list[0] || null;
+  };
+  const buy = async (a, amount, reason) => {
+    for (let tries = 0; tries < 4 && orders < RULES.maxOrdersPerRun; tries++) {
+      const v = chooseVehicle(a);
+      if (!v) { once(`novehicle:${a.key}`, "hinweis", `Für ${a.name} ist in Ihrem Konto gerade kein ETF kaufbar – dieser Anteil bleibt vorerst als Geld im Konto.`); return; }
+      const at = new Date().toISOString(), sl = v.last > 0 ? round(v.last * (1 - RULES.stopLossPct / 100), 4) : null;
+      try {
+        const r = await send("POST", DEMO.open, {
+          InstrumentID: v.id, IsBuy: true, Leverage: 1, Amount: amount, ...(sl ? { StopLossRate: sl, IsNoStopLoss: false } : { IsNoStopLoss: true }), IsNoTakeProfit: true, IsTslEnabled: false,
+        });
+        orders++; credit -= amount;
+        const ofo = field(r, "orderForOpen") || {}, orderID = num(field(ofo, "orderID"));
+        log(`Kauf ${v.sym} für ${a.name}: Auftrag ${orderID ?? "?"}, Status ${field(ofo, "statusID") ?? "?"}`);
+        if (Number.isInteger(orderID)) st.orders.push({ orderID, key: a.key, instrumentID: v.id, sym: v.sym, at, pct: round(amount / sleeve, 6) });
+        else st.uncertain.push({ key: a.key, sym: v.sym, instrumentID: v.id, at });
+        trades.push({ key: a.key, sym: v.sym, side: "kauf", pct: round(amount / sleeve * 100, 2), reason });
+        return;
+      } catch (e) {
+        if (e.uncertain) { st.uncertain.push({ key: a.key, sym: v.sym, instrumentID: v.id, at }); event("unklar", `Kauf von ${v.sym} gesendet, aber ohne Bestätigung (${mask(e.message)}). Der Bot sendet ihn nicht noch einmal und prüft beim nächsten Lauf das Konto.`); return; }
+        // sofort abgewiesen: dieses ETF eine Woche lang nicht mehr versuchen und gleich das nächste gleichwertige nehmen
+        st.blocked[v.id] = { sym: v.sym, key: a.key, code: e.status || null, msg: mask(e.message), at: now.toISOString(), until: addDays(today, 7) };
+        event("fehler", `eToro hat den Kauf von ${v.sym} abgewiesen: ${mask(e.message)} – der Bot versucht ein gleichwertiges ETF.`);
+      }
+    }
+  };
   for (const a of sig.assets) {
     const g = target[a.key], have = holdings.get(a.key) || 0, want = g * sleeve, diff = want - have;
     if (!(have > 0) || orders >= RULES.maxOrdersPerRun) continue;
     if (g === 0 || (full && diff < -RULES.band * sleeve)) {
-      const ps = mine().filter(p => p.key === a.key);
+      const ps = mine().filter(p => p.key === a.key), soldSyms = new Set();
       let toSell = g === 0 ? Infinity : -diff, sold = 0;
       for (const p of ps.sort((x, y) => x.value - y.value)) {
         if (toSell <= 1 || orders >= RULES.maxOrdersPerRun) break;
@@ -634,11 +791,11 @@ async function tradeMain() {
           await send("POST", DEMO.close(p.positionID), body);
           orders++;
           const amt = full ? p.value : toSell;
-          sold += amt; toSell -= amt; credit += amt;
+          sold += amt; toSell -= amt; credit += amt; soldSyms.add(symOf(p.instrumentID));
           if (full) { const x = st.positions.find(y => y.positionID === p.positionID); if (x) x.closing = now.toISOString(); }
-        } catch (e) { once(`close:${p.positionID}`, "fehler", `Verkauf von ${a.sym} fehlgeschlagen: ${e.message}`); }
+        } catch (e) { once(`close:${p.positionID}`, "fehler", `Verkauf von ${symOf(p.instrumentID)} fehlgeschlagen: ${mask(e.message)}`); }
       }
-      if (sold > 0) trades.push({ key: a.key, sym: a.sym, side: "verkauf", pct: round(sold / sleeve * 100, 2), reason: g === 0 ? "Trend gebrochen – Ausstieg" : "Anteil verringert" });
+      if (sold > 0) trades.push({ key: a.key, sym: [...soldSyms].join(" / "), side: "verkauf", pct: round(sold / sleeve * 100, 2), reason: g === 0 ? "Trend gebrochen – Ausstieg" : "Anteil verringert" });
     }
   }
   for (const a of sig.assets) {
@@ -646,50 +803,51 @@ async function tradeMain() {
     if (!full || !(g > 0) || orders >= RULES.maxOrdersPerRun) continue;
     if (!(have === 0 || diff > RULES.band * sleeve)) continue;
     const amount = Math.floor(Math.min(diff, credit) * 100) / 100;
-    if (!(amount >= RULES.minOrderUsd)) { if (diff >= RULES.minOrderUsd) once(`credit:${a.key}`, "hinweis", `Für ${a.sym} ist nicht genug freies Geld im Demokonto – der Kauf wird übersprungen.`, false); continue; }
-    const at = new Date().toISOString();
-    try {
-      const r = await send("POST", DEMO.open, {
-        InstrumentID: a.instrumentId, IsBuy: true, Leverage: 1, Amount: amount,
-        StopLossRate: round(a.last * (1 - RULES.stopLossPct / 100), 4), IsNoStopLoss: false, IsNoTakeProfit: true, IsTslEnabled: false,
-      });
-      orders++; credit -= amount;
-      const ofo = field(r, "orderForOpen") || {}, orderID = num(field(ofo, "orderID"));
-      log(`Kauf ${a.sym}: Auftrag ${orderID ?? "?"}, Status ${field(ofo, "statusID") ?? "?"}, Antwort-Felder ${Object.keys(r || {}).join(", ")}`);
-      if (Number.isInteger(orderID)) st.orders.push({ orderID, key: a.key, instrumentID: a.instrumentId, at });
-      else st.uncertain.push({ key: a.key, sym: a.sym, instrumentID: a.instrumentId, at });
-      trades.push({ key: a.key, sym: a.sym, side: "kauf", pct: round(amount / sleeve * 100, 2), reason: have === 0 ? "Trend intakt – Einstieg" : "Anteil erhöht" });
-    } catch (e) {
-      if (e.uncertain) { st.uncertain.push({ key: a.key, sym: a.sym, instrumentID: a.instrumentId, at }); event("unklar", `Kauf von ${a.sym} gesendet, aber ohne Bestätigung (${e.message}). Der Bot sendet ihn nicht noch einmal und prüft beim nächsten Lauf das Konto.`); }
-      else once(`open:${a.key}`, "fehler", `eToro hat den Kauf von ${a.sym} abgewiesen: ${e.message}`);
-    }
+    if (!(amount >= RULES.minOrderUsd)) { if (diff >= RULES.minOrderUsd) once(`credit:${a.key}`, "hinweis", `Für ${a.name} ist nicht genug freies Geld im Demokonto – der Kauf wird übersprungen.`, false); continue; }
+    await buy(a, amount, have === 0 ? "Trend intakt – Einstieg" : "Anteil erhöht");
   }
   st.lastTradeDay = today;
   if (full) st.lastFullWeek = weekOf(today);
 
-  // 5. Aufträge bestätigen lassen (Positionen übernehmen)
-  for (let i = 0; i < 5 && st.orders.length; i++) {
+  // 5. Aufträge bestätigen lassen: ausgeführte Positionen übernehmen; was eToro ablehnt, gleich mit dem nächsten gleichwertigen ETF kaufen
+  for (let i = 0; i < 8 && st.orders.length; i++) {
     await sleep(POLL_MS);
+    const retry = [];
+    let positionsNow = null;
     for (const o of [...st.orders]) {
       try {
         const info = await call(DEMO.order(o.orderID));
         const ex = Array.isArray(field(info, "positionExecutions")) ? field(info, "positionExecutions") : [];
-        for (const e of ex) {
-          const pid = num(field(e, "positionId", "positionID"));
-          if (Number.isInteger(pid) && !st.positions.some(x => x.positionID === pid)) st.positions.push({ positionID: pid, instrumentID: o.instrumentID, key: o.key, since: today });
+        if (!ex.length && isRejected(info)) {
+          reject(o, info);
+          const t = trades.find(x => x.side === "kauf" && x.key === o.key && x.sym === o.sym && !x.rejected);
+          if (t) { t.rejected = true; t.reason = "von eToro abgelehnt"; }
+          if (Number.isFinite(o.pct)) { credit += o.pct * sleeve; retry.push(o); }
+          continue;
         }
-        if (ex.length) st.orders = st.orders.filter(x => x !== o);
-      } catch (e) { log(`Auftrag ${o.orderID}: ${e.message}`); }
+        let pids = ex.map(e => num(field(e, "positionId", "positionID"))).filter(Number.isInteger);
+        if (!pids.length) {   // steht die Ausführung nicht im Auftrag: im Konto nach der Auftragsnummer suchen
+          positionsNow = positionsNow || readAccount(await call(DEMO.pnl)).positions;
+          pids = positionsNow.filter(p => p.orderID === o.orderID).map(p => p.positionID);
+        }
+        for (const pid of pids) if (!st.positions.some(x => x.positionID === pid)) st.positions.push({ positionID: pid, instrumentID: o.instrumentID, key: o.key, since: today });
+        if (pids.length) st.orders = st.orders.filter(x => x !== o);
+      } catch (e) { log(`Auftrag ${o.orderID}: ${mask(e.message)}`); }
+    }
+    for (const o of retry) {
+      const a = sig.assets.find(x => x.key === o.key), amount = Math.floor(Math.min(o.pct * sleeve, credit) * 100) / 100;
+      if (a && amount >= RULES.minOrderUsd) await buy(a, amount, "Ersatz für einen abgelehnten Kauf");
     }
   }
   st.todayTrades = trades;
-  if (trades.length) log(`Umgeschichtet: ${trades.map(t => `${t.side} ${t.sym} ${de(t.pct, 1)} %`).join(", ")}`);
+  if (trades.length) log(`Umgeschichtet: ${trades.map(t => `${t.side} ${t.sym} ${de(t.pct, 1)} %${t.rejected ? " (abgelehnt)" : ""}`).join(", ")}`);
   else log("Keine Umschichtung nötig – alle Anteile liegen im Band.");
   if (ddMult < 1) once("brake", "bremse", `Verlustbremse aktiv: Das Modell-Depot liegt ${de(liveDd, 1)} % unter seinem Hoch – der Bot setzt nur ${de(ddMult * 100, 0)} % des üblichen Anteils ein.`);
   return finish(trades);
 
   // Tagebuch: ein Eintrag pro Tag, solange der Bot läuft (nur Prozentwerte)
   async function finish(trades = null, force = false) {
+    if (Array.isArray(st.holdings)) st.holdings = st.holdings.map(h => { const a = assetList.find(x => x.key === h.key); return a ? { ...h, via: viaOf(a) } : h; });
     if ((st.enabled || force) && sig && sig.assets && sig.assets.length) {
       const old = st.journal.find(j => j.day === today) || {};
       // Lernen: geänderte Gewichte der Varianten im Tagebuch vermerken

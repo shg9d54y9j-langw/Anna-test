@@ -573,6 +573,7 @@ details.info .calc { margin-top: 12px; }
 @keyframes lcblink { 50% { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) { .livechip .dot { animation: none; } }
 @media (max-width: 760px) { .livechip .lc-age { display: none; } .livechip { margin-left: auto; } }
+@media (max-width: 760px) { .vname { display: none; } }   /* Handy: beim gekauften ETF nur das Kürzel */
 
 /* ---------- Theorie: Zukunftstrends ---------- */
 .future-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); border: 1px solid var(--line); margin-top: 12px; }

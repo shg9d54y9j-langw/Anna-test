@@ -1,5 +1,5 @@
 // ---------- Trend-Bot: Status, Start/Stopp, heutige Signale, Rückblick-Test, Bot-Tagebuch, Forschung ----------
-// Daten: trend-bot.json vom Zweig trend-data (schreibt der Workflow „Trend-Bot“ einmal pro US-Börsentag).
+// Daten: trend-bot.json vom Zweig trend-data (schreibt der Workflow „Trend-Bot“ einmal pro Börsentag).
 (() => {
   const RAW = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/trend-data/trend-bot.json";
   const WORKFLOW = "https://github.com/shg9d54y9j-langw/Anna-test/actions/workflows/trend-bot.yml";
@@ -16,11 +16,11 @@
   const timeDe = d => (d ? new Date(d).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }) : "–");
   let st = null, loading = false, range = null;   // Standard: der längste Rückblick (aussagekräftiger als wenige Jahre)
 
-  // nächster planmäßiger Lauf: Mo–Fr 15:40 UTC
+  // nächster planmäßiger Lauf: Mo–Fr 14:17 UTC (London und Frankfurt offen)
   function nextRun() {
     const t = new Date();
     for (let i = 0; i < 8; i++) {
-      const d = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate() + i, 15, 40));
+      const d = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate() + i, 14, 17));
       if (d > t && d.getUTCDay() % 6 !== 0) return d;
     }
     return null;
@@ -30,7 +30,7 @@
     if (!st) return { light: "", text: "Lädt", title: "Trend-Bot", sub: "" };
     if (st.setup === false) return { light: "red", text: "Nicht eingerichtet", title: "Bot-Schlüssel fehlt", sub: "Zum Starten braucht der Bot einen eToro-Schlüssel nur für das Demokonto – Anleitung unten, drei Schritte." };
     if (st.enabled && st.stopRequested) return { light: "yellow", text: "Wird gestoppt", title: "Verkauft gerade seine Positionen", sub: "Beim nächsten Lauf sind alle Bot-Positionen geschlossen." };
-    if (st.enabled) return { light: "green", text: "Läuft · Demokonto", title: "Handelt selbstständig", sub: `Seit ${dateDe(st.startedAt)} – an jedem US-Börsentag einmal: prüfen, bei Bedarf umschichten, Tagebuch schreiben.${st.waiting ? ` Gerade: ${esc(st.waiting)}.` : ""}` };
+    if (st.enabled) return { light: "green", text: "Läuft · Demokonto", title: "Handelt selbstständig", sub: `Seit ${dateDe(st.startedAt)} – an jedem Börsentag einmal: prüfen, bei Bedarf umschichten, Tagebuch schreiben.${st.waiting ? ` Gerade: ${esc(st.waiting)}.` : ""}` };
     if (st.stoppedAt) return { light: "yellow", text: "Gestoppt", title: "Pausiert", sub: `Gestoppt am ${dateDe(st.stoppedAt)}. Alle Bot-Positionen wurden verkauft. Neu starten jederzeit mit dem Knopf.` };
     return { light: "yellow", text: "Bereit", title: "Bereit zum Start", sub: "Schlüssel ist eingerichtet, die Signale werden täglich gerechnet. Der Bot kauft erst, wenn Sie ihn starten." };
   }
@@ -60,13 +60,22 @@
 
   function signalsCard() {
     const S = st && st.signals;
-    if (!S || !S.assets) return `<article class="card" data-section="Heute"><h2 class="card-title">Heute</h2><p class="muted">Die Signale erscheinen nach dem ersten Lauf des Workflows „Trend-Bot“ (an Börsentagen gegen 16:40 Uhr).${st && st.signalErrors && st.signalErrors.length ? ` Meldung: ${esc(st.signalErrors.join(" · "))}` : ""}</p></article>`;
+    if (!S || !S.assets) return `<article class="card" data-section="Heute"><h2 class="card-title">Heute</h2><p class="muted">Die Signale erscheinen nach dem ersten Lauf des Workflows „Trend-Bot“ (an Börsentagen gegen 15:20 Uhr, im Sommer 16:20 Uhr).${st && st.signalErrors && st.signalErrors.length ? ` Meldung: ${esc(st.signalErrors.join(" · "))}` : ""}</p></article>`;
     const held = new Map((st.holdings || []).map(h => [h.key, h]));
     const target = st.enabled && st.target ? st.target : null;
+    const blocked = st.blocked || {};
+    // gekauft wird ein europäisches Gegenstück (UCITS); zuletzt der US-ETF selbst – den lehnt eToro bei gesperrten CFDs ab
+    const via = a => {
+      const h = held.get(a.key), list = (a.trade || []).filter(t => !blocked[t.id]);
+      const sym = (h && h.via) || (list[0] && list[0].sym);
+      const v = (a.trade || []).find(t => t.sym === sym);
+      if (!sym) return `<span class="muted small">kein kaufbares ETF – bleibt Geld</span>`;
+      return `<b>${esc(sym)}</b>${v && v.name && !v.us ? ` <span class="muted small vname">${esc(v.name)}</span>` : v && v.us ? ` <span class="muted small">US-ETF</span>` : ""}`;
+    };
     const sq = checks => `<span class="sq-row" aria-label="${checks.filter(Boolean).length} von 4 Prüfungen erfüllt">${checks.map((c, i) => `<span class="sq ${c ? "on" : ""}" title="${["3 Monate", "6 Monate", "12 Monate", "200-Tage-Schnitt"][i]}: ${c ? "positiv" : "negativ"}"></span>`).join("")}</span>`;
     const rows = S.assets.map(a => {
       const goal = target ? target[a.key] : a.weightBase ?? a.weight, have = held.get(a.key);
-      return `<tr><td><b>${esc(a.sym)}</b> <span class="muted small">${esc(a.name)}</span></td>
+      return `<tr><td><b>${esc(a.sym)}</b> <span class="muted small">${esc(a.name)}</span></td><td>${via(a)}</td>
         <td>${sq(a.checks || [])} <span class="muted small">${fmt(a.score * 4, 0)}/4</span></td>
         <td class="num ${cls(a.r12)}">${sign(a.r12)} %</td><td class="num">${fmt(a.vol, 1)} %</td>
         <td class="num"><b>${pct(goal, 1)}</b></td><td class="num">${st.enabled && have ? pct(have.pct, 1) : "–"}</td></tr>`;
@@ -76,10 +85,11 @@
     return `<article class="card" data-section="Heute">
       <div class="card-head"><h2 class="card-title">Heute: was der Bot halten will</h2><span class="muted small">Kurse bis ${dateDe(S.asOf)}</span></div>
       <div class="table-wrap"><table>
-        <thead><tr><th>ETF</th><th>Trend (3M · 6M · 12M · 200T)</th><th class="num">12 Monate</th><th class="num">Schwankung</th><th class="num">Ziel</th><th class="num">Ist</th></tr></thead>
+        <thead><tr><th>Signal</th><th>Gekauft als</th><th>Trend (3M · 6M · 12M · 200T)</th><th class="num">12 Monate</th><th class="num">Schwankung</th><th class="num">Ziel</th><th class="num">Ist</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
       <p class="hint">Ziel zusammen: <b>${pct(sum, 0)}</b> des Bot-Anteils investiert, der Rest bleibt als Geld im Konto. Depot-Schwankung ${fmt(S.portVol, 1)} % pro Jahr (Obergrenze 10 %).
-        Verlustbremse: ${brake < 1 ? `<b>aktiv – nur ${fmt(brake * 100, 0)} % des üblichen Einsatzes</b>` : "aus"}. Ein Kästchen pro Prüfung: gefüllt = positiv.</p>
+        Verlustbremse: ${brake < 1 ? `<b>aktiv – nur ${fmt(brake * 100, 0)} % des üblichen Einsatzes</b>` : "aus"}. Ein Kästchen pro Prüfung: gefüllt = positiv.
+        Die Signale kommen aus US-ETFs mit langer Kurshistorie. Gekauft werden gleichwertige europäische UCITS-ETFs als echte Anteile, weil eToro US-ETFs Kunden in der EU nur als CFD anbietet${Object.keys(blocked).length ? ` – gesperrt für Ihr Konto: ${Object.values(blocked).map(b => esc(b.sym)).join(", ")}` : ""}.</p>
     </article>`;
   }
 
@@ -198,7 +208,7 @@
     const name = k => (st && st.signals && st.signals.assets || []).find(a => a.key === k)?.sym || k;
     const items = J.slice().reverse().map((j, i, arr) => {
       const prev = arr[i + 1], chg = prev && Number.isFinite(j.model) && Number.isFinite(prev.model) ? (j.model / prev.model - 1) * 100 : null;
-      const trades = (j.trades || []).map(t => `${t.side === "kauf" ? "Kauf" : "Verkauf"} ${esc(t.sym === "alle" ? "aller Positionen" : t.sym)} ${t.pct ? `${fmt(t.pct, 1)} %` : ""}${t.reason ? ` <span class="muted">(${esc(t.reason)})</span>` : ""}`);
+      const trades = (j.trades || []).map(t => { const main = `${t.side === "kauf" ? "Kauf" : "Verkauf"} ${esc(t.sym === "alle" ? "aller Positionen" : t.sym)} ${t.pct ? `${fmt(t.pct, 1)} %` : ""}`; return `${t.rejected ? `<s class="muted">${main}</s>` : main}${t.reason ? ` <span class="muted">(${esc(t.reason)})</span>` : ""}`; });
       const tgt = j.target ? Object.entries(j.target).filter(([, w]) => w > 0).map(([k, w]) => `${esc(name(k))} ${fmt(w * 100, 0)} %`).join(" · ") : "";
       return `<li class="jr">
         <div class="jr-day"><b>${dateDe(j.day)}</b>${chg !== null ? ` <span class="nowrap ${cls(chg)}">${sign(chg, 2)} %</span>` : ""}</div>
@@ -210,7 +220,7 @@
     }).join("");
     const events = ((st && st.events) || []).slice(-8).reverse().map(e => `<li><span class="muted small">${timeDe(e.at)}</span> · <b>${esc(e.kind)}</b>: ${esc(e.text)}</li>`).join("");
     return `<article class="card" data-section="Bot-Tagebuch">
-      <div class="card-head"><h2 class="card-title">Bot-Tagebuch</h2><span class="muted small">schreibt sich jeden US-Börsentag selbst · nur Prozentwerte</span></div>
+      <div class="card-head"><h2 class="card-title">Bot-Tagebuch</h2><span class="muted small">schreibt sich jeden Börsentag selbst · nur Prozentwerte</span></div>
       ${items ? `<ol class="journal-list">${items}</ol>` : `<p class="muted">Das Tagebuch füllt sich automatisch ab dem ersten Börsentag nach dem Start: Signale, Käufe und Verkäufe, Modell-Depot und Bremsen – ohne dass Sie etwas tun müssen.</p>`}
       ${events ? `<details class="info"><summary>Meldungen des Bots</summary><ul class="checklist">${events}</ul></details>` : ""}
     </article>`;
@@ -223,7 +233,7 @@
         <li><b>eToro-Schlüssel nur für das Demokonto:</b> In eToro <b>Einstellungen</b> → <b>Trading</b> → <b>API-Key-Verwaltung</b> → <b>„Neuen Schlüssel erstellen“</b>. Nur ${v("Trading – Demo → Write")} ankreuzen – nichts bei „Trading – Real“, nichts unter „Geld“. (Haben Sie den Schlüssel schon für den Copy-Bot angelegt, überspringen Sie die Schritte 1 und 2.)</li>
         <li><b>Schlüssel sicher hinterlegen:</b> ${SRC(SECRETS, "GitHub → Settings → Secrets → Actions")} → <b>„New repository secret“</b>: ${v("ETORO_BOT_API_KEY")} = öffentlicher Schlüssel, ${v("ETORO_BOT_USER_KEY")} = privater Schlüssel. Schlüssel nie in einen Chat oder eine Nachricht kopieren.</li>
         <li><b>Starten:</b> oben <b>„▶ Bot starten“</b> → GitHub zeigt „Trend-Bot“ → <b>„Run workflow“</b> → Befehl ${v("starten")} → grüner Knopf <b>„Run workflow“</b>.</li>
-        <li><b>Fertig.</b> Ab jetzt prüft der Bot an jedem US-Börsentag um 16:40 Uhr (Sommerzeit 17:40 Uhr) selbstständig die Trends, schichtet bei Bedarf um und schreibt das Tagebuch. Wichtige Ereignisse (Start, Stopp, Verlustbremse, Fehler) kommen als GitHub-Benachrichtigung aufs Handy.</li>
+        <li><b>Fertig.</b> Ab jetzt prüft der Bot an jedem Börsentag gegen 15:20 Uhr (Sommerzeit 16:20 Uhr) selbstständig die Trends, schichtet bei Bedarf um und schreibt das Tagebuch. Wichtige Ereignisse (Start, Stopp, Verlustbremse, Fehler) kommen als GitHub-Benachrichtigung aufs Handy.</li>
         <li><b>Optional – Anteil des Kontos:</b> Standard sind 50 % des Demokontos. Ändern unter ${SRC(VARIABLES, "Variables")}: ${v("TREND_BOT_SHARE")} = z. B. ${v("0.3")} für 30 % (erlaubt 0.1 bis 0.9).</li>
         <li><b>Stoppen:</b> gleicher Weg, Befehl ${v("stoppen")}. Der Bot verkauft dann alle seine Positionen; Ihre eigenen Positionen und Kopien fasst er nie an.</li>
       </ol>
@@ -236,6 +246,7 @@
       <h2 class="card-title">Was der Bot tut – und warum genau so</h2>
       <ul class="checklist">
         <li><b>Sechs breite Märkte statt Einzelaktien:</b> US-Aktien (SPY), Aktien anderer Industrieländer (EFA), US-Staatsanleihen (IEF), Gold (GLD), Rohstoffe (DBC), Immobilien (VNQ). Breite Streuung ist der einzige „kostenlose“ Risikoschutz; die Märkte laufen oft gegeneinander.</li>
+        <li><b>Gekauft werden europäische Gegenstücke:</b> US-ETFs haben kein Basisinformationsblatt nach der ${SRC("https://eur-lex.europa.eu/eli/reg/2014/1286/oj", "PRIIPs-Verordnung")} und sind für Kunden in der EU bei eToro nur als CFD zu haben – CFDs sind in Ihrem Konto gesperrt. Der Bot sucht deshalb selbst in der eToro-Liste gleichwertige UCITS-ETFs (z. B. einen S&amp;P-500-ETF aus London statt SPY), prüft Name, aktuelle Kurse und Gleichlauf mit dem US-ETF und kauft sie als echte Anteile. Lehnt eToro eines ab, sperrt er es und nimmt sofort das nächste.</li>
         <li><b>Fünf Regeln statt einer:</b> Trend 3–6–12 Monate, schneller Trend 1–3–12, die 10-Monats-Linie, Dual Momentum (nur die drei stärksten Märkte) und Trend plus Finanzlage. Kombinieren ist robuster als jede Einzelregel (${DOI("10.1093/rfs/hhp063", "Rapach, Strauss &amp; Zhou 2010")}); die Gewichte lernt der Bot nur vorsichtig, weil geschätzte Gewichte sonst mehr schaden als nützen (${DOI("10.1093/rfs/hhm075", "DeMiguel, Garlappi &amp; Uppal 2009")}) und Regeln mit gutem Lauf eher weiterlaufen (${DOI("10.1111/jofi.13131", "Ehsani &amp; Linnainmaa 2022")}).</li>
         <li><b>Trend je Markt aus vier Prüfungen (Grundregel):</b> Rendite über 3, 6 und 12 Monate positiv, Kurs über dem 200-Tage-Schnitt. Je mehr erfüllt, desto größer der Anteil; bei 0 von 4 wird sofort verkauft. Zeitreihen-Momentum ist über mehr als 100 Jahre und viele Märkte belegt (${DOI("10.1016/j.jfineco.2011.11.003", "Moskowitz, Ooi &amp; Pedersen 2012")}, ${DOI("10.3905/jpm.2017.44.1.015", "Hurst, Ooi &amp; Pedersen 2017")}, ${DOI("10.3905/jwm.2007.674809", "Faber 2007")}).</li>
         <li><b>Passt sich dem Markt an – automatisch:</b> Ruhige Märkte bekommen mehr Gewicht, unruhige weniger; steigt die Schwankung des ganzen Depots über 10 % pro Jahr, wird alles kleiner (${DOI("10.1111/jofi.12513", "Moreira &amp; Muir 2017")}, ${DOI("10.3905/jpm.2018.45.1.014", "Harvey u. a. 2018")}). Fällt das Modell-Depot mehr als 5 % unter sein Hoch, sinkt der Einsatz schrittweise bis auf die Hälfte (${DOI("10.1111/j.1467-9965.1993.tb00044.x", "Grossman &amp; Zhou 1993")}). In Abwärtsphasen ist der Bot so großteils in Geld.</li>
