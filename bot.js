@@ -14,7 +14,7 @@
   const DOI = (doi, text) => SRC(`https://doi.org/${doi}`, text);
   const dateDe = d => (d ? new Date(`${String(d).slice(0, 10)}T12:00:00Z`).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" }) : "–");
   const timeDe = d => (d ? new Date(d).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }) : "–");
-  let st = null, loading = false, range = "daily";
+  let st = null, loading = false, range = null;   // Standard: der längste Rückblick (aussagekräftiger als wenige Jahre)
 
   // nächster planmäßiger Lauf: Mo–Fr 15:40 UTC
   function nextRun() {
@@ -139,6 +139,7 @@
   function backtestCard() {
     const B = st && st.backtest;
     if (!B || !B.daily) return `<article class="card" data-section="Rückblick"><h2 class="card-title">Rückblick-Test</h2><p class="muted">Erscheint nach dem ersten Lauf des Workflows „Trend-Bot“.</p></article>`;
+    if (!range) range = B.weekly ? "weekly" : "daily";
     const bt = range === "weekly" && B.weekly ? B.weekly : B.daily;
     const k = ["bot", "ew", "spy"];
     const row = (label, f, color) => `<tr><td>${label}</td>${k.map(x => `<td class="num ${color ? color(bt[x]) : ""}">${f(bt[x])}</td>`).join("")}</tr>`;
@@ -147,8 +148,8 @@
     return `<article class="card" data-section="Rückblick">
       <div class="card-head"><h2 class="card-title">Rückblick-Test: Wie hätte der Bot früher abgeschnitten?</h2>
         <div class="seg" role="group" aria-label="Zeitraum wählen">
-          <button type="button" data-range="daily" aria-pressed="${range === "daily"}">Tageskurse ≈4 Jahre</button>
           ${B.weekly ? `<button type="button" data-range="weekly" aria-pressed="${range === "weekly"}">Wochenkurse ${esc(B.weekly.start.slice(0, 4))}–heute</button>` : ""}
+          <button type="button" data-range="daily" aria-pressed="${range === "daily"}">Tageskurse ${esc(B.daily.start.slice(0, 4))}–heute</button>
         </div></div>
       <p class="muted small">${dateDe(bt.start)} bis ${dateDe(bt.end)}, mit genau den Regeln des Bots und eToro-Kursen. Gehandelt wird immer erst am Tag nach dem Signal; ${fmt(0.15, 2)} % Kosten je umgeschichtetem Anteil sind abgezogen. ${range === "weekly" ? "Wochenkurse: längerer Zeitraum, dafür wöchentlich statt täglich geprüft." : ""}</p>
       <p style="margin:12px 0 0">In <b>${fmt(bt.bot.pos12, 0)} %</b> aller 12-Monats-Zeiträume lag der Bot im Plus; der schlechteste brachte <b class="down">${sign(bt.bot.worst12)} %</b>, der größte Rückgang war <b class="down">−${fmt(bt.bot.maxDD, 1)} %</b>${fullYears ? `, ${negYears} von ${fullYears} vollen Kalenderjahren endeten im Minus` : ""}. Zum Vergleich S&amp;P 500: größter Rückgang −${fmt(bt.spy.maxDD, 1)} %.</p>
@@ -244,14 +245,16 @@
   }
 
   function honestCard() {
-    const b = st && st.backtest && st.backtest.daily && st.backtest.daily.bot;
+    const L = st && st.backtest && (st.backtest.weekly || st.backtest.daily), b = L && L.bot, spy = L && L.spy;
+    const neg = b ? b.years.filter(y => !y.partial && y.ret < 0) : [], full = b ? b.years.filter(y => !y.partial).length : 0;
     return `<article class="card" data-section="Ehrlich">
       <h2 class="card-title">Ehrlich: Kann der Bot ein Minus-Jahr haben?</h2>
       <p>Ja. <b>Kein Bot kann garantieren, dass er nach einem Jahr im Plus ist</b> – jede Anlage mit mehr Rendite als Tagesgeld kann Verluste machen. Wer etwas anderes verspricht, lügt oder verkauft etwas.</p>
       <ul class="checklist">
-        <li><b>Was die Regeln leisten:</b> Sie machen große Verluste unwahrscheinlicher. In Abwärtsmärkten steigt der Bot schrittweise aus, die Verlustbremse senkt den Einsatz, jede Position hat eine Notbremse.${b ? ` Im Rückblick lagen ${fmt(b.pos12, 0)} % der 12-Monats-Zeiträume im Plus, der schlechteste bei ${sign(b.worst12)} %.` : ""}</li>
+        <li><b>Was die Regeln leisten:</b> Sie machen große Verluste unwahrscheinlicher. In Abwärtsmärkten steigt der Bot schrittweise aus, die Verlustbremse senkt den Einsatz, jede Position hat eine Notbremse.${b ? ` Im Rückblick ${esc(L.start.slice(0, 4))}–heute lagen ${fmt(b.pos12, 0)} % der 12-Monats-Zeiträume im Plus, der schlechteste bei ${sign(b.worst12)} % (S&amp;P 500: ${sign(spy.worst12)} %); ${neg.length} von ${full} vollen Jahren endeten im Minus${neg.length ? ` (${neg.map(y => `${esc(y.year)}: ${sign(y.ret)} %`).join(", ")})` : ""}.` : ""}</li>
         <li><b>Was sie nicht leisten:</b> In Seitwärtsmärkten kauft und verkauft der Bot öfter zur falschen Zeit („Whipsaw“) – das kostet. Auch Trendfolge-Fonds mit Milliarden hatten Jahre im Minus.</li>
-        <li><b>Erwartung:</b> Langfristig eher weniger Rendite als „nur Aktien“ in guten Jahren, dafür deutlich kleinere Verluste in schlechten. Das ist der Preis für mehr Sicherheit.</li>
+        <li><b>Erwartung – der Preis der Sicherheit:</b> deutlich weniger Rendite als „nur Aktien“, dafür viel kleinere Verluste.${b ? ` Im Rückblick ${esc(L.start.slice(0, 4))}–heute: Bot ${sign(b.cagr)} % pro Jahr bei höchstens −${fmt(b.maxDD, 0)} % Rückgang, S&amp;P 500 ${sign(spy.cagr)} % pro Jahr bei bis zu −${fmt(spy.maxDD, 0)} %.` : ""} Gerade in langen Aufwärtsphasen mit kurzen, heftigen Rücksetzern (wie 2011–2021) hinkt Trendfolge hinterher, weil sie nach dem Fall aus- und nach der Erholung wieder einsteigt.</li>
+        <li><b>„Sehr ertragreich“ und „sicher im Plus“ gibt es nicht zusammen.</b> Wer mehr Rendite will, muss mehr Schwankung aushalten – die belegte Alternative ist ein breiter Aktien-ETF über viele Jahre, mit Rückgängen von 30 % und mehr zwischendurch.</li>
         <li><b>Erst Demo, dann vielleicht echt:</b> Lassen Sie den Bot mindestens 6–12 Monate im Demokonto laufen und vergleichen Sie Tagebuch und Rückblick. Echtgeld ist bewusst gesperrt und wird nur auf Ihren ausdrücklichen Wunsch freigeschaltet.</li>
       </ul>
     </article>`;
