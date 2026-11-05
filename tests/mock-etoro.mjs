@@ -104,7 +104,11 @@ const UNIVERSE = [
   ...Array.from({ length: 70 }, (_, i) => ({ instrumentId: 2000 + i, internalSymbolFull: i % 10 === 3 ? `DE${i}.DE` : `STK${String(i).padStart(3, "0")}`, displayname: `Testaktie ${i}`, instrumentTypeID: 5, exchangeID: i % 10 === 3 ? 6 : 4, buyHoldingPct: 60 + (i % 35), popularityUniques7Day: 100000 - i * 100, isDelisted: i === 5, isInternal: i === 7, isActiveInPlatform: true, isHiddenFromClient: false })),
   { instrumentId: 2999, internalSymbolFull: "BAD SYMBOL!", displayname: "Ungültig", instrumentTypeID: 5, exchangeID: 4, popularityUniques7Day: 99999, isDelisted: false, isActiveInPlatform: true },
   ...Array.from({ length: 15 }, (_, i) => ({ instrumentId: 3000 + i, internalSymbolFull: `ETF${String(i).padStart(2, "0")}`, displayname: `Test-ETF ${i}`, instrumentTypeID: 6, exchangeID: 5, buyHoldingPct: 90, popularityUniques7Day: 50000 - i * 100, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false })),
+  { instrumentId: 2500, internalSymbolFull: "NOPOP", displayname: "Aktie ohne Beliebtheit", instrumentTypeID: 5, exchangeID: 4, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false },
 ];
+// Wie bei eToro: alte, nicht mehr handelbare Einträge ohne Beliebtheit – die echte Suche liefert sie zuerst
+const DEAD = Array.from({ length: 30 }, (_, i) => ({ instrumentId: 4000 + i, internalSymbolFull: `OLD${i}`, displayname: `Alt ${i}`, instrumentTypeID: i % 3 ? 5 : 6, exchangeID: 4, isDelisted: i % 2 === 0, isActiveInPlatform: i % 2 === 0 }));
+const SEARCH_ORDER = [...DEAD, ...[...UNIVERSE].sort((a, b) => (a.instrumentId * 7919) % 1009 - (b.instrumentId * 7919) % 1009)];
 const FRED_DATA = {
   T10Y3M: d => (0.4 - 0.002 * d).toFixed(2),
   NFCI: d => (-0.45 + 0.001 * d).toFixed(3),
@@ -173,13 +177,13 @@ http.createServer(async (req, res) => {
   if (url.pathname === "/api/v1/market-data/search") {
     if (!url.searchParams.get("fields")) return send(400, { error: "fields is required" });
     const size = Number(url.searchParams.get("pageSize") || 20), page = Number(url.searchParams.get("pageNumber") || 1);
-    // schlechtester Fall wie bei der echten API: Typ-Filter wird ignoriert, Typ-Feld nicht mitgeliefert
-    const list = [...UNIVERSE].sort((a, b) => b.popularityUniques7Day - a.popularityUniques7Day);
+    // wie die echte API: Typ-Filter ignoriert, Typ-Feld nicht mitgeliefert, Reihenfolge nicht nach Beliebtheit
+    const list = SEARCH_ORDER;
     return send(200, { items: list.slice((page - 1) * size, page * size).map(({ instrumentTypeID, exchangeID, isInternal, ...rest }) => rest), page, pageSize: size, totalItems: list.length });
   }
   if (url.pathname === "/api/v1/market-data/instruments") {   // offizielle Liste mit Typ je Instrument
     const want = (url.searchParams.get("instrumentTypeIds") || "").split(",").filter(Boolean).map(Number);
-    const list = UNIVERSE.filter(u => !want.length || want.includes(u.instrumentTypeID));
+    const list = [...UNIVERSE, ...DEAD].filter(u => !want.length || want.includes(u.instrumentTypeID));
     return send(200, { instrumentDisplayDatas: list.map(u => ({ instrumentID: u.instrumentId, instrumentDisplayName: u.displayname, instrumentTypeID: u.instrumentTypeID, exchangeID: u.exchangeID, symbolFull: u.internalSymbolFull, isInternalInstrument: Boolean(u.isInternal) })) });
   }
   if (url.pathname === "/api/v2/market-data/instruments") {

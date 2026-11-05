@@ -44,8 +44,11 @@ def close(a, b, tol):
 
 # Universum vom Test-Server: Beliebtheit aus der Suche, Typ nur aus der offiziellen Instrumentenliste
 universe = {}
-for page in (1, 2):
-    for it in get(f"{base}/api/v1/market-data/search?fields=x&pageSize=100&pageNumber={page}")["items"]:
+for page in range(1, 50):
+    items = get(f"{base}/api/v1/market-data/search?fields=x&pageSize=100&pageNumber={page}")["items"]
+    if not items:
+        break
+    for it in items:
         universe[it["internalSymbolFull"].upper()] = it
 official = {x["instrumentID"]: x for x in get(f"{base}/api/v1/market-data/instruments")["instrumentDisplayDatas"]}
 syms = {x["sym"] for x in d["items"]}
@@ -71,7 +74,7 @@ def valid(it, t):
             and all(ch.isalnum() or ch in ".-_" for ch in it["internalSymbolFull"]))
 
 
-ranked = sorted(universe.values(), key=lambda it: -it["popularityUniques7Day"])
+ranked = sorted(universe.values(), key=lambda it: (-it.get("popularityUniques7Day", -1), it["instrumentId"]))
 for kind, t, env in (("Aktie", 5, "STOCK_COUNT"), ("ETF", 6, "ETF_COUNT")):
     want = {it["internalSymbolFull"].upper() for it in [it for it in ranked if valid(it, t)][:int(os.environ.get(env, "0") or 0)]}
     got = {x["sym"] for x in d["items"] if x["type"] == kind}

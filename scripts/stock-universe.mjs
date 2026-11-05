@@ -93,29 +93,44 @@ async function typeIndex(typeIds) {
   }
   return index;
 }
-const PAGE = Number(process.env.SEARCH_PAGE_SIZE || 100), MAX_SCAN = 5000;   // höchstens 5000 Suchtreffer je Typ
-async function popular(typeId, count, index) {
-  const out = [], seen = new Set();
-  const fields = "instrumentId,internalSymbolFull,displayname,instrumentType,buyHoldingPct,popularityUniques7Day,isDelisted,isActiveInPlatform,isHiddenFromClient";
-  let scanned = 0;
-  for (let page = 1; out.length < count && scanned < MAX_SCAN; page++) {
-    const d = await call("/v1/market-data/search", { fields, instrumentTypeID: typeId, sort: "-popularityUniques7Day", pageSize: PAGE, pageNumber: page });
+// Beliebtheit: Die Suche ignoriert den Typ-Filter und sortiert nicht verlässlich (leere Werte zuerst).
+// Deshalb einmal alle Seiten lesen und selbst sortieren: beliebteste zuerst, bei Gleichstand kleinere ID.
+const PAGE = Number(process.env.SEARCH_PAGE_SIZE || 100), MAX_PAGES = 600;
+async function allInstruments() {
+  const fields = "instrumentId,internalSymbolFull,displayname,buyHoldingPct,popularityUniques7Day,isDelisted,isActiveInPlatform,isHiddenFromClient";
+  const all = new Map();
+  let total = null, page = 1;
+  for (; page <= MAX_PAGES; page++) {
+    const d = await call("/v1/market-data/search", { fields, sort: "-popularityUniques7Day", pageSize: PAGE, pageNumber: page });
     const items = findArray(d);
-    if (page === 1) log(`Suche Typ ${typeId}: Felder ${Object.keys(items[0] || {}).join(", ")}; erste: ${items.slice(0, 5).map(x => field(x, "internalSymbolFull")).join(", ")}`);
-    if (!items.length) break;
-    scanned += items.length;
-    for (const it of items) {
-      const id = num(field(it, "instrumentId")), sym = field(it, "internalSymbolFull");
-      if (!Number.isInteger(id) || seen.has(id) || index.get(id) !== typeId) continue;
-      if (typeof sym !== "string" || !/^[A-Za-z0-9.\-_]{1,20}$/.test(sym)) continue;
-      if (field(it, "isDelisted") === true || field(it, "isHiddenFromClient") === true || field(it, "isActiveInPlatform") === false) continue;
-      seen.add(id);
-      out.push({ id, sym: sym.toUpperCase(), name: String(field(it, "displayname") || sym).slice(0, 60), crowd: num(field(it, "buyHoldingPct")) ?? null, pop: num(field(it, "popularityUniques7Day")) ?? null });
-      if (out.length >= count) break;
+    if (page === 1) {
+      total = num(field(d, "totalItems"));
+      log(`Suche: ${total ?? "?"} Instrumente, ${items.length} je Seite, Felder ${Object.keys(items[0] || {}).join(", ")}; erste: ${items.slice(0, 3).map(x => `${field(x, "internalSymbolFull")} (${field(x, "popularityUniques7Day") ?? "–"})`).join(", ")}`);
     }
+    if (!items.length) break;
+    let fresh = 0;
+    for (const it of items) {
+      const id = num(field(it, "instrumentId"));
+      if (Number.isInteger(id) && !all.has(id)) { all.set(id, it); fresh++; }
+    }
+    if (!fresh) { warn(`Suche: Seite ${page} brachte nichts Neues – Blättern beendet.`); break; }
+    if (Number.isFinite(total) && all.size >= total) break;
   }
-  log(`Typ ${typeId}: ${out.length} übernommen aus ${scanned} Suchtreffern`);
-  return out;
+  log(`Suche: ${all.size} verschiedene Instrumente aus ${Math.min(page, MAX_PAGES)} Seiten`);
+  return [...all.values()];
+}
+const popScore = x => (Number.isFinite(x.pop) ? x.pop : -1);
+function popular(list, typeId, count, index) {
+  const out = [];
+  for (const it of list) {
+    const id = num(field(it, "instrumentId")), sym = field(it, "internalSymbolFull");
+    if (index.get(id) !== typeId || typeof sym !== "string" || !/^[A-Za-z0-9.\-_]{1,20}$/.test(sym)) continue;
+    if (field(it, "isDelisted") === true || field(it, "isHiddenFromClient") === true || field(it, "isActiveInPlatform") === false) continue;
+    out.push({ id, sym: sym.toUpperCase(), name: String(field(it, "displayname") || sym).slice(0, 60), crowd: num(field(it, "buyHoldingPct")) ?? null, pop: num(field(it, "popularityUniques7Day")) ?? null });
+  }
+  out.sort((a, b) => popScore(b) - popScore(a) || a.id - b.id);
+  log(`Typ ${typeId}: ${out.length} gültige, davon ${Math.min(count, out.length)} übernommen; beliebteste: ${out.slice(0, 5).map(x => x.sym).join(", ")}`);
+  return out.slice(0, count);
 }
 async function dailyCandles(id) {
   const d = await call(`/v1/market-data/instruments/${id}/history/candles/desc/OneDay/${CONFIG.candles}`);
@@ -152,9 +167,10 @@ async function main() {
   const inIndex = t => [...index.values()].filter(x => x === t).length;
   log(`Offizielle Instrumentenliste: ${inIndex(types.stock)} Aktien, ${inIndex(types.etf)} ETFs`);
   if (!inIndex(types.stock)) throw new Error("Instrumentenliste ohne Aktien – Typ-Zuordnung nicht möglich.");
+  const list = await allInstruments();
   const universe = [
-    ...(await popular(types.stock, CONFIG.stocks, index)).map(x => ({ ...x, type: "Aktie" })),
-    ...(Number.isInteger(types.etf) ? (await popular(types.etf, CONFIG.etfs, index)).map(x => ({ ...x, type: "ETF" })) : []),
+    ...popular(list, types.stock, CONFIG.stocks, index).map(x => ({ ...x, type: "Aktie" })),
+    ...(Number.isInteger(types.etf) ? popular(list, types.etf, CONFIG.etfs, index).map(x => ({ ...x, type: "ETF" })) : []),
   ];
   log(`${universe.length} Werte: ${universe.slice(0, 8).map(x => x.sym).join(", ")} …`);
 
