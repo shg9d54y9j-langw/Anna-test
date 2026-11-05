@@ -377,11 +377,34 @@ async function tradeMain() {
   // 1. Konto lesen und eigene Positionen abgleichen (nur Positionen, die der Bot selbst eröffnet hat)
   const acc = readAccount(await call(DEMO.pnl));
   st.checkedAt = now.toISOString();
+  // Nur Anzahlen und Nummern ins (öffentliche) Protokoll – keine Beträge
+  log(`Konto: ${acc.positions.length} eigene Positionen (Instrumente ${[...new Set(acc.positions.map(p => p.instrumentID))].join(", ") || "–"}; Auftragsnummern ${acc.positions.map(p => p.orderID).filter(Number.isInteger).slice(0, 12).join(", ") || "–"}), offene Kaufaufträge für ${[...acc.pendingInstruments].join(", ") || "–"}; vom Bot geführt ${st.positions.length}, unbestätigt ${st.orders.length}.`);
   const byId = new Map(acc.positions.map(p => [p.positionID, p]));
   for (const o of [...st.orders]) {   // bestätigte Aufträge → Positionen übernehmen
-    const hits = acc.positions.filter(p => p.orderID === o.orderID && !st.positions.some(x => x.positionID === p.positionID));
+    let hits = acc.positions.filter(p => p.orderID === o.orderID && !st.positions.some(x => x.positionID === p.positionID));
+    // Rückfallebene, falls eToro an der Position eine andere Auftragsnummer führt: gleiches Instrument, bis 30 Minuten nach dem Auftrag eröffnet
+    if (!hits.length) {
+      const t0 = new Date(o.at).getTime();
+      hits = acc.positions.filter(p => p.instrumentID === o.instrumentID && !st.positions.some(x => x.positionID === p.positionID)
+        && p.opened && new Date(p.opened).getTime() - t0 > -2 * 6e4 && new Date(p.opened).getTime() - t0 < 30 * 6e4).slice(0, 1);
+      if (hits.length) log(`Auftrag ${o.orderID}: Position ${hits[0].positionID} über Instrument und Zeit zugeordnet.`);
+    }
     for (const p of hits) st.positions.push({ positionID: p.positionID, instrumentID: p.instrumentID, key: o.key, since: today });
     if (hits.length || (now - new Date(o.at)) / 864e5 > 2) st.orders = st.orders.filter(x => x !== o);
+  }
+  for (const o of st.orders.slice(0, 6)) {   // Stand unbestätigter Aufträge bei eToro nachfragen
+    try {
+      const info = await call(DEMO.order(o.orderID));
+      const ex = Array.isArray(field(info, "positionExecutions")) ? field(info, "positionExecutions") : [];
+      log(`Auftrag ${o.orderID} (${o.key}): Status ${JSON.stringify(field(info, "status") ?? null).slice(0, 160)}, Ausführungen ${ex.length}${ex.length ? ` (Position ${ex.map(e => num(field(e, "positionId", "positionID"))).join(", ")})` : ""}`);
+      for (const e of ex) {
+        const pid = num(field(e, "positionId", "positionID"));
+        if (Number.isInteger(pid) && byId.has(pid) && !st.positions.some(x => x.positionID === pid)) {
+          st.positions.push({ positionID: pid, instrumentID: o.instrumentID, key: o.key, since: today });
+          st.orders = st.orders.filter(x => x !== o);
+        }
+      }
+    } catch (e) { log(`Auftrag ${o.orderID}: ${e.message}`); }
   }
   for (const u of [...st.uncertain]) {  // unklare Aufträge: passende neue Position übernehmen, sonst nach einem Tag vergessen
     const t0 = new Date(u.at).getTime();

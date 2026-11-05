@@ -125,6 +125,30 @@ await withServer("Offener Auftrag und unklare Bestätigung", async ({ run, acct,
   check(r.s.orders.length === 0 && r.s.positions.length >= 1 && r.s.positions.some(x => a.positions.some(y => y.positionID === x.positionID && y.orderID)), "ausgeführter Auftrag wird über die Auftragsnummer übernommen");
 });
 
+await withServer("Bestätigung verspätet, Position mit anderer Auftragsnummer", async ({ run, acct, ctl }) => {
+  await ctl("/__test/trend-flags", { slowConfirm: true, foreignOrderIds: true });
+  let r = await run(D1, "starten");
+  let a = await acct();
+  const n = opens(a).length;
+  check(n > 0 && r.s.orders.length === n && r.s.positions.length === 0, `${n} Käufe gesendet, eToro bestätigt noch nicht – als unbestätigt gemerkt`);
+  const firstBuys = opens(a).map(x => x.body.InstrumentID), firstOrders = r.s.orders.map(o => o.orderID);
+  r = await run(NEXT, "status");   // Montag = volle Umschichtung: ohne Zuordnung würde der Bot alles noch einmal kaufen
+  a = await acct();
+  check(!r.s.orders.some(o => firstOrders.includes(o.orderID)) && firstBuys.every(id => r.s.positions.some(x => x.instrumentID === id)), "nächster Lauf: alle Positionen vom Vortag über ETF und Zeitpunkt zugeordnet");
+  const again = r.s.journal.at(-1).trades.filter(x => x.side === "kauf" && x.reason.includes("Einstieg"));
+  check(again.length === 0, `kein zweiter Einstieg in denselben ETF (höchstens normales Aufstocken: ${r.s.journal.at(-1).trades.map(x => `${x.sym} ${x.reason}`).join(", ") || "nichts"})`);
+});
+
+await withServer("Bestätigung kommt erst beim nächsten Lauf", async ({ run, acct, ctl }) => {
+  await ctl("/__test/trend-flags", { slowConfirm: true });
+  let r = await run(D1, "starten");
+  const n = opens(await acct()).length;
+  check(r.s.orders.length === n && r.s.positions.length === 0, "Käufe noch unbestätigt");
+  await ctl("/__test/confirm-orders");
+  r = await run(D2, "status");
+  check(r.s.orders.length === 0 && r.s.positions.length === n && opens(await acct()).length === n, "nächster Lauf: bestätigte Käufe übernommen, nichts doppelt");
+});
+
 await withServer("Kauf ohne Bestätigung wird nie doppelt gesendet", async ({ run, acct, ctl }) => {
   await ctl("/__test/fail-next-open");
   let r = await run(D1, "starten");

@@ -38,11 +38,12 @@ const traders = Array.from({ length: 180 }, (_, i) => {
 const accounts = { demo: { credit: 100000, mirrors: [], ops: [], statuses: {}, positions: [], pendingOpen: [], orders: {}, tradeOps: [] }, real: { credit: 20000, mirrors: [], ops: [], statuses: {}, positions: [], pendingOpen: [], orders: {}, tradeOps: [] } };
 const realTradeOps = [];   // Aufrufe an Echtgeld-Handelsadressen (müssen in den Tests leer bleiben)
 let nextPosition = 70000, nextOrder = 50000;
-const trendFlags = { failNextOpen: false, pendingNextOpen: false };
+const trendFlags = { failNextOpen: false, pendingNextOpen: false, slowConfirm: false, foreignOrderIds: false };
 function openPosition(acc, instrumentID, amount, orderID, mirrorID = 0) {
-  const price = trendPrice(instrumentID), pos = { positionID: nextPosition++, instrumentID, orderID, mirrorID, amount, units: amount / price, openRate: price, isBuy: true, leverage: 1, openDateTime: new Date().toISOString() };
+  // Wie im echten Betrieb beobachtet: Bestätigung kann auf sich warten lassen, die Position eine andere Auftragsnummer tragen
+  const price = trendPrice(instrumentID), pos = { positionID: nextPosition++, instrumentID, orderID: trendFlags.foreignOrderIds ? orderID + 900000000 : orderID, mirrorID, amount, units: amount / price, openRate: price, isBuy: true, leverage: 1, openDateTime: new Date().toISOString() };
   acc.credit -= amount; acc.positions.push(pos);
-  acc.orders[orderID] = { orderId: orderID, executed: true, positionId: pos.positionID };
+  acc.orders[orderID] = { orderId: orderID, executed: !trendFlags.slowConfirm, positionId: pos.positionID };
   return pos;
 }
 let nextMirror = 900;
@@ -191,6 +192,8 @@ http.createServer(async (req, res) => {
     if (url.pathname === "/__test/trend") return send(200, { credit: acc.credit, positions: acc.positions, pendingOpen: acc.pendingOpen, tradeOps: acc.tradeOps, realTradeOps, prices: Object.fromEntries(Object.entries(TREND_ETFS).map(([k, id]) => [k, trendPrice(id)])) });
     if (url.pathname === "/__test/fail-next-open") { trendFlags.failNextOpen = true; return send(200, { ok: true }); }
     if (url.pathname === "/__test/pending-next-open") { trendFlags.pendingNextOpen = true; return send(200, { ok: true }); }
+    if (url.pathname === "/__test/trend-flags") { Object.assign(trendFlags, body); return send(200, { ok: true }); }
+    if (url.pathname === "/__test/confirm-orders") { for (const o of Object.values(acc.orders)) if (o.positionId) o.executed = true; return send(200, { ok: true }); }
     if (url.pathname === "/__test/fill-pending") { for (const o of acc.pendingOpen.splice(0)) openPosition(acc, o.instrumentID, o.amount, o.orderID); return send(200, { ok: true }); }
     if (url.pathname === "/__test/manual-position") { openPosition(acc, TREND_ETFS[body.sym], body.amount, nextOrder++); return send(200, { ok: true }); }
     if (url.pathname === "/__test/remove-position") { const x = acc.positions.find(y => y.positionID === body.positionID); if (x) { acc.credit += x.units * trendPrice(x.instrumentID); acc.positions = acc.positions.filter(y => y !== x); } return send(200, { ok: true }); }
