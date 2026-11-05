@@ -47,7 +47,9 @@ async function withServer(name, fn) {
     try { s = JSON.parse(await readFile(out, "utf8")); await writeFile(files.state, JSON.stringify(s)); } catch {}
     return { ...r, sigCode: sig.code, s };
   };
-  try { await fn({ run, acct, ctl, files }); } finally { srv.kill(); }
+  // Euro-Kurs des Test-Servers (letzter Wert), mit dem der Bot sein Spielgeld in Dollar umrechnet
+  const fx = async () => Number((await (await fetch(api(`/fred?id=DEXUSEU&cosd=${new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10)}`))).text()).trim().split("\n").pop().split(",")[1]);
+  try { await fn({ run, acct, ctl, files, fx }); } finally { srv.kill(); }
 }
 const opens = a => a.tradeOps.filter(o => o.path.endsWith("/by-amount"));
 const closes = a => a.tradeOps.filter(o => o.path.includes("market-close-orders"));
@@ -69,7 +71,7 @@ await withServer("Ohne Schlüssel und nicht gestartet", async ({ run, acct }) =>
   check(JSON.stringify(got) === JSON.stringify(EXPECTED), `Gegenstücke richtig gewählt (gegenläufige, währungsgesicherte, kurslose und unsauber benannte übersprungen): ${JSON.stringify(got)}`);
 });
 
-await withServer("Start, gleicher Tag, Ihre eigene Position", async ({ run, acct, ctl }) => {
+await withServer("Start, gleicher Tag, Ihre eigene Position", async ({ run, acct, ctl, fx }) => {
   await ctl("/__test/regime", { sym: "VNQ", drift: 0.004 });   // Immobilien im Aufwärtstrend: der Bot will sie kaufen, hat aber nur den US-ETF
   await ctl("/__test/manual-position", { sym: "VUAA.L", amount: 5000 });
   const before = await acct();
@@ -78,16 +80,17 @@ await withServer("Start, gleicher Tag, Ihre eigene Position", async ({ run, acct
   let a = await acct();
   const o = opens(a);
   const sig = r.s.signals;
-  const want = sig.assets.filter(x => x.weightBase > 0), vnq = sig.assets.find(x => x.key === "reits");
-  check(r.code === 0 && r.s.enabled === true && r.s.newEvents.some(e => e.kind === "gestartet"), "Start-Befehl: Bot läuft und meldet den Start");
+  const sleeve = 1000 * await fx();   // 1.000 € Spielgeld in Dollar
+  const want = sig.assets.filter(x => x.weightBase * sleeve >= 25), vnq = sig.assets.find(x => x.key === "reits");
+  check(r.code === 0 && r.s.enabled === true && r.s.newEvents.some(e => e.kind === "gestartet" && /1\.000 € Spielgeld/.test(e.text)), "Start-Befehl: Bot läuft und meldet den Start mit 1.000 € Spielgeld");
+  check(r.s.budgetEur === 1000 && r.s.capitalEur === 1000 && r.s.fx && r.s.fx.value > 1, `Spielgeld 1.000 €, Euro-Kurs ${r.s.fx && r.s.fx.value} vom ${r.s.fx && r.s.fx.asOf}`);
   check(vnq.weightBase > 0 && o.length === want.length, `ein Kaufauftrag je Markt mit Trend (${o.length} von ${want.length})`);
   check(want.filter(x => x.key !== "reits").every(x => o.some(y => y.body.InstrumentID === x.trade[0].id)), "gekauft wird das erste europäische Gegenstück, nicht der US-ETF");
   check(o.every(x => x.body.Leverage === 1 && x.body.IsBuy === true && x.body.IsNoTakeProfit === true), "nur Kauf ohne Hebel");
   const priceOf = id => a.prices[Object.keys(a.ids).find(k => a.ids[k] === id)];
   check(o.every(x => Math.abs(x.body.StopLossRate / priceOf(x.body.InstrumentID) - 0.7) < 0.05), "jede Position mit Notbremse 30 % unter dem Kurs des gekauften ETF");
-  const equity = 100000;   // Startguthaben des Testkontos (eigene Position ist Teil des Kontos)
-  const okAmounts = want.every(x => { const b = o.find(y => assetOf(sig, y.body.InstrumentID) === x); return b && Math.abs(b.body.Amount - x.weightBase * 0.5 * equity) <= equity * 0.01; });
-  check(okAmounts, "Beträge = Zielanteil × 50 % des Kontos");
+  const okAmounts = want.every(x => { const b = o.find(y => assetOf(sig, y.body.InstrumentID) === x); return b && Math.abs(b.body.Amount - x.weightBase * sleeve) <= 0.5; });
+  check(okAmounts, `Beträge = Zielanteil × 1.000 € Spielgeld (${Math.round(sleeve)} $): ${o.map(x => x.body.Amount).join(", ")}`);
   check(r.s.positions.length === want.length - 1 && r.s.orders.length === 0, "alle anderen Käufe bestätigt und als Bot-Positionen gemerkt");
   check(r.s.blocked[vnq.instrumentId] && r.s.blocked[vnq.instrumentId].code === 797 && r.s.newEvents.some(e => e.kind === "abgelehnt" && /CFD/.test(e.text)), "US-ETF VNQ von eToro abgelehnt (CFD gesperrt): gesperrt und gemeldet");
   check(r.s.newEvents.some(e => e.kind === "hinweis" && e.text.includes("Immobilien")), "kein anderes Gegenstück: Hinweis, Anteil bleibt Geld");
@@ -212,7 +215,7 @@ await withServer("Börse geschlossen, veraltete Kurse, Stoppen", async ({ run, a
 
 await withServer("Wenig freies Geld", async ({ run, acct, ctl }) => {
   await ctl("/__test/manual-position", { sym: "SPY", amount: 85000 });   // Ihr eigenes Geld ist fast ganz investiert
-  const r = await run(D1, "starten");
+  const r = await run(D1, "starten", { TREND_BOT_BUDGET_EUR: "50000" });   // großes Spielgeld: das freie Geld begrenzt
   const a = await acct();
   const spent = opens(a).reduce((s, x) => s + x.body.Amount, 0);
   check(spent <= 15000 - 1000 + 1 && a.credit >= 999, `Käufe nur bis zum freien Geld, 1 % Reserve bleibt (${Math.round(spent)} $ gekauft)`);

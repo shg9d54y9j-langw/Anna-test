@@ -150,6 +150,7 @@ jobs:
         id: bot
         env:
           BOT_MODE: ${{ vars.BOT_MODE }}
+          COPY_BOT_BUDGET_EUR: ${{ vars.COPY_BOT_BUDGET_EUR }}   # Spielgeld für die Kopie in Euro (leer = 1000)
           # Nur der Demo-Schlüssel: Echtgeld ist gesperrt, ein Echtgeld-Schlüssel wird gar nicht erst übergeben
           ETORO_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
           ETORO_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}

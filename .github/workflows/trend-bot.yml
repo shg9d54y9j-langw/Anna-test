@@ -67,7 +67,7 @@ jobs:
           ETORO_API_KEY: ${{ secrets.ETORO_BOT_API_KEY }}
           ETORO_USER_KEY: ${{ secrets.ETORO_BOT_USER_KEY }}
           TREND_BOT_COMMAND: ${{ inputs.befehl || 'status' }}
-          TREND_BOT_SHARE: ${{ vars.TREND_BOT_SHARE }}
+          TREND_BOT_BUDGET_EUR: ${{ vars.TREND_BOT_BUDGET_EUR }}   # Spielgeld in Euro (leer = 1000)
           TREND_STATE_IN: ${{ runner.temp }}/trend-prev.json
           TREND_SIGNALS_IN: ${{ runner.temp }}/trend-signals.json
         run: |

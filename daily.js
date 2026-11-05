@@ -118,11 +118,12 @@
     for (const c of copies) {
       if (c.justStarted) { html += `<p class="small">Kopie von ${link(c.userName)} gerade gestartet – die Werte erscheinen in der nächsten Runde.</p>`; continue; }
       const state = c.closing ? " · <b>wird beendet</b>" : c.aligning ? " · wird an das Portfolio des Traders angepasst" : c.paused ? " · pausiert" : "";
+      const budget = Number.isFinite(bot.budgetEur) ? `${fmt(bot.budgetEur, 0)} € Spielgeld` : Number.isFinite(c.sharePct) ? `${fmt(c.sharePct, 0)} % des Kontos` : "";
       html += `<p class="small">Kopiert ${link(c.userName)} seit ${dateDe(c.since)} · Stand <b class="${c.pnlPct < 0 ? "down" : "up"}">${sign(c.pnlPct)} %</b>
-        · ${Number.isFinite(c.sharePct) ? `${fmt(c.sharePct, 0)} % des Kontos` : ""}${state}</p>
+        ${budget ? `· ${budget}` : ""}${c.insteadOf && okName(c.insteadOf) ? ` · <span class="muted">als Ersatz für ${link(c.insteadOf)}, den eToro nicht zulässt</span>` : ""}${state}</p>
         <p class="muted small">Copy Stop Loss: Der Bot beendet die Kopie bei −${c.botStopLossPct} % (geprüft alle 15 Minuten an Börsentagen, eToros Schnittstelle kann ihn nicht direkt setzen).${Number.isFinite(c.etoroStopBelowPct) ? ` eToros eigene Grenze greift, wenn der Wert um weitere ${fmt(c.etoroStopBelowPct, 0)} % fällt.` : ""}</p>`;
     }
-    if (bot.active && !copies.length && !bot.pending) html += `<p class="small muted">Zurzeit keine Bot-Kopie. Der Bot startet die Tageswahl in der nächsten Runde, wenn nichts dagegen spricht.</p>`;
+    if (bot.active && !copies.length && !bot.pending) html += `<p class="small muted">Zurzeit keine Bot-Kopie. Der Bot startet die Tageswahl${Number.isFinite(bot.budgetEur) ? ` mit ${fmt(bot.budgetEur, 0)} € Spielgeld` : ""} in der nächsten Runde, wenn nichts dagegen spricht.</p>`;
     if (bot.pending && okName(bot.pending.userName)) html += `<p class="small">Auftrag für ${link(bot.pending.userName)} gesendet, wartet auf Bestätigung.</p>`;
     const events = (bot.events || []).filter(e => e && typeof e.text === "string").slice(-4).reverse();
     if (events.length) html += `<ul class="bot-log">${events.map(e => `<li><span class="muted">${new Date(e.at).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span> ${esc(e.text)}</li>`).join("")}</ul>`;

@@ -49,7 +49,8 @@ function openPosition(acc, instrumentID, amount, orderID, mirrorID = 0) {
   return pos;
 }
 let nextMirror = 900;
-const testFlags = { failNextRegister: false, mirrorStopLossPct: 40 };
+// refuseCids: Trader, deren Kopie eToro im Probelauf ablehnt (wie beobachtet: isSuccess false, errorCode 972, ohne Text)
+const testFlags = { failNextRegister: false, mirrorStopLossPct: 40, refuseCids: [] };
 const byCid = cid => traders.find(t => t.cid === cid);
 function register(acc, body) {
   const t = byCid(body.parentCID);
@@ -190,11 +191,21 @@ const FRED_DATA = {
   T10Y3M: d => (0.4 - 0.002 * d).toFixed(2),
   NFCI: d => (-0.45 + 0.001 * d).toFixed(3),
   DTWEXBGS: d => (120 + Math.sin(d / 40) * 3 + d * 0.01).toFixed(4),
+  DEXUSEU: null,   // Euro in Dollar, siehe unten
 };
 function fredCsv(id, cosd) {
   const f = FRED_DATA[id];
-  if (!f) return null;
+  if (!f && !(id in FRED_DATA)) return null;
   const rows = ["observation_date," + id];
+  if (id === "DEXUSEU") {
+    // werktäglich ab dem angefragten Datum bis gestern, um 1,08 schwankend
+    const from = cosd ? Date.parse(`${cosd}T00:00:00Z`) : Date.UTC(2025, 8, 1);
+    for (let t = new Date(from); t < new Date(Date.now() - 864e5); t = new Date(t.getTime() + 864e5)) {
+      if (t.getUTCDay() % 6 === 0) continue;
+      rows.push(`${t.toISOString().slice(0, 10)},${(1.08 + 0.012 * Math.sin(t.getTime() / 864e5 / 9)).toFixed(4)}`);
+    }
+    return rows.join("\n") + "\n";
+  }
   if (id === "NFCI") {
     // wöchentlich (freitags) ab dem angefragten Datum bis heute; wechselt in Wellen über und unter null
     const from = Math.max(Date.UTC(2005, 0, 7), cosd ? Date.parse(`${cosd}T00:00:00Z`) : Date.UTC(2025, 8, 1));
@@ -240,6 +251,7 @@ http.createServer(async (req, res) => {
     if (url.pathname === "/__test/pnl") { for (const m of acc.mirrors) if (m.parentUsername === body.userName) m.pnlPct = body.pnlPct; return send(200, { ok: true }); }
     if (url.pathname === "/__test/manual-copy") { const t = traders.find(x => x.username === body.userName); register(acc, { parentCID: t.cid, amount: body.amount, referenceID: `manual-${Date.now()}` }); return send(200, { ok: true }); }
     if (url.pathname === "/__test/fail-next-register") { testFlags.failNextRegister = true; return send(200, { ok: true }); }
+    if (url.pathname === "/__test/copy-flags") { Object.assign(testFlags, body); return send(200, { ok: true }); }
     if (url.pathname === "/__test/remove") { acc.mirrors = acc.mirrors.filter(m => m.parentUsername !== body.userName); return send(200, { ok: true }); }
     return send(404, { error: "unknown test endpoint" });
   }
@@ -323,6 +335,7 @@ http.createServer(async (req, res) => {
       const b = await readBody(req);
       if (!b || !Number.isInteger(b.parentCID) || !b.amount) return send(400, { error: "parentCID and non-zero amount required" });
       acc.ops.push({ op: "eligibility", ...b });
+      if (testFlags.refuseCids.includes(b.parentCID)) return send(200, { CID: 1, parentCID: b.parentCID, isSuccess: false, errorCode: 972 });
       const ok = Boolean(byCid(b.parentCID)) && b.amount >= 200 && b.amount <= acc.credit;
       return send(200, ok ? { CID: 1, parentCID: b.parentCID, isSuccess: true } : { CID: 1, parentCID: b.parentCID, isSuccess: false, errorMessage: "Not eligible" });
     }

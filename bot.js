@@ -43,7 +43,8 @@
       <div class="hero-title" style="margin-top:14px">${s.title}</div>
       <p class="hero-sub">${s.sub}</p>
       <div class="hero-grid">
-        <div class="kpi"><div class="lbl">Investiert (Bot-Anteil)</div><div class="val">${st && st.enabled ? pct(st.exposure) : "–"}</div></div>
+        <div class="kpi"><div class="lbl">Spielgeld des Bots</div><div class="val">${st && Number.isFinite(st.capitalEur) ? `${fmt(st.capitalEur, 0)} €` : st && Number.isFinite(st.budgetEur) ? `${fmt(st.budgetEur, 0)} €` : "–"}</div></div>
+        <div class="kpi"><div class="lbl">Davon investiert</div><div class="val">${st && st.enabled ? pct(st.exposure) : "–"}</div></div>
         <div class="kpi"><div class="lbl">Modell-Depot seit Start</div><div class="val ${cls(model)}">${model !== null ? `${sign(model)} %` : "–"}</div></div>
         <div class="kpi"><div class="lbl">Rückgang vom Hoch</div><div class="val ${st && st.liveDd > 0 ? "down" : ""}">${st && Number.isFinite(st.liveDd) ? `${fmt(-st.liveDd, 1)} %` : "–"}</div></div>
         <div class="kpi"><div class="lbl">Offene Positionen</div><div class="val ${cls(st && st.openPnlPct)}">${st && Number.isFinite(st.openPnlPct) ? `${sign(st.openPnlPct)} %` : "–"}</div></div>
@@ -234,7 +235,7 @@
         <li><b>Schlüssel sicher hinterlegen:</b> ${SRC(SECRETS, "GitHub → Settings → Secrets → Actions")} → <b>„New repository secret“</b>: ${v("ETORO_BOT_API_KEY")} = öffentlicher Schlüssel, ${v("ETORO_BOT_USER_KEY")} = privater Schlüssel. Schlüssel nie in einen Chat oder eine Nachricht kopieren.</li>
         <li><b>Starten:</b> oben <b>„▶ Bot starten“</b> → GitHub zeigt „Trend-Bot“ → <b>„Run workflow“</b> → Befehl ${v("starten")} → grüner Knopf <b>„Run workflow“</b>.</li>
         <li><b>Fertig.</b> Ab jetzt prüft der Bot an jedem Börsentag gegen 15:20 Uhr (Sommerzeit 16:20 Uhr) selbstständig die Trends, schichtet bei Bedarf um und schreibt das Tagebuch. Wichtige Ereignisse (Start, Stopp, Verlustbremse, Fehler) kommen als GitHub-Benachrichtigung aufs Handy.</li>
-        <li><b>Optional – Anteil des Kontos:</b> Standard sind 50 % des Demokontos. Ändern unter ${SRC(VARIABLES, "Variables")}: ${v("TREND_BOT_SHARE")} = z. B. ${v("0.3")} für 30 % (erlaubt 0.1 bis 0.9).</li>
+        <li><b>Optional – Spielgeld:</b> Standard sind 1.000 € (eToro rechnet in Dollar, der Bot rechnet zum Tageskurs um). Ändern unter ${SRC(VARIABLES, "Variables")}: ${v("TREND_BOT_BUDGET_EUR")} = z. B. ${v("2000")}. Für den Copy-Bot gilt ${v("COPY_BOT_BUDGET_EUR")} (ebenfalls 1.000 €).</li>
         <li><b>Stoppen:</b> gleicher Weg, Befehl ${v("stoppen")}. Der Bot verkauft dann alle seine Positionen; Ihre eigenen Positionen und Kopien fasst er nie an.</li>
       </ol>
       <p class="hint">Sicherheit: Der Bot kennt nur die Demo-Adressen von eToro – Echtgeld ist im Programm gesperrt. Er kauft ohne Hebel, setzt nie auf fallende Kurse, legt bei jeder Position eine Notbremse 30 % unter dem Kaufkurs fest und sendet unklare Aufträge nie ein zweites Mal. Alles ist mit einem nachgebauten eToro-Server automatisch getestet.</p>

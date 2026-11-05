@@ -24,20 +24,12 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 import { call, send, field, num, findArray, log, warn, hasKeys, sleep } from "./etoro.mjs";
+import { fredSeries, eurUsdCached, budgetEur } from "./fred.mjs";
 
 const here = p => fileURLToPath(new URL(p, import.meta.url));
 export const REAL_MONEY_UNLOCKED = false;
-// Finanzlage von FRED (Federal Reserve Bank of St. Louis, ohne Schlüssel) – nur an fred.stlouisfed.org
-const FRED = (process.env.FRED_BASE || "https://fred.stlouisfed.org/graph/fredgraph.csv").replace(/\/$/, "");
-if (!["fred.stlouisfed.org", "localhost", "127.0.0.1"].includes(new URL(FRED).hostname)) throw new Error(`Unzulässige FRED-Adresse ${new URL(FRED).hostname}`);
-async function fredSeries(id, from) {
-  const res = await fetch(`${FRED}?id=${encodeURIComponent(id)}&cosd=${from}`, { redirect: "error", signal: AbortSignal.timeout(20000) });
-  if (!res.ok) throw new Error(`FRED ${id}: HTTP ${res.status}`);
-  const rows = (await res.text()).trim().split(/\r?\n/).slice(1).map(l => l.split(",")).map(([d, v]) => ({ d, v: Number(v) }))
-    .filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.d) && Number.isFinite(r.v)).sort((a, b) => (a.d < b.d ? -1 : 1));
-  if (!rows.length) throw new Error(`FRED ${id}: keine Werte`);
-  return rows;
-}
+// Spielgeld des Bots in Euro (Repository-Variable TREND_BOT_BUDGET_EUR, Standard 1.000 €); eToro rechnet in Dollar
+export const BUDGET_EUR = budgetEur(process.env.TREND_BOT_BUDGET_EUR, 1000);
 // Wert je Kurstag: letzter NFCI-Stand, der mindestens 7 Tage alt ist (so spät wird er veröffentlicht – kein Blick in die Zukunft)
 export function macroAt(dates, rows) {
   const out = [];
@@ -68,7 +60,7 @@ export const RULES = {
   ddStart: 5, ddFull: 15, ddFloor: 0.5,   // Verlustbremse
   stopLossPct: 30,         // Notbremse je Position
   costPct: 0.15,           // Annahme für Spread und Gebühren je umgeschichtetem Anteil (Rückblick-Test)
-  minOrderUsd: 50,
+  minOrderUsd: 25,         // kleinere Käufe lohnen sich nicht (eToro-Mindestbetrag 10 $)
   reservePct: 1,           // 1 % des Kontos bleiben immer frei
   maxOrdersPerRun: 12,
   staleDays: 4,            // ältere Kurse → kein Handel
@@ -570,15 +562,15 @@ async function tradeMain() {
   const STATE_IN = process.env.TREND_STATE_IN || "";
   const OUT = process.env.TREND_OUT || here("../data/trend-bot.json");
   const POLL_MS = Number(process.env.TREND_POLL_MS ?? 3000);
-  const share = Math.min(0.9, Math.max(0.1, Number(process.env.TREND_BOT_SHARE || 0.5) || 0.5));
   const command = String(process.env.TREND_BOT_COMMAND || "status").trim().toLowerCase();
   const now = nowDate(), today = nyClock(now).day;
   const prev = (await readJson(STATE_IN)) || {};
   const sig = await readJson(SIGNALS);
   const st = {
     version: 1, enabled: false, positions: [], orders: [], uncertain: [], journal: [], events: [], notices: {}, blocked: {},
-    ...prev, updated: now.toISOString(), mode: "demo", share, newEvents: [],
+    ...prev, updated: now.toISOString(), mode: "demo", budgetEur: BUDGET_EUR, newEvents: [],
   };
+  delete st.share;
   const event = (kind, text, notify = true) => {
     const e = { at: now.toISOString(), kind, text };
     st.events = [...st.events, e].slice(-RULES.keepEvents);
@@ -599,7 +591,7 @@ async function tradeMain() {
   };
 
   if (command === "starten" && !st.enabled && !hasKeys) { event("fehler", "Start abgelehnt: Der Bot-Schlüssel fehlt. Bitte zuerst den Demo-Schlüssel als GitHub-Secret hinterlegen (Anleitung auf der Seite „Trend-Bot“), dann erneut starten."); }
-  else if (command === "starten" && !st.enabled) { st.enabled = true; st.startedAt = now.toISOString(); st.model = null; st.lastFullWeek = null; delete st.stoppedAt; event("gestartet", `Trend-Bot gestartet (Demokonto, ${de(share * 100, 0)} % des Kontos). Er handelt ab jetzt an jedem Börsentag selbstständig.`); }
+  else if (command === "starten" && !st.enabled) { st.enabled = true; st.startedAt = now.toISOString(); st.model = null; st.lastFullWeek = null; delete st.stoppedAt; event("gestartet", `Trend-Bot gestartet (Demokonto, ${de(BUDGET_EUR, 0)} € Spielgeld). Er handelt ab jetzt an jedem Börsentag selbstständig.`); }
   if (command === "stoppen" && st.enabled) st.stopRequested = true;
   if (!hasKeys) { st.setup = false; log("Kein Bot-Schlüssel hinterlegt – Trend-Bot übersprungen."); return save(); }
   st.setup = true;
@@ -700,7 +692,12 @@ async function tradeMain() {
 
   // 3. Ziel und Ist
   const fresh = sig && sig.asOf && sig.assets && sig.assets.length >= 4 && (new Date(`${today}T12:00:00Z`) - new Date(`${sig.asOf}T12:00:00Z`)) / 864e5 <= RULES.staleDays;
-  const sleeve = share * acc.equity;
+  // Kapital des Bots: das Euro-Budget in Dollar, mitgewachsen bzw. geschrumpft wie sein Modell-Depot seit dem Start;
+  // nie mehr, als im Konto ist
+  st.fx = await eurUsdCached(st.fx, now, e => warn(`Euro-Kurs: ${e.message} – nehme den letzten bekannten.`));
+  const growth = st.model && st.model.index > 0 ? st.model.index / 100 : 1;
+  const sleeve = Math.max(0, Math.min(BUDGET_EUR * st.fx.value * growth, acc.equity * 0.98));
+  st.capitalEur = round(BUDGET_EUR * growth, 2);   // für die Website: Bot-Kapital laut Modell (aus Budget und Modell, nicht aus dem Konto)
   const holdings = new Map();
   for (const p of mine()) holdings.set(p.key, (holdings.get(p.key) || 0) + p.value);
   st.exposure = sleeve > 0 ? round([...holdings.values()].reduce((a, b) => a + b, 0) / sleeve, 4) : 0;

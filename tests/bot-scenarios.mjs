@@ -27,7 +27,7 @@ async function withServer(name, fn) {
     const out = join(dir, `${p}-bot-${n}.json`);
     execFile(process.execPath, [join(root, "scripts/copy-bot.mjs")], {
       env: {
-        PATH: process.env.PATH, ETORO_API_BASE: `http://localhost:${p}/api`, ETORO_THROTTLE_MS: "0", BOT_POLL_MS: "5",
+        PATH: process.env.PATH, ETORO_API_BASE: `http://localhost:${p}/api`, FRED_BASE: `http://localhost:${p}/fred`, ETORO_THROTTLE_MS: "0", BOT_POLL_MS: "5",
         ETORO_API_KEY: "test-bot-key-0000", ETORO_USER_KEY: "test-bot-user-0000", BOT_MODE: "demo",
         RANKING_IN: files.ranking, BOT_STATE_IN: files.state, BOT_OUT: out, ...env,
       },
@@ -37,7 +37,9 @@ async function withServer(name, fn) {
       resolve({ code: err ? err.code : 0, log: stdout, s });
     });
   });
-  try { await fn({ run, ranking, state, ctl, files }); } finally { srv.kill(); }
+  // erwarteter Kopie-Betrag: 1.000 € zum letzten Euro-Kurs des Test-Servers, abgerundet auf ganze Dollar
+  const fx = async () => Number((await (await fetch(api(`/fred?id=DEXUSEU&cosd=${new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10)}`))).text()).trim().split("\n").pop().split(",")[1]);
+  try { await fn({ run, ranking, state, ctl, files, fx }); } finally { srv.kill(); }
 }
 
 const pickOf = (i, extra = {}) => ({ userName: `trader${String(i).padStart(3, "0")}`, cid: 5000 + i, light: "yellow", amountPct: 0.1, csl: 11, ...extra });
@@ -54,16 +56,18 @@ await withServer("Ausgeschaltet und ohne Schlüssel", async ({ run, ranking, sta
   check((await state()).ops.length === 0, "kein einziger Auftrag an eToro");
 });
 
-await withServer("Starten, Wechsel, Stop Loss, Tageslimit", async ({ run, ranking, state, ctl, files }) => {
+await withServer("Starten, Wechsel, Stop Loss, Tageslimit", async ({ run, ranking, state, ctl, files, fx }) => {
   await ranking(pickOf(7));
   let r = await run();
   let s = await state();
+  const amount = Math.floor(1000 * await fx());
   check(ops(s, "eligibility").length === 1 && ops(s, "register").length === 1, "erster Lauf: Probelauf und genau ein Start");
-  check(ops(s, "register")[0].amount === 10000 && ops(s, "register")[0].parentCID === 5007, "Betrag 10 % von 100.000 $ = 10.000 $ für trader007");
+  check(ops(s, "register")[0].amount === amount && ops(s, "register")[0].parentCID === 5007, `Betrag 1.000 € Spielgeld = ${amount} $ zum Euro-Kurs für trader007`);
+  check(r.s.budgetEur === 1000 && r.s.newEvents.some(e => /1\.000 € Spielgeld/.test(e.text)), "Start-Meldung nennt 1.000 € Spielgeld");
   check(ops(s, "register")[0].referenceID.length <= 35, "Auftragsnummer höchstens 35 Zeichen");
   check(r.s.managed.length === 1 && r.s.managed[0].userName === "trader007", "Bot führt die Kopie als eigene");
   r = await run();
-  check(r.s.copies.length === 1 && Math.abs(r.s.copies[0].sharePct - 10) < 0.01 && r.s.copies[0].botStopLossPct === 11, "Überblick: Bot-Kopie mit 10 % des Kontos, Stop Loss 11 %");
+  check(r.s.copies.length === 1 && Math.abs(r.s.copies[0].sharePct - amount / 1000) < 0.01 && r.s.copies[0].botStopLossPct === 11, "Überblick: Bot-Kopie mit ihrem Anteil am Konto, Stop Loss 11 %");
   check(!/\d\s?\$/.test(JSON.stringify(r.s).replace(/200 \$/g, "")), "keine Dollar-Beträge im veröffentlichten Bot-Stand");
   r = await run();
   check(ops(await state(), "register").length === 1, "zweiter Lauf: kein weiterer Start, kein Nachschießen");
@@ -146,9 +150,42 @@ await withServer("Veraltete Daten und falsche Kunden-ID", async ({ run, ranking,
   await ranking(pickOf(7, { cid: 5008 }));
   r = await run();
   check(ops(await state(), "register").length === 0 && r.s.newEvents.some(e => /Kunden-ID/.test(e.text)), "Kunden-ID gehört zu einem anderen Trader: keine Kopie");
-  await ranking(pickOf(7, { amountPct: 0.001 }));
+  await ranking(pickOf(7));
+  r = await run({ COPY_BOT_BUDGET_EUR: "100" });
+  check(ops(await state(), "register").length === 0 && r.s.newEvents.some(e => /Mindestbetrag/.test(e.text)), "Spielgeld 100 € (unter 200 $): keine Kopie");
+});
+
+await withServer("eToro lehnt die Tageswahl ab – Ersatz aus den Top 5", async ({ run, ranking, state, ctl }) => {
+  await ctl("/__test/copy-flags", { refuseCids: [5007] });
+  const top = [pickOf(7, { rank: 1, inLimits: true }), pickOf(9, { rank: 2, inLimits: false }), pickOf(11, { rank: 3, inLimits: true }), pickOf(14, { rank: 7, inLimits: true })];
+  await ranking(pickOf(7), { top });
+  let r = await run();
+  let s = await state();
+  check(ops(s, "eligibility").map(o => o.parentCID).join() === "5007,5011", "trader007 im Probelauf abgelehnt → nächster geprüfter Trader in den Grenzen (trader011; nicht trader009 außerhalb der Grenzen, nicht trader014 hinter Platz 5)");
+  check(ops(s, "register").length === 1 && ops(s, "register")[0].parentCID === 5011 && r.s.substitute && r.s.substitute.for === "trader007", "Ersatz trader011 mit 1.000 € gestartet");
+  check(r.s.newEvents.some(e => e.kind === "abgelehnt" && /972/.test(e.text)) && r.s.newEvents.some(e => /als Ersatz/.test(e.text)), "Ablehnung mit Fehlercode und Ersatz gemeldet");
   r = await run();
-  check(ops(await state(), "register").length === 0 && r.s.newEvents.some(e => /Mindestbetrag/.test(e.text)), "Betrag unter 200 $: keine Kopie");
+  s = await state();
+  check(ops(s, "close").length === 0 && ops(s, "eligibility").length === 2 && r.s.copies[0].insteadOf === "trader007", "nächste Runde: Ersatz-Kopie bleibt, kein neuer Probelauf");
+  await ranking(pickOf(12), { top: [pickOf(12, { rank: 1, inLimits: true })] });
+  r = await run();
+  s = await state();
+  check(ops(s, "close").length === 1 && !r.s.substitute, "neue Tageswahl: Ersatz-Kopie wird beendet");
+  r = await run(); r = await run();
+  s = await state();
+  check(ops(s, "register").length === 2 && ops(s, "register")[1].parentCID === 5012, "danach wird die neue Tageswahl trader012 kopiert");
+});
+
+await withServer("eToro lässt gar keine Kopie zu", async ({ run, ranking, state, ctl }) => {
+  await ctl("/__test/copy-flags", { refuseCids: [5007, 5011, 5013] });
+  await ranking(pickOf(7), { top: [pickOf(7, { rank: 1, inLimits: true }), pickOf(11, { rank: 2, inLimits: true }), pickOf(13, { rank: 3, inLimits: true })] });
+  let r = await run();
+  let s = await state();
+  check(ops(s, "register").length === 0 && ops(s, "eligibility").length === 3, "drei Probeläufe, kein Auftrag");
+  check(r.s.newEvents.some(e => e.kind === "abgelehnt" && /keine Kopie zu/.test(e.text) && /972/.test(e.text)), "Meldung: eToro lässt heute keine Kopie zu (mit Fehlercode)");
+  r = await run();
+  s = await state();
+  check(ops(s, "eligibility").length === 3 && !r.s.newEvents.length, "nächste Runde am selben Tag: keine weiteren Probeläufe, keine doppelte Meldung");
 });
 
 console.log(failures ? `\n${failures} Prüfung(en) fehlgeschlagen.` : "\nAlle Bot-Prüfungen bestanden.");
