@@ -73,6 +73,12 @@ const MONTHLY = [
   { id: "L", text: "Antonacci GEM: stärkster von US/Welt, wenn besser als T-Bills, sonst Anleihen", uni: ["us", "intl", "bonds"],
     fn: (F, ctx) => (!F[0] ? [0, 0, F[2] ? 1 : 0] : F[0].r12 > ctx.tb12 ? (F[1] && F[1].r12 > F[0].r12 ? [0, 1, 0] : [1, 0, 0]) : [0, 0, F[2] ? 1 : 0]) },
   { id: "S", text: "S&P 500 mit Trendfilter: über der 10-Monats-Linie Aktien, sonst Anleihen", uni: ["us", "bonds"], fn: F => (above10(F[0]) ? [1, 0] : [0, F[1] ? 1 : 0]) },
+  // Faber & Richardson 2009 („The Ivy Portfolio“): halb kaufen und halten, halb Trendfilter
+  { id: "P1", text: "Ivy 50/50: 5 Märkte, halb fest, halb mit 10-Monats-Linie", uni: ["us", "intl", "bonds", "reits", "commod"],
+    fn: F => F.map(f => (f ? 0.1 + (above10(f) ? 0.1 : 0) : 0)) },
+  { id: "P2", text: "Ivy 50/50 auf 60/40 (= N als Monatsregel)", uni: ["us", "bonds"], fn: F => [F[0] ? 0.3 + (above10(F[0]) ? 0.3 : 0) : 0, F[1] ? 0.2 + (above10(F[1]) ? 0.2 : 0) : 0] },
+  { id: "P3", text: "Ivy 50/50 auf 80/20 (offensiv)", uni: ["us", "bonds"], fn: F => [F[0] ? 0.4 + (above10(F[0]) ? 0.4 : 0) : 0, F[1] ? 0.1 + (above10(F[1]) ? 0.1 : 0) : 0] },
+  { id: "P4", text: "80/20 fest (offensiver Vergleich)", uni: ["us", "bonds"], fn: F => [F[0] ? 0.8 : 0, F[1] ? 0.2 : 0] },
 ];
 
 // ---------- Risiko-Schicht mit Optionen (A entspricht genau dem Bot) ----------
@@ -150,12 +156,14 @@ function familyBT(series, ppy, ctxAt, o, cashRet) {
 // Kennzahlen für einen Zeitraum (Kurve neu bei 1), Sharpe über dem T-Bill-Zins
 function stats(curve, ppy, from, to, rf) {
   const c = curve.filter(x => x.d >= from && x.d < to);
-  if (c.length < ppy) return null;
+  if (c.length < Math.min(ppy, 40)) return null;
   const v = c.map(x => x.eq), d = c.map(x => x.d), p = perf(v, d, ppy);
   const ex = [];
   for (let i = 1; i < c.length; i++) ex.push(v[i] / v[i - 1] - 1 - (rf ? rf.get(d[i]) || 0 : 0));
   const s = sd(ex);
-  return { cagr: p.cagr, vol: p.vol, sharpeEx: s > 0 ? r2(mean(ex) / s * Math.sqrt(ppy)) : null, maxDD: p.maxDD, worst12: p.worst12, pos12: p.pos12, exp: r2(mean(c.map(x => x.exp)) * 100) };
+  const full = p.years.filter(y => !y.partial), neg = full.filter(y => y.ret < 0);
+  return { cagr: p.cagr, vol: p.vol, sharpeEx: s > 0 ? r2(mean(ex) / s * Math.sqrt(ppy)) : null, maxDD: p.maxDD, worst12: p.worst12, pos12: p.pos12, exp: r2(mean(c.map(x => x.exp)) * 100),
+    negYears: `${neg.length}/${full.length}`, worstYear: full.length ? Math.min(...full.map(y => y.ret)) : null };
 }
 
 async function main() {
@@ -287,7 +295,7 @@ async function main() {
     mixBase = {};
   }
   // 4. Bericht
-  const fmt = s => (s ? `${String(s.cagr).padStart(6)} %  ${String(s.vol).padStart(5)} %  ${String(s.sharpeEx).padStart(5)}  −${String(s.maxDD).padStart(5)} %  ${String(s.worst12).padStart(7)} %  ${String(s.pos12).padStart(5)} %  ${String(s.exp).padStart(5)} %` : "–");
+  const fmt = s => (s ? `${String(s.cagr).padStart(6)} %  ${String(s.vol).padStart(5)} %  ${String(s.sharpeEx).padStart(5)}  −${String(s.maxDD).padStart(5)} %  ${String(s.worst12).padStart(7)} %  ${String(s.pos12).padStart(5)} %  ${String(s.exp).padStart(5)} %  Minusjahre ${String(s.negYears).padStart(5)} (schlechtestes ${s.worstYear} %)` : "–");
   for (const mode of ["w", "d"]) {
     log(`\n===== ${mode === "w" ? "Wochenkurse" : "Tageskurse"}: Rendite p. a. · Schwankung · Sharpe (über T-Bills) · größter Rückgang · schlechteste 12 Monate · 12-Monats-Zeiträume im Plus · investiert =====`);
     for (const [wn] of windows) {
