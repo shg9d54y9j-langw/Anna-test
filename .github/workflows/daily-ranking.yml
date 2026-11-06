@@ -91,4 +91,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/ranking.json data/returns.json
           git diff --cached --quiet || git commit -m "Tagesempfehlung $(date -u +%F)"
-          git push
+          # vorübergehende Ablehnung durch GitHub oder neuerer Stand auf dem Branch: neu aufsetzen und erneut versuchen
+          for i in 1 2 3 4 5; do
+            git push && break
+            [ "$i" = 5 ] && exit 1
+            sleep $((i * 4))
+            git pull -q --rebase
+          done

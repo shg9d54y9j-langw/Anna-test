@@ -101,7 +101,12 @@ jobs:
           git init -q -b trend-data
           git add trend-bot.json
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Trend-Bot $(date -u +%FT%TZ)"
-          git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:trend-data
+          # GitHub lehnt Pushes selten vorübergehend ab („fatal error in commit_refs“) – dann bis zu fünfmal versuchen
+          for i in 1 2 3 4 5; do
+            git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:trend-data && break
+            [ "$i" = 5 ] && exit 1
+            sleep $((i * 4))
+          done
       - name: Wichtige Ereignisse melden
         env:
           STATE_B64: ${{ needs.trade.outputs.state }}
