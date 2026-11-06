@@ -1,0 +1,148 @@
+{
+ "updated": "2026-11-06T23:12:29.992Z",
+ "rules": {
+  "volCalm": 15,
+  "volHigh": 25,
+  "targetVol": 15,
+  "minSize": 0.25
+ },
+ "assets": [
+  {
+   "key": "spx",
+   "name": "S&P 500",
+   "tv": "FOREXCOM:SPXUSD",
+   "symbol": "SPX500",
+   "asOf": "2026-11-07T00:00:00Z",
+   "last": 7376.12,
+   "chg1d": -0.07153114585308762,
+   "ret1m": -3.440276897781369,
+   "ret12m": 8.022629318235408,
+   "distSma200": -0.41664681208612997,
+   "vol20": 21.40775488912063,
+   "points": 420,
+   "perYear": 252,
+   "light": "yellow"
+  },
+  {
+   "key": "ndx",
+   "name": "Nasdaq 100",
+   "tv": "FOREXCOM:NSXUSD",
+   "symbol": "NSDQ100",
+   "asOf": "2026-11-07T00:00:00Z",
+   "last": 26994,
+   "chg1d": -0.04406444517679464,
+   "ret1m": -7.221172022684308,
+   "ret12m": 8.0934759897056,
+   "distSma200": -5.517114651167965,
+   "vol20": 33.371830241352626,
+   "points": 420,
+   "perYear": 252,
+   "light": "yellow"
+  },
+  {
+   "key": "dax",
+   "name": "DAX",
+   "tv": "XETR:DAX",
+   "symbol": "GER40",
+   "asOf": "2026-11-06T00:00:00Z",
+   "last": 25699.56,
+   "chg1d": -1.8645294915502708,
+   "ret1m": 2.889564777696685,
+   "ret12m": 8.137189310645176,
+   "distSma200": 3.0837624360329885,
+   "vol20": 18.689643417317463,
+   "points": 420,
+   "perYear": 252,
+   "light": "green"
+  },
+  {
+   "key": "gold",
+   "name": "Gold",
+   "tv": "TVC:GOLD",
+   "symbol": "GOLD",
+   "asOf": "2026-11-07T00:00:00Z",
+   "last": 4070.01,
+   "chg1d": -0.008844404808394657,
+   "ret1m": -2.034170012420211,
+   "ret12m": -6.175568823624323,
+   "distSma200": -6.895340451506382,
+   "vol20": 23.151000378873217,
+   "points": 420,
+   "perYear": 252,
+   "light": "red"
+  },
+  {
+   "key": "oil",
+   "name": "Öl (WTI)",
+   "tv": "TVC:USOIL",
+   "symbol": "OIL",
+   "asOf": "2026-11-07T00:00:00Z",
+   "last": 89.32,
+   "chg1d": -0.35698348951361814,
+   "ret1m": -9.877913429522756,
+   "ret12m": 54.63988919667588,
+   "distSma200": 0.06508936063429616,
+   "vol20": 45.849126524117715,
+   "points": 420,
+   "perYear": 252,
+   "light": "green"
+  },
+  {
+   "key": "btc",
+   "name": "Bitcoin",
+   "tv": "BITSTAMP:BTCUSD",
+   "symbol": "BTC",
+   "asOf": "2026-11-07T00:00:00Z",
+   "last": 75807.83,
+   "chg1d": -0.003033895338266923,
+   "ret1m": -7.268459927353932,
+   "ret12m": -26.96048450065016,
+   "distSma200": 3.560932790910387,
+   "vol20": 35.38518076233096,
+   "points": 420,
+   "perYear": 365,
+   "light": "yellow"
+  }
+ ],
+ "macro": {
+  "curve": {
+   "name": "Zinskurve 10 J. − 3 M.",
+   "series": "T10Y3M",
+   "unit": "Prozentpunkte",
+   "value": 0.67,
+   "asOf": "2026-11-06",
+   "light": "green",
+   "invertedDays12m": 0,
+   "days12m": 262
+  },
+  "nfci": {
+   "name": "Finanzbedingungen (NFCI)",
+   "series": "NFCI",
+   "unit": "Standardabweichungen",
+   "value": -0.459,
+   "asOf": "2026-10-30",
+   "light": "green"
+  },
+  "dollar": {
+   "name": "US-Dollar (breiter Index)",
+   "series": "DTWEXBGS",
+   "unit": "Index",
+   "value": 121.6656,
+   "asOf": "2026-10-30",
+   "distSma200": 4.945144081278152,
+   "ret1m": -0.10066656704016408,
+   "trend": "steigt"
+  }
+ },
+ "errors": [],
+ "sources": [
+  "eToro-Marktdaten (Tageskerzen)",
+  "FRED, Federal Reserve Bank of St. Louis: T10Y3M (US-Finanzministerium/Fed), NFCI (Chicago Fed), DTWEXBGS (Fed)"
+ ],
+ "overall": {
+  "light": "yellow",
+  "score": 0,
+  "parts": 3,
+  "sizeFactor": 0.7006806681826764
+ }
+}
