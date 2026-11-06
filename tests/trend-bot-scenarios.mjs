@@ -279,11 +279,55 @@ await withServer("Abgelehnte Aufträge vom Vortag (wie beim ersten echten Start)
   check(r.s.lastTradeDay === D2.slice(0, 10) && r.s.positions.length === wanted.length + 1, "Käufe (mit Geldmarkt) bestätigt, Tag als gehandelt vermerkt");
 });
 
-await withServer("Altstand nach dem ersten echten Start: abgelehnte Käufe zählen nicht", async ({ run }) => {
+await withServer("Nur nach Stückzahl oder nur als CFD (wie beim ersten echten Kauf)", async ({ run, acct, ctl, fx }) => {
+  const ids = (await acct()).ids;
+  // CBU0.L (Anleihen, wegen des Kerns immer gekauft): nur ganze Stücke, Kurs in einer anderen Währung (0,5 $ je Kurseinheit);
+  // IB01.L: für dieses Konto nur als CFD
+  await ctl("/__test/trend-flags", { unitsOnly: [ids["CBU0.L"]], cfdOnly: [ids["IB01.L"]], conv: { [ids["CBU0.L"]]: 0.5 } });
+  const r = await run(D1, "starten");
+  const a = await acct(), sig = r.s.signals, cash = sig.cash.trade, com = sig.assets.find(x => x.key === "bonds");
+  check(cash[0].sym === "BB3M.L" && cash.at(-1).sym === "IB01.L" && cash.at(-1).elig && cash.at(-1).elig.real === false && com.trade[0].elig.qty === "units" && com.trade[0].elig.whole,
+    `eToros Regeln gelesen: IB01.L nur als CFD → ans Ende (${cash.map(v => v.sym).join(", ")}), CBU0.L nur ganze Stücke`);
+  check(!a.tradeOps.some(x => x.body.InstrumentID === ids["IB01.L"]) && opens(a).some(x => x.body.InstrumentID === ids["BB3M.L"]), "Geldmarkt über BB3M.L – IB01.L wird gar nicht erst versucht");
+  const units = a.tradeOps.filter(x => x.path.endsWith("/by-units")), px = com.trade[0].px, want = com.weight * 1000 * await fx();
+  check(com.weight > 0 && Math.abs(px - a.prices["CBU0.L"] * 1.001 * 0.5) < 1e-3, `Dollar-Kurs je Stück aus Briefkurs × Umrechnung 0,5 (${px})`);
+  check(units.length === 1 && units[0].body.InstrumentID === ids["CBU0.L"] && units[0].body.AmountInUnits === Math.floor(want / px) && !opens(a).some(x => x.body.InstrumentID === ids["CBU0.L"]),
+    `CBU0.L gleich nach ganzen Stücken gekauft (${units[0] && units[0].body.AmountInUnits} Stück), kein Auftrag nach Betrag`);
+  const pos = a.positions.find(p => p.instrumentID === ids["CBU0.L"]);
+  check(pos && pos.amount <= want + 0.5 && pos.amount > want - px - 1, "Wert der Anleihen-Position knapp unter dem Zielanteil (höchstens ein Stück weniger)");
+  check(r.s.holdings.find(h => h.key === "bonds").pct > 0 && r.s.exposure > 0 && r.s.cashPct > 0, "Website zeigt den Bestand gleich nach dem Kauf (nicht erst am nächsten Tag)");
+  check(!r.s.newEvents.some(e => /CBU0\.L|IB01\.L|BB3M\.L/.test(e.text)) && r.s.journal.at(-1).trades.find(t => t.key === "bonds").units === true, "keine Ablehnung und keine Meldung zu Anleihen oder Geldmarkt; Tagebuch vermerkt den Kauf nach Stückzahl");
+});
+
+await withServer("Ohne eToros Regeln: aus der Ablehnung lernen und nach Stückzahl neu senden", async ({ run, acct, ctl }) => {
+  const ids = (await acct()).ids;
+  await ctl("/__test/trend-flags", { unitsOnly: [ids["CBU0.L"]], eligDown: true });
+  const r = await run(D1, "starten");
+  const a = await acct();
+  const byAmount = opens(a).filter(x => x.body.InstrumentID === ids["CBU0.L"]), byUnits = a.tradeOps.filter(x => x.path.endsWith("/by-units"));
+  check(byAmount.length === 1 && byUnits.length === 1 && byUnits[0].body.InstrumentID === ids["CBU0.L"] && Number.isInteger(byUnits[0].body.AmountInUnits), "erst nach Betrag (abgelehnt, 2021), dann im selben Lauf nach ganzen Stücken");
+  check(r.s.positions.some(p => p.instrumentID === ids["CBU0.L"]) && !r.s.blocked[ids["CBU0.L"]] && r.s.unitsOnly[ids["CBU0.L"]], "CBU0.L gehalten, nicht gesperrt, „nur nach Stückzahl“ gemerkt");
+  const ct = r.s.journal.at(-1).trades.filter(t => t.key === "bonds");
+  check(ct.length === 2 && ct[0].rejected && /Stückzahl/.test(ct[0].reason) && ct[1].units === true && !ct[1].rejected, "Tagebuch: Kauf nach Betrag durchgestrichen, dann Kauf nach Stückzahl");
+  check(!r.s.newEvents.some(e => /CBU0\.L/.test(e.text)), "keine Meldung zu CBU0.L – das hat der Bot selbst gelöst");
+});
+
+await withServer("Nach der ersten CFD-Ablehnung: reine CFDs gar nicht erst versuchen", async ({ run, acct, ctl }) => {
+  const ids = (await acct()).ids;
+  await ctl("/__test/trend-flags", { cfdOnly: [ids["IGLN.L"], ids["SGLD.L"]] });   // Gold gibt es für dieses Konto nur als CFD
+  const r = await run(D1, "starten");
+  const a = await acct(), gold = [ids["IGLN.L"], ids["SGLD.L"], ids.GLD], goldOps = opens(a).filter(x => gold.includes(x.body.InstrumentID));
+  check(r.s.signals.assets.find(x => x.key === "gold").weight > 0 && goldOps.length === 1 && goldOps[0].body.InstrumentID === ids["IGLN.L"], `nur ein Versuch für Gold (IGLN.L) – nach der CFD-Ablehnung weder SGLD.L noch GLD (${goldOps.length} Aufträge)`);
+  check(r.s.cfdBlocked > D1.slice(0, 10) && r.s.newEvents.some(e => e.kind === "hinweis" && e.text.includes("Gold")), "CFD-Sperre des Kontos gemerkt; Hinweis: Gold vorerst im Geldmarkt");
+});
+
+await withServer("Altstand nach dem ersten echten Start: abgelehnte Käufe zählen nicht", async ({ run, acct }) => {
   let r = await run(D1, "status");
-  const sig = r.s.signals, us = sig.assets.filter(x => x.key !== "bonds"), d1 = D1.slice(0, 10);
+  const sig = r.s.signals, us = sig.assets.filter(x => x.key !== "bonds"), d1 = D1.slice(0, 10), cmod = (await acct()).ids["CMOD.L"];
   // So stand es im echten Bot-Stand: Käufe im Tagebuch, Sperren noch ohne Vermerk, Modell-Depot mit Verlust aus nie gehaltenen Positionen
   const blocked = Object.fromEntries(us.map(a => [a.instrumentId, { sym: a.sym, key: a.key, code: 797, msg: "User is blocked from CFD - opening position.", at: D1.replace("13:00", "15:00"), until: "2099-01-01" }]));
+  // … und eine „Sperre“, die keine war: eToro wollte nur einen Auftrag nach Stückzahl
+  blocked[cmod] = { sym: "CMOD.L", key: "commod", code: 2021, msg: "Error - Order type validation failure, requested order type: 17, allowed OrderType ORDER_FOR_EXECUTION_BY_UNITS (18)", at: D1, until: "2099-01-01", marked: true };
   const journal = [{ day: d1, enabled: true, asOf: sig.asOf, model: 98.7, liveDd: 1.3, trades: us.map(a => ({ key: a.key, sym: a.sym, side: "kauf", pct: 10, reason: "Trend intakt – Einstieg" })) }];
   const model = { start: sig.asOf, lastDate: sig.asOf, index: 98.7, peak: 100, w: Object.fromEntries(us.map(a => [a.key, 0.1])), appliedFor: sig.asOf };
   const preset = { ...r.s, enabled: true, startedAt: D1, orders: [], positions: [], uncertain: [], blocked, journal, model, lastTradeDay: d1, lastFullWeek: null, events: [] };
@@ -295,6 +339,7 @@ await withServer("Altstand nach dem ersten echten Start: abgelehnte Käufe zähl
   check(start === sig.asOf || start > sig.asOf, `Modell-Depot neu begonnen (Start ${start})`);
   check(r.s.positions.length > 0 && r.s.model.live === true && r.s.model.index > 99.5 && r.s.capitalEur === 1000 && Number.isFinite(j2.model), `ab den ersten echten Käufen zählt es: Modell ${r.s.model.index.toFixed(2)}, Spielgeld ${r.s.capitalEur} €`);
   check(Object.values(r.s.blocked).every(b => b.marked), "Sperren vermerkt – nichts wird ein zweites Mal durchgestrichen");
+  check(!r.s.blocked[cmod] && r.s.unitsOnly[cmod], "„Sperre“ wegen Stückzahl-Pflicht aufgehoben und als „nur nach Stückzahl“ gemerkt");
   r = await run(NEXT, "status");
   check(r.s.model.start === start && r.s.model.live === true && r.s.journal.filter(j => Number.isFinite(j.model)).length === 2, "nächste Woche: Modell-Depot läuft weiter (kein Neubeginn, solange der Bot etwas hält)");
 });

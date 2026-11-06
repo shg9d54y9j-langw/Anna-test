@@ -49,6 +49,7 @@ export function macroAt(dates, rows) {
 const DEMO = {
   pnl: "/v1/trading/info/demo/pnl",
   open: "/v1/trading/execution/demo/market-open-orders/by-amount",
+  openUnits: "/v1/trading/execution/demo/market-open-orders/by-units",   // für ETFs, die eToro nur nach Stückzahl annimmt
   close: id => `/v1/trading/execution/demo/market-close-orders/positions/${id}`,
   order: id => `/v1/trading/info/demo/orders/${id}`,
 };
@@ -530,6 +531,44 @@ async function resolveCash(list, today) {
   return ok;
 }
 
+// eToros Handelsregeln für ein Instrument in diesem Konto: echter Anteil (Kauf ohne Hebel) oder nur als CFD, Kauf nach Betrag
+// oder nur nach Stückzahl, ganze oder geteilte Stücke, Mindestgröße, Notbremse erlaubt
+export function eligInfo(e) {
+  const lc = s => String(s ?? "").toLowerCase();
+  const cfgs = Array.isArray(field(e, "leverageConfigs")) ? field(e, "leverageConfigs") : [];
+  const real = cfgs.find(c => lc(field(c, "settlementType")) === "real" && lc(field(c, "direction")) === "long" && field(c, "isPotential") !== true
+    && (Array.isArray(field(c, "leverageValues")) ? field(c, "leverageValues") : []).map(Number).includes(1));
+  const qty = lc(field(e, "allowedOrderQuantityType")), min = num(field(e, "minPositionExposure"));
+  return {
+    open: field(e, "allowOpenPosition") !== false, real: Boolean(real),
+    qty: qty === "unitsonly" ? "units" : qty === "amountonly" ? "amount" : "all", whole: lc(field(e, "unitsQuantityType")) === "whole",
+    minUsd: Number.isFinite(min) ? min : null, sl: real ? field(real, "allowStopLossTakeProfit") !== false : true,
+  };
+}
+// Regeln (eligibility) und aktuelle Kurse in Dollar (Briefkurs × Umrechnung) für bis zu 100 Instrumente je Abfrage.
+// Schlägt eine Abfrage fehl, kauft der Bot wie bisher nach Betrag und lernt aus Ablehnungen.
+async function tradeRules(ids) {
+  const elig = new Map(), px = new Map();
+  for (let i = 0; i < ids.length; i += 100) {
+    const part = ids.slice(i, i + 100);
+    try {
+      const d = await send("POST", "/v2/trading/info/demo/eligibility", { instrumentIds: part, currency: "USD" });
+      for (const e of Array.isArray(field(d, "eligibilities")) ? field(d, "eligibilities") : []) {
+        const id = num(field(e, "instrumentId", "instrumentID"));
+        if (Number.isInteger(id)) elig.set(id, eligInfo(e));
+      }
+    } catch (e) { warn(`Handelsregeln von eToro nicht lesbar (${e.message}) – der Bot kauft nach Betrag und lernt aus Ablehnungen.`); }
+    try {
+      const d = await call("/v1/market-data/instruments/rates", { instrumentIds: part.join(",") });
+      for (const r of Array.isArray(field(d, "rates")) ? field(d, "rates") : findArray(d)) {
+        const id = num(field(r, "instrumentID", "instrumentId")), ask = num(field(r, "ask")), cv = num(field(r, "conversionRateAsk"));
+        if (Number.isInteger(id) && ask > 0 && cv > 0) px.set(id, round(ask * cv, 6));
+      }
+    } catch (e) { warn(`Aktuelle Kurse nicht lesbar (${e.message}) – ETFs, die eToro nur nach Stückzahl annimmt, lässt der Bot heute aus.`); }
+  }
+  return { elig, px };
+}
+
 async function signalsMain() {
   const OUT = process.env.TREND_SIGNALS_OUT || here("../data/trend-signals.json");
   const now = nowDate(), today = now.toISOString().slice(0, 10);
@@ -569,7 +608,17 @@ async function signalsMain() {
       // Was der Bot tatsächlich kauft: UCITS-Gegenstücke, zuletzt der US-ETF selbst (für Konten, die ihn kaufen dürfen)
       let list = null;
       try { list = await etfList(); log(`ETF-Liste von eToro: ${list.length} ETFs`); } catch (e) { warn(`ETF-Liste: ${e.message}`); }
-      const veh = await resolveVehicles(found, today, list), cashVeh = await resolveCash(list, today);
+      const veh = await resolveVehicles(found, today, list);
+      let cashVeh = await resolveCash(list, today);
+      // Was eToro diesem Konto je ETF erlaubt und was ein Anteil gerade in Dollar kostet; echte Anteile zuerst, reine CFDs zuletzt
+      const rules = await tradeRules([...new Set([...Object.values(veh || {}).flat(), ...cashVeh, ...found].map(v => v.id))]);
+      const withRules = v => ({ ...v, ...(rules.elig.has(v.id) ? { elig: rules.elig.get(v.id) } : {}), ...(rules.px.has(v.id) ? { px: rules.px.get(v.id) } : {}) });
+      const realFirst = vs => vs.map(withRules).sort((a, b) => Number(Boolean(a.elig && !a.elig.real)) - Number(Boolean(b.elig && !b.elig.real)));
+      if (veh) for (const k of Object.keys(veh)) veh[k] = realFirst(veh[k]);
+      cashVeh = realFirst(cashVeh);
+      const special = [...Object.values(veh || {}).flat(), ...cashVeh].filter(v => v.elig && (!v.elig.real || !v.elig.open || v.elig.qty === "units"))
+        .map(v => `${v.sym} ${!v.elig.open ? "gesperrt" : !v.elig.real ? "nur als CFD" : `nur nach Stückzahl${v.elig.whole ? " (ganze Stücke)" : ""}`}`);
+      log(`Handelsregeln von eToro für ${rules.elig.size} ETFs, Dollar-Kurse für ${rules.px.size}${special.length ? ` – ${special.join(", ")}` : " – überall echte Anteile nach Betrag"}`);
       if (!veh) out.errors.push("Die ETF-Liste von eToro war nicht lesbar – der Bot versucht vorerst die US-ETFs (in der EU nur als CFD erlaubt).");
       else if (found.some(f => !veh[f.key].length)) out.errors.push(`Ohne europäisches Gegenstück: ${found.filter(f => !veh[f.key].length).map(f => f.name).join(", ")} – dafür versucht der Bot den US-ETF.`);
       if (veh && !cashVeh.length) out.errors.push("Kein Geldmarkt-ETF gefunden – freies Geld bleibt vorerst unverzinst im Konto.");
@@ -590,7 +639,7 @@ async function signalsMain() {
         const w = core.map((c, i) => c + trendW[i]);
         out.asOf = D.dates[t];
         out.core = { share: CORE.share, weights: CORE.weights };
-        const trade = (f, i) => [...(veh ? veh[f.key] : []), { id: f.id, sym: f.sym, name: `${f.sym} (US-ETF)`, last: Number.isFinite(raw[i]) ? round(raw[i], 4) : null, asOf: D.dates[t], us: true }];
+        const trade = (f, i) => [...(veh ? veh[f.key] : []), withRules({ id: f.id, sym: f.sym, name: `${f.sym} (US-ETF)`, last: Number.isFinite(raw[i]) ? round(raw[i], 4) : null, asOf: D.dates[t], us: true })];
         out.assets = found.map((f, i) => sigs[i] && F[i] ? ({
           key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: round(raw[i], 4), r3: round(sigs[i].r3 * 100, 2), r6: round(sigs[i].r6 * 100, 2),
           r12: round(sigs[i].r12 * 100, 2), dSma: round(sigs[i].dSma * 100, 2), checks: sigs[i].checks, score: sigs[i].score, vol: round(sigs[i].vol * 100, 2),
@@ -714,8 +763,20 @@ async function tradeMain() {
   const idsOf = a => new Set([a.instrumentId, ...vehiclesOf(a).map(v => v.id)].filter(Number.isInteger));
   const symOf = id => { for (const a of assetList) { const v = vehiclesOf(a).find(x => x.id === id); if (v) return v.sym; } return String(id); };
   // via: worüber der Bot diesen Markt hält bzw. als Nächstes kaufen würde (für die Website)
-  const viaOf = a => { const held = [...new Set(st.positions.filter(p => p.key === a.key && !p.closing).map(p => symOf(p.instrumentID)))]; return held.length ? held.join(" / ") : (vehiclesOf(a).find(v => !st.blocked[v.id]) || {}).sym || null; };
+  const vehicleOf = id => { for (const a of assetList) { const v = vehiclesOf(a).find(x => x.id === id); if (v) return v; } return null; };
+  // kaufbar: nicht gesperrt und laut eToro für neue Positionen offen (reine CFDs kommen in den Signalen zuletzt dran)
+  const skipNow = new Set();
+  // Hat eToro schon einmal wegen der CFD-Sperre abgelehnt, versucht der Bot ETFs, die es laut eToro nur als CFD gibt, gar nicht erst
+  if (!st.cfdBlocked) { const u = Object.values(st.blocked).filter(b => b.code === 797).map(b => b.until).sort().pop(); if (u) st.cfdBlocked = u; }
+  if (st.cfdBlocked && st.cfdBlocked <= today) delete st.cfdBlocked;
+  const usable = v => !st.blocked[v.id] && !skipNow.has(v.id) && !(v.elig && v.elig.open === false) && !(st.cfdBlocked && v.elig && v.elig.real === false);
+  const viaOf = a => { const held = [...new Set(st.positions.filter(p => p.key === a.key && !p.closing).map(p => symOf(p.instrumentID)))]; return held.length ? held.join(" / ") : (vehiclesOf(a).find(usable) || {}).sym || null; };
   const isRejected = info => { const c = num(field(info, "errorCode")); return Number.isFinite(c) && c > 0; };
+  // eToro nimmt bei manchen ETFs nur Aufträge nach Stückzahl an: gemerkt aus einer Ablehnung (falls die Regeln fehlten)
+  const UNITS_ONLY = /BY_UNITS|order type validation/i;
+  st.unitsOnly = st.unitsOnly || {};
+  for (const [id, b] of Object.entries(st.blocked)) if (UNITS_ONLY.test(b.msg || "")) { st.unitsOnly[id] = today; delete st.blocked[id]; }   // war keine echte Sperre
+  for (const [id, d] of Object.entries(st.unitsOnly)) if (d < addDays(today, -90)) delete st.unitsOnly[id];
   // Ablehnungen eines Laufs: einzeln auf der Website, als Benachrichtigung zusammen in einer Meldung (siehe finish)
   const rejectedNow = [];
   // Kauf im Tagebuch als abgelehnt kennzeichnen – auch wenn eToro erst nach dem Lauf entschieden hat
@@ -725,14 +786,23 @@ async function tradeMain() {
   };
   // Sperren aus der Zeit vor diesem Vermerk: ihren Kauf vom Tag der Ablehnung nachträglich kennzeichnen (einmalig)
   for (const b of Object.values(st.blocked)) if (!b.marked && b.at) { markRejected(nyClock(new Date(b.at)).day, b.key, b.sym); b.marked = true; }
+  // Ergebnis: "units" (nur nach Stückzahl erlaubt – wird gleich so neu gesendet, keine Sperre) oder "blocked"
   const reject = (o, info) => {   // CFD-Sperre: ein halbes Jahr nicht mehr versuchen, sonst eine Woche
     const code = num(field(info, "errorCode")), msg = mask(field(info, "errorMessage")), sym = o.sym || symOf(o.instrumentID);
-    const cfd = code === 797 || /CFD/i.test(msg);
-    st.blocked[o.instrumentID] = { sym, key: o.key, code: Number.isFinite(code) ? code : null, msg, at: now.toISOString(), until: addDays(today, cfd ? 182 : 7), marked: true };
-    markRejected(nyClock(o.at ? new Date(o.at) : now).day, o.key, sym);
     st.orders = st.orders.filter(x => x !== o);
-    event("abgelehnt", `eToro hat den Kauf von ${sym} abgelehnt${msg ? ` („${msg}“)` : ""}.${cfd ? " Ihr Konto darf keine CFDs handeln – und US-ETFs gibt es für Kunden in der EU nur als CFD." : ""} Der Bot versucht dieses Instrument ${cfd ? "ein halbes Jahr" : "eine Woche"} lang nicht mehr und weicht, wo es geht, auf ein gleichwertiges europäisches ETF aus.`, false);
-    rejectedNow.push({ sym, cfd });
+    if (UNITS_ONLY.test(String(field(info, "errorMessage") || ""))) {
+      st.unitsOnly[o.instrumentID] = today;
+      log(`${sym}: eToro nimmt hier nur Aufträge nach Stückzahl an – der Bot sendet den Kauf so neu.`);
+      return "units";
+    }
+    const cfd = code === 797 || /CFD/i.test(msg), us = Boolean((vehicleOf(o.instrumentID) || {}).us);
+    st.blocked[o.instrumentID] = { sym, key: o.key, code: Number.isFinite(code) ? code : null, msg, at: now.toISOString(), until: addDays(today, cfd ? 182 : 7), marked: true };
+    if (cfd) st.cfdBlocked = addDays(today, 182);
+    markRejected(nyClock(o.at ? new Date(o.at) : now).day, o.key, sym);
+    const why = !cfd ? "" : us ? " Ihr Konto darf keine CFDs handeln – und US-ETFs gibt es für Kunden in der EU nur als CFD." : " eToro bietet dieses ETF Ihrem Konto nur als CFD an, und Ihr Konto darf keine CFDs handeln.";
+    event("abgelehnt", `eToro hat den Kauf von ${sym} abgelehnt${msg ? ` („${msg}“)` : ""}.${why} Der Bot versucht dieses Instrument ${cfd ? "ein halbes Jahr" : "eine Woche"} lang nicht mehr und weicht, wo es geht, auf ein gleichwertiges europäisches ETF aus.`, false);
+    rejectedNow.push({ sym, cfd, us, msg });
+    return "blocked";
   };
 
   // 1. Konto lesen und eigene Positionen abgleichen (nur Positionen, die der Bot selbst eröffnet hat)
@@ -765,7 +835,11 @@ async function tradeMain() {
     try {
       const info = await call(DEMO.order(o.orderID));
       const ex = Array.isArray(field(info, "positionExecutions")) ? field(info, "positionExecutions") : [];
-      if (!ex.length && isRejected(info)) { reject(o, info); rejectedBefore++; continue; }
+      if (!ex.length && isRejected(info)) {
+        // nur nach Stückzahl erlaubt: der Kauf des Vortags gilt als nicht geschehen und wird heute so neu gesendet
+        if (reject(o, info) === "units") markRejected(nyClock(o.at ? new Date(o.at) : now).day, o.key, o.sym || symOf(o.instrumentID));
+        rejectedBefore++; continue;
+      }
       // nur Zustandsfelder, bei verschachtelten Werten nur deren Namen und in Texten keine Zahlen – das Protokoll ist öffentlich
       const safe = (k, v) => (v === null || typeof v === "number" || typeof v === "boolean" ? v
         : typeof v === "string" ? (/message|reason/i.test(k) ? v.replace(/\d+(?:[.,]\d+)*/g, "#") : v).slice(0, 120)
@@ -840,14 +914,19 @@ async function tradeMain() {
   const growth = st.model && st.model.index > 0 ? st.model.index / 100 : 1;
   const sleeve = Math.max(0, Math.min(BUDGET_EUR * st.fx.value * growth, acc.equity * 0.98));
   st.capitalEur = round(BUDGET_EUR * growth, 2);   // für die Website: Bot-Kapital laut Modell (aus Budget und Modell, nicht aus dem Konto)
-  const holdings = new Map();
-  for (const p of mine()) holdings.set(p.key, (holdings.get(p.key) || 0) + p.value);
-  // investiert = in Märkten (ohne Geldmarkt); der Geldmarkt-Anteil getrennt
-  st.exposure = sleeve > 0 ? round([...holdings.entries()].filter(([k]) => k !== "cash").reduce((a, [, v]) => a + v, 0) / sleeve, 4) : 0;
-  st.cashPct = sleeve > 0 ? round((holdings.get("cash") || 0) / sleeve, 4) : 0;
-  const pnlOpen = mine().reduce((s, p) => s + p.pnl, 0), investedOpen = mine().reduce((s, p) => s + p.amount, 0);
-  st.openPnlPct = investedOpen > 0 ? round(pnlOpen / investedOpen * 100, 2) : null;
-  st.holdings = assetList.map(a => ({ key: a.key, sym: a.sym, via: viaOf(a), pct: sleeve > 0 ? round((holdings.get(a.key) || 0) / sleeve, 4) : 0, target: a.weight }));
+  // Bestand des Bots je Markt (für Website und Umschichtung); nach dem Handel noch einmal, damit die Website gleich stimmt
+  const measure = (list, tgt = null) => {
+    const h = new Map();
+    for (const p of list) h.set(p.key, (h.get(p.key) || 0) + p.value);
+    // investiert = in Märkten (ohne Geldmarkt); der Geldmarkt-Anteil getrennt
+    st.exposure = sleeve > 0 ? round([...h.entries()].filter(([k]) => k !== "cash").reduce((a, [, v]) => a + v, 0) / sleeve, 4) : 0;
+    st.cashPct = sleeve > 0 ? round((h.get("cash") || 0) / sleeve, 4) : 0;
+    const pnlOpen = list.reduce((s, p) => s + p.pnl, 0), investedOpen = list.reduce((s, p) => s + p.amount, 0);
+    st.openPnlPct = investedOpen > 0 ? round(pnlOpen / investedOpen * 100, 2) : null;
+    st.holdings = assetList.map(a => ({ key: a.key, sym: a.sym, via: viaOf(a), pct: sleeve > 0 ? round((h.get(a.key) || 0) / sleeve, 4) : 0, target: tgt ? tgt[a.key] : a.weight }));
+    return h;
+  };
+  const holdings = measure(mine());
 
   if (!st.enabled) { log("Trend-Bot ist nicht gestartet – er rechnet nur die Signale."); return finish(); }
   if (!fresh) { once("stale", "warten", `Die Kurse sind nicht aktuell (Stand ${sig && sig.asOf || "unbekannt"}) – heute keine Käufe oder Verkäufe.`); return finish(); }
@@ -857,8 +936,8 @@ async function tradeMain() {
   const liveDd = (1 - M.index / M.peak) * 100, ddMult = Number.isFinite(sig.ddMult) ? sig.ddMult : 1;
   const target = Object.fromEntries(assetList.map(a => [a.key, round(a.weight || 0, 4)]));
   // Für einen Markt ist im Konto kein ETF kaufbar (alle abgelehnt): sein Anteil kommt verzinst in den Geldmarkt
-  if (cashAsset && vehiclesOf(cashAsset).some(v => !st.blocked[v.id])) for (const a of sig.assets) {
-    if (target[a.key] > 0 && !vehiclesOf(a).some(v => !st.blocked[v.id])) { target.cash = round((target.cash || 0) + target[a.key], 4); target[a.key] = 0; }
+  if (cashAsset && vehiclesOf(cashAsset).some(usable)) for (const a of sig.assets) {
+    if (target[a.key] > 0 && !vehiclesOf(a).some(usable)) { target.cash = round((target.cash || 0) + target[a.key], 4); target[a.key] = 0; }
   }
   st.liveDd = round(liveDd, 2); st.ddMult = round(ddMult, 3); st.target = target;
   st.holdings = st.holdings.map(h => ({ ...h, target: target[h.key] }));
@@ -884,31 +963,44 @@ async function tradeMain() {
   let orders = 0, credit = acc.credit - acc.equity * RULES.reservePct / 100;
   // Kaufen über das erste kaufbare Gegenstück; Aufstocken möglichst im schon gehaltenen ETF
   const chooseVehicle = a => {
-    const held = new Set(mine().filter(p => p.key === a.key).map(p => p.instrumentID)), list = vehiclesOf(a).filter(v => !st.blocked[v.id]);
+    const held = new Set(mine().filter(p => p.key === a.key).map(p => p.instrumentID)), list = vehiclesOf(a).filter(usable);
     return list.find(v => held.has(v.id)) || list[0] || null;
   };
   const buy = async (a, amount, reason) => {
     for (let tries = 0; tries < 4 && orders < RULES.maxOrdersPerRun; tries++) {
       const v = chooseVehicle(a);
       if (!v) { once(`novehicle:${a.key}`, "hinweis", `Für ${a.name} ist in Ihrem Konto gerade kein ETF kaufbar – dieser Anteil kommt vorerst in den Geldmarkt.`); return; }
-      const at = new Date().toISOString(), sl = v.last > 0 ? round(v.last * (1 - RULES.stopLossPct / 100), 4) : null;
+      const E = v.elig || {}, min = Math.max(RULES.minOrderUsd, E.minUsd || 0);
+      if (amount < min) { log(`${a.name}: ${v.sym} verlangt bei eToro eine größere Mindestposition – heute kein Kauf.`); return; }
+      // Nur nach Stückzahl erlaubt (laut eToros Regeln oder aus einer Ablehnung gelernt): Stückzahl zum aktuellen Dollar-Kurs,
+      // ganze Stücke, wenn eToro es verlangt oder die Regeln fehlen; zu teuer für den Betrag → nächstes gleichwertiges ETF
+      const byUnits = E.qty === "units" || Boolean(st.unitsOnly[v.id]);
+      let units = null;
+      if (byUnits) {
+        if (!(v.px > 0)) { log(`${v.sym}: nur nach Stückzahl kaufbar, aber kein aktueller Kurs – nehme das nächste ETF.`); skipNow.add(v.id); continue; }
+        units = E.whole || !v.elig ? Math.floor(amount / v.px) : Math.floor(amount / v.px * 1e4) / 1e4;
+        if (!(units > 0) || units * v.px < min) { log(`${v.sym}: ein Anteil kostet mehr als der geplante Betrag – nehme das nächste ETF.`); skipNow.add(v.id); continue; }
+      }
+      const spent = byUnits ? round(units * v.px, 2) : amount;
+      const at = new Date().toISOString(), sl = E.sl !== false && v.last > 0 ? round(v.last * (1 - RULES.stopLossPct / 100), 4) : null;
       try {
-        const r = await send("POST", DEMO.open, {
-          InstrumentID: v.id, IsBuy: true, Leverage: 1, Amount: amount, ...(sl ? { StopLossRate: sl, IsNoStopLoss: false } : { IsNoStopLoss: true }), IsNoTakeProfit: true, IsTslEnabled: false,
+        const r = await send("POST", byUnits ? DEMO.openUnits : DEMO.open, {
+          InstrumentID: v.id, IsBuy: true, Leverage: 1, ...(byUnits ? { AmountInUnits: units } : { Amount: amount }),
+          ...(sl ? { StopLossRate: sl, IsNoStopLoss: false } : { IsNoStopLoss: true }), IsNoTakeProfit: true, IsTslEnabled: false,
         });
-        orders++; credit -= amount;
+        orders++; credit -= spent;
         const ofo = field(r, "orderForOpen") || {}, orderID = num(field(ofo, "orderID"));
-        log(`Kauf ${v.sym} für ${a.name}: Auftrag ${orderID ?? "?"}, Status ${field(ofo, "statusID") ?? "?"}`);
-        if (Number.isInteger(orderID)) st.orders.push({ orderID, key: a.key, instrumentID: v.id, sym: v.sym, at, pct: round(amount / sleeve, 6) });
+        log(`Kauf ${v.sym} für ${a.name}${byUnits ? " (nach Stückzahl)" : ""}: Auftrag ${orderID ?? "?"}, Status ${field(ofo, "statusID") ?? "?"}`);
+        if (Number.isInteger(orderID)) st.orders.push({ orderID, key: a.key, instrumentID: v.id, sym: v.sym, at, pct: round(spent / sleeve, 6) });
         else st.uncertain.push({ key: a.key, sym: v.sym, instrumentID: v.id, at });
-        trades.push({ key: a.key, sym: v.sym, side: "kauf", pct: round(amount / sleeve * 100, 2), reason });
+        trades.push({ key: a.key, sym: v.sym, side: "kauf", pct: round(spent / sleeve * 100, 2), reason, ...(byUnits ? { units: true } : {}) });
         return;
       } catch (e) {
         if (e.uncertain) { st.uncertain.push({ key: a.key, sym: v.sym, instrumentID: v.id, at }); event("unklar", `Kauf von ${v.sym} gesendet, aber ohne Bestätigung (${mask(e.message)}). Der Bot sendet ihn nicht noch einmal und prüft beim nächsten Lauf das Konto.`); return; }
         // sofort abgewiesen: dieses ETF eine Woche lang nicht mehr versuchen und gleich das nächste gleichwertige nehmen
         st.blocked[v.id] = { sym: v.sym, key: a.key, code: e.status || null, msg: mask(e.message), at: now.toISOString(), until: addDays(today, 7), marked: true };
         event("fehler", `eToro hat den Kauf von ${v.sym} abgewiesen: ${mask(e.message)} – der Bot versucht ein gleichwertiges ETF.`, false);
-        rejectedNow.push({ sym: v.sym, cfd: false });
+        rejectedNow.push({ sym: v.sym, cfd: false, us: Boolean(v.us), msg: mask(e.message) });
       }
     }
   };
@@ -921,11 +1013,15 @@ async function tradeMain() {
       for (const p of ps.sort((x, y) => x.value - y.value)) {
         if (toSell <= 1 || orders >= RULES.maxOrdersPerRun) break;
         const full = toSell >= p.value * 0.98 || !(p.units > 0);
-        const body = full ? { InstrumentID: p.instrumentID } : { InstrumentID: p.instrumentID, UnitsToDeduct: round(p.units * toSell / p.value, 6) };
+        // ETFs mit ganzen Stücken: nur ganze Stücke verkaufen (weniger als ein Stück → diese Position bleibt)
+        const E = (vehicleOf(p.instrumentID) || {}).elig || {}, whole = E.whole || Boolean(st.unitsOnly[p.instrumentID]);
+        const cut = full ? null : whole ? Math.floor(p.units * toSell / p.value) : round(p.units * toSell / p.value, 6);
+        if (!full && !(cut > 0)) continue;
+        const body = full ? { InstrumentID: p.instrumentID } : { InstrumentID: p.instrumentID, UnitsToDeduct: cut };
         try {
           await send("POST", DEMO.close(p.positionID), body);
           orders++;
-          const amt = full ? p.value : toSell;
+          const amt = full ? p.value : cut * p.value / p.units;
           sold += amt; toSell -= amt; credit += amt; soldSyms.add(symOf(p.instrumentID));
           if (full) { const x = st.positions.find(y => y.positionID === p.positionID); if (x) x.closing = now.toISOString(); }
         } catch (e) { once(`close:${p.positionID}`, "fehler", `Verkauf von ${symOf(p.instrumentID)} fehlgeschlagen: ${mask(e.message)}`); }
@@ -956,10 +1052,10 @@ async function tradeMain() {
         const info = await call(DEMO.order(o.orderID));
         const ex = Array.isArray(field(info, "positionExecutions")) ? field(info, "positionExecutions") : [];
         if (!ex.length && isRejected(info)) {
-          reject(o, info);
+          const kind = reject(o, info);
           const t = trades.find(x => x.side === "kauf" && x.key === o.key && x.sym === o.sym && !x.rejected);
-          if (t) { t.rejected = true; t.reason = "von eToro abgelehnt"; }
-          if (Number.isFinite(o.pct)) { credit += o.pct * sleeve; retry.push(o); }
+          if (t) { t.rejected = true; t.reason = kind === "units" ? "nach Betrag abgelehnt – neu nach Stückzahl" : "von eToro abgelehnt"; }
+          if (Number.isFinite(o.pct)) { credit += o.pct * sleeve; retry.push({ ...o, kind }); }
           continue;
         }
         let pids = ex.map(e => num(field(e, "positionId", "positionID"))).filter(Number.isInteger);
@@ -973,8 +1069,15 @@ async function tradeMain() {
     }
     for (const o of retry) {
       const a = assetList.find(x => x.key === o.key), amount = Math.floor(Math.min(o.pct * sleeve, credit) * 100) / 100;
-      if (a && amount >= RULES.minOrderUsd) await buy(a, amount, "Ersatz für einen abgelehnten Kauf");
+      if (a && amount >= RULES.minOrderUsd) await buy(a, amount, o.kind === "units" ? "nach Stückzahl, wie eToro es hier verlangt" : "Ersatz für einen abgelehnten Kauf");
     }
+  }
+  // Bestand nach dem Handel neu lesen, damit Website und Tagebuch zeigen, was jetzt im Depot liegt
+  if (trades.length) {
+    try {
+      const now2 = new Map(readAccount(await call(DEMO.pnl)).positions.map(p => [p.positionID, p]));
+      measure(st.positions.map(x => ({ ...x, ...now2.get(x.positionID) })).filter(p => Number.isFinite(p.value)), target);
+    } catch (e) { log(`Bestand nach dem Handel nicht lesbar: ${mask(e.message)} – die Website zeigt ihn nach dem nächsten Lauf.`); }
   }
   st.todayTrades = trades;
   if (trades.length) log(`Umgeschichtet: ${trades.map(t => `${t.side} ${t.sym} ${de(t.pct, 1)} %${t.rejected ? " (abgelehnt)" : ""}`).join(", ")}`);
@@ -985,9 +1088,12 @@ async function tradeMain() {
   // Tagebuch: ein Eintrag pro Tag, solange der Bot läuft (nur Prozentwerte)
   async function finish(trades = null, force = false) {
     if (rejectedNow.length) {
-      const syms = [...new Set(rejectedNow.map(x => x.sym))], cfd = rejectedNow.some(x => x.cfd);
+      // Gründe getrennt nennen: nur als CFD (bei US-ETFs der EU-Grund dazu) bzw. eToros eigene Begründung
+      const uniq = xs => [...new Set(xs)];
+      const syms = uniq(rejectedNow.map(x => x.sym)), cfdL = rejectedNow.filter(x => x.cfd), other = rejectedNow.filter(x => !x.cfd);
       event("abgelehnt", `eToro hat ${syms.length === 1 ? `den Kauf von ${syms[0]}` : `die Käufe von ${syms.join(", ")}`} abgelehnt.`
-        + `${cfd ? " Grund: Ihr Konto darf keine CFDs handeln – und US-ETFs gibt es für Kunden in der EU nur als CFD." : ""}`
+        + (cfdL.length ? ` ${uniq(cfdL.map(x => x.sym)).join(", ")}: für Ihr Konto nur als CFD erhältlich, und CFDs sind gesperrt${cfdL.some(x => x.us) ? " (US-ETFs gibt es für Kunden in der EU nur als CFD)" : ""}.` : "")
+        + (other.length ? ` ${uniq(other.map(x => `${x.sym}${x.msg ? ` („${x.msg}“)` : ""}`)).join(", ")}.` : "")
         + " Der Bot nimmt dafür, wo es geht, gleichwertige europäische ETFs; was nicht kaufbar ist, liegt verzinst im Geldmarkt.");
       rejectedNow.length = 0;
     }

@@ -70,7 +70,9 @@
     const target = st.enabled && st.target ? st.target : null;
     const blocked = st.blocked || {};
     // gekauft wird ein europäisches Gegenstück (UCITS); zuletzt der US-ETF selbst – den lehnt eToro bei gesperrten CFDs ab
-    const viaSym = a => { const h = held.get(a.key), list = (a.trade || []).filter(t => !blocked[t.id]); return (h && h.via) || (list[0] && list[0].sym) || null; };
+    // kaufbar: nicht gesperrt, laut eToro offen und – wenn das Konto keine CFDs darf – als echter Anteil erhältlich
+    const usable = t => !blocked[t.id] && !(t.elig && t.elig.open === false) && !(st.cfdBlocked && t.elig && t.elig.real === false);
+    const viaSym = a => { const h = held.get(a.key), list = (a.trade || []).filter(usable); return (h && h.via) || (list[0] && list[0].sym) || null; };
     // Handy: statt der Spalte „Gekauft als“ eine Zeile unter dem Signal
     const viaSm = a => { const s = viaSym(a); return `<span class="only-sm muted small">${s ? `gekauft als <b>${esc(s)}</b>` : "Anteil im Geldmarkt"}</span>`; };
     const via = a => {
@@ -223,7 +225,7 @@
     const name = k => (k === "cash" ? "Geldmarkt" : (st && st.signals && st.signals.assets || []).find(a => a.key === k)?.sym || k);
     const items = J.slice().reverse().map((j, i, arr) => {
       const prev = arr[i + 1], chg = prev && Number.isFinite(j.model) && Number.isFinite(prev.model) ? (j.model / prev.model - 1) * 100 : null;
-      const trades = (j.trades || []).map(t => { const main = `${t.side === "kauf" ? "Kauf" : "Verkauf"} ${esc(t.sym === "alle" ? "aller Positionen" : t.sym)} ${t.pct ? `${fmt(t.pct, 1)} %` : ""}`; return `${t.rejected ? `<s class="muted">${main}</s>` : main}${t.reason ? ` <span class="muted">(${esc(t.reason)})</span>` : ""}`; });
+      const trades = (j.trades || []).map(t => { const main = `${t.side === "kauf" ? "Kauf" : "Verkauf"} ${esc(t.sym === "alle" ? "aller Positionen" : t.sym)} ${t.pct ? `${fmt(t.pct, 1)} %` : ""}`; return `${t.rejected ? `<s class="muted">${main}</s>` : main}${t.reason || t.units ? ` <span class="muted">(${esc([t.reason, t.units && !/Stückzahl/.test(t.reason || "") ? "nach Stückzahl" : ""].filter(Boolean).join(", "))})</span>` : ""}`; });
       const tgt = j.target ? Object.entries(j.target).filter(([, w]) => w > 0).map(([k, w]) => `${esc(name(k))} ${fmt(w * 100, 0)} %`).join(" · ") : "";
       return `<li class="jr">
         <div class="jr-day"><b>${dateDe(j.day)}</b>${chg !== null ? ` <span class="nowrap ${cls(chg)}">${sign(chg, 2)} %</span>` : ""}</div>

@@ -40,10 +40,15 @@ const realTradeOps = [];   // Aufrufe an Echtgeld-Handelsadressen (müssen in de
 let nextPosition = 70000, nextOrder = 50000;
 // cfdBlocked: wie das echte Konto – CFD-Handel gesperrt, US-ETFs (für EU-Kunden nur als CFD) werden nach dem Absenden abgelehnt.
 // rejectIds: weitere Instrumente, die eToro für dieses Konto ablehnt (z. B. nicht handelbar)
-const trendFlags = { failNextOpen: false, pendingNextOpen: false, slowConfirm: false, foreignOrderIds: false, cfdBlocked: true, rejectIds: [] };
-function openPosition(acc, instrumentID, amount, orderID, mirrorID = 0) {
+// Handelsregeln je Instrument (wie eToros „eligibility“): unitsOnly – nur Aufträge nach ganzen Stückzahlen (wie beim ersten
+// echten Lauf IBTM.L, CMOD.L, IUSP.L …; Aufträge nach Betrag lehnt eToro danach mit 2021 ab); cfdOnly – für dieses Konto nur als CFD
+// (wie IB01.L); eligDown – die Abfrage der Regeln schlägt fehl; conv – Kurs in einer anderen Währung (Dollar je Kurseinheit)
+const trendFlags = { failNextOpen: false, pendingNextOpen: false, slowConfirm: false, foreignOrderIds: false, cfdBlocked: true, rejectIds: [], unitsOnly: [], cfdOnly: [], eligDown: false, conv: {} };
+const conv = id => Number(trendFlags.conv[id]) || 1;
+const usdPrice = id => trendPrice(id) * conv(id);
+function openPosition(acc, instrumentID, amount, orderID, mirrorID = 0, units = null) {
   // Wie im echten Betrieb beobachtet: Bestätigung kann auf sich warten lassen, die Position eine andere Auftragsnummer tragen
-  const price = trendPrice(instrumentID), pos = { positionID: nextPosition++, instrumentID, orderID: trendFlags.foreignOrderIds ? orderID + 900000000 : orderID, mirrorID, amount, units: amount / price, openRate: price, isBuy: true, leverage: 1, openDateTime: new Date().toISOString() };
+  const price = trendPrice(instrumentID), pos = { positionID: nextPosition++, instrumentID, orderID: trendFlags.foreignOrderIds ? orderID + 900000000 : orderID, mirrorID, amount, units: units ?? amount / usdPrice(instrumentID), openRate: price, isBuy: true, leverage: 1, openDateTime: new Date().toISOString() };
   acc.credit -= amount; acc.positions.push(pos);
   acc.orders[orderID] = { orderId: orderID, executed: !trendFlags.slowConfirm, positionId: pos.positionID };
   return pos;
@@ -75,7 +80,7 @@ function portfolio(acc) {
   return {
     clientPortfolio: {
       accountCurrencyId: 1, credit: acc.credit, bonusCredit: 0, orders: [],
-      positions: acc.positions.map(x => ({ ...x, amount: Math.round(x.amount * 100) / 100, unrealizedPnL: { pnL: Math.round(x.units * (trendPrice(x.instrumentID) - x.openRate) * 100) / 100, closeRate: trendPrice(x.instrumentID) } })),
+      positions: acc.positions.map(x => ({ ...x, amount: Math.round(x.amount * 100) / 100, unrealizedPnL: { pnL: Math.round(x.units * (trendPrice(x.instrumentID) - x.openRate) * conv(x.instrumentID) * 100) / 100, closeRate: trendPrice(x.instrumentID) } })),
       ordersForOpen: acc.pendingOpen.map(o => ({ orderID: o.orderID, instrumentId: o.instrumentID, amount: o.amount, isBuy: true })),
       unrealizedPnL: acc.mirrors.reduce((x, m) => x + mirrorInvested(m) * m.pnlPct / 100, 0),
       mirrors: acc.mirrors.map(m => {
@@ -385,31 +390,61 @@ http.createServer(async (req, res) => {
     }
     return send(405, { error: "method not allowed" });
   }
-  const exec = /^\/api\/v1\/trading\/execution\/(demo\/)?(market-open-orders\/by-amount|market-close-orders\/positions\/(\d+))$/.exec(url.pathname);
+  // Handelsregeln je Instrument für dieses Konto (Aufbau wie eToros POST /api/v2/trading/info/demo/eligibility)
+  if (url.pathname === "/api/v2/trading/info/demo/eligibility" && req.method === "POST") {
+    if (trendFlags.eligDown) return send(500, { error: "temporarily unavailable" });
+    const b = await readBody(req) || {}, ids = Array.isArray(b.instrumentIds) ? b.instrumentIds : [];
+    if (!ids.length || ids.length > 100) return send(400, { title: "At least one and at most 100 instruments" });
+    const cfg = (settlementType, leverageValues) => ({ settlementType, direction: "long", leverageValues, isPotential: false, allowStopLossTakeProfit: true, allowEditStopLoss: true, minPositionAmount: 10 });
+    const known = ids.filter(id => trendSeries[id]);
+    return send(200, {
+      currency: "USD", notFoundInstrumentIds: ids.filter(id => !trendSeries[id]), notFoundSymbols: [],
+      eligibilities: known.map(id => {
+        const cfdOnly = CFD_ONLY.has(id) || trendFlags.cfdOnly.includes(id), units = trendFlags.unitsOnly.includes(id);
+        return { instrumentId: id, allowOpenPosition: true, allowClosePosition: true, allowPartialClosePosition: true, minPositionExposure: 10, maxUnitsPerOrder: 100000,
+          allowedOrderQuantityType: units ? "unitsOnly" : "all", unitsQuantityType: units ? "whole" : "fractional", tradeUnitType: "units",
+          leverageConfigs: cfdOnly ? [cfg("cfd", [1, 2, 5])] : [cfg("real", [1]), cfg("cfd", [2, 5])] };
+      }),
+    });
+  }
+  // Aktuelle Kurse mit Umrechnung in Dollar (wie eToros GET /api/v1/market-data/instruments/rates)
+  if (url.pathname === "/api/v1/market-data/instruments/rates") {
+    const ids = String(url.searchParams.get("instrumentIds") || "").split(",").map(Number).filter(id => trendSeries[id]);
+    return send(200, { rates: ids.map(id => ({ instrumentID: id, ask: trendPrice(id) * 1.001, bid: trendPrice(id) * 0.999, lastExecution: trendPrice(id), conversionRateAsk: conv(id), conversionRateBid: conv(id), date: new Date().toISOString() })) });
+  }
+  const exec = /^\/api\/v1\/trading\/execution\/(demo\/)?(market-open-orders\/by-amount|market-open-orders\/by-units|market-close-orders\/positions\/(\d+))$/.exec(url.pathname);
   if (exec && req.method === "POST") {
     const b = await readBody(req) || {};
     if (!exec[1]) { realTradeOps.push({ path: url.pathname, body: b }); return send(403, { error: "real-money trading is not allowed in tests" }); }
     const acc = accounts.demo;
     acc.tradeOps.push({ path: url.pathname, body: b });
     if (exec[2].startsWith("market-open")) {
-      if (!trendSeries[b.InstrumentID]) return send(400, { error: "unknown instrument" });
+      const byUnits = exec[2].endsWith("by-units"), id = b.InstrumentID;
+      if (!trendSeries[id]) return send(400, { error: "unknown instrument" });
       if (!Number.isInteger(b.Leverage) || b.Leverage < 1) return send(400, { error: "Leverage must be at least 1" });
-      if (typeof b.IsBuy !== "boolean" || !(b.Amount >= 10)) return send(400, { error: "IsBuy and Amount >= 10 required" });
-      if (b.Amount > acc.credit) return send(400, { error: "Insufficient funds" });
-      if (b.StopLossRate !== undefined && b.StopLossRate !== null && !(b.StopLossRate < trendPrice(b.InstrumentID))) return send(400, { error: "StopLoss must be worse than current price" });
+      if (typeof b.IsBuy !== "boolean") return send(400, { error: "IsBuy required" });
+      if (byUnits && !(b.AmountInUnits > 0)) return send(400, { error: "AmountInUnits > 0 required" });
+      if (byUnits && trendFlags.unitsOnly.includes(id) && !Number.isInteger(b.AmountInUnits)) return send(400, { error: "Only whole units can be traded for this instrument" });
+      if (!byUnits && !(b.Amount >= 10)) return send(400, { error: "Amount >= 10 required" });
+      const amount = byUnits ? b.AmountInUnits * usdPrice(id) * 1.001 : b.Amount;
+      if (byUnits && !(amount >= 10)) return send(400, { error: "Position below the minimum exposure" });
+      if (amount > acc.credit) return send(400, { error: "Insufficient funds" });
+      if (b.StopLossRate !== undefined && b.StopLossRate !== null && !(b.StopLossRate < trendPrice(id))) return send(400, { error: "StopLoss must be worse than current price" });
       const orderID = nextOrder++;
-      const refuse = trendFlags.cfdBlocked && CFD_ONLY.has(b.InstrumentID) ? [797, "User is blocked from CFD - opening position."]
-        : trendFlags.rejectIds.includes(b.InstrumentID) ? [744, "Instrument is not available for trading"] : null;
-      if (refuse) acc.orders[orderID] = { orderId: orderID, executed: false, instrumentID: b.InstrumentID, error: refuse };
-      else if (trendFlags.pendingNextOpen) { trendFlags.pendingNextOpen = false; acc.pendingOpen.push({ orderID, instrumentID: b.InstrumentID, amount: b.Amount }); acc.orders[orderID] = { orderId: orderID, executed: false }; }
-      else openPosition(acc, b.InstrumentID, b.Amount, orderID);
+      const refuse = trendFlags.cfdBlocked && (CFD_ONLY.has(id) || trendFlags.cfdOnly.includes(id)) ? [797, "User is blocked from CFD - opening position."]
+        : !byUnits && trendFlags.unitsOnly.includes(id) ? [2021, "Error - Order type validation failure, requested order type: 17, allowed OrderType ORDER_FOR_EXECUTION_BY_UNITS (18)"]
+        : trendFlags.rejectIds.includes(id) ? [744, "Instrument is not available for trading"] : null;
+      if (refuse) acc.orders[orderID] = { orderId: orderID, executed: false, instrumentID: id, error: refuse };
+      else if (trendFlags.pendingNextOpen) { trendFlags.pendingNextOpen = false; acc.pendingOpen.push({ orderID, instrumentID: id, amount }); acc.orders[orderID] = { orderId: orderID, executed: false }; }
+      else openPosition(acc, id, amount, orderID, 0, byUnits ? b.AmountInUnits : null);
       if (trendFlags.failNextOpen) { trendFlags.failNextOpen = false; return send(503, { error: "temporarily unavailable" }); }   // angekommen, aber keine Bestätigung
-      return send(200, { orderForOpen: { orderID, instrumentID: b.InstrumentID, amount: b.Amount, isBuy: b.IsBuy, leverage: b.Leverage, statusID: 1, openDateTime: new Date().toISOString() }, token: "22222222-2222-4222-8222-222222222222" });
+      return send(200, { orderForOpen: { orderID, instrumentID: id, amount: Math.round(amount), ...(byUnits ? { amountInUnits: b.AmountInUnits } : {}), isBuy: b.IsBuy, leverage: b.Leverage, statusID: 1, openDateTime: new Date().toISOString() }, token: "22222222-2222-4222-8222-222222222222" });
     }
     const pos = acc.positions.find(x => x.positionID === Number(exec[3]));
     if (!pos) return send(404, { error: "Position not found" });
     if (b.InstrumentID !== pos.instrumentID) return send(400, { error: "InstrumentID does not match the position" });
-    const price = trendPrice(pos.instrumentID), cut = b.UnitsToDeduct === undefined || b.UnitsToDeduct === null ? pos.units : Math.min(pos.units, Number(b.UnitsToDeduct));
+    if (b.UnitsToDeduct !== undefined && b.UnitsToDeduct !== null && trendFlags.unitsOnly.includes(pos.instrumentID) && !Number.isInteger(b.UnitsToDeduct)) return send(400, { error: "Only whole units can be traded for this instrument" });
+    const price = usdPrice(pos.instrumentID), cut = b.UnitsToDeduct === undefined || b.UnitsToDeduct === null ? pos.units : Math.min(pos.units, Number(b.UnitsToDeduct));
     acc.credit += cut * price;
     if (cut >= pos.units - 1e-9) acc.positions = acc.positions.filter(x => x !== pos);
     else { pos.amount *= 1 - cut / pos.units; pos.units -= cut; }
