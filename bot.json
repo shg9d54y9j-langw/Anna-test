@@ -1,0 +1,117 @@
+{
+ "version": 1,
+ "managed": [],
+ "pending": null,
+ "starts": [],
+ "blocked": {},
+ "refused": {
+  "TiuBuletaire2": {
+   "day": "2026-11-06",
+   "code": 972
+  },
+  "Kevin_Pando": {
+   "day": "2026-11-06",
+   "code": 972
+  },
+  "StefanULS": {
+   "day": "2026-11-06",
+   "code": 972
+  },
+  "iliescu2605": {
+   "day": "2026-11-06",
+   "code": 972
+  },
+  "Space-Investor": {
+   "day": "2026-11-06",
+   "code": 972
+  }
+ },
+ "substitute": null,
+ "notices": {
+  "elig:TiuBuletaire2": "2026-11-06",
+  "elig:Kevin_Pando": "2026-11-06",
+  "elig:StefanULS": "2026-11-06",
+  "elig:iliescu2605": "2026-11-06",
+  "elig:Space-Investor": "2026-11-06",
+  "allrefused": "2026-11-06"
+ },
+ "events": [
+  {
+   "at": "2026-11-05T18:00:29.965Z",
+   "kind": "abgelehnt",
+   "text": "eToro würde die Kopie von TiuBuletaire2 mit 10 % des Kontos nicht erlauben: ohne Begründung."
+  },
+  {
+   "at": "2026-11-05T19:41:36.251Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt die Kopie von Kevin_Pando mit 1.000 € Spielgeld nicht zu (Antwort: 972)."
+  },
+  {
+   "at": "2026-11-05T19:41:36.251Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt die Kopie von StefanULS mit 1.000 € Spielgeld nicht zu (Antwort: 972)."
+  },
+  {
+   "at": "2026-11-05T19:41:36.251Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt die Kopie von iliescu2605 mit 1.000 € Spielgeld nicht zu (Antwort: 972)."
+  },
+  {
+   "at": "2026-11-05T19:41:36.251Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt die Kopie von Space-Investor mit 1.000 € Spielgeld nicht zu (Antwort: 972)."
+  },
+  {
+   "at": "2026-11-05T19:41:36.251Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt heute keine Kopie zu – weder TiuBuletaire2 noch 4 geprüfte Ersatz-Trader (Fehlercode 972). Vermutlich ist Copy-Trading in Ihrem Konto eingeschränkt; bitte in eToro unter Einstellungen prüfen. Der Bot versucht es morgen wieder."
+  },
+  {
+   "at": "2026-11-06T07:09:46.939Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt die Kopie von TiuBuletaire2 mit 1.000 € Spielgeld nicht zu (Antwort: 972). Der Bot prüft die nächstbesten geprüften Trader."
+  },
+  {
+   "at": "2026-11-06T07:09:46.939Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt die Kopie von Kevin_Pando mit 1.000 € Spielgeld nicht zu (Antwort: 972)."
+  },
+  {
+   "at": "2026-11-06T07:09:46.939Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt die Kopie von StefanULS mit 1.000 € Spielgeld nicht zu (Antwort: 972)."
+  },
+  {
+   "at": "2026-11-06T07:09:46.939Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt die Kopie von iliescu2605 mit 1.000 € Spielgeld nicht zu (Antwort: 972)."
+  },
+  {
+   "at": "2026-11-06T07:09:46.939Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt die Kopie von Space-Investor mit 1.000 € Spielgeld nicht zu (Antwort: 972)."
+  },
+  {
+   "at": "2026-11-06T07:09:46.939Z",
+   "kind": "abgelehnt",
+   "text": "eToro lässt heute keine Kopie zu – weder TiuBuletaire2 noch 4 geprüfte Ersatz-Trader (Fehlercode 972). Mögliche Gründe: Ihr Konto ist für CFDs gesperrt, und die Trader halten auch CFD-Positionen – oder eToro lässt das Kopieren im Demokonto über die Schnittstelle zurzeit nicht zu. Klären lässt es sich in der eToro-App: im virtuellen Portfolio einen dieser Trader einmal von Hand kopieren – die Meldung dort nennt den Grund. Der Bot versucht es jeden Tag wieder und meldet sich erst wieder, wenn sich etwas ändert (spätestens nach einer Woche)."
+  }
+ ],
+ "mode": "demo",
+ "updated": "2026-11-06T23:12:52.173Z",
+ "newEvents": [],
+ "active": true,
+ "setup": true,
+ "checkedAt": "2026-11-06T23:12:52.173Z",
+ "copies": [],
+ "budgetEur": 1000,
+ "fx": {
+  "value": 1.1163,
+  "asOf": "2026-10-30",
+  "at": "2026-11-06T20:02:31.159Z"
+ },
+ "allRefused": {
+  "codes": "972",
+  "notified": "2026-11-06"
+ }
+}
