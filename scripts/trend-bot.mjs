@@ -178,7 +178,8 @@ export const VARIANTS = [
   { key: "macro", name: "Trend + Finanzlage (NFCI)", src: "Adrian, Boyarchenko & Giannone 2019", doi: "10.1257/aer.20161923",
     raw: (F, b, ctx) => {
       const w = VARIANTS[0].raw(F, b, ctx);
-      return Number.isFinite(ctx.nfci) && ctx.nfci > 0 ? w.map((x, i) => (RISKY.has(ctx.keys[i]) ? x / 2 : x)) : w;
+      const risky = ctx.risky || RISKY;
+      return Number.isFinite(ctx.nfci) && ctx.nfci > 0 ? w.map((x, i) => (risky.has(ctx.keys[i]) ? x / 2 : x)) : w;
     } },
 ];
 // Kennzahlen eines ETF am Zeitpunkt t (nur Kurse bis einschließlich t)
@@ -229,7 +230,7 @@ export function learnStep(monthly, prev) {
   return { w: step.map(x => x / sum), scores };
 }
 // Monatsend-Werte einer Kurve bis vor Index k (abgeschlossene Monate), mit dem Startwert vorneweg
-function monthEnds(curve, k) {
+export function monthEnds(curve, k) {
   const out = [curve[0].eq];
   for (let j = 0; j < k && j + 1 < curve.length; j++) if (curve[j].d.slice(0, 7) !== curve[j + 1].d.slice(0, 7)) out.push(curve[j].eq);
   return out;
@@ -342,7 +343,7 @@ export function summarize(bt, ppy, every) {
 }
 
 // ---------- Kurse ----------
-async function resolve(asset) {
+export async function resolve(asset) {
   for (const sym of asset.symbols) {
     try {
       const d = await call("/v2/market-data/instruments", { symbols: sym });
@@ -355,7 +356,7 @@ async function resolve(asset) {
   }
   return null;
 }
-async function candles(id, interval, count) {
+export async function candles(id, interval, count) {
   const d = await call(`/v1/market-data/instruments/${id}/history/candles/desc/${interval}/${count}`);
   const groups = Array.isArray(field(d, "candles")) ? field(d, "candles") : [];
   const list = (groups.find(g => num(field(g, "instrumentId")) === id) || groups[0] || {}).candles || [];
