@@ -163,7 +163,8 @@ await withServer("eToro lehnt die Tageswahl ab – Ersatz aus den Top 5", async 
   let s = await state();
   check(ops(s, "eligibility").map(o => o.parentCID).join() === "5007,5011", "trader007 im Probelauf abgelehnt → nächster geprüfter Trader in den Grenzen (trader011; nicht trader009 außerhalb der Grenzen, nicht trader014 hinter Platz 5)");
   check(ops(s, "register").length === 1 && ops(s, "register")[0].parentCID === 5011 && r.s.substitute && r.s.substitute.for === "trader007", "Ersatz trader011 mit 1.000 € gestartet");
-  check(r.s.newEvents.some(e => e.kind === "abgelehnt" && /972/.test(e.text)) && r.s.newEvents.some(e => /als Ersatz/.test(e.text)), "Ablehnung mit Fehlercode und Ersatz gemeldet");
+  check(r.s.events.some(e => e.kind === "abgelehnt" && /972/.test(e.text)) && !r.s.newEvents.some(e => e.kind === "abgelehnt") && r.s.newEvents.some(e => /als Ersatz/.test(e.text) && /trader007/.test(e.text)),
+    "Ablehnung mit Fehlercode auf der Website; benachrichtigt wird nur einmal: Ersatz gestartet, weil trader007 nicht zugelassen ist");
   r = await run();
   s = await state();
   check(ops(s, "close").length === 0 && ops(s, "eligibility").length === 2 && r.s.copies[0].insteadOf === "trader007", "nächste Runde: Ersatz-Kopie bleibt, kein neuer Probelauf");
@@ -176,16 +177,33 @@ await withServer("eToro lehnt die Tageswahl ab – Ersatz aus den Top 5", async 
   check(ops(s, "register").length === 2 && ops(s, "register")[1].parentCID === 5012, "danach wird die neue Tageswahl trader012 kopiert");
 });
 
-await withServer("eToro lässt gar keine Kopie zu", async ({ run, ranking, state, ctl }) => {
+await withServer("eToro lässt gar keine Kopie zu", async ({ run, ranking, state, ctl, files }) => {
   await ctl("/__test/copy-flags", { refuseCids: [5007, 5011, 5013] });
   await ranking(pickOf(7), { top: [pickOf(7, { rank: 1, inLimits: true }), pickOf(11, { rank: 2, inLimits: true }), pickOf(13, { rank: 3, inLimits: true })] });
   let r = await run();
   let s = await state();
   check(ops(s, "register").length === 0 && ops(s, "eligibility").length === 3, "drei Probeläufe, kein Auftrag");
-  check(r.s.newEvents.some(e => e.kind === "abgelehnt" && /keine Kopie zu/.test(e.text) && /972/.test(e.text)), "Meldung: eToro lässt heute keine Kopie zu (mit Fehlercode)");
+  check(r.s.newEvents.length === 1 && r.s.newEvents[0].kind === "abgelehnt" && /keine Kopie zu/.test(r.s.newEvents[0].text) && /972/.test(r.s.newEvents[0].text) && /von Hand kopieren/.test(r.s.newEvents[0].text),
+    "eine einzige Benachrichtigung: eToro lässt heute keine Kopie zu (mit Fehlercode und wie man den Grund klärt)");
+  check(r.s.events.filter(e => e.kind === "abgelehnt").length === 4, "die drei einzelnen Ablehnungen stehen nur auf der Website");
   r = await run();
   s = await state();
   check(ops(s, "eligibility").length === 3 && !r.s.newEvents.length, "nächste Runde am selben Tag: keine weiteren Probeläufe, keine doppelte Meldung");
+  // Folgetage mit derselben Sperre: Stand so verschieben, als wären Tage vergangen
+  const shift = async days => {
+    const st = JSON.parse(await readFile(files.state, "utf8")), d = new Date(Date.now() - days * 864e5).toISOString().slice(0, 10);
+    for (const k of Object.keys(st.notices)) st.notices[k] = d;
+    for (const k of Object.keys(st.refused)) st.refused[k].day = d;
+    if (st.allRefused) st.allRefused.notified = d;
+    await writeFile(files.state, JSON.stringify(st));
+  };
+  await shift(1);
+  r = await run();
+  s = await state();
+  check(ops(s, "eligibility").length === 6 && !r.s.newEvents.length && r.s.events.at(-1).kind === "abgelehnt", "nächster Tag, gleiche Sperre: neu geprüft, auf der Website vermerkt, aber keine neue Benachrichtigung");
+  await shift(7);
+  r = await run();
+  check(r.s.newEvents.length === 1 && /keine Kopie zu/.test(r.s.newEvents[0].text), "eine Woche später: einmal erinnern");
 });
 
 console.log(failures ? `\n${failures} Prüfung(en) fehlgeschlagen.` : "\nAlle Bot-Prüfungen bestanden.");

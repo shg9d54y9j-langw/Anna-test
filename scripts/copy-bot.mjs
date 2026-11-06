@@ -107,7 +107,7 @@ async function main() {
     if (notify) st.newEvents.push(e);
     log(`${kind}: ${text}`);
   };
-  const once = (key, kind, text) => { if (st.notices[key] !== today) { st.notices[key] = today; event(kind, text); } else log(`${kind}: ${text}`); };
+  const once = (key, kind, text, notify = true) => { if (st.notices[key] !== today) { st.notices[key] = today; event(kind, text, notify); } else log(`${kind}: ${text}`); };
   const save = async () => {
     for (const k of Object.keys(st.notices)) if (st.notices[k] !== today) delete st.notices[k];
     st.starts = st.starts.filter(d => d >= new Date(now - 7 * 864e5).toISOString().slice(0, 10));
@@ -131,6 +131,7 @@ async function main() {
   st.fx = await eurUsdCached(st.fx, now, e => warn(`Euro-Kurs: ${e.message} – nehme den letzten bekannten.`));
   st.refused = st.refused || {};
   for (const n of Object.keys(st.refused)) if (st.refused[n].day !== today) delete st.refused[n];   // Ablehnungen gelten einen Tag
+  if (st.managed.length) delete st.allRefused;   // eine Kopie läuft: eine spätere Sperre wird wieder sofort gemeldet
   const P = MODE === "real"
     ? { copy: "/v2/trading/copy", pnl: "/v1/trading/info/real/pnl" }
     : { copy: "/v2/trading/copy/demo", pnl: "/v1/trading/info/demo/pnl" };
@@ -254,7 +255,16 @@ async function main() {
     }
     const codes = [...new Set(Object.values(st.refused).map(r => r.code).filter(c => c !== null && c !== undefined))];
     if (!list.length) once(`nosub:${pick.userName}`, "hinweis", `eToro lässt die Kopie von ${pick.userName} nicht zu, und heute ist kein anderer geprüfter Trader in den Grenzen. Der Bot versucht es mit der nächsten Tageswahl wieder.`);
-    else if (tried || list.every(t => st.refused[t.userName])) once("allrefused", "abgelehnt", `eToro lässt heute keine Kopie zu – weder ${pick.userName} noch ${list.length} geprüfte Ersatz-Trader${codes.length ? ` (Fehlercode ${codes.join(", ")})` : ""}. Vermutlich ist Copy-Trading in Ihrem Konto eingeschränkt; bitte in eToro unter Einstellungen prüfen. Der Bot versucht es morgen wieder.`);
+    else if (tried || list.every(t => st.refused[t.userName])) {
+      // Als Benachrichtigung nur, wenn es neu ist (anderer Fehlercode) oder die letzte eine Woche her ist; sonst nur auf der Website
+      const key = codes.join(",") || "–", last = st.allRefused;
+      const fresh = !last || last.codes !== key || !(last.notified > new Date(now - 7 * 864e5).toISOString().slice(0, 10));
+      if (fresh && st.notices.allrefused !== today) st.allRefused = { codes: key, notified: today };
+      once("allrefused", "abgelehnt", `eToro lässt heute keine Kopie zu – weder ${pick.userName} noch ${list.length} geprüfte Ersatz-Trader${codes.length ? ` (Fehlercode ${codes.join(", ")})` : ""}. `
+        + "Mögliche Gründe: Ihr Konto ist für CFDs gesperrt, und die Trader halten auch CFD-Positionen – oder eToro lässt das Kopieren im Demokonto über die Schnittstelle zurzeit nicht zu. "
+        + "Klären lässt es sich in der eToro-App: im virtuellen Portfolio einen dieser Trader einmal von Hand kopieren – die Meldung dort nennt den Grund. "
+        + "Der Bot versucht es jeden Tag wieder und meldet sich erst wieder, wenn sich etwas ändert (spätestens nach einer Woche).", fresh);
+    }
   }
 
   // Ergebnis: "started", "pending" (gesendet, Bestätigung folgt), "refused" (Probelauf abgelehnt), "skip" (anderer Grund)
@@ -291,7 +301,8 @@ async function main() {
       log(`Probelauf ${p.userName}: Antwort-Felder ${Object.keys(ok || {}).join(", ") || "–"}`);
       const code = num(field(ok, "errorCode"));
       st.refused[p.userName] = { day: today, code: Number.isFinite(code) ? code : null };
-      once(`elig:${p.userName}`, "abgelehnt", `eToro lässt die Kopie von ${p.userName} mit ${money} nicht zu (${why ? `Antwort: ${why}` : "ohne Begründung"}).${insteadOf ? "" : " Der Bot prüft die nächstbesten geprüften Trader."}`);
+      // nur auf der Website; benachrichtigt wird über das Ergebnis (Ersatz-Kopie gestartet oder gar keine Kopie möglich)
+      once(`elig:${p.userName}`, "abgelehnt", `eToro lässt die Kopie von ${p.userName} mit ${money} nicht zu (${why ? `Antwort: ${why}` : "ohne Begründung"}).${insteadOf ? "" : " Der Bot prüft die nächstbesten geprüften Trader."}`, false);
       return "refused";
     }
 

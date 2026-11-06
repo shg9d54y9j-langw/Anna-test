@@ -269,7 +269,10 @@ await withServer("Abgelehnte Aufträge vom Vortag (wie beim ersten echten Start)
   const a = await acct();
   check(orders.every(o => r.s.blocked[o.instrumentID] && r.s.blocked[o.instrumentID].code === 797), "alle fünf abgelehnten US-ETFs erkannt und gesperrt");
   check(r.s.journal[0].trades.every(t => t.rejected && t.reason === "von eToro abgelehnt"), "Tagebuch des Vortags: die fünf Käufe nachträglich als abgelehnt durchgestrichen");
-  check(r.s.newEvents.filter(e => e.kind === "abgelehnt").length === 5 && !r.s.orders.length, "fünf Meldungen, keine hängenden Aufträge mehr");
+  const note = r.s.newEvents.filter(e => e.kind === "abgelehnt");
+  check(note.length === 1 && orders.every(o => note[0].text.includes(sig.assets.find(x => x.key === o.key).sym)) && /CFD/.test(note[0].text) && !r.s.orders.length,
+    `eine einzige Benachrichtigung für alle fünf („${note[0] && note[0].text.slice(0, 70)}…“), keine hängenden Aufträge mehr`);
+  check(r.s.events.filter(e => e.kind === "abgelehnt").length === 6, "die fünf einzelnen Ablehnungen stehen auf der Website");
   const bought = opens(a).map(x => x.body.InstrumentID);
   const wanted = sig.assets.filter(x => x.weightBase > 0 && x.trade.length > 1);
   check(wanted.every(x => bought.includes(x.trade[0].id)) && !bought.some(id => usIds(sig).has(id)), `noch am selben Tag mit europäischen ETFs nachgekauft: ${opens(a).map(x => Object.keys(ids).find(k => ids[k] === x.body.InstrumentID)).join(", ")}`);

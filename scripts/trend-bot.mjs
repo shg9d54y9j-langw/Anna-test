@@ -716,6 +716,8 @@ async function tradeMain() {
   // via: worüber der Bot diesen Markt hält bzw. als Nächstes kaufen würde (für die Website)
   const viaOf = a => { const held = [...new Set(st.positions.filter(p => p.key === a.key && !p.closing).map(p => symOf(p.instrumentID)))]; return held.length ? held.join(" / ") : (vehiclesOf(a).find(v => !st.blocked[v.id]) || {}).sym || null; };
   const isRejected = info => { const c = num(field(info, "errorCode")); return Number.isFinite(c) && c > 0; };
+  // Ablehnungen eines Laufs: einzeln auf der Website, als Benachrichtigung zusammen in einer Meldung (siehe finish)
+  const rejectedNow = [];
   // Kauf im Tagebuch als abgelehnt kennzeichnen – auch wenn eToro erst nach dem Lauf entschieden hat
   const markRejected = (day, key, sym) => {
     const t = ((st.journal.find(j => j.day === day) || {}).trades || []).find(x => x.side === "kauf" && x.key === key && x.sym === sym && !x.rejected);
@@ -729,7 +731,8 @@ async function tradeMain() {
     st.blocked[o.instrumentID] = { sym, key: o.key, code: Number.isFinite(code) ? code : null, msg, at: now.toISOString(), until: addDays(today, cfd ? 182 : 7), marked: true };
     markRejected(nyClock(o.at ? new Date(o.at) : now).day, o.key, sym);
     st.orders = st.orders.filter(x => x !== o);
-    event("abgelehnt", `eToro hat den Kauf von ${sym} abgelehnt${msg ? ` („${msg}“)` : ""}.${cfd ? " Ihr Konto darf keine CFDs handeln – und US-ETFs gibt es für Kunden in der EU nur als CFD." : ""} Der Bot versucht dieses Instrument ${cfd ? "ein halbes Jahr" : "eine Woche"} lang nicht mehr und weicht, wo es geht, auf ein gleichwertiges europäisches ETF aus.`);
+    event("abgelehnt", `eToro hat den Kauf von ${sym} abgelehnt${msg ? ` („${msg}“)` : ""}.${cfd ? " Ihr Konto darf keine CFDs handeln – und US-ETFs gibt es für Kunden in der EU nur als CFD." : ""} Der Bot versucht dieses Instrument ${cfd ? "ein halbes Jahr" : "eine Woche"} lang nicht mehr und weicht, wo es geht, auf ein gleichwertiges europäisches ETF aus.`, false);
+    rejectedNow.push({ sym, cfd });
   };
 
   // 1. Konto lesen und eigene Positionen abgleichen (nur Positionen, die der Bot selbst eröffnet hat)
@@ -904,7 +907,8 @@ async function tradeMain() {
         if (e.uncertain) { st.uncertain.push({ key: a.key, sym: v.sym, instrumentID: v.id, at }); event("unklar", `Kauf von ${v.sym} gesendet, aber ohne Bestätigung (${mask(e.message)}). Der Bot sendet ihn nicht noch einmal und prüft beim nächsten Lauf das Konto.`); return; }
         // sofort abgewiesen: dieses ETF eine Woche lang nicht mehr versuchen und gleich das nächste gleichwertige nehmen
         st.blocked[v.id] = { sym: v.sym, key: a.key, code: e.status || null, msg: mask(e.message), at: now.toISOString(), until: addDays(today, 7), marked: true };
-        event("fehler", `eToro hat den Kauf von ${v.sym} abgewiesen: ${mask(e.message)} – der Bot versucht ein gleichwertiges ETF.`);
+        event("fehler", `eToro hat den Kauf von ${v.sym} abgewiesen: ${mask(e.message)} – der Bot versucht ein gleichwertiges ETF.`, false);
+        rejectedNow.push({ sym: v.sym, cfd: false });
       }
     }
   };
@@ -980,6 +984,13 @@ async function tradeMain() {
 
   // Tagebuch: ein Eintrag pro Tag, solange der Bot läuft (nur Prozentwerte)
   async function finish(trades = null, force = false) {
+    if (rejectedNow.length) {
+      const syms = [...new Set(rejectedNow.map(x => x.sym))], cfd = rejectedNow.some(x => x.cfd);
+      event("abgelehnt", `eToro hat ${syms.length === 1 ? `den Kauf von ${syms[0]}` : `die Käufe von ${syms.join(", ")}`} abgelehnt.`
+        + `${cfd ? " Grund: Ihr Konto darf keine CFDs handeln – und US-ETFs gibt es für Kunden in der EU nur als CFD." : ""}`
+        + " Der Bot nimmt dafür, wo es geht, gleichwertige europäische ETFs; was nicht kaufbar ist, liegt verzinst im Geldmarkt.");
+      rejectedNow.length = 0;
+    }
     if (Array.isArray(st.holdings)) st.holdings = st.holdings.map(h => { const a = assetList.find(x => x.key === h.key); return a ? { ...h, via: viaOf(a) } : h; });
     if (st.model && st.positions.length) st.model.live = true;   // ab dem ersten ausgeführten Kauf zählt das Modell-Depot
     const live = !!(st.model && st.model.live);
