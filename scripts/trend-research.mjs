@@ -59,6 +59,21 @@ const CASES = [
   { id: "H", text: "F ohne Verlustbremse", uni: U13, tr: true, cash: true, scaleUp: true, target: 12, dd: false, cap: 0.25 },
 ];
 const SPLIT = "2019-01-01";
+// Zweite Runde: bekannte Monatsregeln aus der Literatur (je Monatsanfang neu, dazwischen liegen lassen), mit Ausschüttungen,
+// freies Geld in T-Bills, Kosten wie beim Bot. F = Kennzahlen je Markt, ctx.tb12 = T-Bill-Ertrag der letzten 12 Monate.
+const above10 = f => Boolean(f && f.p > f.sma10);
+const anyUp = f => Boolean(f && (f.r3 > 0 || f.r6 > 0 || f.r12 > 0 || f.p > f.sma));
+const MONTHLY = [
+  { id: "I", text: "Faber GTAA: 5 Märkte je 20 %, nur über der 10-Monats-Linie, sonst T-Bills", uni: ["us", "intl", "bonds", "reits", "commod"],
+    fn: F => F.map(f => (above10(f) ? 0.2 : 0)) },
+  { id: "I6", text: "GTAA mit Gold: 6 Märkte je 1/6, nur über der 10-Monats-Linie", uni: U6, fn: F => F.map(f => (above10(f) ? 1 / 6 : 0)) },
+  { id: "J", text: "6 Märkte gleich, nur bei ganz gebrochenem Trend (0 von 4) in T-Bills", uni: U6, fn: F => F.map(f => (anyUp(f) ? 1 / 6 : 0)) },
+  { id: "K", text: "60/40 mit Trendfilter: jeder Teil nur über der 10-Monats-Linie, sonst T-Bills", uni: ["us", "bonds"], fn: F => [above10(F[0]) ? 0.6 : 0, above10(F[1]) ? 0.4 : 0] },
+  { id: "K2", text: "60/40 mit Trendfilter nur für Aktien (Anleihen immer)", uni: ["us", "bonds"], fn: F => [above10(F[0]) ? 0.6 : 0, F[1] ? 0.4 : 0] },
+  { id: "L", text: "Antonacci GEM: stärkster von US/Welt, wenn besser als T-Bills, sonst Anleihen", uni: ["us", "intl", "bonds"],
+    fn: (F, ctx) => (!F[0] ? [0, 0, F[2] ? 1 : 0] : F[0].r12 > ctx.tb12 ? (F[1] && F[1].r12 > F[0].r12 ? [0, 1, 0] : [1, 0, 0]) : [0, 0, F[2] ? 1 : 0]) },
+  { id: "S", text: "S&P 500 mit Trendfilter: über der 10-Monats-Linie Aktien, sonst Anleihen", uni: ["us", "bonds"], fn: F => (above10(F[0]) ? [1, 0] : [0, F[1] ? 1 : 0]) },
+];
 
 // ---------- Risiko-Schicht mit Optionen (A entspricht genau dem Bot) ----------
 function riskLayerX(raw, F, ppy, ddPct, o) {
@@ -200,7 +215,8 @@ async function main() {
   const rfMap = (dates) => { const m = new Map(), c = cashRetOf(dates); dates.forEach((d, t) => m.set(d, c[t])); return m; };
 
   const out = { updated: now.toISOString(), split: SPLIT, assets: found.map(f => ({ key: f.key, sym: f.sym, weeklyFrom: f.weekly[0].d, dailyFrom: f.daily[0] && f.daily[0].d })), cases: [], benchmarks: [] };
-  const windows = [["gesamt", "0000", "9999"], ["bis 2018", "0000", SPLIT], ["ab 2019", SPLIT, "9999"]];
+  const windows = [["gesamt", "0000", "9999"], ["bis 2018", "0000", SPLIT], ["ab 2019", SPLIT, "9999"], ["2022", "2022-01-01", "2023-01-01"]];
+  let mixBase = {};
   for (const [mode, ppy, cutoff] of [["w", 52, weekCut], ["d", 252, today]]) {
     for (const cs of CASES) {
       const { S, keys, risky } = build(cs.uni, mode, cutoff, cs.tr);
@@ -211,6 +227,7 @@ async function main() {
       const row = { id: cs.id, mode, text: cs.text, markets: keys.length, turnover: r2(res.ens.turnoverPerYear * 100), weights: res.weights.map(x => r2(x * 100)) };
       for (const [name, from, to] of windows) row[name] = stats(res.ens.curve, ppy, from, to, rf);
       out.cases.push(row);
+      if (cs.id === "B") mixBase.B = res.ens.curve;
       // Abgleich: Fall A muss genau den Rückblick des Bots ergeben
       if (cs.id === "A") {
         const bot = familyBacktest(S, ppy, ctx);
@@ -218,7 +235,27 @@ async function main() {
         log(`Abgleich ${mode}: Fall A ${a.cagr} % / −${a.maxDD} %, Bot ${b.cagr} % / −${b.maxDD} % → ${a.cagr === b.cagr && a.maxDD === b.maxDD ? "identisch ✓" : "ABWEICHUNG ✗"}`);
       }
     }
-    // Vergleichsgrößen (mit Ausschüttungen): S&P 500, 60/40, alle 6 bzw. 13 gleich gewichtet (monatlich), T-Bills
+    // Monatsregeln aus der Literatur
+    for (const mr of MONTHLY) {
+      const { S, keys } = build(mr.uni, mode, cutoff, true);
+      const F = S.dates.map((_, t) => S.closes.map(c => featuresAt(c, t, ppy)));
+      const cr = cashRetOf(S.dates, ppy);
+      let month = null;
+      const res = runBT(S, ppy, t => {
+        const m = S.dates[t].slice(0, 7);
+        if (m === month) return null;   // nur zum Monatswechsel umschichten
+        month = m;
+        let tb = 1;
+        for (let q = Math.max(1, t - ppy + 1); q <= t; q++) tb *= 1 + cr[q];
+        return mr.fn(F[t], { tb12: tb - 1 }).map(x => Math.max(0, x));
+      }, cr);
+      if (!res) continue;
+      const rf = rfMap(S.dates);
+      const row = { id: mr.id, mode, text: mr.text, markets: keys.length, turnover: r2(res.turnoverPerYear * 100) };
+      for (const [name, from, to] of windows) row[name] = stats(res.curve, ppy, from, to, rf);
+      out.cases.push(row);
+      if (mr.id === "K") mixBase.K = res.curve;
+    }
     const bench = [["S&P 500", ["us"], [1]], ["60/40 (S&P 500 / 7–10-J.-Anleihen)", ["us", "bonds"], [0.6, 0.4]], ["6 Märkte gleich", U6, null], ["13 Märkte gleich", U13, null]];
     for (const [name, keys, wts] of bench) {
       const { S } = build(keys, mode, cutoff, true);
@@ -233,7 +270,21 @@ async function main() {
       const rf = rfMap(S.dates), row = { name, mode };
       for (const [wn, from, to] of windows) row[wn] = stats(curve, ppy, from, to, rf);
       out.benchmarks.push(row);
+      if (name.startsWith("60/40")) mixBase.static = curve;
     }
+    // Mischungen: fester Kern + Trend (B) bzw. + 60/40 mit Trendfilter (K)
+    for (const [id, text, a, b] of [["M", "Hälfte 60/40 fest, Hälfte Trend-Bot (B)", "static", "B"], ["N", "Hälfte 60/40 fest, Hälfte 60/40 mit Trendfilter (K)", "static", "K"]]) {
+      const A1 = mixBase[a], B1 = mixBase[b];
+      if (!A1 || !B1) continue;
+      const mb = new Map(B1.map(x => [x.d, x.eq])), common = A1.filter(x => mb.has(x.d));
+      let eq = 1;
+      const curve = common.map((x, i) => { if (i) eq *= 0.5 * x.eq / common[i - 1].eq + 0.5 * mb.get(x.d) / mb.get(common[i - 1].d); return { d: x.d, eq, exp: 1 }; });
+      const { S } = build(["us"], mode, cutoff, true), rf = rfMap(S.dates);
+      const row = { id, mode, text, markets: 0, turnover: null };
+      for (const [wn, from, to] of windows) row[wn] = stats(curve, ppy, from, to, rf);
+      out.cases.push(row);
+    }
+    mixBase = {};
   }
   // 4. Bericht
   const fmt = s => (s ? `${String(s.cagr).padStart(6)} %  ${String(s.vol).padStart(5)} %  ${String(s.sharpeEx).padStart(5)}  −${String(s.maxDD).padStart(5)} %  ${String(s.worst12).padStart(7)} %  ${String(s.pos12).padStart(5)} %  ${String(s.exp).padStart(5)} %` : "–");
