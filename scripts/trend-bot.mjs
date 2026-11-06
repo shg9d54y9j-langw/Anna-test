@@ -967,8 +967,10 @@ async function tradeMain() {
     return list.find(v => held.has(v.id)) || list[0] || null;
   };
   const buy = async (a, amount, reason) => {
+    let tooSmall = false;   // übersprungen, weil schon ein ganzer Anteil mehr kostet als der Betrag (kein Grund für eine Meldung)
     for (let tries = 0; tries < 4 && orders < RULES.maxOrdersPerRun; tries++) {
       const v = chooseVehicle(a);
+      if (!v && tooSmall) { log(`${a.name}: Betrag kleiner als ein ganzer Anteil – heute kein Kauf.`); return; }
       if (!v) { once(`novehicle:${a.key}`, "hinweis", `Für ${a.name} ist in Ihrem Konto gerade kein ETF kaufbar – dieser Anteil kommt vorerst in den Geldmarkt.`); return; }
       const E = v.elig || {}, min = Math.max(RULES.minOrderUsd, E.minUsd || 0);
       if (amount < min) { log(`${a.name}: ${v.sym} verlangt bei eToro eine größere Mindestposition – heute kein Kauf.`); return; }
@@ -979,7 +981,7 @@ async function tradeMain() {
       if (byUnits) {
         if (!(v.px > 0)) { log(`${v.sym}: nur nach Stückzahl kaufbar, aber kein aktueller Kurs – nehme das nächste ETF.`); skipNow.add(v.id); continue; }
         units = E.whole || !v.elig ? Math.floor(amount / v.px) : Math.floor(amount / v.px * 1e4) / 1e4;
-        if (!(units > 0) || units * v.px < min) { log(`${v.sym}: ein Anteil kostet mehr als der geplante Betrag – nehme das nächste ETF.`); skipNow.add(v.id); continue; }
+        if (!(units > 0) || units * v.px < min) { log(`${v.sym}: ein Anteil kostet mehr als der geplante Betrag – nehme das nächste ETF.`); skipNow.add(v.id); tooSmall = true; continue; }
       }
       const spent = byUnits ? round(units * v.px, 2) : amount;
       const at = new Date().toISOString(), sl = E.sl !== false && v.last > 0 ? round(v.last * (1 - RULES.stopLossPct / 100), 4) : null;

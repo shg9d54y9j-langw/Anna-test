@@ -321,6 +321,16 @@ await withServer("Nach der ersten CFD-Ablehnung: reine CFDs gar nicht erst versu
   check(r.s.cfdBlocked > D1.slice(0, 10) && r.s.newEvents.some(e => e.kind === "hinweis" && e.text.includes("Gold")), "CFD-Sperre des Kontos gemerkt; Hinweis: Gold vorerst im Geldmarkt");
 });
 
+await withServer("Ein ganzer Anteil kostet mehr als der Betrag: still auslassen", async ({ run, acct, ctl }) => {
+  const ids = (await acct()).ids;
+  // Gold nur in ganzen Stücken zu einem Preis weit über dem Gold-Anteil; dass das Konto keine CFDs darf, weiß der Bot schon
+  await ctl("/__test/trend-flags", { unitsOnly: [ids["IGLN.L"], ids["SGLD.L"]], conv: { [ids["IGLN.L"]]: 50, [ids["SGLD.L"]]: 50 } });
+  const r = await run(D1, "starten", {}, { cfdBlocked: "2099-01-01" });
+  const a = await acct(), gold = [ids["IGLN.L"], ids["SGLD.L"], ids.GLD];
+  check(r.s.signals.assets.find(x => x.key === "gold").weight > 0 && !a.tradeOps.some(x => gold.includes(x.body.InstrumentID)), "kein Gold-Auftrag (auch nicht als CFD über GLD)");
+  check(/Betrag kleiner als ein ganzer Anteil/.test(r.log) && !r.s.events.some(e => /Gold/.test(e.text)), "nur im Protokoll vermerkt – keine Meldung „kein ETF kaufbar“");
+});
+
 await withServer("Altstand nach dem ersten echten Start: abgelehnte Käufe zählen nicht", async ({ run, acct }) => {
   let r = await run(D1, "status");
   const sig = r.s.signals, us = sig.assets.filter(x => x.key !== "bonds"), d1 = D1.slice(0, 10), cmod = (await acct()).ids["CMOD.L"];
