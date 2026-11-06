@@ -578,8 +578,11 @@ details.info .calc { margin-top: 12px; }
 /* Signal-Tabelle des Trend-Bots: auf dem Handy ohne Nebenspalten, Name und gekauftes ETF unter dem Signal */
 .only-sm { display: none; }
 @media (max-width: 760px) {
-  table.sig th, table.sig td { padding: 10px 8px; }
+  table.sig th, table.sig td { padding: 10px 5px; }
   table.sig .opt { display: none; }
+  table.sig .sq { width: 9px; height: 9px; }
+  table.sig .sq-row { gap: 2px; }
+  table.sig td.num .small { font-size: 11px; }
   table.sig .aname, table.sig .only-sm { display: block; white-space: normal; line-height: 1.3; margin-top: 3px; }
 }
 

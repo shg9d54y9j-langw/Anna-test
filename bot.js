@@ -42,6 +42,8 @@
     const s = status(), M = st && st.model, nr = nextRun();
     // das Modell-Depot zählt erst ab dem ersten ausgeführten Kauf (vorher: „–“)
     const live = !!(M && M.live), model = live && Number.isFinite(M.index) ? M.index - 100 : null;
+    // Rückgang aus denselben ungerundeten Werten wie das Modell-Depot (sonst rundet er anders)
+    const dd = live && M.peak > 0 && Number.isFinite(M.index) ? (1 - M.index / M.peak) * 100 : null;
     return `<section class="hero ${s.light}">
       <div class="hero-top"><span class="light big ${s.light}">${s.text}</span><span class="muted small">Trend-Bot · nur Demokonto (Spielgeld)${st && st.updated ? ` · Stand ${timeDe(st.updated)} Uhr` : ""}</span></div>
       <div class="hero-title" style="margin-top:14px">${s.title}</div>
@@ -50,7 +52,7 @@
         <div class="kpi"><div class="lbl">Spielgeld des Bots</div><div class="val">${st && Number.isFinite(st.capitalEur) ? `${fmt(st.capitalEur, 0)} €` : st && Number.isFinite(st.budgetEur) ? `${fmt(st.budgetEur, 0)} €` : "–"}</div></div>
         <div class="kpi"><div class="lbl">Davon investiert</div><div class="val">${st && st.enabled ? pct(st.exposure) : "–"}</div></div>
         <div class="kpi"><div class="lbl">Modell-Depot seit Start</div><div class="val ${cls(model)}">${model !== null ? `${sign(model)} %` : "–"}</div></div>
-        <div class="kpi"><div class="lbl">Rückgang vom Hoch</div><div class="val ${live && st.liveDd > 0 ? "down" : ""}">${live && Number.isFinite(st.liveDd) ? `${fmt(-st.liveDd, 1)} %` : "–"}</div></div>
+        <div class="kpi"><div class="lbl">Rückgang vom Hoch</div><div class="val ${dd > 0.05 ? "down" : ""}">${dd !== null ? `${fmt(-dd, 1)} %` : "–"}</div></div>
         <div class="kpi"><div class="lbl">Offene Positionen</div><div class="val ${cls(st && st.openPnlPct)}">${st && Number.isFinite(st.openPnlPct) ? `${sign(st.openPnlPct)} %` : "–"}</div></div>
         <div class="kpi"><div class="lbl">Nächster Lauf</div><div class="val" style="font-size:16px">${nr ? timeDe(nr) : "–"}</div></div>
       </div>
