@@ -40,7 +40,8 @@
 
   function hero() {
     const s = status(), M = st && st.model, nr = nextRun();
-    const model = M && Number.isFinite(M.index) ? M.index - 100 : null;
+    // das Modell-Depot zählt erst ab dem ersten ausgeführten Kauf (vorher: „–“)
+    const live = !!(M && M.live), model = live && Number.isFinite(M.index) ? M.index - 100 : null;
     return `<section class="hero ${s.light}">
       <div class="hero-top"><span class="light big ${s.light}">${s.text}</span><span class="muted small">Trend-Bot · nur Demokonto (Spielgeld)${st && st.updated ? ` · Stand ${timeDe(st.updated)} Uhr` : ""}</span></div>
       <div class="hero-title" style="margin-top:14px">${s.title}</div>
@@ -49,7 +50,7 @@
         <div class="kpi"><div class="lbl">Spielgeld des Bots</div><div class="val">${st && Number.isFinite(st.capitalEur) ? `${fmt(st.capitalEur, 0)} €` : st && Number.isFinite(st.budgetEur) ? `${fmt(st.budgetEur, 0)} €` : "–"}</div></div>
         <div class="kpi"><div class="lbl">Davon investiert</div><div class="val">${st && st.enabled ? pct(st.exposure) : "–"}</div></div>
         <div class="kpi"><div class="lbl">Modell-Depot seit Start</div><div class="val ${cls(model)}">${model !== null ? `${sign(model)} %` : "–"}</div></div>
-        <div class="kpi"><div class="lbl">Rückgang vom Hoch</div><div class="val ${st && st.liveDd > 0 ? "down" : ""}">${st && Number.isFinite(st.liveDd) ? `${fmt(-st.liveDd, 1)} %` : "–"}</div></div>
+        <div class="kpi"><div class="lbl">Rückgang vom Hoch</div><div class="val ${live && st.liveDd > 0 ? "down" : ""}">${live && Number.isFinite(st.liveDd) ? `${fmt(-st.liveDd, 1)} %` : "–"}</div></div>
         <div class="kpi"><div class="lbl">Offene Positionen</div><div class="val ${cls(st && st.openPnlPct)}">${st && Number.isFinite(st.openPnlPct) ? `${sign(st.openPnlPct)} %` : "–"}</div></div>
         <div class="kpi"><div class="lbl">Nächster Lauf</div><div class="val" style="font-size:16px">${nr ? timeDe(nr) : "–"}</div></div>
       </div>
@@ -69,9 +70,11 @@
     const target = st.enabled && st.target ? st.target : null;
     const blocked = st.blocked || {};
     // gekauft wird ein europäisches Gegenstück (UCITS); zuletzt der US-ETF selbst – den lehnt eToro bei gesperrten CFDs ab
+    const viaSym = a => { const h = held.get(a.key), list = (a.trade || []).filter(t => !blocked[t.id]); return (h && h.via) || (list[0] && list[0].sym) || null; };
+    // Handy: statt der Spalte „Gekauft als“ eine Zeile unter dem Signal
+    const viaSm = a => { const s = viaSym(a); return `<span class="only-sm muted small">${s ? `gekauft als <b>${esc(s)}</b>` : "Anteil im Geldmarkt"}</span>`; };
     const via = a => {
-      const h = held.get(a.key), list = (a.trade || []).filter(t => !blocked[t.id]);
-      const sym = (h && h.via) || (list[0] && list[0].sym);
+      const sym = viaSym(a);
       const v = (a.trade || []).find(t => t.sym === sym);
       if (!sym) return `<span class="muted small">kein kaufbares ETF – Anteil im Geldmarkt</span>`;
       return `<b>${esc(sym)}</b>${v && v.name && !v.us ? ` <span class="muted small vname">${esc(v.name)}</span>` : v && v.us ? ` <span class="muted small">US-ETF</span>` : ""}`;
@@ -80,24 +83,24 @@
     const split = a => (Number.isFinite(a.core) ? `<div class="muted small">${a.core > 0 ? `Kern ${pct(a.core, 0)}<br>` : ""}Trend ${pct(a.trend, 1)}</div>` : "");
     const rows = S.assets.map(a => {
       const goal = target ? target[a.key] : a.weightBase ?? a.weight, have = held.get(a.key);
-      return `<tr><td><b>${esc(a.sym)}</b> <span class="muted small">${esc(a.name)}</span></td><td>${via(a)}</td>
-        <td>${sq(a.checks || [])} <span class="muted small">${fmt(a.score * 4, 0)}/4</span></td>
-        <td class="num ${cls(a.r12)}">${sign(a.r12)} %</td><td class="num">${fmt(a.vol, 1)} %</td>
+      return `<tr><td><b>${esc(a.sym)}</b> <span class="muted small aname">${esc(a.name)}</span>${viaSm(a)}</td><td class="opt">${via(a)}</td>
+        <td>${sq(a.checks || [])} <span class="muted small opt">${fmt(a.score * 4, 0)}/4</span></td>
+        <td class="num opt ${cls(a.r12)}">${sign(a.r12)} %</td><td class="num opt">${fmt(a.vol, 1)} %</td>
         <td class="num"><b>${pct(goal, 1)}</b>${split(a)}</td><td class="num">${st.enabled && have ? pct(have.pct, 1) : "–"}</td></tr>`;
     }).join("");
     const C = S.cash;
     const cashRow = C ? (() => {
       const goal = target ? target.cash : C.weight, have = held.get("cash");
-      return `<tr><td><b>Geldmarkt</b> <span class="muted small">freies Geld des Trend-Teils${C.rate ? `, Zins ${fmt(C.rate.value, 2)} % p. a.` : ""}</span></td><td>${via(C)}</td>
-        <td class="muted small">immer – kein Trend nötig</td><td class="num">–</td><td class="num">–</td>
+      return `<tr><td><b>Geldmarkt</b> <span class="muted small aname">freies Geld des Trend-Teils${C.rate ? `, Zins ${fmt(C.rate.value, 2)} % p. a.` : ""}</span>${viaSm(C)}</td><td class="opt">${via(C)}</td>
+        <td class="muted small">immer<span class="opt"> – kein Trend nötig</span></td><td class="num opt">–</td><td class="num opt">–</td>
         <td class="num"><b>${pct(goal, 1)}</b></td><td class="num">${st.enabled && have ? pct(have.pct, 1) : "–"}</td></tr>`;
     })() : "";
     const sum = target ? Object.entries(target).filter(([k]) => k !== "cash").reduce((x, [, y]) => x + y, 0) : S.assets.reduce((x, a) => x + (a.weightBase ?? a.weight), 0);
     const brake = st.enabled ? st.ddMult : 1;
     return `<article class="card" data-section="Heute">
       <div class="card-head"><h2 class="card-title">Heute: was der Bot halten will</h2><span class="muted small">Kurse bis ${dateDe(S.asOf)}</span></div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Signal</th><th>Gekauft als</th><th>Trend (3M · 6M · 12M · 200T)</th><th class="num">12 Monate</th><th class="num">Schwankung</th><th class="num">Ziel</th><th class="num">Ist</th></tr></thead>
+      <div class="table-wrap"><table class="sig">
+        <thead><tr><th>Signal</th><th class="opt">Gekauft als</th><th>Trend<span class="opt"> (3M · 6M · 12M · 200T)</span></th><th class="num opt">12 Monate</th><th class="num opt">Schwankung</th><th class="num">Ziel</th><th class="num">Ist</th></tr></thead>
         <tbody>${rows}${cashRow}</tbody></table></div>
       <p class="hint">${S.core ? `<b>Aufbau:</b> Die Hälfte des Spielgelds ist fester Kern und immer investiert (60 % S&amp;P 500, 40 % US-Staatsanleihen), die andere Hälfte steuert der selbstlernende Trend-Teil; was er nicht braucht, liegt verzinst im Geldmarkt. ` : ""}In Märkten zusammen: <b>${pct(sum, 0)}</b>${C ? `, im Geldmarkt ${pct(target ? target.cash : C.weight, 0)}` : ", der Rest bleibt als Geld im Konto"}. Depot-Schwankung ${fmt(S.portVol, 1)} % pro Jahr.
         Verlustbremse im Trend-Teil: ${brake < 1 ? `<b>aktiv – nur ${fmt(brake * 100, 0)} % des üblichen Einsatzes</b>` : "aus"}. Ein Kästchen pro Prüfung: gefüllt = positiv; Trends mit Dividenden und Zinsen gerechnet.

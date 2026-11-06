@@ -716,10 +716,18 @@ async function tradeMain() {
   // via: worüber der Bot diesen Markt hält bzw. als Nächstes kaufen würde (für die Website)
   const viaOf = a => { const held = [...new Set(st.positions.filter(p => p.key === a.key && !p.closing).map(p => symOf(p.instrumentID)))]; return held.length ? held.join(" / ") : (vehiclesOf(a).find(v => !st.blocked[v.id]) || {}).sym || null; };
   const isRejected = info => { const c = num(field(info, "errorCode")); return Number.isFinite(c) && c > 0; };
+  // Kauf im Tagebuch als abgelehnt kennzeichnen – auch wenn eToro erst nach dem Lauf entschieden hat
+  const markRejected = (day, key, sym) => {
+    const t = ((st.journal.find(j => j.day === day) || {}).trades || []).find(x => x.side === "kauf" && x.key === key && x.sym === sym && !x.rejected);
+    if (t) { t.rejected = true; t.reason = "von eToro abgelehnt"; }
+  };
+  // Sperren aus der Zeit vor diesem Vermerk: ihren Kauf vom Tag der Ablehnung nachträglich kennzeichnen (einmalig)
+  for (const b of Object.values(st.blocked)) if (!b.marked && b.at) { markRejected(nyClock(new Date(b.at)).day, b.key, b.sym); b.marked = true; }
   const reject = (o, info) => {   // CFD-Sperre: ein halbes Jahr nicht mehr versuchen, sonst eine Woche
     const code = num(field(info, "errorCode")), msg = mask(field(info, "errorMessage")), sym = o.sym || symOf(o.instrumentID);
     const cfd = code === 797 || /CFD/i.test(msg);
-    st.blocked[o.instrumentID] = { sym, key: o.key, code: Number.isFinite(code) ? code : null, msg, at: now.toISOString(), until: addDays(today, cfd ? 182 : 7) };
+    st.blocked[o.instrumentID] = { sym, key: o.key, code: Number.isFinite(code) ? code : null, msg, at: now.toISOString(), until: addDays(today, cfd ? 182 : 7), marked: true };
+    markRejected(nyClock(o.at ? new Date(o.at) : now).day, o.key, sym);
     st.orders = st.orders.filter(x => x !== o);
     event("abgelehnt", `eToro hat den Kauf von ${sym} abgelehnt${msg ? ` („${msg}“)` : ""}.${cfd ? " Ihr Konto darf keine CFDs handeln – und US-ETFs gibt es für Kunden in der EU nur als CFD." : ""} Der Bot versucht dieses Instrument ${cfd ? "ein halbes Jahr" : "eine Woche"} lang nicht mehr und weicht, wo es geht, auf ein gleichwertiges europäisches ETF aus.`);
   };
@@ -799,9 +807,31 @@ async function tradeMain() {
     return finish([{ key: "alle", sym: "alle", side: "verkauf", pct: round((st.exposure || 0) * 100, 2), reason: "Bot gestoppt" }], true);
   }
 
-  // 3. Ziel und Ist
+  // 3. Modell-Depot, Ziel und Ist
   const fresh = sig && sig.asOf && sig.assets && sig.assets.length >= 4 && (new Date(`${today}T12:00:00Z`) - new Date(`${sig.asOf}T12:00:00Z`)) / 864e5 <= RULES.staleDays;
-  // Kapital des Bots: das Euro-Budget in Dollar, mitgewachsen bzw. geschrumpft wie sein Modell-Depot seit dem Start;
+  // Modell-Depot (100 = Startwert): Grundlage für Tagebuch und Bot-Kapital (Kurse mit Ausschüttungen, Geldmarkt verzinst).
+  // Es zählt erst ab dem ersten ausgeführten Kauf: Solange der Bot nichts hält und nichts offen ist, beginnt es bei jedem Lauf neu –
+  // abgelehnte Käufe verändern das Spielgeld also nicht, und frühere Tagebuch-Werte ohne echte Käufe entfallen.
+  if (st.model && !st.model.live && !st.positions.length && !st.orders.length && !st.uncertain.length) {
+    st.model = null;
+    const since = st.startedAt ? nyClock(new Date(st.startedAt)).day : "";
+    for (const j of st.journal) if (j.day >= since) { j.model = null; j.liveDd = null; }
+  }
+  const keys = sig && sig.assets ? sig.recentKeys || sig.assets.map(a => a.key) : [];
+  if (st.enabled && fresh) {
+    if (!st.model) st.model = { start: sig.asOf, lastDate: sig.asOf, index: 100, peak: 100, w: {} };
+    const M = st.model, rows = (sig.recent || []).filter(r => r[0] > M.lastDate);
+    let prevRow = (sig.recent || []).filter(r => r[0] <= M.lastDate).pop();
+    if (rows.length && !prevRow) { M.lastDate = rows[rows.length - 1][0]; event("hinweis", "Der Bot ist länger nicht gelaufen – das Modell-Depot setzt ab heute fort.", false); }
+    else for (const r of rows) {
+      let grow = 0, inv = 0;
+      keys.forEach((k, i) => { const w = M.w[k] || 0; inv += w; grow += w * r[i + 1] / prevRow[i + 1]; });
+      const total = grow + (1 - inv);
+      keys.forEach((k, i) => { if (M.w[k]) M.w[k] = M.w[k] * r[i + 1] / prevRow[i + 1] / total; });
+      M.index *= total; M.peak = Math.max(M.peak, M.index); M.lastDate = r[0]; prevRow = r;
+    }
+  }
+  // Kapital des Bots: das Euro-Budget in Dollar, mitgewachsen bzw. geschrumpft wie sein Modell-Depot seit dem ersten Kauf;
   // nie mehr, als im Konto ist
   st.fx = await eurUsdCached(st.fx, now, e => warn(`Euro-Kurs: ${e.message} – nehme den letzten bekannten.`));
   const growth = st.model && st.model.index > 0 ? st.model.index / 100 : 1;
@@ -819,19 +849,7 @@ async function tradeMain() {
   if (!st.enabled) { log("Trend-Bot ist nicht gestartet – er rechnet nur die Signale."); return finish(); }
   if (!fresh) { once("stale", "warten", `Die Kurse sind nicht aktuell (Stand ${sig && sig.asOf || "unbekannt"}) – heute keine Käufe oder Verkäufe.`); return finish(); }
 
-  // Modell-Depot seit dem Start (100 = Startwert): Grundlage für Tagebuch und Bot-Kapital (Kurse mit Ausschüttungen, Geldmarkt verzinst)
-  const keys = sig.recentKeys || sig.assets.map(a => a.key);
-  if (!st.model) st.model = { start: sig.asOf, lastDate: sig.asOf, index: 100, peak: 100, w: {} };
-  const M = st.model, rows = (sig.recent || []).filter(r => r[0] > M.lastDate);
-  let prevRow = (sig.recent || []).filter(r => r[0] <= M.lastDate).pop();
-  if (rows.length && !prevRow) { M.lastDate = rows[rows.length - 1][0]; event("hinweis", "Der Bot ist länger nicht gelaufen – das Modell-Depot setzt ab heute fort.", false); }
-  else for (const r of rows) {
-    let grow = 0, inv = 0;
-    keys.forEach((k, i) => { const w = M.w[k] || 0; inv += w; grow += w * r[i + 1] / prevRow[i + 1]; });
-    const total = grow + (1 - inv);
-    keys.forEach((k, i) => { if (M.w[k]) M.w[k] = M.w[k] * r[i + 1] / prevRow[i + 1] / total; });
-    M.index *= total; M.peak = Math.max(M.peak, M.index); M.lastDate = r[0]; prevRow = r;
-  }
+  const M = st.model;
   // Ziele: Kern + Trend-Teil (dessen Verlustbremse steckt schon in den Signalen) und der Geldmarkt für den Rest
   const liveDd = (1 - M.index / M.peak) * 100, ddMult = Number.isFinite(sig.ddMult) ? sig.ddMult : 1;
   const target = Object.fromEntries(assetList.map(a => [a.key, round(a.weight || 0, 4)]));
@@ -885,7 +903,7 @@ async function tradeMain() {
       } catch (e) {
         if (e.uncertain) { st.uncertain.push({ key: a.key, sym: v.sym, instrumentID: v.id, at }); event("unklar", `Kauf von ${v.sym} gesendet, aber ohne Bestätigung (${mask(e.message)}). Der Bot sendet ihn nicht noch einmal und prüft beim nächsten Lauf das Konto.`); return; }
         // sofort abgewiesen: dieses ETF eine Woche lang nicht mehr versuchen und gleich das nächste gleichwertige nehmen
-        st.blocked[v.id] = { sym: v.sym, key: a.key, code: e.status || null, msg: mask(e.message), at: now.toISOString(), until: addDays(today, 7) };
+        st.blocked[v.id] = { sym: v.sym, key: a.key, code: e.status || null, msg: mask(e.message), at: now.toISOString(), until: addDays(today, 7), marked: true };
         event("fehler", `eToro hat den Kauf von ${v.sym} abgewiesen: ${mask(e.message)} – der Bot versucht ein gleichwertiges ETF.`);
       }
     }
@@ -963,6 +981,8 @@ async function tradeMain() {
   // Tagebuch: ein Eintrag pro Tag, solange der Bot läuft (nur Prozentwerte)
   async function finish(trades = null, force = false) {
     if (Array.isArray(st.holdings)) st.holdings = st.holdings.map(h => { const a = assetList.find(x => x.key === h.key); return a ? { ...h, via: viaOf(a) } : h; });
+    if (st.model && st.positions.length) st.model.live = true;   // ab dem ersten ausgeführten Kauf zählt das Modell-Depot
+    const live = !!(st.model && st.model.live);
     if ((st.enabled || force) && sig && sig.assets && sig.assets.length) {
       const old = st.journal.find(j => j.day === today) || {};
       // Lernen: geänderte Gewichte der Varianten im Tagebuch vermerken
@@ -979,7 +999,7 @@ async function tradeMain() {
       const entry = {
         day: today, enabled: st.enabled, asOf: sig.asOf, exposureTarget: st.target ? round(Object.entries(st.target).filter(([k]) => k !== "cash").reduce((a, [, b]) => a + b, 0), 4) : sig.exposure,
         exposure: st.exposure ?? null, target: st.target || null, scores: Object.fromEntries(sig.assets.map(a => [a.key, a.score])),
-        model: st.model ? round(st.model.index, 4) : null, liveDd: st.liveDd ?? null, ddMult: st.ddMult ?? null, openPnlPct: st.openPnlPct ?? null,
+        model: live ? round(st.model.index, 4) : null, liveDd: live ? st.liveDd ?? null : null, ddMult: st.ddMult ?? null, openPnlPct: st.openPnlPct ?? null,
         trades: trades || old.trades || [], note: st.waiting || null, learn: lw || null, learnNote,
       };
       st.journal = [...st.journal.filter(j => j.day !== today), entry];

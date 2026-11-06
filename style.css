@@ -575,6 +575,13 @@ details.info .calc { margin-top: 12px; }
 @media (max-width: 760px) { .livechip .lc-age { display: none; } .livechip { margin-left: auto; } }
 .vname { display: block; max-width: 240px; white-space: normal; line-height: 1.35; }   /* Name des gekauften ETF unter dem Kürzel, umbrechend */
 @media (max-width: 760px) { .vname { display: none; } }   /* Handy: nur das Kürzel */
+/* Signal-Tabelle des Trend-Bots: auf dem Handy ohne Nebenspalten, Name und gekauftes ETF unter dem Signal */
+.only-sm { display: none; }
+@media (max-width: 760px) {
+  table.sig th, table.sig td { padding: 10px 8px; }
+  table.sig .opt { display: none; }
+  table.sig .aname, table.sig .only-sm { display: block; white-space: normal; line-height: 1.3; margin-top: 3px; }
+}
 
 /* ---------- Theorie: Zukunftstrends ---------- */
 .future-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); border: 1px solid var(--line); margin-top: 12px; }

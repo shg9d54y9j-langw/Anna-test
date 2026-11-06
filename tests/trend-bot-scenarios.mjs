@@ -263,15 +263,37 @@ await withServer("Abgelehnte Aufträge vom Vortag (wie beim ersten echten Start)
     const o = await (await ctl("/__test/rejected-order", { instrumentID: a.instrumentId })).json();
     orders.push({ orderID: o.orderID, key: a.key, instrumentID: a.instrumentId, at: D1 });
   }
-  const preset = { ...r.s, enabled: true, startedAt: D1, orders, positions: [], uncertain: [], lastTradeDay: D1.slice(0, 10), lastFullWeek: weekOf(D1.slice(0, 10)), model: null, events: [], journal: [] };
+  const journal = [{ day: D1.slice(0, 10), enabled: true, asOf: sig.asOf, trades: orders.map(o => ({ key: o.key, sym: sig.assets.find(x => x.key === o.key).sym, side: "kauf", pct: 10, reason: "Trend intakt – Einstieg" })) }];
+  const preset = { ...r.s, enabled: true, startedAt: D1, orders, positions: [], uncertain: [], lastTradeDay: D1.slice(0, 10), lastFullWeek: weekOf(D1.slice(0, 10)), model: null, events: [], journal };
   r = await run(D2, "status", {}, preset);   // Dienstag: eigentlich keine volle Umschichtung
   const a = await acct();
   check(orders.every(o => r.s.blocked[o.instrumentID] && r.s.blocked[o.instrumentID].code === 797), "alle fünf abgelehnten US-ETFs erkannt und gesperrt");
+  check(r.s.journal[0].trades.every(t => t.rejected && t.reason === "von eToro abgelehnt"), "Tagebuch des Vortags: die fünf Käufe nachträglich als abgelehnt durchgestrichen");
   check(r.s.newEvents.filter(e => e.kind === "abgelehnt").length === 5 && !r.s.orders.length, "fünf Meldungen, keine hängenden Aufträge mehr");
   const bought = opens(a).map(x => x.body.InstrumentID);
   const wanted = sig.assets.filter(x => x.weightBase > 0 && x.trade.length > 1);
   check(wanted.every(x => bought.includes(x.trade[0].id)) && !bought.some(id => usIds(sig).has(id)), `noch am selben Tag mit europäischen ETFs nachgekauft: ${opens(a).map(x => Object.keys(ids).find(k => ids[k] === x.body.InstrumentID)).join(", ")}`);
   check(r.s.lastTradeDay === D2.slice(0, 10) && r.s.positions.length === wanted.length + 1, "Käufe (mit Geldmarkt) bestätigt, Tag als gehandelt vermerkt");
+});
+
+await withServer("Altstand nach dem ersten echten Start: abgelehnte Käufe zählen nicht", async ({ run }) => {
+  let r = await run(D1, "status");
+  const sig = r.s.signals, us = sig.assets.filter(x => x.key !== "bonds"), d1 = D1.slice(0, 10);
+  // So stand es im echten Bot-Stand: Käufe im Tagebuch, Sperren noch ohne Vermerk, Modell-Depot mit Verlust aus nie gehaltenen Positionen
+  const blocked = Object.fromEntries(us.map(a => [a.instrumentId, { sym: a.sym, key: a.key, code: 797, msg: "User is blocked from CFD - opening position.", at: D1.replace("13:00", "15:00"), until: "2099-01-01" }]));
+  const journal = [{ day: d1, enabled: true, asOf: sig.asOf, model: 98.7, liveDd: 1.3, trades: us.map(a => ({ key: a.key, sym: a.sym, side: "kauf", pct: 10, reason: "Trend intakt – Einstieg" })) }];
+  const model = { start: sig.asOf, lastDate: sig.asOf, index: 98.7, peak: 100, w: Object.fromEntries(us.map(a => [a.key, 0.1])), appliedFor: sig.asOf };
+  const preset = { ...r.s, enabled: true, startedAt: D1, orders: [], positions: [], uncertain: [], blocked, journal, model, lastTradeDay: d1, lastFullWeek: null, events: [] };
+  r = await run(D2, "status", {}, preset);
+  const j1 = r.s.journal.find(j => j.day === d1), j2 = r.s.journal.find(j => j.day === D2.slice(0, 10));
+  check(j1.trades.length === us.length && j1.trades.every(t => t.rejected && t.reason === "von eToro abgelehnt"), "Tagebuch: die nachträglich abgelehnten Käufe des Vortags sind durchgestrichen");
+  check(j1.model === null && j1.liveDd === null, "Tagebuch: kein Modell-Wert für den Tag ohne echte Käufe");
+  const start = r.s.model.start;
+  check(start === sig.asOf || start > sig.asOf, `Modell-Depot neu begonnen (Start ${start})`);
+  check(r.s.positions.length > 0 && r.s.model.live === true && r.s.model.index > 99.5 && r.s.capitalEur === 1000 && Number.isFinite(j2.model), `ab den ersten echten Käufen zählt es: Modell ${r.s.model.index.toFixed(2)}, Spielgeld ${r.s.capitalEur} €`);
+  check(Object.values(r.s.blocked).every(b => b.marked), "Sperren vermerkt – nichts wird ein zweites Mal durchgestrichen");
+  r = await run(NEXT, "status");
+  check(r.s.model.start === start && r.s.model.live === true && r.s.journal.filter(j => Number.isFinite(j.model)).length === 2, "nächste Woche: Modell-Depot läuft weiter (kein Neubeginn, solange der Bot etwas hält)");
 });
 
 console.log(failures ? `\n${failures} Prüfung(en) fehlgeschlagen.` : "\nAlle Trend-Bot-Prüfungen bestanden.");
