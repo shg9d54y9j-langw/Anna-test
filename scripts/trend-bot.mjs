@@ -1,6 +1,11 @@
 // Trend-Bot (GitHub Actions, an Börsentagen einmal täglich während der Handelszeit in London/Frankfurt) – NUR im Demokonto.
 //
-// Regel – gut erforscht, einfach und bewusst nicht „optimiert“ (Optimieren auf die Vergangenheit ist die häufigste
+// Aufbau (Forschungs-Lauf „Trend-Forschung“ auf eToro-Kursen 2011–2026, beide Hälften geprüft):
+//  - Die Hälfte des Spielgelds ist fester Kern, immer investiert: 60 % S&P 500, 40 % US-Staatsanleihen
+//    (Faber & Richardson 2009, „The Ivy Portfolio“: halb kaufen und halten, halb Trend).
+//  - Die andere Hälfte steuert der selbstlernende Trend-Teil (unten); sein freies Geld liegt im Geldmarkt-ETF (T-Bills).
+//  - Signale und Rückblick rechnen Dividenden und Zinsen mit (eToro-Kurse enthalten sie nicht).
+// Trend-Teil – gut erforscht, einfach und bewusst nicht „optimiert“ (Optimieren auf die Vergangenheit ist die häufigste
 // Ursache, warum Handelssysteme später versagen: Bailey u. a. 2014, Sullivan, Timmermann & White 1999):
 //  - Sechs breite Märkte: US-Aktien, Aktien anderer Industrieländer, US-Staatsanleihen, Gold, Rohstoffe, Immobilien.
 //    Signale aus den langen Kursreihen der US-ETFs; gekauft werden gleichwertige europäische UCITS-ETFs (für EU-Kunden
@@ -72,25 +77,33 @@ export const RULES = {
 // Konto gesperrt, lehnt eToro solche Käufe ab (Fehler 797). Kürzel ohne Börsenendung in Wunschreihenfolge – gesucht in
 // der offiziellen ETF-Liste (CSPX → CSPX.L). match: so muss der Name lauten; avoid: Namen einer anderen Anlage.
 export const ASSETS = [
-  { key: "us", name: "US-Aktien (S&P 500)", symbols: ["SPY", "VOO", "IVV"],
+  { key: "us", name: "US-Aktien (S&P 500)", symbols: ["SPY", "VOO", "IVV"], yld: 0.018,
     trade: ["CSPX", "VUAA", "SXR8", "IUSA", "VUSA", "SPY5", "SPXS", "I500"], match: /S&P\s*500/i,
     avoid: /equal|esg|sri|paris|climate|screened|sector|info|tech|financ|health|energy|consumer|industr|utilit|material|communic|real estate|dividend|growth|value|momentum|quality|low vol|buyback|covered|premium/i },
-  { key: "intl", name: "Aktien anderer Industrieländer", symbols: ["EFA", "VEA", "IEFA"],
+  { key: "intl", name: "Aktien anderer Industrieländer", symbols: ["EFA", "VEA", "IEFA"], yld: 0.03,
     trade: ["EXUS", "IMEU", "SMEA", "VEUR", "MEUD", "EXSA", "XMEU"], match: /ex[\s-]*US|EAFE|Europe|STOXX\s*600/i,
     avoid: /ex[\s-]*Europe|emerging|small|esg|sri|paris|climate|dividend|value|momentum|quality|low vol|sector|bank|financ|health|energy|tech|real estate|property/i },
-  { key: "bonds", name: "US-Staatsanleihen 7–10 Jahre", symbols: ["IEF", "GOVT", "TLT"],
+  { key: "bonds", name: "US-Staatsanleihen 7–10 Jahre", symbols: ["IEF", "GOVT", "TLT"], fred: "DGS10",
     trade: ["IBTM", "CBU0", "IUSM", "SXRM", "VUTY", "VDTY"], match: /treasur/i,
     avoid: /0\s*-\s*1|1\s*-\s*3|3\s*-\s*7|20\s*\+|short|ultra|tips|inflation|float|esg/i },
-  { key: "gold", name: "Gold", symbols: ["GLD", "IAU"],
+  { key: "gold", name: "Gold", symbols: ["GLD", "IAU"], yld: 0,
     trade: ["IGLN", "SGLD", "PHAU", "SGLN", "PPFB", "8PSG", "4GLD", "EWG2"], match: /gold/i,
     avoid: /miner|mining|esg|silver|platin|precious metals|basket/i },
-  { key: "commod", name: "Rohstoffe", symbols: ["DBC", "PDBC", "GSG", "COMT", "BCI"],
+  { key: "commod", name: "Rohstoffe", symbols: ["DBC", "PDBC", "GSG", "COMT", "BCI"], fred: "DTB3",
     trade: ["CMOD", "ICOM", "AIGC", "WCOA", "EXXY", "CRBL"], match: /commodit|rohstoff|\bCRB\b/i,
     avoid: /ex[\s-]*(agri|energy)|agricult|energy|precious|industrial metal|gold|esg|carbon/i },
-  { key: "reits", name: "Immobilien (REITs)", symbols: ["VNQ", "IYR", "XLRE"],
+  { key: "reits", name: "Immobilien (REITs)", symbols: ["VNQ", "IYR", "XLRE"], yld: 0.038,
     trade: ["IUSP", "IDUP", "IQQ7", "IWDP", "IQQ6", "GLRE", "SPYJ", "TRET"], match: /property|real estate|REIT|EPRA|immobil/i,
     avoid: /europe|asia|china|japan|\buk\b|esg|mortgage/i },
 ];
+// yld / fred: geschätzte Ausschüttung pro Jahr bzw. FRED-Marktrendite in % (siehe withDistributions)
+// Aufbau (Forschungs-Lauf „Trend-Forschung“ 2011–2026, beide Hälften): die Hälfte als fester Kern, immer investiert –
+// 60 % US-Aktien, 40 % US-Staatsanleihen (Faber & Richardson 2009, „The Ivy Portfolio“: halb kaufen und halten, halb Trend);
+// die andere Hälfte steuert der selbstlernende Trend-Teil, sein freies Geld liegt verzinst im Geldmarkt-ETF.
+export const CORE = { share: 0.5, weights: { us: 0.6, bonds: 0.4 } };
+// Geldmarkt: kurzlaufende US-Staatsanleihen (bis 1 Jahr) – verzinst wie T-Bills, kaum Schwankung
+export const CASH = { key: "cash", name: "Geldmarkt (US-Staatsanleihen bis 1 Jahr)", trade: ["IB01", "BB3M", "VDST", "ZPR1", "TBIL"],
+  match: /treasur|t-?bill/i, need: /0\s*-\s*1|0\s*-\s*3\s*month|bill/i, avoid: /1\s*-\s*3\s*y|3\s*-\s*7|7\s*-\s*10|20\s*\+|tips|inflation|float|esg/i };
 // nie: gehebelt, umgekehrt, währungsgesichert (dann wäre es eine andere Anlage als im Signal)
 export const BAD_VEHICLE = /hedged|leverag|short|inverse|\b[23]x\b|daily|ultra|bear|bull/i;
 export const VEHICLE = { keep: 3, minCorr: 0.3, nameFreeCorr: 0.8, freshDays: 7, corrDays: 120 };
@@ -199,17 +212,21 @@ export function inverseVol(F) {
   return inv.map(x => (sum > 0 ? x / sum : 0));
 }
 // Gemeinsame Risiko-Schicht: höchstens 35 % je ETF, Depot-Schwankung höchstens 10 % pro Jahr, Verlustbremse
-export function riskLayer(raw, F, ppy, ddPct) {
-  const w = raw.map((x, i) => (F[i] ? Math.min(RULES.maxWeight, Math.max(0, x)) : 0));
+// Schwankung eines Depots pro Jahr aus den Tagesrenditen der letzten 60 Handelstage (mit Zusammenhang der Märkte)
+export function portfolioVol(w, F, ppy) {
   let pv = 0;
   for (let i = 0; i < w.length; i++) for (let j = 0; j < w.length; j++) {
-    if (!w[i] || !w[j]) continue;
+    if (!w[i] || !w[j] || !F[i] || !F[j]) continue;
     const a = F[i].lr, b = F[j].lr, ma = mean(a), mb = mean(b);
     let c = 0;
     for (let q = 0; q < a.length; q++) c += (a[q] - ma) * (b[q] - mb);
     pv += w[i] * w[j] * c / (a.length - 1);
   }
-  pv = Math.sqrt(Math.max(0, pv) * ppy);
+  return Math.sqrt(Math.max(0, pv) * ppy);
+}
+export function riskLayer(raw, F, ppy, ddPct) {
+  const w = raw.map((x, i) => (F[i] ? Math.min(RULES.maxWeight, Math.max(0, x)) : 0));
+  const pv = portfolioVol(w, F, ppy);
   const volMult = pv > RULES.targetVol / 100 ? RULES.targetVol / 100 / pv : 1, ddMult = ddMultiplier(ddPct);
   return { w: w.map(x => x * volMult * ddMult), portVol: pv * volMult * ddMult, volMult, ddMult };
 }
@@ -238,27 +255,31 @@ export function monthEnds(curve, k) {
 
 // ---------- Rückblick-Test ----------
 const equal = (closes, t) => { const ok = closes.map(c => c[t] > 0 && c[t - 1] > 0), n = ok.filter(Boolean).length; return ok.map(x => (x ? 1 / n : 0)); };
+// Vergleichsdepot: feste Gewichte (fehlt ein ETF noch, liegt sein Anteil als Geld da) oder – ohne Angabe – alle gleich
+const benchWeights = (closes, t, bench) => (bench ? bench.map((w, i) => (closes[i][t] > 0 && closes[i][t - 1] > 0 ? w : 0)) : equal(closes, t));
 export const weekOf = day => { const t = new Date(`${day}T12:00:00Z`); return new Date(t - ((t.getUTCDay() + 6) % 7) * 864e5).toISOString().slice(0, 10); };
 // Gehandelt wird einen Zeitschritt nach dem Signal (wie im echten Betrieb: Signal aus dem Schlusskurs, Kauf am nächsten Tag).
-export function runBacktest(series, ppy, targetsAt) {
+// cashRet: Zins auf freies Geld je Zeitschritt (T-Bills); bench: feste Gewichte des Vergleichsdepots (monatlich neu)
+export function runBacktest(series, ppy, targetsAt, cashRet = null, bench = null) {
   const { dates, closes } = series, n = dates.length, A = closes.length;
   const start = warmup(ppy);
   if (n < start + 2) return null;
   let eq = 1, peak = 1, ew = 1, spy = 1, cur = Array(A).fill(0), pending = null, turnover = 0;
-  let ewW = equal(closes, start);
+  let ewW = benchWeights(closes, start, bench);
   const curve = [];
   for (let t = start; t < n; t++) {
     if (t > start) {
       // Wertentwicklung von t−1 nach t (ein ETF ohne Kurs zählt nicht)
       const ratio = i => (closes[i][t] > 0 && closes[i][t - 1] > 0 ? closes[i][t] / closes[i][t - 1] : 1);
       const grow = cur.map((w, i) => w * ratio(i));
-      const total = grow.reduce((a, b) => a + b, 0) + (1 - cur.reduce((a, b) => a + b, 0));
+      const cash = 1 + (cashRet ? cashRet[t] : 0);
+      const total = grow.reduce((a, b) => a + b, 0) + (1 - cur.reduce((a, b) => a + b, 0)) * cash;
       eq *= total;
       cur = grow.map(v => v / total);
-      const ewGrow = ewW.map((w, i) => w * ratio(i)), ewTotal = ewGrow.reduce((a, b) => a + b, 0);
+      const ewGrow = ewW.map((w, i) => w * ratio(i)), ewTotal = ewGrow.reduce((a, b) => a + b, 0) + (1 - ewW.reduce((a, b) => a + b, 0)) * cash;
       ew *= ewTotal;
-      // monatlich neu gleichgewichtet über alle ETFs, die schon Kurse haben
-      ewW = (t - start) % Math.round(ppy / 12) === 0 ? equal(closes, t) : ewGrow.map(v => v / ewTotal);
+      // Vergleichsdepot monatlich neu gewichtet
+      ewW = (t - start) % Math.round(ppy / 12) === 0 ? benchWeights(closes, t, bench) : ewGrow.map(v => v / ewTotal);
       spy *= closes[0][t] / closes[0][t - 1];
     }
     // gestern berechnete Ziele heute umsetzen: volle Umschichtung am ersten Handelstag der Woche, sonst nur Ausstiege
@@ -282,15 +303,15 @@ export function runBacktest(series, ppy, targetsAt) {
   return { curve, next: pending, dd: (1 - eq / peak) * 100, turnoverPerYear: turnover / Math.max(years, 1e-9) };
 }
 // Alle Varianten einzeln und das lernende Gesamt-Depot (Gewichte nur aus der Vergangenheit, monatlich neu)
-export function familyBacktest(series, ppy, ctxAt) {
+export function familyBacktest(series, ppy, ctxAt, cashRet = null) {
   const { dates, closes } = series;
   const F = dates.map((_, t) => closes.map(c => featuresAt(c, t, ppy)));
   const B = F.map(inverseVol);
   const raws = dates.map((_, t) => VARIANTS.map(v => v.raw(F[t], B[t], ctxAt(t))));
-  const singles = VARIANTS.map((_, v) => runBacktest(series, ppy, (t, dd) => riskLayer(raws[t][v], F[t], ppy, dd).w));
+  const singles = VARIANTS.map((_, v) => runBacktest(series, ppy, (t, dd) => riskLayer(raws[t][v], F[t], ppy, dd).w, cashRet));
   if (singles.some(x => !x)) return null;
   let lw = Array(VARIANTS.length).fill(1 / VARIANTS.length), lastMonth = null, scores = null;
-  const history = [];
+  const history = [], targets = [];
   const ens = runBacktest(series, ppy, (t, dd, k) => {
     const m = dates[t].slice(0, 7);
     if (m !== lastMonth) {
@@ -299,9 +320,17 @@ export function familyBacktest(series, ppy, ctxAt) {
       history.push([dates[t], ...lw.map(x => round(x, 4))]);
     }
     const raw = closes.map((_, i) => VARIANTS.reduce((sum, _v, v) => sum + lw[v] * raws[t][v][i], 0));
-    return riskLayer(raw, F[t], ppy, dd).w;
-  });
-  return { ens, singles, history, weights: lw, scores, F, raws };
+    return (targets[t] = riskLayer(raw, F[t], ppy, dd).w);
+  }, cashRet);
+  return { ens, singles, history, weights: lw, scores, F, raws, targets };
+}
+// Kern + Trend: Ziel je Zeitschritt = Anteil × fester Kern + Rest × Ziel des Trend-Teils (mit dessen eigener Verlustbremse);
+// Vergleich: der Kern allein (60/40)
+export function combinedBacktest(series, ppy, fam, coreW, cashRet = null) {
+  return runBacktest(series, ppy, t => {
+    const tw = fam.targets[t];
+    return tw ? coreW.map((c, i) => CORE.share * (fam.F[t][i] ? c : 0) + (1 - CORE.share) * tw[i]) : null;
+  }, cashRet, coreW);
 }
 // Kombiniertes Rohziel mit festen Lerngewichten (für heute)
 export const combine = (lw, rawsT) => rawsT[0].map((_, i) => rawsT.reduce((sum, r, v) => sum + lw[v] * r[i], 0));
@@ -332,13 +361,13 @@ export function perf(values, dates, ppy) {
     years: yearsList,
   };
 }
-export function summarize(bt, ppy, every) {
+export function summarize(bt, ppy, every, benchName = null) {
   const c = bt.curve, d = c.map(x => x.d);
   const sample = c.filter((_, i) => i % every === 0 || i === c.length - 1).map(x => [x.d, round(x.eq), round(x.ew), round(x.spy), round(x.exp, 3)]);
   return {
     start: d[0], end: d[d.length - 1], points: c.length,
     bot: perf(c.map(x => x.eq), d, ppy), ew: perf(c.map(x => x.ew), d, ppy), spy: perf(c.map(x => x.spy), d, ppy),
-    avgExposure: round(mean(c.map(x => x.exp)) * 100, 1), turnoverPerYear: round(bt.turnoverPerYear * 100, 0), curve: sample,
+    avgExposure: round(mean(c.map(x => x.exp)) * 100, 1), turnoverPerYear: round(bt.turnoverPerYear * 100, 0), curve: sample, benchName,
   };
 }
 
@@ -377,6 +406,35 @@ export function align(lists, cutoff) {
   });
   return { dates, closes };
 }
+
+// Ausschüttungen: eToro-Kurse enthalten keine Dividenden und Zinsen (geprüft: SPY schloss laut eToro am 19.11.2010 bei
+// 120,29 $ – der unbereinigte Kurs). Für Anleihen fehlten so 2–5 % im Jahr, ihre Trends sahen schlechter aus, als sie
+// waren. Signale und Rückblick rechnen deshalb mit geschätzten Ausschüttungen: Aktien mit üblicher Dividendenrendite,
+// Anleihen mit der Marktrendite (FRED), Rohstoff-ETFs mit dem T-Bill-Zins ihrer Sicherheiten.
+const valueAsOf = (rows, d) => {
+  if (!rows || !rows.length) return null;
+  let lo = 0, hi = rows.length - 1, ans = null;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (rows[m].d <= d) { ans = rows[m].v; lo = m + 1; } else hi = m - 1; }
+  return ans;
+};
+export function withDistributions(S, assets, fred) {
+  const closes = S.closes.map((col, i) => {
+    const a = assets[i];
+    let acc = null, prev = null, prevD = null;
+    return col.map((c, t) => {
+      if (c === null) return null;
+      if (acc === null) { acc = c; prev = c; prevD = S.dates[t]; return acc; }
+      const days = (Date.parse(S.dates[t]) - Date.parse(prevD)) / 864e5;
+      const y = a.fred ? (valueAsOf(fred[a.fred], prevD) ?? 0) / 100 : (a.yld || 0);
+      acc = acc * (c / prev) * (1 + y * days / 365);
+      prev = c; prevD = S.dates[t];
+      return acc;
+    });
+  });
+  return { dates: S.dates, closes };
+}
+// Zins auf freies Geld je Zeitschritt (T-Bill-Zins des Vortags, tageweise)
+export const cashReturns = (dates, dtb3) => dates.map((d, t) => (t ? ((valueAsOf(dtb3, dates[t - 1]) ?? 0) / 100) * (Date.parse(d) - Date.parse(dates[t - 1])) / 864e5 / 365 : 0));
 
 // ---------- Handelbare Gegenstücke (UCITS-ETFs) ----------
 // Offizielle ETF-Liste von eToro (Typ laut Liste, ohne interne Instrumente)
@@ -422,10 +480,8 @@ export function trackCorr(sigList, vehList, days = VEHICLE.corrDays) {
 }
 // Je Markt bis zu drei geeignete UCITS-ETFs: Name passt (oder läuft fast genau gleich), keine andere Anlage, aktuelle Kurse,
 // läuft mit dem Signal-ETF. Der Handel nimmt das erste, das im Konto kaufbar ist.
-async function resolveVehicles(found, today) {
-  let list;
-  try { list = await etfList(); log(`ETF-Liste von eToro: ${list.length} ETFs`); }
-  catch (e) { warn(`ETF-Liste: ${e.message}`); return null; }
+async function resolveVehicles(found, today, list) {
+  if (!list) return null;
   const byKey = {};
   for (const f of found) {
     const ok = [], sigDaily = f.daily.filter(x => x.d < today);
@@ -448,6 +504,30 @@ async function resolveVehicles(found, today) {
     byKey[f.key] = ok;
   }
   return byKey;
+}
+// Geldmarkt-ETF: nur nach Kürzel und Name (es gibt kein Signal, mit dem er laufen müsste), aktuelle Kurse
+export function cashCandidates(list) {
+  const out = [];
+  for (const base of CASH.trade) {
+    const hits = list.filter(x => x.sym.split(".")[0] === base && /^[A-Z0-9]+\.[A-Z]{1,3}$/.test(x.sym)).sort((a, b) => suffixRank(a.sym) - suffixRank(b.sym) || a.id - b.id);
+    for (const h of hits) if (!out.some(o => o.id === h.id)) out.push({ ...h, ok: CASH.match.test(h.name) && CASH.need.test(h.name) && !CASH.avoid.test(h.name) && !BAD_VEHICLE.test(h.name) });
+  }
+  return out;
+}
+async function resolveCash(list, today) {
+  if (!list) return [];
+  const ok = [];
+  for (const v of cashCandidates(list)) {
+    if (ok.length >= VEHICLE.keep) break;
+    if (!v.ok) { log(`Geldmarkt: ${v.sym} („${v.name}“) ist kein Geldmarkt-ETF – übersprungen.`); continue; }
+    let daily;
+    try { daily = (await candles(v.id, "OneDay", 30)).filter(x => x.d < today); } catch (e) { log(`Geldmarkt: ${v.sym}: ${e.message}`); continue; }
+    const last = daily[daily.length - 1];
+    if (!last || (Date.parse(`${today}T12:00:00Z`) - Date.parse(`${last.d}T12:00:00Z`)) / 864e5 > VEHICLE.freshDays) { log(`Geldmarkt: ${v.sym} hat keine aktuellen Kurse – übersprungen.`); continue; }
+    ok.push({ id: v.id, sym: v.sym, name: v.name, last: round(last.c, 4), asOf: last.d, corr: null });
+  }
+  log(`Geldmarkt: ${ok.length ? `gehandelt wird ${ok.map(o => o.sym).join(" / ")}` : "kein passender ETF – freies Geld bleibt unverzinst im Konto"}`);
+  return ok;
 }
 
 async function signalsMain() {
@@ -475,35 +555,61 @@ async function signalsMain() {
     }
     if (found.length >= 4 && found[0].key === "us") {
       const weekCut = new Date(now - 6 * 864e5).toISOString().slice(0, 10);   // laufende Woche weglassen, egal ob Mo- oder So-datiert
-      const D = align(found.map(f => f.daily), today), W = align(found.map(f => f.weekly), weekCut);
-      // Finanzlage (Chicago Fed NFCI, wöchentlich) für die Variante „Trend + Finanzlage“
-      let nfci = null;
-      try { nfci = await fredSeries("NFCI", "2008-01-01"); } catch (e) { out.errors.push(`Finanzlage (FRED): ${e.message} – die Variante „Trend + Finanzlage“ rechnet vorerst wie die Grundregel.`); }
+      const Draw = align(found.map(f => f.daily), today), Wraw = align(found.map(f => f.weekly), weekCut);
+      // FRED: Finanzlage (NFCI) für „Trend + Finanzlage“, T-Bill-Zins (DTB3) für freies Geld, 10-jährige Rendite (DGS10) für Anleihen
+      const fred = {};
+      for (const [id, from] of [["NFCI", "2008-01-01"], ["DTB3", "2009-01-01"], ["DGS10", "2009-01-01"]]) {
+        try { fred[id] = await fredSeries(id, from); }
+        catch (e) { out.errors.push(`FRED ${id}: ${e.message} – ${id === "NFCI" ? "die Variante „Trend + Finanzlage“ rechnet vorerst wie die Grundregel" : "der Bot rechnet hier vorsichtig mit 0 %"}.`); }
+      }
+      const nfci = fred.NFCI || null;
+      // Signale und Rückblick mit Ausschüttungen; freies Geld verzinst wie T-Bills
+      const D = withDistributions(Draw, found, fred), W = withDistributions(Wraw, found, fred);
+      const cashD = cashReturns(D.dates, fred.DTB3), cashW = cashReturns(W.dates, fred.DTB3);
       // Was der Bot tatsächlich kauft: UCITS-Gegenstücke, zuletzt der US-ETF selbst (für Konten, die ihn kaufen dürfen)
-      const veh = await resolveVehicles(found, today);
+      let list = null;
+      try { list = await etfList(); log(`ETF-Liste von eToro: ${list.length} ETFs`); } catch (e) { warn(`ETF-Liste: ${e.message}`); }
+      const veh = await resolveVehicles(found, today, list), cashVeh = await resolveCash(list, today);
       if (!veh) out.errors.push("Die ETF-Liste von eToro war nicht lesbar – der Bot versucht vorerst die US-ETFs (in der EU nur als CFD erlaubt).");
       else if (found.some(f => !veh[f.key].length)) out.errors.push(`Ohne europäisches Gegenstück: ${found.filter(f => !veh[f.key].length).map(f => f.name).join(", ")} – dafür versucht der Bot den US-ETF.`);
+      if (veh && !cashVeh.length) out.errors.push("Kein Geldmarkt-ETF gefunden – freies Geld bleibt vorerst unverzinst im Konto.");
       const keys = found.map(f => f.key);
       const ctxOf = dates => { const m = macroAt(dates, nfci); return t => ({ nfci: m[t], keys }); };
-      const fam = familyBacktest(D, 252, ctxOf(D.dates)), famW = familyBacktest(W, 52, ctxOf(W.dates));
+      const fam = familyBacktest(D, 252, ctxOf(D.dates), cashD), famW = familyBacktest(W, 52, ctxOf(W.dates), cashW);
+      const coreArr = found.map(f => CORE.weights[f.key] || 0);
       if (!fam) out.errors.push(`Zu wenige gemeinsame Handelstage (${D.dates.length}) für die Signale.`);
       else {
-        const t = D.dates.length - 1, sigs = found.map((_, i) => signalAt(D.closes[i], t, 252)), F = fam.F[t];
+        const comb = combinedBacktest(D, 252, fam, coreArr, cashD), combW = famW ? combinedBacktest(W, 52, famW, coreArr, cashW) : null;
+        const t = D.dates.length - 1, F = fam.F[t];
+        const sigs = found.map((_, i) => signalAt(D.closes[i], t, 252));        // Trend mit Ausschüttungen
+        const raw = found.map((_, i) => Draw.closes[i][t]);                     // echte Kurse (Notbremse des US-ETF)
         if (F.some(x => !x)) out.errors.push(`Zu kurze Historie für ${found.filter((_, i) => !F[i]).map(f => f.sym).join(", ")} – diese ETFs bleiben vorerst bei 0 %.`);
         const rawT = fam.raws[t], mix = combine(fam.weights, rawT);
-        const base = riskLayer(mix, F, 252, 0), tw = riskLayer(mix, F, 252, fam.ens.dd);   // ohne / mit Verlustbremse laut Rückblick
+        const tw = riskLayer(mix, F, 252, fam.ens.dd);   // Trend-Teil mit seiner eigenen Verlustbremse (laut seinem Rückblick)
+        const core = coreArr.map((c, i) => (F[i] ? CORE.share * c : 0)), trendW = tw.w.map(x => (1 - CORE.share) * x);
+        const w = core.map((c, i) => c + trendW[i]);
         out.asOf = D.dates[t];
-        const trade = (f, i) => [...(veh ? veh[f.key] : []), { id: f.id, sym: f.sym, name: `${f.sym} (US-ETF)`, last: sigs[i] ? round(sigs[i].last, 4) : null, asOf: D.dates[t], us: true }];
+        out.core = { share: CORE.share, weights: CORE.weights };
+        const trade = (f, i) => [...(veh ? veh[f.key] : []), { id: f.id, sym: f.sym, name: `${f.sym} (US-ETF)`, last: Number.isFinite(raw[i]) ? round(raw[i], 4) : null, asOf: D.dates[t], us: true }];
         out.assets = found.map((f, i) => sigs[i] && F[i] ? ({
-          key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: round(sigs[i].last, 4), r3: round(sigs[i].r3 * 100, 2), r6: round(sigs[i].r6 * 100, 2),
+          key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: round(raw[i], 4), r3: round(sigs[i].r3 * 100, 2), r6: round(sigs[i].r6 * 100, 2),
           r12: round(sigs[i].r12 * 100, 2), dSma: round(sigs[i].dSma * 100, 2), checks: sigs[i].checks, score: sigs[i].score, vol: round(sigs[i].vol * 100, 2),
-          weightBase: round(base.w[i], 4), weight: round(tw.w[i], 4), trade: trade(f, i),
-        }) : ({ key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: null, checks: [false, false, false, false], score: 0, vol: null, weightBase: 0, weight: 0, short: true, trade: trade(f, i) }));
+          core: round(core[i], 4), trend: round(trendW[i], 4), weightBase: round(w[i], 4), weight: round(w[i], 4), trade: trade(f, i),
+        }) : ({ key: f.key, name: f.name, sym: f.sym, instrumentId: f.id, last: null, checks: [false, false, false, false], score: 0, vol: null, core: 0, trend: 0, weightBase: 0, weight: 0, short: true, trade: trade(f, i) }));
+        const invested = out.assets.reduce((a, x) => a + x.weight, 0);
+        const rate = fred.DTB3 ? fred.DTB3[fred.DTB3.length - 1] : null;
+        out.cash = { key: "cash", name: CASH.name, weight: round(Math.max(0, 1 - invested), 4), trade: cashVeh, rate: rate ? { value: rate.v, asOf: rate.d } : null };
+        // für das Modell-Depot des Bots: Schlusskurse mit Ausschüttungen und ein Geldmarkt-Index
+        let ci = 1;
+        const cashIdx = cashD.map(r => (ci *= 1 + r));
         const m = D.dates.length, k0 = m - Math.min(15, m);
-        out.recent = D.dates.slice(k0).map((d, k) => [d, ...D.closes.map(c => round(c[k0 + k], 6))]);   // für das Modell-Depot des Bots
-        out.exposure = round(tw.w.reduce((a, b) => a + b, 0), 4);
-        out.portVol = round(tw.portVol * 100, 2); out.volMult = round(tw.volMult, 3); out.ddMult = round(tw.ddMult, 3); out.modelDd = round(fam.ens.dd, 2);
-        out.backtest = { daily: summarize(fam.ens, 252, 5), weekly: famW ? summarize(famW.ens, 52, 2) : null };
+        out.recentKeys = [...keys, "cash"];
+        out.recent = D.dates.slice(k0).map((d, k) => [d, ...D.closes.map(c => round(c[k0 + k], 6)), round(cashIdx[k0 + k], 8)]);
+        out.exposure = round(invested, 4);
+        out.portVol = round(portfolioVol(w, F, 252) * 100, 2); out.volMult = round(tw.volMult, 3); out.ddMult = round(tw.ddMult, 3); out.modelDd = round(fam.ens.dd, 2);
+        out.backtest = { daily: summarize(comb, 252, 5, "60/40"), weekly: combW ? summarize(combW, 52, 2, "60/40") : null };
+        const trendPerf = fb => (fb ? perf(fb.ens.curve.map(y => y.eq), fb.ens.curve.map(y => y.d), fb === fam ? 252 : 52) : null);
+        out.backtest.trendOnly = { daily: trendPerf(fam), weekly: trendPerf(famW) };
         const vstats = (fb, ppy) => (fb ? fb.singles.map(x => { const q = perf(x.curve.map(y => y.eq), x.curve.map(y => y.d), ppy); return { cagr: q.cagr, vol: q.vol, maxDD: q.maxDD, sharpe: q.sharpe, worst12: q.worst12, pos12: q.pos12 }; }) : null);
         const vd = vstats(fam, 252), vw = vstats(famW, 52);
         out.learning = {
@@ -517,12 +623,12 @@ async function signalsMain() {
           historyWeekly: famW ? famW.history.filter((_, i, arr) => i % 3 === 0 || i === arr.length - 1) : null,
           nfci: nfci ? { value: nfci[nfci.length - 1].v, asOf: nfci[nfci.length - 1].d } : null,
         };
-        log(`Signale ${out.asOf}: ${out.assets.map(a => `${a.sym} ${de(a.score * 4)}/4 → ${de(a.weight * 100, 1)} %`).join(", ")}; investiert ${de(out.exposure * 100, 0)} %`);
-        log(`Gelernte Gewichte: ${VARIANTS.map((v, i) => `${v.name} ${de(fam.weights[i] * 100, 0)} %`).join(", ")}${out.learning.nfci ? `; NFCI ${out.learning.nfci.value} (${out.learning.nfci.asOf})` : ""}`);
+        log(`Signale ${out.asOf}: ${out.assets.map(a => `${a.sym} ${de(a.score * 4)}/4 → Kern ${de(a.core * 100, 1)} % + Trend ${de(a.trend * 100, 1)} %`).join(", ")}; Geldmarkt ${de(out.cash.weight * 100, 1)} %`);
+        log(`Gelernte Gewichte: ${VARIANTS.map((v, i) => `${v.name} ${de(fam.weights[i] * 100, 0)} %`).join(", ")}${out.learning.nfci ? `; NFCI ${out.learning.nfci.value} (${out.learning.nfci.asOf})` : ""}${rate ? `; T-Bill-Zins ${rate.v} % (${rate.d})` : ""}`);
         if (out.errors.length) log(`Hinweise: ${out.errors.join(" | ")}`);
         const b = out.backtest.daily.bot;
-        log(`Rückblick täglich ${out.backtest.daily.start}–${out.backtest.daily.end}: ${de(b.cagr, 1)} % p. a., größter Rückgang ${de(b.maxDD, 1)} %, 12-Monats-Fenster im Plus ${de(b.pos12, 0)} %`);
-        if (out.backtest.weekly) { const w = out.backtest.weekly.bot; log(`Rückblick wöchentlich ${out.backtest.weekly.start}–${out.backtest.weekly.end}: ${de(w.cagr, 1)} % p. a., größter Rückgang ${de(w.maxDD, 1)} %, 12-Monats-Fenster im Plus ${de(w.pos12, 0)} %`); }
+        log(`Rückblick täglich ${out.backtest.daily.start}–${out.backtest.daily.end}: ${de(b.cagr, 1)} % p. a., größter Rückgang ${de(b.maxDD, 1)} %, 12-Monats-Fenster im Plus ${de(b.pos12, 0)} % (60/40: ${de(out.backtest.daily.ew.cagr, 1)} %)`);
+        if (out.backtest.weekly) { const x = out.backtest.weekly.bot; log(`Rückblick wöchentlich ${out.backtest.weekly.start}–${out.backtest.weekly.end}: ${de(x.cagr, 1)} % p. a., größter Rückgang ${de(x.maxDD, 1)} %, 12-Monats-Fenster im Plus ${de(x.pos12, 0)} % (60/40: ${de(out.backtest.weekly.ew.cagr, 1)} %)`); }
       }
     } else if (!found.length || found[0].key !== "us") out.errors.push("US-Aktien-ETF fehlt – ohne ihn rechnet der Bot nicht.");
     else out.errors.push(`Nur ${found.length} von ${ASSETS.length} ETFs gefunden – zu wenig für eine breite Streuung.`);
@@ -583,7 +689,7 @@ async function tradeMain() {
     for (const k of Object.keys(st.notices)) if (st.notices[k] !== today) delete st.notices[k];
     st.journal = st.journal.slice(-RULES.keepJournal);
     // Website: Signale und Rückblick-Test mitliefern (nur Prozentwerte)
-    if (sig && sig.assets && sig.assets.length) st.signals = { asOf: sig.asOf, updated: sig.updated, assets: sig.assets, exposure: sig.exposure, portVol: sig.portVol, volMult: sig.volMult, ddMult: sig.ddMult, modelDd: sig.modelDd };
+    if (sig && sig.assets && sig.assets.length) st.signals = { asOf: sig.asOf, updated: sig.updated, assets: sig.assets, cash: sig.cash || null, core: sig.core || null, exposure: sig.exposure, portVol: sig.portVol, volMult: sig.volMult, ddMult: sig.ddMult, modelDd: sig.modelDd };
     if (sig && sig.backtest) st.backtest = sig.backtest;
     if (sig && sig.learning) st.learning = sig.learning;
     if (sig && sig.errors) st.signalErrors = sig.errors;
@@ -601,9 +707,11 @@ async function tradeMain() {
   const addDays = (day, n) => new Date(Date.parse(`${day}T12:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
   const mask = s => String(s || "").replace(/\d{4,}(?:[.,]\d+)?|\d+[.,]\d+/g, "#").slice(0, 200);   // keine Beträge ins öffentliche Protokoll
   for (const [id, b] of Object.entries(st.blocked)) if (!b.until || b.until <= today) delete st.blocked[id];   // Sperre abgelaufen → wieder versuchen
-  const assetList = (sig && sig.assets) || [];
-  const vehiclesOf = a => (Array.isArray(a.trade) && a.trade.length ? a.trade : [{ id: a.instrumentId, sym: a.sym, last: a.last, us: true }]);
-  const idsOf = a => new Set([a.instrumentId, ...vehiclesOf(a).map(v => v.id)]);
+  // Märkte und – als letzter Posten – der Geldmarkt für das freie Geld des Trend-Teils
+  const cashAsset = sig && sig.cash && Array.isArray(sig.cash.trade) ? { ...sig.cash, sym: "Geldmarkt", instrumentId: null, score: null } : null;
+  const assetList = [...((sig && sig.assets) || []), ...(cashAsset ? [cashAsset] : [])];
+  const vehiclesOf = a => (Array.isArray(a.trade) && a.trade.length ? a.trade : a.instrumentId ? [{ id: a.instrumentId, sym: a.sym, last: a.last, us: true }] : []);
+  const idsOf = a => new Set([a.instrumentId, ...vehiclesOf(a).map(v => v.id)].filter(Number.isInteger));
   const symOf = id => { for (const a of assetList) { const v = vehiclesOf(a).find(x => x.id === id); if (v) return v.sym; } return String(id); };
   // via: worüber der Bot diesen Markt hält bzw. als Nächstes kaufen würde (für die Website)
   const viaOf = a => { const held = [...new Set(st.positions.filter(p => p.key === a.key && !p.closing).map(p => symOf(p.instrumentID)))]; return held.length ? held.join(" / ") : (vehiclesOf(a).find(v => !st.blocked[v.id]) || {}).sym || null; };
@@ -675,7 +783,7 @@ async function tradeMain() {
   for (const x of st.positions) if (byId.has(x.positionID) && x.closing && (now - new Date(x.closing)) / 36e5 > 6) delete x.closing;   // Verkauf nicht ausgeführt → wieder normal führen
   for (const x of [...st.positions]) if (!byId.has(x.positionID)) {
     st.positions = st.positions.filter(y => y !== x);
-    if (!x.closing) event("geschlossen", `Eine Bot-Position (${(sig && sig.assets || []).find(a => a.key === x.key)?.sym || x.key}) ist nicht mehr im Konto – von Hand oder durch die Notbremse geschlossen.`, false);
+    if (!x.closing) event("geschlossen", `Eine Bot-Position (${assetList.find(a => a.key === x.key)?.sym || x.key}) ist nicht mehr im Konto – von Hand oder durch die Notbremse geschlossen.`, false);
   }
   const mine = () => st.positions.map(x => ({ ...x, ...byId.get(x.positionID) })).filter(p => Number.isFinite(p.value));
 
@@ -701,16 +809,18 @@ async function tradeMain() {
   st.capitalEur = round(BUDGET_EUR * growth, 2);   // für die Website: Bot-Kapital laut Modell (aus Budget und Modell, nicht aus dem Konto)
   const holdings = new Map();
   for (const p of mine()) holdings.set(p.key, (holdings.get(p.key) || 0) + p.value);
-  st.exposure = sleeve > 0 ? round([...holdings.values()].reduce((a, b) => a + b, 0) / sleeve, 4) : 0;
+  // investiert = in Märkten (ohne Geldmarkt); der Geldmarkt-Anteil getrennt
+  st.exposure = sleeve > 0 ? round([...holdings.entries()].filter(([k]) => k !== "cash").reduce((a, [, v]) => a + v, 0) / sleeve, 4) : 0;
+  st.cashPct = sleeve > 0 ? round((holdings.get("cash") || 0) / sleeve, 4) : 0;
   const pnlOpen = mine().reduce((s, p) => s + p.pnl, 0), investedOpen = mine().reduce((s, p) => s + p.amount, 0);
   st.openPnlPct = investedOpen > 0 ? round(pnlOpen / investedOpen * 100, 2) : null;
-  st.holdings = (sig && sig.assets || []).map(a => ({ key: a.key, sym: a.sym, via: viaOf(a), pct: sleeve > 0 ? round((holdings.get(a.key) || 0) / sleeve, 4) : 0, target: a.weight }));
+  st.holdings = assetList.map(a => ({ key: a.key, sym: a.sym, via: viaOf(a), pct: sleeve > 0 ? round((holdings.get(a.key) || 0) / sleeve, 4) : 0, target: a.weight }));
 
   if (!st.enabled) { log("Trend-Bot ist nicht gestartet – er rechnet nur die Signale."); return finish(); }
   if (!fresh) { once("stale", "warten", `Die Kurse sind nicht aktuell (Stand ${sig && sig.asOf || "unbekannt"}) – heute keine Käufe oder Verkäufe.`); return finish(); }
 
-  // Modell-Depot seit dem Start (100 = Startwert): Grundlage für Tagebuch und Verlustbremse
-  const keys = sig.assets.map(a => a.key);
+  // Modell-Depot seit dem Start (100 = Startwert): Grundlage für Tagebuch und Bot-Kapital (Kurse mit Ausschüttungen, Geldmarkt verzinst)
+  const keys = sig.recentKeys || sig.assets.map(a => a.key);
   if (!st.model) st.model = { start: sig.asOf, lastDate: sig.asOf, index: 100, peak: 100, w: {} };
   const M = st.model, rows = (sig.recent || []).filter(r => r[0] > M.lastDate);
   let prevRow = (sig.recent || []).filter(r => r[0] <= M.lastDate).pop();
@@ -722,8 +832,13 @@ async function tradeMain() {
     keys.forEach((k, i) => { if (M.w[k]) M.w[k] = M.w[k] * r[i + 1] / prevRow[i + 1] / total; });
     M.index *= total; M.peak = Math.max(M.peak, M.index); M.lastDate = r[0]; prevRow = r;
   }
-  const liveDd = (1 - M.index / M.peak) * 100, ddMult = ddMultiplier(liveDd);
-  const target = Object.fromEntries(sig.assets.map(a => [a.key, round((a.weightBase ?? a.weight) * ddMult, 4)]));
+  // Ziele: Kern + Trend-Teil (dessen Verlustbremse steckt schon in den Signalen) und der Geldmarkt für den Rest
+  const liveDd = (1 - M.index / M.peak) * 100, ddMult = Number.isFinite(sig.ddMult) ? sig.ddMult : 1;
+  const target = Object.fromEntries(assetList.map(a => [a.key, round(a.weight || 0, 4)]));
+  // Für einen Markt ist im Konto kein ETF kaufbar (alle abgelehnt): sein Anteil kommt verzinst in den Geldmarkt
+  if (cashAsset && vehiclesOf(cashAsset).some(v => !st.blocked[v.id])) for (const a of sig.assets) {
+    if (target[a.key] > 0 && !vehiclesOf(a).some(v => !st.blocked[v.id])) { target.cash = round((target.cash || 0) + target[a.key], 4); target[a.key] = 0; }
+  }
   st.liveDd = round(liveDd, 2); st.ddMult = round(ddMult, 3); st.target = target;
   st.holdings = st.holdings.map(h => ({ ...h, target: target[h.key] }));
   // Volle Umschichtung beim ersten Handelslauf der Woche (und gleich nach dem Start), sonst nur Ausstiege bei gebrochenem Trend
@@ -731,7 +846,7 @@ async function tradeMain() {
   if (M.appliedFor !== sig.asOf && marketOpen(now) && st.lastTradeDay !== today) {   // Ziele einmal je Kursstand ins Modell (mit Band und Kosten)
     let traded = 0;
     for (const k of keys) {
-      const c = M.w[k] || 0, g = target[k];
+      const c = M.w[k] || 0, g = target[k] || 0;
       if (!full && !(g === 0 && c > 0)) continue;
       if ((g === 0 && c > 0) || (c === 0 && g > 0) || Math.abs(g - c) > RULES.band) { traded += Math.abs(g - c); M.w[k] = g; }
     }
@@ -740,7 +855,7 @@ async function tradeMain() {
   if (!marketOpen(now)) { log("Börse geschlossen (London/Frankfurt) – gehandelt wird beim nächsten Lauf während der Handelszeit."); st.waiting = "Börse geschlossen"; return finish(); }
   delete st.waiting;
   if (st.lastTradeDay === today) { log("Heute schon abgeglichen."); return finish(); }
-  const busy = sig.assets.filter(a => [...idsOf(a)].some(id => acc.pendingInstruments.has(id)));
+  const busy = assetList.filter(a => [...idsOf(a)].some(id => acc.pendingInstruments.has(id)));
   if (busy.length || st.orders.length) { once("pending", "warten", `Es gibt noch offene Aufträge (${busy.map(a => a.sym).join(", ") || "in Prüfung"}) – der Bot wartet, damit nichts doppelt gekauft wird.`, false); return finish(); }
 
   // 4. Umschichten: erst verkaufen (macht Geld frei), dann kaufen
@@ -754,7 +869,7 @@ async function tradeMain() {
   const buy = async (a, amount, reason) => {
     for (let tries = 0; tries < 4 && orders < RULES.maxOrdersPerRun; tries++) {
       const v = chooseVehicle(a);
-      if (!v) { once(`novehicle:${a.key}`, "hinweis", `Für ${a.name} ist in Ihrem Konto gerade kein ETF kaufbar – dieser Anteil bleibt vorerst als Geld im Konto.`); return; }
+      if (!v) { once(`novehicle:${a.key}`, "hinweis", `Für ${a.name} ist in Ihrem Konto gerade kein ETF kaufbar – dieser Anteil kommt vorerst in den Geldmarkt.`); return; }
       const at = new Date().toISOString(), sl = v.last > 0 ? round(v.last * (1 - RULES.stopLossPct / 100), 4) : null;
       try {
         const r = await send("POST", DEMO.open, {
@@ -775,8 +890,8 @@ async function tradeMain() {
       }
     }
   };
-  for (const a of sig.assets) {
-    const g = target[a.key], have = holdings.get(a.key) || 0, want = g * sleeve, diff = want - have;
+  for (const a of assetList) {
+    const g = target[a.key] || 0, have = holdings.get(a.key) || 0, want = g * sleeve, diff = want - have;
     if (!(have > 0) || orders >= RULES.maxOrdersPerRun) continue;
     if (g === 0 || (full && diff < -RULES.band * sleeve)) {
       const ps = mine().filter(p => p.key === a.key), soldSyms = new Set();
@@ -793,16 +908,18 @@ async function tradeMain() {
           if (full) { const x = st.positions.find(y => y.positionID === p.positionID); if (x) x.closing = now.toISOString(); }
         } catch (e) { once(`close:${p.positionID}`, "fehler", `Verkauf von ${symOf(p.instrumentID)} fehlgeschlagen: ${mask(e.message)}`); }
       }
-      if (sold > 0) trades.push({ key: a.key, sym: [...soldSyms].join(" / "), side: "verkauf", pct: round(sold / sleeve * 100, 2), reason: g === 0 ? "Trend gebrochen – Ausstieg" : "Anteil verringert" });
+      const why = a.key === "cash" ? "Geldmarkt für Käufe aufgelöst" : g === 0 ? "Trend gebrochen – Ausstieg" : "Anteil verringert";
+      if (sold > 0) trades.push({ key: a.key, sym: [...soldSyms].join(" / "), side: "verkauf", pct: round(sold / sleeve * 100, 2), reason: why });
     }
   }
-  for (const a of sig.assets) {
-    const g = target[a.key], have = holdings.get(a.key) || 0, want = g * sleeve, diff = want - have;
+  for (const a of assetList) {   // der Geldmarkt kommt zuletzt und bekommt, was übrig ist
+    const g = target[a.key] || 0, have = holdings.get(a.key) || 0, want = g * sleeve, diff = want - have;
     if (!full || !(g > 0) || orders >= RULES.maxOrdersPerRun) continue;
     if (!(have === 0 || diff > RULES.band * sleeve)) continue;
     const amount = Math.floor(Math.min(diff, credit) * 100) / 100;
-    if (!(amount >= RULES.minOrderUsd)) { if (diff >= RULES.minOrderUsd) once(`credit:${a.key}`, "hinweis", `Für ${a.name} ist nicht genug freies Geld im Demokonto – der Kauf wird übersprungen.`, false); continue; }
-    await buy(a, amount, have === 0 ? "Trend intakt – Einstieg" : "Anteil erhöht");
+    if (!(amount >= RULES.minOrderUsd)) { if (diff >= RULES.minOrderUsd && a.key !== "cash") once(`credit:${a.key}`, "hinweis", `Für ${a.name} ist nicht genug freies Geld im Demokonto – der Kauf wird übersprungen.`, false); continue; }
+    const reason = a.key === "cash" ? "freies Geld verzinst im Geldmarkt" : have > 0 ? "Anteil erhöht" : a.core > 0 ? "Kern-Anteil" + (a.trend > 0 ? " und Trend intakt" : "") : "Trend intakt – Einstieg";
+    await buy(a, amount, reason);
   }
   st.lastTradeDay = today;
   if (full) st.lastFullWeek = weekOf(today);
@@ -833,14 +950,14 @@ async function tradeMain() {
       } catch (e) { log(`Auftrag ${o.orderID}: ${mask(e.message)}`); }
     }
     for (const o of retry) {
-      const a = sig.assets.find(x => x.key === o.key), amount = Math.floor(Math.min(o.pct * sleeve, credit) * 100) / 100;
+      const a = assetList.find(x => x.key === o.key), amount = Math.floor(Math.min(o.pct * sleeve, credit) * 100) / 100;
       if (a && amount >= RULES.minOrderUsd) await buy(a, amount, "Ersatz für einen abgelehnten Kauf");
     }
   }
   st.todayTrades = trades;
   if (trades.length) log(`Umgeschichtet: ${trades.map(t => `${t.side} ${t.sym} ${de(t.pct, 1)} %${t.rejected ? " (abgelehnt)" : ""}`).join(", ")}`);
   else log("Keine Umschichtung nötig – alle Anteile liegen im Band.");
-  if (ddMult < 1) once("brake", "bremse", `Verlustbremse aktiv: Das Modell-Depot liegt ${de(liveDd, 1)} % unter seinem Hoch – der Bot setzt nur ${de(ddMult * 100, 0)} % des üblichen Anteils ein.`);
+  if (ddMult < 1) once("brake", "bremse", `Verlustbremse im Trend-Teil aktiv: Er liegt ${de(sig.modelDd || 0, 1)} % unter seinem Hoch und setzt nur ${de(ddMult * 100, 0)} % des üblichen Anteils ein – der feste Kern bleibt investiert.`);
   return finish(trades);
 
   // Tagebuch: ein Eintrag pro Tag, solange der Bot läuft (nur Prozentwerte)
@@ -860,7 +977,7 @@ async function tradeMain() {
         st.learnWeights = lw;
       }
       const entry = {
-        day: today, enabled: st.enabled, asOf: sig.asOf, exposureTarget: st.target ? round(Object.values(st.target).reduce((a, b) => a + b, 0), 4) : sig.exposure,
+        day: today, enabled: st.enabled, asOf: sig.asOf, exposureTarget: st.target ? round(Object.entries(st.target).filter(([k]) => k !== "cash").reduce((a, [, b]) => a + b, 0), 4) : sig.exposure,
         exposure: st.exposure ?? null, target: st.target || null, scores: Object.fromEntries(sig.assets.map(a => [a.key, a.score])),
         model: st.model ? round(st.model.index, 4) : null, liveDd: st.liveDd ?? null, ddMult: st.ddMult ?? null, openPnlPct: st.openPnlPct ?? null,
         trades: trades || old.trades || [], note: st.waiting || null, learn: lw || null, learnNote,

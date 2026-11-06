@@ -16,6 +16,9 @@
   const timeDe = d => (d ? new Date(d).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }) : "–");
   let st = null, loading = false, range = null;   // Standard: der längste Rückblick (aussagekräftiger als wenige Jahre)
 
+  // Vergleichsdepot im Rückblick: 60/40 (der Kern allein) – ältere Stände: alle 6 ETFs gleich gewichtet
+  const benchLabel = bt => (bt && bt.benchName === "60/40" ? "60/40 fest (Kern allein)" : "Alle 6 ETFs gleich gewichtet");
+  const benchShort = bt => (bt && bt.benchName === "60/40" ? "60/40" : "6 ETFs");
   // nächster planmäßiger Lauf: Mo–Fr 14:17 UTC (London und Frankfurt offen)
   function nextRun() {
     const t = new Date();
@@ -70,31 +73,39 @@
       const h = held.get(a.key), list = (a.trade || []).filter(t => !blocked[t.id]);
       const sym = (h && h.via) || (list[0] && list[0].sym);
       const v = (a.trade || []).find(t => t.sym === sym);
-      if (!sym) return `<span class="muted small">kein kaufbares ETF – bleibt Geld</span>`;
+      if (!sym) return `<span class="muted small">kein kaufbares ETF – Anteil im Geldmarkt</span>`;
       return `<b>${esc(sym)}</b>${v && v.name && !v.us ? ` <span class="muted small vname">${esc(v.name)}</span>` : v && v.us ? ` <span class="muted small">US-ETF</span>` : ""}`;
     };
     const sq = checks => `<span class="sq-row" aria-label="${checks.filter(Boolean).length} von 4 Prüfungen erfüllt">${checks.map((c, i) => `<span class="sq ${c ? "on" : ""}" title="${["3 Monate", "6 Monate", "12 Monate", "200-Tage-Schnitt"][i]}: ${c ? "positiv" : "negativ"}"></span>`).join("")}</span>`;
+    const split = a => (Number.isFinite(a.core) ? `<div class="muted small">${a.core > 0 ? `Kern ${pct(a.core, 0)}<br>` : ""}Trend ${pct(a.trend, 1)}</div>` : "");
     const rows = S.assets.map(a => {
       const goal = target ? target[a.key] : a.weightBase ?? a.weight, have = held.get(a.key);
       return `<tr><td><b>${esc(a.sym)}</b> <span class="muted small">${esc(a.name)}</span></td><td>${via(a)}</td>
         <td>${sq(a.checks || [])} <span class="muted small">${fmt(a.score * 4, 0)}/4</span></td>
         <td class="num ${cls(a.r12)}">${sign(a.r12)} %</td><td class="num">${fmt(a.vol, 1)} %</td>
-        <td class="num"><b>${pct(goal, 1)}</b></td><td class="num">${st.enabled && have ? pct(have.pct, 1) : "–"}</td></tr>`;
+        <td class="num"><b>${pct(goal, 1)}</b>${split(a)}</td><td class="num">${st.enabled && have ? pct(have.pct, 1) : "–"}</td></tr>`;
     }).join("");
-    const sum = target ? Object.values(target).reduce((x, y) => x + y, 0) : S.assets.reduce((x, a) => x + (a.weightBase ?? a.weight), 0);
+    const C = S.cash;
+    const cashRow = C ? (() => {
+      const goal = target ? target.cash : C.weight, have = held.get("cash");
+      return `<tr><td><b>Geldmarkt</b> <span class="muted small">freies Geld des Trend-Teils${C.rate ? `, Zins ${fmt(C.rate.value, 2)} % p. a.` : ""}</span></td><td>${via(C)}</td>
+        <td class="muted small">immer – kein Trend nötig</td><td class="num">–</td><td class="num">–</td>
+        <td class="num"><b>${pct(goal, 1)}</b></td><td class="num">${st.enabled && have ? pct(have.pct, 1) : "–"}</td></tr>`;
+    })() : "";
+    const sum = target ? Object.entries(target).filter(([k]) => k !== "cash").reduce((x, [, y]) => x + y, 0) : S.assets.reduce((x, a) => x + (a.weightBase ?? a.weight), 0);
     const brake = st.enabled ? st.ddMult : 1;
     return `<article class="card" data-section="Heute">
       <div class="card-head"><h2 class="card-title">Heute: was der Bot halten will</h2><span class="muted small">Kurse bis ${dateDe(S.asOf)}</span></div>
       <div class="table-wrap"><table>
         <thead><tr><th>Signal</th><th>Gekauft als</th><th>Trend (3M · 6M · 12M · 200T)</th><th class="num">12 Monate</th><th class="num">Schwankung</th><th class="num">Ziel</th><th class="num">Ist</th></tr></thead>
-        <tbody>${rows}</tbody></table></div>
-      <p class="hint">Ziel zusammen: <b>${pct(sum, 0)}</b> des Bot-Anteils investiert, der Rest bleibt als Geld im Konto. Depot-Schwankung ${fmt(S.portVol, 1)} % pro Jahr (Obergrenze 10 %).
-        Verlustbremse: ${brake < 1 ? `<b>aktiv – nur ${fmt(brake * 100, 0)} % des üblichen Einsatzes</b>` : "aus"}. Ein Kästchen pro Prüfung: gefüllt = positiv.
+        <tbody>${rows}${cashRow}</tbody></table></div>
+      <p class="hint">${S.core ? `<b>Aufbau:</b> Die Hälfte des Spielgelds ist fester Kern und immer investiert (60 % S&amp;P 500, 40 % US-Staatsanleihen), die andere Hälfte steuert der selbstlernende Trend-Teil; was er nicht braucht, liegt verzinst im Geldmarkt. ` : ""}In Märkten zusammen: <b>${pct(sum, 0)}</b>${C ? `, im Geldmarkt ${pct(target ? target.cash : C.weight, 0)}` : ", der Rest bleibt als Geld im Konto"}. Depot-Schwankung ${fmt(S.portVol, 1)} % pro Jahr.
+        Verlustbremse im Trend-Teil: ${brake < 1 ? `<b>aktiv – nur ${fmt(brake * 100, 0)} % des üblichen Einsatzes</b>` : "aus"}. Ein Kästchen pro Prüfung: gefüllt = positiv; Trends mit Dividenden und Zinsen gerechnet.
         Die Signale kommen aus US-ETFs mit langer Kurshistorie. Gekauft werden gleichwertige europäische UCITS-ETFs als echte Anteile, weil eToro US-ETFs Kunden in der EU nur als CFD anbietet${Object.keys(blocked).length ? ` – gesperrt für Ihr Konto: ${Object.values(blocked).map(b => esc(b.sym)).join(", ")}` : ""}.</p>
     </article>`;
   }
 
-  // Wachstum von 100 im Rückblick: Bot, alle sechs ETFs gleich gewichtet, S&P 500
+  // Wachstum von 100 im Rückblick: Bot, Vergleichsdepot (60/40 bzw. alle 6 ETFs gleich), S&P 500
   function chart(host, bt) {
     const c = bt.curve, N = c.length - 1;
     if (N < 2) { host.innerHTML = ""; return; }
@@ -102,7 +113,7 @@
     const pw = W - m.l - m.r, ph = H - m.t - m.b;
     const S = [
       { i: 1, name: "Trend-Bot", short: "Bot", color: PAL.series1, width: 2.5, dash: "" },
-      { i: 2, name: "Alle 6 ETFs gleich gewichtet", short: "6 ETFs", color: PAL.series2, width: 2, dash: "" },
+      { i: 2, name: benchLabel(bt), short: benchShort(bt), color: PAL.series2, width: 2, dash: "" },
       { i: 3, name: "S&P 500 (SPY)", short: "S&P 500", color: PAL.gray, width: 2, dash: "5 4" },
     ];
     const val = (row, i) => row[i] / c[0][i] * 100;
@@ -162,10 +173,10 @@
           ${B.weekly ? `<button type="button" data-range="weekly" aria-pressed="${range === "weekly"}">Wochenkurse ${esc(B.weekly.start.slice(0, 4))}–heute</button>` : ""}
           <button type="button" data-range="daily" aria-pressed="${range === "daily"}">Tageskurse ${esc(B.daily.start.slice(0, 4))}–heute</button>
         </div></div>
-      <p class="muted small">${dateDe(bt.start)} bis ${dateDe(bt.end)}, mit genau den Regeln des Bots und eToro-Kursen. Gehandelt wird immer erst am Tag nach dem Signal; ${fmt(0.15, 2)} % Kosten je umgeschichtetem Anteil sind abgezogen. ${range === "weekly" ? "Wochenkurse: längerer Zeitraum, dafür wöchentlich statt täglich geprüft." : ""}</p>
+      <p class="muted small">${dateDe(bt.start)} bis ${dateDe(bt.end)}, mit genau den Regeln des Bots und eToro-Kursen, Dividenden und Zinsen geschätzt dazugerechnet, freies Geld verzinst wie T-Bills. Gehandelt wird immer erst am Tag nach dem Signal; ${fmt(0.15, 2)} % Kosten je umgeschichtetem Anteil sind abgezogen. ${range === "weekly" ? "Wochenkurse: längerer Zeitraum, dafür wöchentlich statt täglich geprüft." : ""}${B.trendOnly && B.trendOnly[range] ? ` Der Trend-Teil allein hätte ${sign(B.trendOnly[range].cagr)} % pro Jahr gebracht (größter Rückgang −${fmt(B.trendOnly[range].maxDD, 1)} %).` : ""}</p>
       <p style="margin:12px 0 0">In <b>${fmt(bt.bot.pos12, 0)} %</b> aller 12-Monats-Zeiträume lag der Bot im Plus; der schlechteste brachte <b class="down">${sign(bt.bot.worst12)} %</b>, der größte Rückgang war <b class="down">−${fmt(bt.bot.maxDD, 1)} %</b>${fullYears ? `, ${negYears} von ${fullYears} vollen Kalenderjahren endeten im Minus` : ""}. Zum Vergleich S&amp;P 500: größter Rückgang −${fmt(bt.spy.maxDD, 1)} %.</p>
       <div class="table-wrap" style="margin-top:12px"><table>
-        <thead><tr><th></th><th class="num">Trend-Bot</th><th class="num">6 ETFs gleich gewichtet</th><th class="num">S&amp;P 500</th></tr></thead>
+        <thead><tr><th></th><th class="num">Trend-Bot</th><th class="num">${benchLabel(bt)}</th><th class="num">S&amp;P 500</th></tr></thead>
         <tbody>
           ${row("Rendite pro Jahr", x => `${sign(x.cagr)} %`, x => cls(x.cagr))}
           ${row("Schwankung pro Jahr", x => `${fmt(x.vol, 1)} %`)}
@@ -176,10 +187,10 @@
         </tbody></table></div>
       <p class="muted small">Im Schnitt investiert: ${fmt(bt.avgExposure, 0)} % · Umschlag ${fmt(bt.turnoverPerYear, 0)} % pro Jahr. Ein Rückblick auf wenige Jahre ist kein Beweis – er zeigt, wie die Regeln in genau dieser Zeit gewirkt hätten.</p>
       <h3 style="margin:18px 0 8px">Wachstum von 100</h3>
-      <div class="legend-row"><span class="legend-item"><span class="lkey" style="background:${PAL.series1}"></span>Trend-Bot</span><span class="legend-item"><span class="lkey" style="background:${PAL.series2}"></span>Alle 6 ETFs gleich gewichtet</span><span class="legend-item"><span class="lkey dash" style="color:${PAL.gray}"></span>S&amp;P 500 (SPY)</span></div>
+      <div class="legend-row"><span class="legend-item"><span class="lkey" style="background:${PAL.series1}"></span>Trend-Bot</span><span class="legend-item"><span class="lkey" style="background:${PAL.series2}"></span>${benchLabel(bt)}</span><span class="legend-item"><span class="lkey dash" style="color:${PAL.gray}"></span>S&amp;P 500 (SPY)</span></div>
       <div class="chart-host" id="botChart"></div>
       <details class="info"><summary>Kalenderjahre</summary>
-        <div class="table-wrap"><table><thead><tr><th>Jahr</th><th class="num">Trend-Bot</th><th class="num">6 ETFs</th><th class="num">S&amp;P 500</th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>Jahr</th><th class="num">Trend-Bot</th><th class="num">${benchShort(bt)}</th><th class="num">S&amp;P 500</th></tr></thead>
         <tbody>${years.slice().reverse().map(y => `<tr><td>${esc(y.y)}${y.partial ? ' <span class="chip">Teiljahr</span>' : ""}</td><td class="num ${cls(y.b)}">${sign(y.b)} %</td><td class="num ${cls(y.e)}">${sign(y.e)} %</td><td class="num ${cls(y.s)}">${sign(y.s)} %</td></tr>`).join("")}</tbody></table></div>
       </details>
     </article>`;
@@ -192,8 +203,8 @@
     const hist = (L.history || []).slice(-6).reverse();
     const bar = w => `<span class="wbar"><span style="width:${Math.max(0, Math.min(100, w * 100 / 0.4))}%"></span></span>`;
     return `<article class="card" data-section="Lernen">
-      <div class="card-head"><h2 class="card-title">Lernen: fünf erforschte Regeln, der Bot gewichtet selbst</h2><span class="muted small">Gewichte neu am ersten Handelstag jedes Monats</span></div>
-      <p class="small">Statt sich auf eine Regel zu verlassen, verteilt der Bot sein Geld auf fünf vorab festgelegte, belegte Regeln. Einmal im Monat schaut er, welche in den letzten 36 Monaten mehr Rendite je Risiko gebracht hat, und gibt ihr etwas mehr Gewicht – höchstens 10 Prozentpunkte pro Monat und immer zur Hälfte gleich verteilt. So passt er sich an, ohne einer Glückssträhne hinterherzulaufen. Die Gewichte entstehen nur aus vergangenen Daten; im Rückblick-Test unten ist genau dieses Lernen schon eingerechnet.</p>
+      <div class="card-head"><h2 class="card-title">Lernen im Trend-Teil: fünf erforschte Regeln, der Bot gewichtet selbst</h2><span class="muted small">Gewichte neu am ersten Handelstag jedes Monats</span></div>
+      <p class="small">Der Trend-Teil (die Hälfte des Spielgelds) verlässt sich nicht auf eine Regel, sondern verteilt sein Geld auf fünf vorab festgelegte, belegte Regeln. Einmal im Monat schaut er, welche in den letzten 36 Monaten mehr Rendite je Risiko gebracht hat, und gibt ihr etwas mehr Gewicht – höchstens 10 Prozentpunkte pro Monat und immer zur Hälfte gleich verteilt. So passt er sich an, ohne einer Glückssträhne hinterherzulaufen. Die Gewichte entstehen nur aus vergangenen Daten; im Rückblick-Test unten ist genau dieses Lernen schon eingerechnet.</p>
       <div class="table-wrap" style="margin-top:12px"><table>
         <thead><tr><th>Regel</th><th class="num">Gewicht</th><th class="num">Rendite je Risiko (36 M)</th><th class="num">Rückblick ${esc((st.backtest && st.backtest.weekly && st.backtest.weekly.start || "").slice(0, 4))}–heute</th><th class="num">Größter Rückgang</th><th class="num">Heute investiert</th><th>Quelle</th></tr></thead>
         <tbody>${L.variants.map(v => `<tr><td><b>${esc(v.name)}</b></td><td class="num">${bar(v.weight)} ${pct(v.weight, 0)}</td><td class="num">${Number.isFinite(v.score) ? fmt(v.score, 2) : "–"}</td>
@@ -206,7 +217,7 @@
 
   function journalCard() {
     const J = (st && st.journal) || [];
-    const name = k => (st && st.signals && st.signals.assets || []).find(a => a.key === k)?.sym || k;
+    const name = k => (k === "cash" ? "Geldmarkt" : (st && st.signals && st.signals.assets || []).find(a => a.key === k)?.sym || k);
     const items = J.slice().reverse().map((j, i, arr) => {
       const prev = arr[i + 1], chg = prev && Number.isFinite(j.model) && Number.isFinite(prev.model) ? (j.model / prev.model - 1) * 100 : null;
       const trades = (j.trades || []).map(t => { const main = `${t.side === "kauf" ? "Kauf" : "Verkauf"} ${esc(t.sym === "alle" ? "aller Positionen" : t.sym)} ${t.pct ? `${fmt(t.pct, 1)} %` : ""}`; return `${t.rejected ? `<s class="muted">${main}</s>` : main}${t.reason ? ` <span class="muted">(${esc(t.reason)})</span>` : ""}`; });
@@ -246,6 +257,8 @@
     return `<article class="card" data-section="Regeln">
       <h2 class="card-title">Was der Bot tut – und warum genau so</h2>
       <ul class="checklist">
+        <li><b>Kern + Trend – warum so:</b> Ein Forschungs-Lauf auf echten eToro-Kursen 2011–2026 (getrennt nach zwei Hälften, damit nichts auf Zufall getrimmt ist) zeigte: Reine Trendfolge schützt vor Abstürzen, verpasst aber in langen Aufwärtsjahren viel Rendite. Deshalb ist die Hälfte des Spielgelds ein fester Kern, der immer investiert bleibt – 60 % S&amp;P 500, 40 % US-Staatsanleihen –, die andere Hälfte steuert der selbstlernende Trend-Teil. Diese Aufteilung empfehlen Faber &amp; Richardson in „The Ivy Portfolio“ (2009). Im Rückblick brachte sie deutlich mehr Rendite als der Trend-Teil allein, bei weiterhin kleineren Rückgängen als Aktien allein – die Zahlen stehen unten im Rückblick-Test.</li>
+        <li><b>Freies Geld arbeitet mit:</b> Was der Trend-Teil gerade nicht investiert, liegt in einem Geldmarkt-ETF (kurzlaufende US-Staatsanleihen bis 1 Jahr) und bekommt den T-Bill-Zins, statt zinslos im Konto zu liegen. Dividenden und Zinsen der Märkte rechnet der Bot in seine Trends ein – eToros Kurse enthalten sie nicht, Anleihen sahen dadurch früher schlechter aus, als sie waren.</li>
         <li><b>Sechs breite Märkte statt Einzelaktien:</b> US-Aktien (SPY), Aktien anderer Industrieländer (EFA), US-Staatsanleihen (IEF), Gold (GLD), Rohstoffe (DBC), Immobilien (VNQ). Breite Streuung ist der einzige „kostenlose“ Risikoschutz; die Märkte laufen oft gegeneinander.</li>
         <li><b>Gekauft werden europäische Gegenstücke:</b> US-ETFs haben kein Basisinformationsblatt nach der ${SRC("https://eur-lex.europa.eu/eli/reg/2014/1286/oj", "PRIIPs-Verordnung")} und sind für Kunden in der EU bei eToro nur als CFD zu haben – CFDs sind in Ihrem Konto gesperrt. Der Bot sucht deshalb selbst in der eToro-Liste gleichwertige UCITS-ETFs (z. B. einen S&amp;P-500-ETF aus London statt SPY), prüft Name, aktuelle Kurse und Gleichlauf mit dem US-ETF und kauft sie als echte Anteile. Lehnt eToro eines ab, sperrt er es und nimmt sofort das nächste.</li>
         <li><b>Fünf Regeln statt einer:</b> Trend 3–6–12 Monate, schneller Trend 1–3–12, die 10-Monats-Linie, Dual Momentum (nur die drei stärksten Märkte) und Trend plus Finanzlage. Kombinieren ist robuster als jede Einzelregel (${DOI("10.1093/rfs/hhp063", "Rapach, Strauss &amp; Zhou 2010")}); die Gewichte lernt der Bot nur vorsichtig, weil geschätzte Gewichte sonst mehr schaden als nützen (${DOI("10.1093/rfs/hhm075", "DeMiguel, Garlappi &amp; Uppal 2009")}) und Regeln mit gutem Lauf eher weiterlaufen (${DOI("10.1111/jofi.13131", "Ehsani &amp; Linnainmaa 2022")}).</li>
@@ -286,7 +299,7 @@
       <ul class="checklist">
         <li><b>Was die Regeln leisten:</b> Sie machen große Verluste unwahrscheinlicher. In Abwärtsmärkten steigt der Bot schrittweise aus, die Verlustbremse senkt den Einsatz, jede Position hat eine Notbremse.${b ? ` Im Rückblick ${esc(L.start.slice(0, 4))}–heute lagen ${fmt(b.pos12, 0)} % der 12-Monats-Zeiträume im Plus, der schlechteste bei ${sign(b.worst12)} % (S&amp;P 500: ${sign(spy.worst12)} %); ${neg.length} von ${full} vollen Jahren endeten im Minus${neg.length ? ` (${neg.map(y => `${esc(y.year)}: ${sign(y.ret)} %`).join(", ")})` : ""}.` : ""}</li>
         <li><b>Was sie nicht leisten:</b> In Seitwärtsmärkten kauft und verkauft der Bot öfter zur falschen Zeit („Whipsaw“) – das kostet. Auch Trendfolge-Fonds mit Milliarden hatten Jahre im Minus.</li>
-        <li><b>Erwartung – der Preis der Sicherheit:</b> deutlich weniger Rendite als „nur Aktien“, dafür viel kleinere Verluste.${b ? ` Im Rückblick ${esc(L.start.slice(0, 4))}–heute: Bot ${sign(b.cagr)} % pro Jahr bei höchstens −${fmt(b.maxDD, 0)} % Rückgang, S&amp;P 500 ${sign(spy.cagr)} % pro Jahr bei bis zu −${fmt(spy.maxDD, 0)} %.` : ""} Gerade in langen Aufwärtsphasen mit kurzen, heftigen Rücksetzern (wie 2011–2021) hinkt Trendfolge hinterher, weil sie nach dem Fall aus- und nach der Erholung wieder einsteigt.</li>
+        <li><b>Erwartung – der Preis der Sicherheit:</b> deutlich weniger Rendite als „nur Aktien“, dafür viel kleinere Verluste.${b ? ` Im Rückblick ${esc(L.start.slice(0, 4))}–heute: Bot ${sign(b.cagr)} % pro Jahr bei höchstens −${fmt(b.maxDD, 0)} % Rückgang, S&amp;P 500 ${sign(spy.cagr)} % pro Jahr bei bis zu −${fmt(spy.maxDD, 0)} %.` : ""} Gerade in langen Aufwärtsphasen mit kurzen, heftigen Rücksetzern (wie 2011–2021) hinkt Trendfolge hinterher, weil sie nach dem Fall aus- und nach der Erholung wieder einsteigt – deshalb bleibt die Hälfte des Geldes als fester Kern immer investiert. Fallen Aktien und Anleihen gleichzeitig wie 2022, verliert auch der Kern.</li>
         <li><b>„Sehr ertragreich“ und „sicher im Plus“ gibt es nicht zusammen.</b> Wer mehr Rendite will, muss mehr Schwankung aushalten – die belegte Alternative ist ein breiter Aktien-ETF über viele Jahre, mit Rückgängen von 30 % und mehr zwischendurch.</li>
         <li><b>Erst Demo, dann vielleicht echt:</b> Lassen Sie den Bot mindestens 6–12 Monate im Demokonto laufen und vergleichen Sie Tagebuch und Rückblick. Echtgeld ist bewusst gesperrt und wird nur auf Ihren ausdrücklichen Wunsch freigeschaltet.</li>
       </ul>

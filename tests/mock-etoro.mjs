@@ -150,12 +150,16 @@ const UCITS = [
   { id: 3305, sym: "CMOD.L", name: "Invesco Bloomberg Commodity UCITS ETF", of: 3207, scale: 1.4 },
   { id: 3306, sym: "ICOM.L", name: "ICOM", of: 3207, scale: 0.3 },
   { id: 3309, sym: "IUSP.L", name: "iShares US Property Yield UCITS ETF", of: 3206, scale: 0.4 },
+  // Geldmarkt: kurzlaufende US-Staatsanleihen (steigen gleichmäßig wie T-Bills); IBTA.L (1–3 Jahre) ist kein Geldmarkt
+  { id: 3320, sym: "IB01.L", name: "iShares $ Treasury Bond 0-1yr UCITS ETF", of: 3201, tbill: 0.00016 },
+  { id: 3321, sym: "BB3M.L", name: "JPMorgan BetaBuilders US Treasury Bond 0-3 Months UCITS ETF", of: 3201, tbill: 0.00015 },
+  { id: 3322, sym: "IBTA.L", name: "iShares $ Treasury Bond 1-3yr UCITS ETF", of: 3201, tbill: 0.0001 },
 ];
 const UCITS_BY_SYM = Object.fromEntries(UCITS.map(v => [v.sym, v.id]));
 NO_CANDLES.add(3309);
 const CFD_ONLY = new Set([...Object.values(TREND_ETFS), 3299]);   // US-ETFs: für Kunden in der EU nur als CFD
 function deriveVehicles() {
-  for (const v of UCITS) trendSeries[v.id] = trendSeries[v.of].map(x => ({ d: x.d, c: Math.round((v.inverse ? 5000 / x.c : x.c * v.scale) * 10000) / 10000 }));
+  for (const v of UCITS) trendSeries[v.id] = trendSeries[v.of].map((x, k) => ({ d: x.d, c: Math.round((v.tbill ? 100 * (1 + v.tbill) ** k : v.inverse ? 5000 / x.c : x.c * v.scale) * 10000) / 10000 }));
 }
 deriveVehicles();
 const trendPrice = id => trendSeries[id][trendSeries[id].length - 1].c;
@@ -193,10 +197,28 @@ const FRED_DATA = {
   DTWEXBGS: d => (120 + Math.sin(d / 40) * 3 + d * 0.01).toFixed(4),
   DEXUSEU: null,   // Euro in Dollar, siehe unten
 };
+// Lange Tagesreihen (werktäglich ab dem angefragten Datum bis gestern, Prozent): T-Bill-Zins und Marktrenditen für Anleihen.
+// Glatte Wellen, ab und zu ein fehlender Wert („.“) wie bei FRED.
+const FRED_LONG = {
+  DTB3: k => Math.max(0.03, 2.1 + 2.2 * Math.sin(k / 420)),
+  DGS10: k => 2.8 + 1.1 * Math.sin(k / 510),
+  DGS30: k => 3.3 + 0.9 * Math.sin(k / 530),
+  BAMLH0A0HYM2EY: k => 6.4 + 1.6 * Math.sin(k / 300),
+  BAMLC0A0CMEY: k => 4.2 + 1.0 * Math.sin(k / 450),
+};
 function fredCsv(id, cosd) {
   const f = FRED_DATA[id];
-  if (!f && !(id in FRED_DATA)) return null;
+  if (!f && !(id in FRED_DATA) && !FRED_LONG[id]) return null;
   const rows = ["observation_date," + id];
+  if (FRED_LONG[id]) {
+    const from = Math.max(Date.UTC(2005, 0, 3), cosd ? Date.parse(`${cosd}T00:00:00Z`) : Date.UTC(2009, 0, 1));
+    for (let t = new Date(from); t < new Date(Date.now() - 864e5); t = new Date(t.getTime() + 864e5)) {
+      if (t.getUTCDay() % 6 === 0) continue;
+      const k = Math.round((t - Date.UTC(2000, 0, 3)) / 864e5);
+      rows.push(`${t.toISOString().slice(0, 10)},${k % 41 === 7 ? "." : FRED_LONG[id](k).toFixed(2)}`);
+    }
+    return rows.join("\n") + "\n";
+  }
   if (id === "DEXUSEU") {
     // werktäglich ab dem angefragten Datum bis gestern, um 1,08 schwankend
     const from = cosd ? Date.parse(`${cosd}T00:00:00Z`) : Date.UTC(2025, 8, 1);

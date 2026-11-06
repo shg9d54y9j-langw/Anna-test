@@ -84,6 +84,64 @@ def series(interval, cutoff):
     return dates, out
 
 
+# ---------- Ausschüttungen und Zins (unabhängig nachgebaut) ----------
+# eToro-Kurse enthalten keine Dividenden/Zinsen: Aktien mit fester Dividendenrendite, Anleihen mit der 10-jährigen
+# Rendite (DGS10), Rohstoffe mit dem T-Bill-Zins (DTB3) – je Zeitschritt Kurs × (1 + Rendite × Tage/365), Rendite vom Vortag.
+def fred_rows(series_id, cosd):
+    rows = []
+    for line in get(f"{base}/fred?id={series_id}&cosd={cosd}", raw=True).strip().splitlines()[1:]:
+        day, val = line.split(",")
+        try:
+            rows.append((day, float(val)))
+        except ValueError:
+            pass
+    rows.sort()
+    return rows
+
+
+DTB3, DGS10 = fred_rows("DTB3", "2009-01-01"), fred_rows("DGS10", "2009-01-01")
+YLD = {"us": 0.018, "intl": 0.03, "bonds": DGS10, "gold": 0.0, "commod": DTB3, "reits": 0.038}
+CORE_SHARE, CORE_W = 0.5, {"us": 0.6, "bonds": 0.4}
+
+
+def as_of(rows, day):
+    lo, hi, ans = 0, len(rows) - 1, None
+    while lo <= hi:
+        m = (lo + hi) // 2
+        if rows[m][0] <= day:
+            ans, lo = rows[m][1], m + 1
+        else:
+            hi = m - 1
+    return ans
+
+
+def gap(a, b):
+    return (datetime.date.fromisoformat(b) - datetime.date.fromisoformat(a)).days
+
+
+def with_dist(dates, closes):
+    out = []
+    for i, col in enumerate(closes):
+        y, acc, prev, prev_d, res = YLD[keys[i]], None, None, None, []
+        for t, c in enumerate(col):
+            if c is None:
+                res.append(None)
+                continue
+            if acc is None:
+                acc, prev, prev_d = c, c, dates[t]
+            else:
+                yy = (as_of(y, prev_d) or 0) / 100 if isinstance(y, list) else y
+                acc = acc * (c / prev) * (1 + yy * gap(prev_d, dates[t]) / 365)
+                prev, prev_d = c, dates[t]
+            res.append(acc)
+        out.append(res)
+    return out
+
+
+def cash_ret(dates):
+    return [0.0] + [(as_of(DTB3, dates[t - 1]) or 0) / 100 * gap(dates[t - 1], dates[t]) / 365 for t in range(1, len(dates))]
+
+
 # Finanzlage: NFCI ab 2008, je Kurstag der letzte Wert, der mindestens 7 Tage alt ist
 nfci_rows = []
 for line in get(f"{base}/fred?id=NFCI&cosd=2008-01-01", raw=True).strip().splitlines()[1:]:
@@ -187,13 +245,15 @@ def warmup(ppy):
     return max(k(252), k(210), k(60)) + 1
 
 
-def run_bt(dates, closes, ppy, targets):
+def run_bt(dates, closes, ppy, targets, cash=None, bench=None):
     start, A = warmup(ppy), len(closes)
     eq = peak = ew = spy = 1.0
     cur, pending, turnover, curve = [0.0] * A, None, 0.0, []
 
     def equal(t):
         ok = [bool(closes[i][t] and closes[i][t - 1]) for i in range(A)]
+        if bench:   # festes Vergleichsdepot: fehlt ein ETF noch, liegt sein Anteil als Geld da
+            return [bench[i] if ok[i] else 0.0 for i in range(A)]
         return [1 / sum(ok) if x else 0.0 for x in ok]
 
     def ratio(i, t):
@@ -201,13 +261,15 @@ def run_bt(dates, closes, ppy, targets):
     eww = equal(start)
     for t in range(start, len(dates)):
         if t > start:
+            cr = 1 + (cash[t] if cash else 0.0)
             grow = [cur[i] * ratio(i, t) for i in range(A)]
-            total = sum(grow) + 1 - sum(cur)
+            total = sum(grow) + (1 - sum(cur)) * cr
             eq *= total
             cur = [g / total for g in grow]
             eg = [eww[i] * ratio(i, t) for i in range(A)]
-            ew *= sum(eg)
-            eww = equal(t) if (t - start) % jsround(ppy / 12) == 0 else [g / sum(eg) for g in eg]
+            et = sum(eg) + (1 - sum(eww)) * cr
+            ew *= et
+            eww = equal(t) if (t - start) % jsround(ppy / 12) == 0 else [g / et for g in eg]
             spy *= closes[0][t] / closes[0][t - 1]
         if pending:
             full = ppy < 100 or week(dates[t]) != week(dates[t - 1])
@@ -250,24 +312,43 @@ def learn(monthly, prev):
     return [x / sum(step) for x in step]
 
 
-def family(dates, closes, ppy):
+def family(dates, closes, ppy, cash):
     nf = macro(dates)
     F = [[features(c, t, ppy) for c in closes] for t in range(len(dates))]
     raws = []
     for t in range(len(dates)):
         b = inv_vol(F[t])
         raws.append([v(F[t], b, nf[t]) for v in VARIANTS])
-    singles = [run_bt(dates, closes, ppy, lambda t, dd, k, v=v: risk(raws[t][v], F[t], ppy, dd)[0]) for v in range(len(VARIANTS))]
+    singles = [run_bt(dates, closes, ppy, lambda t, dd, k, v=v: risk(raws[t][v], F[t], ppy, dd)[0], cash) for v in range(len(VARIANTS))]
     state = {"lw": [1 / len(VARIANTS)] * len(VARIANTS), "month": None}
+    rec = {}
 
     def ens_targets(t, dd, k):
         if dates[t][:7] != state["month"]:
             state["lw"] = learn([month_ends(s[0], k) for s in singles], state["lw"])
             state["month"] = dates[t][:7]
         mix = [sum(state["lw"][v] * raws[t][v][i] for v in range(len(VARIANTS))) for i in range(len(closes))]
-        return risk(mix, F[t], ppy, dd)[0]
-    ens = run_bt(dates, closes, ppy, ens_targets)
-    return ens, singles, state["lw"], F, raws
+        rec[t] = risk(mix, F[t], ppy, dd)[0]
+        return rec[t]
+    ens = run_bt(dates, closes, ppy, ens_targets, cash)
+    return ens, singles, state["lw"], F, raws, rec
+
+
+def combined(dates, closes, ppy, F, rec, cash):
+    core = [CORE_W.get(k, 0.0) for k in keys]
+    return run_bt(dates, closes, ppy, lambda t, dd, k: [CORE_SHARE * (core[i] if F[t][i] else 0) + (1 - CORE_SHARE) * rec[t][i]
+                                                         for i in range(len(closes))] if t in rec else None, cash, core)
+
+
+def port_vol(w, F, ppy):
+    var = 0.0
+    for i in range(len(w)):
+        for j in range(len(w)):
+            if w[i] and w[j] and F[i] and F[j]:
+                a, b = F[i]["lr"], F[j]["lr"]
+                ma, mb = mean(a), mean(b)
+                var += w[i] * w[j] * sum((a[q] - ma) * (b[q] - mb) for q in range(len(a))) / (len(a) - 1)
+    return math.sqrt(max(var, 0) * ppy)
 
 
 def stats(vals, ppy):
@@ -285,9 +366,12 @@ def tol(k):
     return 0.051 if k == "pos12" else 0.011
 
 
-# ---------- Tagesdaten: Lernen, Ziele heute, Rückblick ----------
-dates, closes = series("OneDay", cut_day)
-(curve, turn, dd), singles, lw, F, raws = family(dates, closes, 252)
+# ---------- Tagesdaten: Lernen, Ziele heute, Rückblick (Kern + Trend) ----------
+dates, raw_closes = series("OneDay", cut_day)
+closes = with_dist(dates, raw_closes)
+cash_d = cash_ret(dates)
+(tcurve, _, tdd), singles, lw, F, raws, rec = family(dates, closes, 252, cash_d)
+curve, turn, _ = combined(dates, closes, 252, F, rec, cash_d)
 t = len(dates) - 1
 if d["asOf"] != dates[t]:
     errors.append(f"Kursstand {d['asOf']} statt {dates[t]}")
@@ -302,17 +386,23 @@ for i, v in enumerate(L["variants"]):
 if abs(sum(lw) - 1) > 1e-9 or any(x <= 0 for x in lw):
     errors.append("Lerngewichte ergeben nicht 100 % oder sind nicht alle positiv")
 mix = [sum(lw[v] * raws[t][v][i] for v in range(len(VARIANTS))) for i in range(len(closes))]
-wb, _ = risk(mix, F[t], 252, 0)
-w, pv = risk(mix, F[t], 252, dd)
+tw, _ = risk(mix, F[t], 252, tdd)   # Trend-Teil mit seiner eigenen Verlustbremse
+core = [CORE_SHARE * CORE_W.get(k, 0.0) if F[t][i] else 0.0 for i, k in enumerate(keys)]
+trend = [(1 - CORE_SHARE) * x for x in tw]
+w = [core[i] + trend[i] for i in range(len(keys))]
 for i, a in enumerate(d["assets"]):
-    if not near(a["weightBase"], wb[i], 1e-4) or not near(a["weight"], w[i], 1e-4):
-        errors.append(f"{a['sym']} Anteil {a['weightBase']}/{a['weight']} statt {wb[i]:.4f}/{w[i]:.4f}")
-    if a["weight"] > R["maxWeight"] + 1e-9:
-        errors.append(f"{a['sym']} über der Obergrenze je ETF")
+    if not near(a["weight"], w[i], 1e-4) or not near(a["core"], core[i], 1e-4) or not near(a["trend"], trend[i], 1e-4):
+        errors.append(f"{a['sym']} Anteil {a['core']}+{a['trend']}={a['weight']} statt {core[i]:.4f}+{trend[i]:.4f}={w[i]:.4f}")
+    if a["trend"] > (1 - CORE_SHARE) * R["maxWeight"] + 1e-9:
+        errors.append(f"{a['sym']}: Trend-Teil über der Obergrenze je ETF")
+    if not near(a["last"], raw_closes[i][t], 1e-4):
+        errors.append(f"{a['sym']}: letzter Kurs {a['last']} statt {raw_closes[i][t]} (echter Kurs, ohne Ausschüttungen)")
 if not near(d["exposure"], sum(w), 1e-3) or sum(w) > 1 + 1e-9:
     errors.append(f"Investiert {d['exposure']} statt {sum(w):.4f}")
-if not near(d["portVol"], pv * 100, 0.02) or pv * 100 > R["targetVol"] + 1e-6:
-    errors.append(f"Depot-Schwankung {d['portVol']} statt {pv * 100:.2f}")
+if not near(d["cash"]["weight"], max(0.0, 1 - sum(w)), 1e-3):
+    errors.append(f"Geldmarkt {d['cash']['weight']} statt {1 - sum(w):.4f}")
+if not near(d["portVol"], port_vol(w, F[t], 252) * 100, 0.02):
+    errors.append(f"Depot-Schwankung {d['portVol']} statt {port_vol(w, F[t], 252) * 100:.2f}")
 bd = d["backtest"]["daily"]
 for key, col in (("bot", 1), ("ew", 2), ("spy", 3)):
     for k2, v2 in stats([c[col] for c in curve], 252).items():
@@ -320,19 +410,33 @@ for key, col in (("bot", 1), ("ew", 2), ("spy", 3)):
             errors.append(f"Rückblick täglich {key} {k2}: {bd[key][k2]} statt {v2:.2f}")
 if not near(bd["turnoverPerYear"], turn * 100, 0.6):
     errors.append(f"Umschlag {bd['turnoverPerYear']} statt {turn * 100:.0f}")
+tp = stats([c[1] for c in tcurve], 252)
+if not near(d["backtest"]["trendOnly"]["daily"]["cagr"], tp["cagr"], 0.011):
+    errors.append(f"Trend-Teil allein: {d['backtest']['trendOnly']['daily']['cagr']} statt {tp['cagr']:.2f}")
 
-# ---------- Wochendaten: das lernende Depot über den langen Zeitraum ----------
-wd, wc = series("OneWeek", cut_week)
-(wcurve, _, _), wsingles, _, _, _ = family(wd, wc, 52)
-for k2, v2 in stats([c[1] for c in wcurve], 52).items():
-    if not near(d["backtest"]["weekly"]["bot"][k2], v2, tol(k2)):
-        errors.append(f"Rückblick wöchentlich {k2}: {d['backtest']['weekly']['bot'][k2]} statt {v2:.2f}")
+# ---------- Wochendaten: Kern + Trend über den langen Zeitraum ----------
+wd, wraw = series("OneWeek", cut_week)
+wc = with_dist(wd, wraw)
+cash_w = cash_ret(wd)
+(_, _, _), wsingles, _, wF, _, wrec = family(wd, wc, 52, cash_w)
+wcurve, _, _ = combined(wd, wc, 52, wF, wrec, cash_w)
+for key, col in (("bot", 1), ("ew", 2), ("spy", 3)):
+    for k2, v2 in stats([c[col] for c in wcurve], 52).items():
+        if not near(d["backtest"]["weekly"][key][k2], v2, tol(k2)):
+            errors.append(f"Rückblick wöchentlich {key} {k2}: {d['backtest']['weekly'][key][k2]} statt {v2:.2f}")
 for i, v in enumerate(L["variants"]):
     want = stats([c[1] for c in wsingles[i][0]], 52)
     if not near(v["weekly"]["cagr"], want["cagr"], 0.011):
         errors.append(f"Variante {v['name']} wöchentlich: {v['weekly']['cagr']} statt {want['cagr']:.2f}")
-if [r[0] for r in d["recent"]] != dates[-15:]:
+# Modell-Depot: letzte 15 Schlusskurse mit Ausschüttungen und der Geldmarkt-Index
+ci, cidx = 1.0, []
+for x in cash_d:
+    ci *= 1 + x
+    cidx.append(ci)
+if [r[0] for r in d["recent"]] != dates[-15:] or d["recentKeys"] != keys + ["cash"]:
     errors.append("Letzte Schlusskurse für das Modell-Depot passen nicht")
+elif any(not near(d["recent"][-1][1 + i], closes[i][t], 1e-5 * max(1, closes[i][t])) for i in range(len(keys))) or not near(d["recent"][-1][-1], cidx[t], 1e-7):
+    errors.append("Modell-Depot: Kurse mit Ausschüttungen oder Geldmarkt-Index weichen ab")
 if L["nfci"]["asOf"] != nfci_rows[-1][0]:
     errors.append("Finanzlage (NFCI) nicht aktuell übernommen")
 
@@ -404,11 +508,33 @@ for (sym, iid, key), a in zip(chosen, d["assets"]):
     if got[-1]["id"] != iid or not got[-1].get("us"):
         errors.append(f"{key}: letzte Wahl muss der US-ETF {sym} sein")
 
+# Geldmarkt-ETF: nur nach Kürzel (IB01, BB3M, VDST, ZPR1, TBIL), Name (Treasury/T-Bill, Laufzeit bis 1 Jahr bzw. 0–3 Monate)
+# und aktuellen Kursen, höchstens drei
+cash_cands = []
+for b in ["IB01", "BB3M", "VDST", "ZPR1", "TBIL"]:
+    hits = [x for x in etfs if x["symbolFull"].upper().split(".")[0] == b and re.fullmatch(r"[A-Z0-9]+\.[A-Z]{1,3}", x["symbolFull"].upper())]
+    hits.sort(key=lambda x: ({".L": 0, ".DE": 1}.get(x["symbolFull"].upper()[x["symbolFull"].rfind("."):], 2), x["instrumentID"]))
+    cash_cands += [h for h in hits if h not in cash_cands]
+cash_want = []
+for h in cash_cands:
+    if len(cash_want) >= 3:
+        break
+    nm = h["instrumentDisplayName"]
+    if not (re.search(r"treasur|t-?bill", nm, re.I) and re.search(r"0\s*-\s*1|0\s*-\s*3\s*month|bill", nm, re.I)) \
+            or re.search(r"1\s*-\s*3\s*y|3\s*-\s*7|7\s*-\s*10|20\s*\+|tips|inflation|float|esg", nm, re.I) or BAD.search(nm):
+        continue
+    m = daily_map(h["instrumentID"], 30)
+    if not m or (now.date() - datetime.date.fromisoformat(max(m))).days > 7:
+        continue
+    cash_want.append(h["symbolFull"].upper())
+if [v["sym"] for v in d["cash"]["trade"]] != cash_want:
+    errors.append(f"Geldmarkt-ETF {[v['sym'] for v in d['cash']['trade']]} statt {cash_want}")
+
 if errors:
     print(f"::error::Gegenrechnung Trend-Bot fehlgeschlagen – {len(errors)} Abweichung(en):")
     for e in errors[:30]:
         print("  -", e)
     sys.exit(1)
-print(f"Gegenrechnung Trend-Bot bestanden: {len(d['assets'])} ETFs, Gegenstücke "
+print(f"Gegenrechnung Trend-Bot bestanden: Kern + Trend, {len(d['assets'])} ETFs, Geldmarkt {', '.join(cash_want) or '–'}, Gegenstücke "
       f"({', '.join(t['sym'] for a in d['assets'] for t in a['trade'][:1])}), 5 Regel-Varianten, Lerngewichte "
       f"({', '.join(f'{x * 100:.0f} %' for x in lw)}), Bremsen und alle Rückblick-Tests stimmen.")

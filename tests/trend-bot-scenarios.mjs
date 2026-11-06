@@ -69,6 +69,12 @@ await withServer("Ohne Schlüssel und nicht gestartet", async ({ run, acct }) =>
   check(r.s.signals && r.s.signals.assets.length === 6 && r.s.backtest && r.s.backtest.daily, "Signale und Rückblick-Test stehen trotzdem für die Website bereit");
   const got = Object.fromEntries(r.s.signals.assets.map(x => [x.key, x.trade.map(v => v.sym)]));
   check(JSON.stringify(got) === JSON.stringify(EXPECTED), `Gegenstücke richtig gewählt (gegenläufige, währungsgesicherte, kurslose und unsauber benannte übersprungen): ${JSON.stringify(got)}`);
+  const cash = r.s.signals.cash;
+  check(cash && cash.trade.map(v => v.sym).join() === "IB01.L,BB3M.L", `Geldmarkt-ETF gefunden (IB01.L, BB3M.L; IBTA.L mit 1–3 Jahren nicht): ${cash && cash.trade.map(v => v.sym)}`);
+  const A = Object.fromEntries(r.s.signals.assets.map(x => [x.key, x]));
+  check(A.us.core === 0.3 && A.bonds.core === 0.2 && ["intl", "gold", "commod", "reits"].every(k => A[k].core === 0), "fester Kern: 30 % S&P 500 und 20 % Anleihen (die Hälfte des Geldes als 60/40)");
+  check(r.s.signals.assets.every(x => Math.abs(x.weight - x.core - x.trend) < 1e-3) && r.s.signals.assets.every(x => x.trend <= 0.5 * 0.35 + 1e-9), "Anteil = Kern + Trend-Teil, Trend-Teil je ETF höchstens 17,5 % (35 % der Hälfte)");
+  check(Math.abs(r.s.signals.assets.reduce((a, x) => a + x.weight, 0) + cash.weight - 1) < 1e-3, "Märkte + Geldmarkt = 100 %");
 });
 
 await withServer("Start, gleicher Tag, Ihre eigene Position", async ({ run, acct, ctl, fx }) => {
@@ -81,22 +87,24 @@ await withServer("Start, gleicher Tag, Ihre eigene Position", async ({ run, acct
   const o = opens(a);
   const sig = r.s.signals;
   const sleeve = 1000 * await fx();   // 1.000 € Spielgeld in Dollar
-  const want = sig.assets.filter(x => x.weightBase * sleeve >= 25), vnq = sig.assets.find(x => x.key === "reits");
+  const want = sig.assets.filter(x => x.weight * sleeve >= 25), vnq = sig.assets.find(x => x.key === "reits");
+  const cashBuy = opens(a).find(x => x.body.InstrumentID === a.ids["IB01.L"]);
   check(r.code === 0 && r.s.enabled === true && r.s.newEvents.some(e => e.kind === "gestartet" && /1\.000 € Spielgeld/.test(e.text)), "Start-Befehl: Bot läuft und meldet den Start mit 1.000 € Spielgeld");
+  check(cashBuy && Math.abs(cashBuy.body.Amount - sig.cash.weight * sleeve) <= 0.5 && opens(a).at(-1) === cashBuy, `freies Geld zuletzt in den Geldmarkt (IB01.L, ${cashBuy && cashBuy.body.Amount} $)`);
   check(r.s.budgetEur === 1000 && r.s.capitalEur === 1000 && r.s.fx && r.s.fx.value > 1, `Spielgeld 1.000 €, Euro-Kurs ${r.s.fx && r.s.fx.value} vom ${r.s.fx && r.s.fx.asOf}`);
-  check(vnq.weightBase > 0 && o.length === want.length, `ein Kaufauftrag je Markt mit Trend (${o.length} von ${want.length})`);
+  check(vnq.weight > 0 && o.length === want.length + 1, `ein Kaufauftrag je Markt mit Anteil plus Geldmarkt (${o.length} von ${want.length + 1})`);
   check(want.filter(x => x.key !== "reits").every(x => o.some(y => y.body.InstrumentID === x.trade[0].id)), "gekauft wird das erste europäische Gegenstück, nicht der US-ETF");
   check(o.every(x => x.body.Leverage === 1 && x.body.IsBuy === true && x.body.IsNoTakeProfit === true), "nur Kauf ohne Hebel");
   const priceOf = id => a.prices[Object.keys(a.ids).find(k => a.ids[k] === id)];
   check(o.every(x => Math.abs(x.body.StopLossRate / priceOf(x.body.InstrumentID) - 0.7) < 0.05), "jede Position mit Notbremse 30 % unter dem Kurs des gekauften ETF");
   const okAmounts = want.every(x => { const b = o.find(y => assetOf(sig, y.body.InstrumentID) === x); return b && Math.abs(b.body.Amount - x.weightBase * sleeve) <= 0.5; });
   check(okAmounts, `Beträge = Zielanteil × 1.000 € Spielgeld (${Math.round(sleeve)} $): ${o.map(x => x.body.Amount).join(", ")}`);
-  check(r.s.positions.length === want.length - 1 && r.s.orders.length === 0, "alle anderen Käufe bestätigt und als Bot-Positionen gemerkt");
+  check(r.s.positions.length === want.length && r.s.orders.length === 0, "alle anderen Käufe (mit Geldmarkt) bestätigt und als Bot-Positionen gemerkt");
   check(r.s.blocked[vnq.instrumentId] && r.s.blocked[vnq.instrumentId].code === 797 && r.s.newEvents.some(e => e.kind === "abgelehnt" && /CFD/.test(e.text)), "US-ETF VNQ von eToro abgelehnt (CFD gesperrt): gesperrt und gemeldet");
   check(r.s.newEvents.some(e => e.kind === "hinweis" && e.text.includes("Immobilien")), "kein anderes Gegenstück: Hinweis, Anteil bleibt Geld");
   check(!r.s.positions.some(x => x.positionID === manual.positionID), "Ihre eigene VUAA-Position gehört nicht zum Bot");
   const j = r.s.journal[0];
-  check(r.s.journal.length === 1 && j.trades.length === want.length && j.trades.filter(t => t.rejected).length === 1 && Math.abs(j.model - 100) < 0.5, "Tagebuch: erster Eintrag mit allen Käufen (einer als abgelehnt markiert), Modell-Depot startet bei 100");
+  check(r.s.journal.length === 1 && j.trades.length === want.length + 1 && j.trades.filter(t => t.rejected).length === 1 && Math.abs(j.model - 100) < 0.5, "Tagebuch: erster Eintrag mit allen Käufen (einer als abgelehnt markiert), Modell-Depot startet bei 100");
   const n = a.tradeOps.length;
   r = await run(D1.replace("13:00", "14:30"), "status");
   a = await acct();
@@ -108,6 +116,7 @@ await withServer("Start, gleicher Tag, Ihre eigene Position", async ({ run, acct
   r = await run(NEXT, "status");   // nächster Montag, volle Umschichtung
   a = await acct();
   check(opens(a).filter(x => x.body.InstrumentID === vnq.instrumentId).length === 1, "gesperrter US-ETF wird nicht noch einmal versucht");
+  check(r.s.target.reits === 0 && Math.abs(r.s.target.cash - (r.s.signals.cash.weight + r.s.signals.assets.find(x => x.key === "reits").weight)) < 1e-3, "Immobilien nicht kaufbar: ihr Anteil kommt verzinst in den Geldmarkt");
   check(a.realTradeOps.length === 0, "keine einzige Echtgeld-Adresse aufgerufen");
 });
 
@@ -262,7 +271,7 @@ await withServer("Abgelehnte Aufträge vom Vortag (wie beim ersten echten Start)
   const bought = opens(a).map(x => x.body.InstrumentID);
   const wanted = sig.assets.filter(x => x.weightBase > 0 && x.trade.length > 1);
   check(wanted.every(x => bought.includes(x.trade[0].id)) && !bought.some(id => usIds(sig).has(id)), `noch am selben Tag mit europäischen ETFs nachgekauft: ${opens(a).map(x => Object.keys(ids).find(k => ids[k] === x.body.InstrumentID)).join(", ")}`);
-  check(r.s.lastTradeDay === D2.slice(0, 10) && r.s.positions.length === wanted.length, "Käufe bestätigt, Tag als gehandelt vermerkt");
+  check(r.s.lastTradeDay === D2.slice(0, 10) && r.s.positions.length === wanted.length + 1, "Käufe (mit Geldmarkt) bestätigt, Tag als gehandelt vermerkt");
 });
 
 console.log(failures ? `\n${failures} Prüfung(en) fehlgeschlagen.` : "\nAlle Trend-Bot-Prüfungen bestanden.");
