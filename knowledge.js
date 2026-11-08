@@ -299,7 +299,7 @@
   function where(sym, f) {
     const onEtoro = stockMap && stockMap.has(sym);
     if (!f.listing) return "";   // US-Werte: bei eToro handelbar (fehlende kommen mit dem nächsten Datenlauf)
-    const etoro = !stockMap || !stockMap.size ? "" : onEtoro ? " · bei eToro handelbar" : " · nicht in den eToro-Daten – z. B. über Interactive Brokers oder eine Bank mit Zugang zu Auslandsbörsen";
+    const etoro = !stockMap || !stockMap.size ? "" : onEtoro ? " · bei eToro handelbar" : " · nicht in den eToro-Daten – nur über einen Broker mit Zugang zu dieser Börse (vorher beim Broker suchen; manche Auslandsaktien gibt es auch an deutschen Börsen)";
     return `<p class="small"><b>Börse:</b> ${esc(f.listing || "USA")}${etoro}${f.tv ? ` · ${link(tvUrl(f.tv), "Kurs bei TradingView")}` : ""}</p>`;
   }
   function futureHtml() {
