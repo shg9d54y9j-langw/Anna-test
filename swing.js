@@ -121,11 +121,12 @@
   const cards = (list, info, empty) => (list.length ? `<div class="ideas">${list.map(s => card(s, info)).join("")}</div>` : `<p class="muted">${empty}</p>`);
 
   function headCard() {
-    const t = new Date(data.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+    const t = new Date(data.dataUpdated || data.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
     const theory = data.setups.filter(s => s.src === "theory"), n = st => theory.filter(s => s.state === st).length;
     return `<article class="card" data-section="Einstellungen">
-      <div class="card-head"><h2 class="card-title">Stand ${t} Uhr</h2><span class="muted small">${theory.length} Firmen der Theorie-Seite · ${data.setups.length - theory.length} neu entdeckt</span></div>
+      <div class="card-head"><h2 class="card-title">Kurse vom ${t} Uhr</h2><span class="muted small">${theory.length} Firmen der Theorie-Seite · ${data.setups.length - theory.length} neu entdeckt</span></div>
       <p class="small">Jede Firma hat eine Theorie (warum sie profitieren sollte) – gekauft wird aber nur, wenn der Kurstrend sie bestätigt. Heute: <b>${n("buy")}</b> in der Kaufzone, <b>${n("wait") + n("alert")}</b> bald kaufbar, <b>${n("watch")}</b> zum Beobachten, <b>${n("avoid")}</b> Finger weg.${n("buy") < 3 ? " Wenige Käufe sind Absicht: Die Regeln kaufen nur im Aufwärtstrend und warten in Korrekturen ab." : ""}</p>
+      ${data.preview ? `<p class="hint">Vorschau aus den Kursen vom ${dDate(data.dataUpdated)}. Ab dem nächsten Aktien-Datenlauf rechnet der Planer zweimal pro Börsentag selbst neu, und die Bilanz der Signale beginnt.</p>` : ""}
       <div class="calc" style="margin-top:12px">
         <label>Ihr Budget für Swing-Trades (€)<input id="swingBudget" type="number" inputmode="numeric" min="100" step="100" value="${pref.budget}"></label>
         <label>Risiko je Idee, wenn der Stop greift<select id="swingRisk">${[0.5, 1, 2].map(r => `<option value="${r}"${r === pref.risk ? " selected" : ""}>${fmt(r, r % 1 ? 1 : 0)} % des Budgets (${eur(pref.budget * r / 100)})</option>`).join("")}</select></label>
