@@ -222,23 +222,24 @@
   // ================= Zukunft: Trend-Empfehlung und Ideen mit sehr großem Potenzial =================
   // Einstufung dieser Seite nach Beleglage der Nachfrage (offizielle Prognosen) und Reife der Technik – keine Kaufempfehlung.
   const FUTURE = [
-    { title: "KI-Rechenleistung und Halbleiter", level: "stark", why: "Der Strombedarf von Rechenzentren steigt laut IEA von rund 415 TWh (2024) auf etwa 945 TWh bis 2030 – vor allem wegen KI-Servern. Chips, Speicher und Fertigungsanlagen sind der Engpass.", sparten: "Chips, Speicherchips, Chipfertigung und -maschinen, Netzwerktechnik", ex: ["NVDA", "TSM", "ASML", "AMD", "MU", "AVGO"], risk: "Stark zyklisch: Wenn die Investitionen der großen Tech-Firmen langsamer wachsen, fallen diese Aktien schnell um 30–50 %.", src: [A("https://www.iea.org/reports/energy-and-ai", "IEA: Energy and AI (2025)")] },
-    { title: "Stromnetze und Elektrifizierung", level: "stark", why: "Strom wächst in allen Szenarien des World Energy Outlook 2025 schneller als der übrige Energiebedarf. Netze, Transformatoren, Kabel und Speicher werden zum Nadelöhr – unabhängig davon, welche Kraftwerke gebaut werden.", sparten: "Netzausrüster, Kabel, Schaltanlagen, Kühlung für Rechenzentren, Gasturbinen", ex: ["SIE.DE", "ENR.DE", "ABBN.ZU", "SU.PA", "PRY.MI", "GEV", "ETN", "VRT"], risk: "Viele dieser Aktien sind seit 2023 stark gestiegen; Lieferengpässe und Zinsen bestimmen die Gewinne.", src: [A("https://www.iea.org/reports/world-energy-outlook-2025", "IEA: World Energy Outlook 2025")] },
-    { title: "Verteidigung und Cybersicherheit", level: "stark", why: "Die NATO-Staaten haben im Juni 2025 beschlossen, bis 2035 jährlich 5 % der Wirtschaftsleistung für Verteidigung und Sicherheit auszugeben (3,5 % Kernverteidigung, 1,5 % Infrastruktur, Cyber, Resilienz; Überprüfung 2029). Die weltweiten Militärausgaben steigen seit elf Jahren.", sparten: "Rüstung und Munition, Sensorik, Luftfahrt, Cybersicherheit, Datenanalyse", ex: ["RHM.DE", "HAG.DE", "BA.L", "LMT", "AIR.PA", "CRWD", "PANW", "PLTR"], risk: "Politisch getrieben und viel ist schon im Preis: Rheinmetall hat sich nach dem Höhenflug zeitweise halbiert.", src: [A("https://www.ncia.nato.int/newsroom/news/the-hague-summit-declaration", "NATO: The Hague Summit Declaration (25.6.2025)"), A("https://www.sipri.org/publications/2026/sipri-fact-sheets/trends-world-military-expenditure-2025", "SIPRI 2026")] },
-    { title: "Gesundheit: Abnehmmittel und alternde Gesellschaft", level: "stark", why: "Weltweit leben mehr als eine Milliarde Menschen mit Adipositas (Lancet 2024). Bis Mitte der 2030er gibt es mehr Über-80-Jährige als Säuglinge (UN). Neue Abnehmmittel (GLP-1) gehören zu den umsatzstärksten Medikamenten.", sparten: "Pharma, Medizintechnik, Roboter-Chirurgie, Telemedizin, Pflege", ex: ["LLY", "NOVO-B.CO", "ISRG", "HIMS"], risk: "Preisdruck durch Politik und Konkurrenz: Novo Nordisk fiel trotz Wachstum deutlich, weil Konkurrenten aufholten.", src: [A("https://doi.org/10.1016/S0140-6736(23)02750-2", "NCD-RisC, The Lancet 2024"), A("https://population.un.org/WPP/Publications/Files/WPP2024_Key-Messages.pdf", "UN: World Population Prospects 2024")] },
-    { title: "Robotik und Automatisierung", level: "mittel", why: "2024 wurden weltweit rund 542.000 Industrieroboter installiert – doppelt so viele wie vor zehn Jahren; der Verband IFR erwartet über 700.000 pro Jahr bis 2028. Fachkräftemangel und KI treiben die Nachfrage; humanoide Roboter stehen noch am Anfang.", sparten: "Industrieroboter, Antriebe und Sensoren, Lager-Automatisierung, humanoide Roboter", ex: ["ABBN.ZU", "SIE.DE", "ISRG", "TSLA"], risk: "Abhängig von Industriekonjunktur und China; ob humanoide Roboter bald Geld verdienen, ist offen.", src: [A("https://ifr.org/ifr-press-releases/news/global-robot-demand-in-factories-doubles-over-10-years", "IFR: World Robotics 2025")] },
-    { title: "Kernenergie und kleine Reaktoren", level: "mittel", why: "Die IEA sieht eine „neue Ära“ der Kernkraft: Viele Staaten und Tech-Konzerne setzen auf rund um die Uhr verfügbaren, CO₂-armen Strom; kleine modulare Reaktoren (SMR) sollen ab etwa 2030 ans Netz gehen.", sparten: "Kraftwerksbetreiber, Uran, Reaktorbauer, SMR-Entwickler", ex: ["RR.L", "VST", "OKLO"], risk: "SMR-Firmen haben oft noch keinen Umsatz; Zulassung, Kosten und Bauzeiten sind die großen Unbekannten (Oklo: −80 % in 12 Monaten).", src: [A("https://www.iea.org/reports/the-path-to-a-new-era-for-nuclear-energy", "IEA: The Path to a New Era for Nuclear Energy (2025)")] },
-    { title: "Raumfahrt und Satelliten", level: "mittel", why: "Laut Weltwirtschaftsforum und McKinsey wächst die Weltraumwirtschaft von 630 Mrd. $ (2023) auf rund 1,8 Billionen $ bis 2035 – etwa doppelt so schnell wie die Weltwirtschaft. Treiber sind billigere Starts und Satelliten-Internet.", sparten: "Raketenstarts, Satelliten-Internet (auch direkt aufs Handy), Erdbeobachtung, Luft- und Raumfahrt", ex: ["RKLB", "ASTS", "AIR.PA"], risk: "Kapitalintensiv, viele Firmen verbrennen Geld und geben laufend neue Aktien aus (Verwässerung).", src: [A("https://www.weforum.org/publications/space-the-1-8-trillion-opportunity-for-global-economic-growth/", "WEF & McKinsey: Space – The $1.8 Trillion Opportunity (2024)")] },
-    { title: "Quantencomputer", level: "spekulativ", why: "McKinsey schätzt im Quantum Technology Monitor 2026 den Umsatz mit Quantencomputern bis 2035 auf 43–71 Mrd. $. Heute ist der Umsatz noch klein – je nach Abgrenzung 1 bis 4 Mrd. $; nützliche, fehlerkorrigierte Rechner gibt es noch nicht.", sparten: "Quantenhardware, Software, Verschlüsselung; große Tech-Konzerne forschen mit", ex: ["IONQ", "RGTI", "QBTS", "IBM", "GOOG"], risk: "Technik unreif, Umsätze winzig im Verhältnis zur Bewertung – die reinen Quanten-Aktien haben sich nach dem Hype 2025 mehr als halbiert.", src: [A("https://www.mckinsey.com/no/our-insights/mckinsey-quantum-technology-monitor-2026-a-commercial-tipping-point", "McKinsey: Quantum Technology Monitor 2026")] },
+    { id: "chips", title: "KI-Rechenleistung und Halbleiter", level: "stark", why: "Der Strombedarf von Rechenzentren steigt laut IEA von rund 415 TWh (2024) auf etwa 945 TWh bis 2030 – vor allem wegen KI-Servern. Chips, Speicher und Fertigungsanlagen sind der Engpass.", sparten: "Chips, Speicherchips, Chipfertigung und -maschinen, Netzwerktechnik", ex: ["NVDA", "TSM", "ASML", "AMD", "MU", "AVGO"], risk: "Stark zyklisch: Wenn die Investitionen der großen Tech-Firmen langsamer wachsen, fallen diese Aktien schnell um 30–50 %.", src: [A("https://www.iea.org/reports/energy-and-ai", "IEA: Energy and AI (2025)")] },
+    { id: "grid", title: "Stromnetze und Elektrifizierung", level: "stark", why: "Strom wächst in allen Szenarien des World Energy Outlook 2025 schneller als der übrige Energiebedarf. Netze, Transformatoren, Kabel und Speicher werden zum Nadelöhr – unabhängig davon, welche Kraftwerke gebaut werden.", sparten: "Netzausrüster, Kabel, Schaltanlagen, Kühlung für Rechenzentren, Gasturbinen", ex: ["SIE.DE", "ENR.DE", "ABBN.ZU", "SU.PA", "PRY.MI", "GEV", "ETN", "VRT"], risk: "Viele dieser Aktien sind seit 2023 stark gestiegen; Lieferengpässe und Zinsen bestimmen die Gewinne.", src: [A("https://www.iea.org/reports/world-energy-outlook-2025", "IEA: World Energy Outlook 2025")] },
+    { id: "defense", title: "Verteidigung und Cybersicherheit", level: "stark", why: "Die NATO-Staaten haben im Juni 2025 beschlossen, bis 2035 jährlich 5 % der Wirtschaftsleistung für Verteidigung und Sicherheit auszugeben (3,5 % Kernverteidigung, 1,5 % Infrastruktur, Cyber, Resilienz; Überprüfung 2029). Die weltweiten Militärausgaben steigen seit elf Jahren.", sparten: "Rüstung und Munition, Sensorik, Luftfahrt, Cybersicherheit, Datenanalyse", ex: ["RHM.DE", "HAG.DE", "BA.L", "LMT", "AIR.PA", "CRWD", "PANW", "PLTR"], risk: "Politisch getrieben und viel ist schon im Preis: Rheinmetall hat sich nach dem Höhenflug zeitweise halbiert.", src: [A("https://www.ncia.nato.int/newsroom/news/the-hague-summit-declaration", "NATO: The Hague Summit Declaration (25.6.2025)"), A("https://www.sipri.org/publications/2026/sipri-fact-sheets/trends-world-military-expenditure-2025", "SIPRI 2026")] },
+    { id: "health", title: "Gesundheit: Abnehmmittel und alternde Gesellschaft", level: "stark", why: "Weltweit leben mehr als eine Milliarde Menschen mit Adipositas (Lancet 2024). Bis Mitte der 2030er gibt es mehr Über-80-Jährige als Säuglinge (UN). Neue Abnehmmittel (GLP-1) gehören zu den umsatzstärksten Medikamenten.", sparten: "Pharma, Medizintechnik, Roboter-Chirurgie, Telemedizin, Pflege", ex: ["LLY", "NOVO-B.CO", "ISRG", "HIMS"], risk: "Preisdruck durch Politik und Konkurrenz: Novo Nordisk fiel trotz Wachstum deutlich, weil Konkurrenten aufholten.", src: [A("https://doi.org/10.1016/S0140-6736(23)02750-2", "NCD-RisC, The Lancet 2024"), A("https://population.un.org/WPP/Publications/Files/WPP2024_Key-Messages.pdf", "UN: World Population Prospects 2024")] },
+    { id: "robots", title: "Robotik und Automatisierung", level: "mittel", why: "2024 wurden weltweit rund 542.000 Industrieroboter installiert – doppelt so viele wie vor zehn Jahren; der Verband IFR erwartet über 700.000 pro Jahr bis 2028. Fachkräftemangel und KI treiben die Nachfrage; humanoide Roboter stehen noch am Anfang.", sparten: "Industrieroboter, Antriebe und Sensoren, Lager-Automatisierung, humanoide Roboter", ex: ["ABBN.ZU", "SIE.DE", "ISRG", "TSLA"], risk: "Abhängig von Industriekonjunktur und China; ob humanoide Roboter bald Geld verdienen, ist offen.", src: [A("https://ifr.org/ifr-press-releases/news/global-robot-demand-in-factories-doubles-over-10-years", "IFR: World Robotics 2025")] },
+    { id: "nuclear", title: "Kernenergie und kleine Reaktoren", level: "mittel", why: "Die IEA sieht eine „neue Ära“ der Kernkraft: Viele Staaten und Tech-Konzerne setzen auf rund um die Uhr verfügbaren, CO₂-armen Strom; kleine modulare Reaktoren (SMR) sollen ab etwa 2030 ans Netz gehen.", sparten: "Kraftwerksbetreiber, Uran, Reaktorbauer, SMR-Entwickler", ex: ["RR.L", "VST", "OKLO"], risk: "SMR-Firmen haben oft noch keinen Umsatz; Zulassung, Kosten und Bauzeiten sind die großen Unbekannten (Oklo: −80 % in 12 Monaten).", src: [A("https://www.iea.org/reports/the-path-to-a-new-era-for-nuclear-energy", "IEA: The Path to a New Era for Nuclear Energy (2025)")] },
+    { id: "space", title: "Raumfahrt und Satelliten", level: "mittel", why: "Laut Weltwirtschaftsforum und McKinsey wächst die Weltraumwirtschaft von 630 Mrd. $ (2023) auf rund 1,8 Billionen $ bis 2035 – etwa doppelt so schnell wie die Weltwirtschaft. Treiber sind billigere Starts und Satelliten-Internet.", sparten: "Raketenstarts, Satelliten-Internet (auch direkt aufs Handy), Erdbeobachtung, Luft- und Raumfahrt", ex: ["RKLB", "ASTS", "AIR.PA"], risk: "Kapitalintensiv, viele Firmen verbrennen Geld und geben laufend neue Aktien aus (Verwässerung).", src: [A("https://www.weforum.org/publications/space-the-1-8-trillion-opportunity-for-global-economic-growth/", "WEF & McKinsey: Space – The $1.8 Trillion Opportunity (2024)")] },
+    { id: "quantum", title: "Quantencomputer", level: "spekulativ", why: "McKinsey schätzt im Quantum Technology Monitor 2026 den Umsatz mit Quantencomputern bis 2035 auf 43–71 Mrd. $. Heute ist der Umsatz noch klein – je nach Abgrenzung 1 bis 4 Mrd. $; nützliche, fehlerkorrigierte Rechner gibt es noch nicht.", sparten: "Quantenhardware, Software, Verschlüsselung; große Tech-Konzerne forschen mit", ex: ["IONQ", "RGTI", "QBTS", "IBM", "GOOG"], risk: "Technik unreif, Umsätze winzig im Verhältnis zur Bewertung – die reinen Quanten-Aktien haben sich nach dem Hype 2025 mehr als halbiert.", src: [A("https://www.mckinsey.com/no/our-insights/mckinsey-quantum-technology-monitor-2026-a-commercial-tipping-point", "McKinsey: Quantum Technology Monitor 2026")] },
   ];
   const LEVEL = { stark: ["Stark belegt", "green", "Nachfrage durch offizielle Prognosen gut abgesichert"], mittel: ["Belegt, unsicherer", "yellow", "Wachstum wahrscheinlich, Gewinner noch offen"], spekulativ: ["Spekulativ", "red", "Technik oder Geschäftsmodell noch unreif"] };
+  // Ideen mit 1000 %-Potenzial; die Firmen dazu kommen aus data/firms.json (ex: Rückfall, falls die Datei fehlt)
   const MOON = [
-    ["Quantencomputer", "Erste nützliche Anwendungen in Chemie, Logistik und Verschlüsselung.", ["IONQ", "RGTI", "QBTS"]],
-    ["Kleine Reaktoren und Kernfusion", "Rund um die Uhr Strom für Rechenzentren ohne CO₂.", ["OKLO", "RR.L"]],
-    ["Satelliten-Internet direkt aufs Handy", "Netz überall, ohne Funkmasten.", ["ASTS", "RKLB"]],
-    ["Humanoide Roboter", "Maschinen, die Arbeiten in Fabrik, Lager und Haushalt übernehmen.", ["TSLA"]],
-    ["KI-Software für Firmen", "Programme, die ganze Arbeitsabläufe selbst erledigen.", ["PLTR"]],
-    ["Telemedizin und Abnehmmittel", "Behandlung per App, neue Medikamente für Volkskrankheiten.", ["HIMS"]],
+    { id: "quantum", title: "Quantencomputer", why: "Erste nützliche Anwendungen in Chemie, Logistik und Verschlüsselung.", ex: ["IONQ", "RGTI", "QBTS"] },
+    { id: "smr", title: "Kleine Reaktoren und Kernfusion", why: "Rund um die Uhr Strom für Rechenzentren ohne CO₂.", ex: ["OKLO", "RR.L"] },
+    { id: "d2d", title: "Satelliten-Internet direkt aufs Handy", why: "Netz überall, ohne Funkmasten.", ex: ["ASTS", "RKLB"] },
+    { id: "humanoid", title: "Humanoide Roboter", why: "Maschinen, die Arbeiten in Fabrik, Lager und Haushalt übernehmen.", ex: ["TSLA"] },
+    { id: "aisoft", title: "KI-Software für Firmen", why: "Programme, die ganze Arbeitsabläufe selbst erledigen.", ex: ["PLTR"] },
+    { id: "telehealth", title: "Telemedizin und Abnehmmittel", why: "Behandlung per App, neue Medikamente für Volkskrankheiten.", ex: ["HIMS"] },
   ];
   let stockMap = null, stockLoading = false;
   async function loadStocks() {
@@ -257,22 +258,53 @@
   }
   const chipFor = sym => {
     const x = stockMap && stockMap.get(sym);
+    // noch nicht in den Aktien-Daten (kommt mit dem nächsten Lauf, sofern bei eToro handelbar): nur anzeigen, nicht öffnen
+    if (stockMap && stockMap.size && !x) return `<span class="chip-btn off" title="Noch nicht in den Aktien-Daten – erscheint nach dem nächsten Datenlauf, sofern bei eToro handelbar">${esc(sym)}</span>`;
     const r = x && Number.isFinite(x.ret12m) ? ` <span class="${x.ret12m < 0 ? "down" : "up"}">${x.ret12m > 0 ? "+" : ""}${fmt(x.ret12m, 0)} %</span>` : "";
     return `<button type="button" class="chip-btn" data-open="${esc(sym)}" title="${x ? `${esc(x.name)} – 12-Monats-Rendite, im Aktien-Check öffnen` : "im Aktien-Check öffnen"}">${esc(sym)}${r}</button>`;
   };
+
+  // Firmen-Steckbriefe (data/firms.json): je Sparte und je 1000-%-Idee – was die Firma macht, warum gerade sie, worauf achten, mit Quelle
+  let firms = null, firmsLoading = false;
+  async function loadFirms() {
+    if (firms || firmsLoading) return;
+    firmsLoading = true;
+    try { const r = await fetch(`data/firms.json?t=${Date.now()}`, { cache: "no-store" }); const d = r.ok ? await r.json() : null; firms = d && d.firms ? d : null; } catch { firms = null; }
+    firmsLoading = false;
+    if (firms && $("theorie") && !$("theorie").hidden) renderTheory();
+  }
+  const ROLE = { leader: ["Marktführer", "green"], supplier: ["Zulieferer", ""], challenger: ["Herausforderer", "yellow"], spec: ["Spekulativ", "red"] };
+  const link = (u, t) => (/^https:\/\//.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(t)}</a>` : esc(t));
+  const firstSentence = s => { const m = /^(.+?[.!?])(?:\s|$)/.exec(s || ""); return m ? m[1] : s || ""; };
+  const firmRow = sym => {
+    const f = firms && firms.firms[sym];
+    if (!f) return "";
+    const R = ROLE[f.role] || ROLE.challenger;
+    return `<div class="firm">${chipFor(sym)}<details>
+        <summary><span class="firm-name">${esc(f.name)}</span> <span class="light ${R[1]}">${R[0]}</span><span class="firm-teaser">${esc(firstSentence(f.why))}</span></summary>
+        <div class="firm-body">
+          <p><b>Was sie macht:</b> ${esc(f.what)}</p>
+          <p><b>Warum diese Firma:</b> ${esc(f.why)}</p>
+          <p class="firm-risk"><b>Worauf achten:</b> ${esc(f.watch)}</p>
+          <p class="muted small">Quelle: ${(f.src || []).map(([u, t]) => link(u, t)).join(" · ")}</p>
+        </div></details></div>`;
+  };
+  const firmList = syms => `<div class="firm-list">${syms.map(firmRow).join("")}</div>`;
   function futureHtml() {
-    const moonRet = MOON.flatMap(m => m[2]).map(sym => stockMap && stockMap.get(sym)).filter(x => x && Number.isFinite(x.ret12m));
+    loadFirms();
+    const moonSyms = m => (firms && firms.moon && firms.moon[m.id] ? firms.moon[m.id].firms : m.ex);
+    const moonRet = [...new Set(MOON.flatMap(moonSyms))].map(sym => stockMap && stockMap.get(sym)).filter(x => x && Number.isFinite(x.ret12m));
     const worst = moonRet.filter(x => x.ret12m < -20).sort((a, b) => a.ret12m - b.ret12m).slice(0, 4);
     return `<article class="card" data-section="Trend-Empfehlung">
         <div class="card-head"><h2 class="card-title">Trend-Empfehlung: Welche Sparten in den nächsten Jahren wachsen</h2><span class="muted small">12-Monats-Renditen live aus den Tagesdaten</span></div>
-        <p class="small">Eingestuft nach zwei Fragen: Ist die Nachfrage durch offizielle Prognosen abgesichert? Und verdienen die Firmen schon Geld damit? Die Beispiele sind große, bei eToro handelbare Firmen aus der Sparte – <b>keine Kaufempfehlung</b>. Ein Klick öffnet den Wert im Aktien-Check.</p>
-        <div class="future-grid">${FUTURE.map(f => { const L = LEVEL[f.level]; return `
+        <p class="small">Eingestuft nach zwei Fragen: Ist die Nachfrage durch offizielle Prognosen abgesichert? Und verdienen die Firmen schon Geld damit? Je Sparte stehen interessante, bei eToro handelbare Firmen – vom Marktführer bis zum spekulativen Wert – <b>keine Kaufempfehlung</b>. Ein Klick auf den Namen zeigt, was die Firma macht, warum gerade sie und worauf man achten muss; ein Klick auf das Kürzel öffnet sie im Aktien-Check.${firms ? ` <span class="muted">Steckbriefe: Stand ${esc(new Date(`${firms.asOf}T12:00:00Z`).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }))}, aus Firmenangaben und Presse; die 12-Monats-Rendite am Kürzel ist live.</span>` : ""}</p>
+        <div class="future-grid">${FUTURE.map(f => { const L = LEVEL[f.level], syms = firms && firms.sectors && firms.sectors[f.id]; return `
           <article class="future">
             <div class="topic-kicker"><span class="light ${L[1]}">${L[0]}</span><span class="muted small">${L[2]}</span></div>
             <h3>${f.title}</h3>
             <p class="core">${f.why}</p>
             <p class="small"><b>Welche Sparten profitieren:</b> ${f.sparten}</p>
-            <div class="chips">${f.ex.map(chipFor).join("")}</div>
+            ${syms ? `<p class="small firm-intro"><b>Interessante Firmen</b> <span class="muted">– Name antippen für die Begründung</span></p>${firmList(syms)}` : `<div class="chips">${f.ex.map(chipFor).join("")}</div>`}
             <p class="small risk"><b>Risiko:</b> ${f.risk}</p>
             <ul class="srcs">${f.src.map(x => `<li>${x}</li>`).join("")}</ul>
           </article>`; }).join("")}</div>
@@ -281,9 +313,15 @@
       <article class="card" data-section="1000-%-Ideen">
         <h2 class="card-title">Ideen mit 1000 %-Potenzial – und was die Forschung dazu sagt</h2>
         <p><b>Kann eine Aktie 1000 % steigen? Ja – aber es ist selten, und vorher weiß es niemand.</b> Von 64.000 Aktien weltweit (1990–2020) haben nur 2,4 % den gesamten Netto-Vermögenszuwachs geschaffen; mehr als die Hälfte brachte über ihre Laufzeit weniger als US-Geldmarktzinsen (${A("https://rpc.cfainstitute.org/research/financial-analysts-journal/2023/long-term-shareholder-returns-evidence-from-64000-global-stocks", "Bessembinder u. a., Financial Analysts Journal 2023")}; für die USA 1926–2016: 4 %, ${A("https://doi.org/10.1016/j.jfineco.2018.06.004", "Bessembinder, JFE 2018")}). Aktien, die wie Lotterielose wirken, bringen im Schnitt sogar weniger (${A("https://doi.org/10.1016/j.jfineco.2010.08.014", "Bali, Cakici &amp; Whitelaw 2011")}).</p>
-        <div class="table-wrap" style="margin-top:12px"><table>
-          <thead><tr><th>Feld</th><th>Warum es riesig werden könnte</th><th>Beispiele bei eToro (12 Monate)</th></tr></thead>
-          <tbody>${MOON.map(m => `<tr><td><b>${m[0]}</b></td><td>${m[1]}</td><td><div class="chips">${m[2].map(chipFor).join("")}</div></td></tr>`).join("")}</tbody></table></div>
+        <p class="small" style="margin-top:10px">Je Idee die Firmen, die heute an der Börse am direktesten darauf setzen – fast alle klein, mit wenig oder keinem Umsatz und mit Kursschwankungen von 60–80 % im Jahr. Darunter jeweils der <b>sicherere Weg</b> über große Firmen, die am selben Trend verdienen.</p>
+        <div class="moon-grid">${MOON.map(m => { const M = firms && firms.moon && firms.moon[m.id]; return `
+          <article class="moon-card">
+            <h3>${m.title}</h3>
+            <p class="core">${m.why}</p>
+            ${M ? `${firmList(M.firms)}
+            ${M.note ? `<p class="small moon-note">${esc(M.note[0])} <span class="muted">(${link(M.note[1], M.note[2])})</span></p>` : ""}
+            <p class="small moon-safer">${esc(M.safer)}</p><div class="chips">${(M.saferSyms || []).map(chipFor).join("")}</div>` : `<div class="chips">${m.ex.map(chipFor).join("")}</div>`}
+          </article>`; }).join("")}</div>
         ${worst.length ? `<p class="small" style="margin-top:12px"><b>Die Lehre aus 2025/26:</b> Genau solche Werte waren 2025 die großen Stars – in den letzten 12 Monaten: ${worst.map(x => `${esc(x.sym)} <span class="down">${fmt(x.ret12m, 0)} %</span>`).join(", ")}. Wer 1000 % will, muss −80 % aushalten können.</p>` : ""}
         <ul class="checklist">
           <li><b>Nur ein kleiner „Moonshot-Korb“:</b> höchstens 5–10 % Ihres Geldes, verteilt auf 10–20 Werte mit je höchstens 1 %. Ein einziger Treffer mit +1000 % gleicht viele Totalverluste aus – ein Einzelwert nicht.</li>

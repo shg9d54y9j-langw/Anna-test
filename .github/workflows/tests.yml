@@ -46,6 +46,9 @@ jobs:
           node scripts/market-cockpit.mjs
           python3 tests/verify_market.py /tmp/market.json http://localhost:8791
 
+      - name: Firmen-Steckbriefe der Theorie-Seite prüfen
+        run: node tests/check-firms.mjs
+
       - name: Aktien-Daten gegen den Test-Server, unabhängige Gegenrechnung
         env:
           ETORO_API_BASE: http://localhost:8792/api
@@ -59,6 +62,7 @@ jobs:
           ETF_COUNT: "10"
           SEARCH_PAGE_SIZE: "50"
           STOCKS_OUT: /tmp/stocks.json
+          FIRMS_IN: tests/firms-test.json   # Firmen der Theorie-Seite: STK065 muss trotz geringer Beliebtheit dabei sein
         run: |
           node tests/mock-etoro.mjs 8792 & sleep 1
           node scripts/stock-universe.mjs

@@ -5,7 +5,7 @@
 //  - Schwankung (20 und 60 Tage), ATR(14) für Stop-Abstände, größter Rückgang im Jahr, Beta zum S&P 500
 // Optional mit Secret FINNHUB_API_KEY: nächster Quartalszahlen-Termin und Analysten-Empfehlungen (US-Aktien).
 // Veröffentlicht werden nur abgeleitete Kennzahlen, keine Kursreihen.
-import { writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 import { call, field, findArray, num, log, warn, fail, hasKeys, sleep } from "./etoro.mjs";
@@ -13,6 +13,14 @@ import { call, field, findArray, num, log, warn, fail, hasKeys, sleep } from "./
 const here = p => fileURLToPath(new URL(p, import.meta.url));
 const OUT = process.env.STOCKS_OUT || here("../data/stocks.json");
 export const CONFIG = { stocks: Number(process.env.STOCK_COUNT || 700), etfs: Number(process.env.ETF_COUNT || 150), candles: 300 };
+// Firmen der Theorie-Seite (Steckbriefe in data/firms.json): immer in den Aktien-Daten, auch wenn sie nicht unter den beliebtesten sind
+const FIRMS = process.env.FIRMS_IN || here("../data/firms.json");
+export function firmSymbols(d) {
+  if (!d || typeof d !== "object") return [];
+  const moon = Object.values(d.moon || {});
+  return [...new Set([...Object.keys(d.firms || {}), ...Object.values(d.sectors || {}).flat(), ...moon.flatMap(m => [...(m.firms || []), ...(m.saferSyms || [])])]
+    .map(s => String(s).toUpperCase()))];
+}
 const FINNHUB_KEY = process.env.FINNHUB_API_KEY || "";
 const FINNHUB = (process.env.FINNHUB_BASE || "https://finnhub.io/api/v1").replace(/\/$/, "");
 if (!["finnhub.io", "localhost", "127.0.0.1"].includes(new URL(FINNHUB).hostname)) fail("Unzulässige Finnhub-Adresse – der Schlüssel geht nur an finnhub.io.");
@@ -139,7 +147,7 @@ export function popularityIsRank(list) {
   if (!known.length || !vals.length) return true;   // so beobachtet bei eToro
   return median(known) <= median(vals);
 }
-function popular(list, typeId, count, index, isRank) {
+function popular(list, typeId, count, index, isRank, always = []) {
   const out = [];
   for (const it of list) {
     const id = num(field(it, "instrumentId")), sym = field(it, "internalSymbolFull");
@@ -150,7 +158,12 @@ function popular(list, typeId, count, index, isRank) {
   // beliebteste zuerst, ohne Wert ans Ende, bei Gleichstand kleinere ID
   out.sort((a, b) => (a.pop === null) - (b.pop === null) || (isRank ? a.pop - b.pop : b.pop - a.pop) || a.id - b.id);
   log(`Typ ${typeId}: ${out.length} gültige, davon ${Math.min(count, out.length)} übernommen; beliebteste: ${out.slice(0, 6).map(x => x.sym).join(", ")}`);
-  return out.slice(0, count);
+  const top = out.slice(0, count), extra = out.slice(count).filter(x => always.includes(x.sym));
+  if (always.length) {
+    const missing = always.filter(s => !out.some(x => x.sym === s));
+    log(`Firmen der Theorie-Seite: ${always.length - missing.length} von ${always.length} gefunden${extra.length ? `, zusätzlich aufgenommen: ${extra.map(x => x.sym).join(", ")}` : ""}${missing.length ? `; nicht als Aktie bei eToro: ${missing.join(", ")}` : ""}`);
+  }
+  return [...top, ...extra];
 }
 async function dailyCandles(id) {
   const d = await call(`/v1/market-data/instruments/${id}/history/candles/desc/OneDay/${CONFIG.candles}`);
@@ -190,8 +203,10 @@ async function main() {
   const list = await allInstruments();
   const isRank = popularityIsRank(list);
   log(`Beliebtheit ist ${isRank ? "ein Rang (1 = beliebteste)" : "eine Anzahl (mehr = beliebter)"}`);
+  let always = [];
+  try { always = firmSymbols(JSON.parse(await readFile(FIRMS, "utf8"))); } catch (e) { warn(`Firmen der Theorie-Seite nicht lesbar (${e.message}) – nur die beliebtesten Werte.`); }
   const universe = [
-    ...popular(list, types.stock, CONFIG.stocks, index, isRank).map(x => ({ ...x, type: "Aktie" })),
+    ...popular(list, types.stock, CONFIG.stocks, index, isRank, always).map(x => ({ ...x, type: "Aktie" })),
     ...(Number.isInteger(types.etf) ? popular(list, types.etf, CONFIG.etfs, index, isRank).map(x => ({ ...x, type: "ETF" })) : []),
   ];
   log(`${universe.length} Werte: ${universe.slice(0, 8).map(x => x.sym).join(", ")} …`);

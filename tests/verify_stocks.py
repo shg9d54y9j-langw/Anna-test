@@ -68,10 +68,19 @@ def valid(it, t):
             and all(ch.isalnum() or ch in ".-_" for ch in it["internalSymbolFull"]))
 
 
+# Firmen der Theorie-Seite (FIRMS_IN): gültige Aktien darunter gehören immer dazu, auch jenseits der beliebtesten
+always = set()
+if os.environ.get("FIRMS_IN"):
+    fd = json.load(open(os.environ["FIRMS_IN"], encoding="utf-8"))
+    always = {s.upper() for s in list(fd.get("firms", {})) + [x for v in fd.get("sectors", {}).values() for x in v]
+              + [x for m in fd.get("moon", {}).values() for x in m.get("firms", []) + m.get("saferSyms", [])]}
+
 # Beliebtheit ist ein Rang: 1 = beliebteste, ohne Rang ans Ende
 ranked = sorted(universe.values(), key=lambda it: ("popularityUniques7Day" not in it, it.get("popularityUniques7Day", 0), it["instrumentId"]))
 for kind, t, env in (("Aktie", 5, "STOCK_COUNT"), ("ETF", 6, "ETF_COUNT")):
     want = {it["internalSymbolFull"].upper() for it in [it for it in ranked if valid(it, t)][:int(os.environ.get(env, "0") or 0)]}
+    if kind == "Aktie":
+        want |= {it["internalSymbolFull"].upper() for it in ranked if valid(it, t) and it["internalSymbolFull"].upper() in always}
     got = {x["sym"] for x in d["items"] if x["type"] == kind}
     if want and got != want:
         errors.append(f"{kind}: {len(got)} statt {len(want)} der beliebtesten gültigen Werte (fehlen {sorted(want - got)[:5]}, zu viel {sorted(got - want)[:5]})")
