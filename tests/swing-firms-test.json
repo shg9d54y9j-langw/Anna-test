@@ -1,0 +1,16 @@
+{
+  "asOf": "2026-11-08",
+  "note": "Testdaten für den Swing-Planer gegen die Aktien-Daten des Test-Servers; NIXDA gibt es dort nicht.",
+  "firms": {
+    "AAPL": { "name": "Test AAPL", "role": "leader", "what": "Test.", "why": "Test.", "watch": "Test.", "src": [["https://example.com", "Test"]] },
+    "MSFT": { "name": "Test MSFT", "role": "leader", "what": "Test.", "why": "Test.", "watch": "Test.", "src": [["https://example.com", "Test"]] },
+    "NVDA": { "name": "Test NVDA", "role": "supplier", "what": "Test.", "why": "Test.", "watch": "Test.", "src": [["https://example.com", "Test"]] },
+    "STK010": { "name": "Test 10", "role": "challenger", "what": "Test.", "why": "Test.", "watch": "Test.", "src": [["https://example.com", "Test"]] },
+    "STK011": { "name": "Test 11", "role": "challenger", "what": "Test.", "why": "Test.", "watch": "Test.", "src": [["https://example.com", "Test"]] },
+    "STK020": { "name": "Test 20", "role": "spec", "what": "Test.", "why": "Test.", "watch": "Test.", "src": [["https://example.com", "Test"]] },
+    "DE13.DE": { "name": "Test DE13", "role": "leader", "what": "Test.", "why": "Test.", "watch": "Test.", "src": [["https://example.com", "Test"]] },
+    "NIXDA": { "name": "Gibt es nicht", "role": "spec", "what": "Test.", "why": "Test.", "watch": "Test.", "src": [["https://example.com", "Test"]] }
+  },
+  "sectors": { "alpha": ["AAPL", "MSFT", "NVDA", "STK010"], "beta": ["STK011", "DE13.DE", "NIXDA"] },
+  "moon": { "idea": { "firms": ["STK020"], "safer": "Test.", "saferSyms": [] } }
+}

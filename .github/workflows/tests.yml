@@ -69,6 +69,17 @@ jobs:
           python3 tests/verify_stocks.py /tmp/stocks.json http://localhost:8792
           node tests/check-popularity.mjs
 
+      - name: Swing-Planer – Zustände, Stop und Bilanz (Szenarien), unabhängige Gegenrechnung, Veröffentlichen mit Bilanz
+        env:
+          STOCKS_IN: /tmp/stocks.json      # aus dem Schritt davor
+          FIRMS_IN: tests/swing-firms-test.json
+          SWING_OUT: /tmp/swing.json
+        run: |
+          node tests/swing-scenarios.mjs
+          node scripts/swing-planner.mjs
+          python3 tests/verify_swing.py /tmp/stocks.json /tmp/swing.json tests/swing-firms-test.json
+          bash tests/check-publish.sh /tmp/stocks.json
+
       - name: Copy-Bot gegen den Test-Server (Start, Wechsel, Stop Loss, eigene Kopien, Echtgeld-Obergrenze)
         run: node tests/bot-scenarios.mjs
 

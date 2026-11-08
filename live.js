@@ -8,11 +8,11 @@
   const chip = document.createElement("div");
   chip.className = "livechip";
   chip.setAttribute("role", "status");
-  chip.title = "Kurse und Grafiken: Echtzeit. Auswertungen: Live-Wächter und Marktlage alle 15 Minuten, Aktien-Daten 2× täglich, Trend-Bot 1× pro Börsentag. Die Seite prüft jede Minute selbst auf Neues.";
+  chip.title = "Kurse und Grafiken: Echtzeit. Auswertungen: Live-Wächter und Marktlage alle 15 Minuten, Aktien-Daten und Swing-Planer 2× täglich, Trend-Bot 1× pro Börsentag. Die Seite prüft jede Minute selbst auf Neues.";
   chip.innerHTML = `<span class="dot on" aria-hidden="true"></span><b>Live</b><span class="lc-clock num"></span><span class="lc-age muted"></span>`;
   bar.append(chip);
   const clock = chip.querySelector(".lc-clock"), age = chip.querySelector(".lc-age");
-  let checked = Date.now(), lastStocks = 0;
+  let checked = Date.now(), lastStocks = 0, lastSwing = Date.now();
   const tick = () => {
     clock.textContent = new Date().toLocaleTimeString("de-DE");
     const s = Math.round((Date.now() - checked) / 1000);
@@ -30,6 +30,7 @@
       if (D.reloadStocks && (await D.reloadStocks()) && D.reloadHot) D.reloadHot();
       else if (D.reloadHot && visible("hot")) D.reloadHot();
     }
+    if (Date.now() - lastSwing > 5 * 60 * 1000 && visible("swing") && D.reloadSwing) { lastSwing = Date.now(); D.reloadSwing(); }
   }
   tick();
   setInterval(tick, 1000);

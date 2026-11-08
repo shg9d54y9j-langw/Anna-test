@@ -32,7 +32,7 @@ def sd(a):
 
 def candles(iid):
     raw = get(f"{base}/api/v1/market-data/instruments/{iid}/history/candles/desc/OneDay/300")["candles"][0]["candles"]
-    rows = [{"d": c["fromDate"][:10], "h": c["high"], "l": c["low"], "c": c["close"]} for c in raw]
+    rows = [{"d": c["fromDate"][:10], "o": c["open"], "h": c["high"], "l": c["low"], "c": c["close"]} for c in raw]
     return sorted(rows, key=lambda r: r["d"])
 
 
@@ -118,7 +118,12 @@ for x in d["items"]:
         "mom": (pct(at(21), at(252)) if n > 252 else None, 0.011), "d200": ((last / mean(cl[-200:]) - 1) * 100, 0.011),
         "atr": (mean(tr), 1e-3), "vol20": (sd(lr[-20:]) * math.sqrt(252) * 100, 0.011), "dHi52": ((last / hi - 1) * 100, 0.011),
         "mdd": (mdd * 100, 0.011), "beta": (beta, 0.011),
+        # für den Swing-Planer: 20-Tage-Schnitt, letzte Kerze, Spanne der letzten 5 Kerzen
+        "d20": ((last / mean(cl[-20:]) - 1) * 100, 0.011), "o1d": (c[-1]["o"], 1e-3), "hi1d": (c[-1]["h"], 1e-3), "lo1d": (c[-1]["l"], 1e-3),
+        "hi5": (max(r["h"] for r in c[-5:]), 1e-3), "lo5": (min(r["l"] for r in c[-5:]), 1e-3),
     }
+    if x.get("asOf") != c[-1]["d"]:
+        errors.append(f"{x['sym']} asOf: Daten {x.get('asOf')}, letzte Kerze {c[-1]['d']}")
     for k, (v, tol) in want.items():
         if not close(v, x.get(k), tol):
             errors.append(f"{x['sym']} {k}: Daten {x.get(k)}, Gegenrechnung {v}")

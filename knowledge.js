@@ -309,7 +309,7 @@
     const worst = moonRet.filter(x => x.ret12m < -20).sort((a, b) => a.ret12m - b.ret12m).slice(0, 4);
     return `<article class="card" data-section="Trend-Empfehlung">
         <div class="card-head"><h2 class="card-title">Trend-Empfehlung: Welche Sparten in den nächsten Jahren wachsen</h2><span class="muted small">12-Monats-Renditen live aus den Tagesdaten</span></div>
-        <p class="small">Eingestuft nach zwei Fragen: Ist die Nachfrage durch offizielle Prognosen abgesichert? Und verdienen die Firmen schon Geld damit? Je Sparte stehen interessante Firmen – vom Marktführer bis zum spekulativen Wert, auch von Börsen außerhalb von eToro (Seoul, Tokio, Stockholm, Oslo …) – <b>keine Kaufempfehlung</b>. Ein Klick auf den Namen zeigt, was die Firma macht, warum gerade sie und worauf man achten muss; ein Klick auf das Kürzel öffnet sie im Aktien-Check, Kürzel mit ↗ zeigen den Kurs bei TradingView.${firms ? ` <span class="muted">Steckbriefe: Stand ${esc(new Date(`${firms.asOf}T12:00:00Z`).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }))}, aus Firmenangaben und Presse; die 12-Monats-Rendite am Kürzel ist live.</span>` : ""}</p>
+        <p class="small">Eingestuft nach zwei Fragen: Ist die Nachfrage durch offizielle Prognosen abgesichert? Und verdienen die Firmen schon Geld damit? Je Sparte stehen interessante Firmen – vom Marktführer bis zum spekulativen Wert, auch von Börsen außerhalb von eToro (Seoul, Tokio, Stockholm, Oslo …) – <b>keine Kaufempfehlung</b>. Ein Klick auf den Namen zeigt, was die Firma macht, warum gerade sie und worauf man achten muss; ein Klick auf das Kürzel öffnet sie im Aktien-Check, Kürzel mit ↗ zeigen den Kurs bei TradingView. <b>Wann sich ein Kauf lohnt</b> – mit Kauf, Stop und Ziel für eToro – zeigt der <a href="#swing">Swing-Planer</a>.${firms ? ` <span class="muted">Steckbriefe: Stand ${esc(new Date(`${firms.asOf}T12:00:00Z`).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }))}, aus Firmenangaben und Presse; die 12-Monats-Rendite am Kürzel ist live.</span>` : ""}</p>
         <div class="future-grid">${FUTURE.map(f => { const L = LEVEL[f.level], syms = firms && firms.sectors && firms.sectors[f.id]; return `
           <article class="future">
             <div class="topic-kicker"><span class="light ${L[1]}">${L[0]}</span><span class="muted small">${L[2]}</span></div>
@@ -476,6 +476,8 @@
     }
     return items.sort((a, b) => a.date - b.date);
   };
+  // Namen der Sparten und 1000-%-Ideen für den Swing-Planer
+  window.DTD.themeInfo = () => Object.fromEntries([...FUTURE.map(f => [`sector:${f.id}`, { title: f.title, level: f.level }]), ...MOON.map(m => [`moon:${m.id}`, { title: m.title }])]);
   window.DTD.renderTheory = renderTheory;
   window.DTD.renderIdeas = renderIdeas;
   window.addEventListener("dtd:market", () => { if ($("ideen") && !$("ideen").hidden) renderIdeas(); });

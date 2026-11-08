@@ -68,12 +68,15 @@ export function stockStats(candles, spxByDay) {
       beta = vx > 0 ? cov / vx : null;
     }
   }
-  const s50 = sma(50), s200 = sma(200);
+  const s20 = sma(20), s50 = sma(50), s200 = sma(200);
+  // Für den Swing-Planer: Spanne der letzten Kerze und der letzten 5 Kerzen (Stops und Trailing-Stops der Papier-Bilanz)
+  const lastC = c[n - 1], last5 = c.slice(-5);
   return {
     last: r4(last), chg1d: r2(pct(last, at(1))), ret1m: r2(pct(last, at(21))), ret3m: r2(pct(last, at(63))), ret12m: r2(pct(last, at(252))),
-    mom: r2(n > 252 ? pct(at(21), at(252)) : null), d50: r2(s50 ? (last / s50 - 1) * 100 : null), d200: r2(s200 ? (last / s200 - 1) * 100 : null),
+    mom: r2(n > 252 ? pct(at(21), at(252)) : null), d20: r2(s20 ? (last / s20 - 1) * 100 : null), d50: r2(s50 ? (last / s50 - 1) * 100 : null), d200: r2(s200 ? (last / s200 - 1) * 100 : null),
     atr: r4(atr), atrPct: r2(atr / last * 100), vol20: r2(vol(20)), vol60: r2(vol(60)),
-    hi52: r4(hi52), lo52: r4(lo52), dHi52: r2((last / hi52 - 1) * 100), mdd: r2(mdd * 100), beta: r2(beta), asOf: c[n - 1].d,
+    hi52: r4(hi52), lo52: r4(lo52), dHi52: r2((last / hi52 - 1) * 100), mdd: r2(mdd * 100), beta: r2(beta),
+    o1d: r4(lastC.o), hi1d: r4(lastC.h), lo1d: r4(lastC.l), hi5: r4(Math.max(...last5.map(x => x.h))), lo5: r4(Math.min(...last5.map(x => x.l))), asOf: lastC.d,
   };
 }
 
