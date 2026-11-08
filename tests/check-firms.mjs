@@ -32,6 +32,10 @@ for (const [s, f] of Object.entries(d.firms)) {
   if (!/[.!?]/.test(f.why || "")) errors.push(`${s}: Begründung ohne ganzen Satz`);
   if (!Array.isArray(f.src) || !f.src.length || !f.src.every(x => Array.isArray(x) && /^https:\/\/[^\s"<>]+$/.test(x[0]) && typeof x[1] === "string" && x[1].length > 3)) errors.push(`${s}: Quelle fehlt oder ohne https`);
   if (/<|>/.test(JSON.stringify(f))) errors.push(`${s}: HTML im Text`);
+  // Börsen außerhalb von eToro: Börse und TradingView-Symbol für den Kurs-Link
+  if (f.tv !== undefined && !/^[A-Z]+:[A-Z0-9_]+$/.test(f.tv)) errors.push(`${s}: ungültiges TradingView-Symbol ${f.tv}`);
+  if ((f.tv === undefined) !== (f.listing === undefined)) errors.push(`${s}: Börse (listing) und TradingView-Symbol (tv) nur zusammen`);
+  if (/\.(KS|KQ|T|HK|SS|SZ)$/.test(s) && !f.tv) errors.push(`${s}: Asien-Börse ohne TradingView-Symbol`);
 }
 for (const m of Object.values(d.moon)) if (m.note && !(Array.isArray(m.note) && m.note.length === 3 && /^https:\/\//.test(m.note[1]))) errors.push(`Hinweis ohne Quelle: ${JSON.stringify(m.note).slice(0, 60)}`);
 

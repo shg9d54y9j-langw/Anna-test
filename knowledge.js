@@ -256,10 +256,14 @@
     stockLoading = false;
     if (!$("theorie").hidden) renderTheory();
   }
+  const tvUrl = tv => `https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/`;
   const chipFor = sym => {
-    const x = stockMap && stockMap.get(sym);
-    // noch nicht in den Aktien-Daten (kommt mit dem nächsten Lauf, sofern bei eToro handelbar): nur anzeigen, nicht öffnen
-    if (stockMap && stockMap.size && !x) return `<span class="chip-btn off" title="Noch nicht in den Aktien-Daten – erscheint nach dem nächsten Datenlauf, sofern bei eToro handelbar">${esc(sym)}</span>`;
+    const x = stockMap && stockMap.get(sym), f = firms && firms.firms[sym];
+    // nicht in den eToro-Daten: Firmen anderer Börsen verlinken den Kurs bei TradingView, sonst nur anzeigen
+    if (stockMap && stockMap.size && !x) {
+      if (f && f.tv) return `<a class="chip-btn ext" href="${tvUrl(f.tv)}" target="_blank" rel="noopener noreferrer" title="${esc(f.listing || "")} – nicht in den eToro-Daten; Kurs bei TradingView">${esc(sym)} ↗</a>`;
+      return `<span class="chip-btn off" title="Noch nicht in den Aktien-Daten – erscheint nach dem nächsten Datenlauf, sofern bei eToro handelbar">${esc(sym)}</span>`;
+    }
     const r = x && Number.isFinite(x.ret12m) ? ` <span class="${x.ret12m < 0 ? "down" : "up"}">${x.ret12m > 0 ? "+" : ""}${fmt(x.ret12m, 0)} %</span>` : "";
     return `<button type="button" class="chip-btn" data-open="${esc(sym)}" title="${x ? `${esc(x.name)} – 12-Monats-Rendite, im Aktien-Check öffnen` : "im Aktien-Check öffnen"}">${esc(sym)}${r}</button>`;
   };
@@ -286,10 +290,18 @@
           <p><b>Was sie macht:</b> ${esc(f.what)}</p>
           <p><b>Warum diese Firma:</b> ${esc(f.why)}</p>
           <p class="firm-risk"><b>Worauf achten:</b> ${esc(f.watch)}</p>
+          ${where(sym, f)}
           <p class="muted small">Quelle: ${(f.src || []).map(([u, t]) => link(u, t)).join(" · ")}</p>
         </div></details></div>`;
   };
   const firmList = syms => `<div class="firm-list">${syms.map(firmRow).join("")}</div>`;
+  // Wo es die Aktie gibt: Börse, und ob sie in den eToro-Daten ist (sonst z. B. über Interactive Brokers oder eine Bank mit Auslandsbörsen)
+  function where(sym, f) {
+    const onEtoro = stockMap && stockMap.has(sym);
+    if (!f.listing) return "";   // US-Werte: bei eToro handelbar (fehlende kommen mit dem nächsten Datenlauf)
+    const etoro = !stockMap || !stockMap.size ? "" : onEtoro ? " · bei eToro handelbar" : " · nicht in den eToro-Daten – z. B. über Interactive Brokers oder eine Bank mit Zugang zu Auslandsbörsen";
+    return `<p class="small"><b>Börse:</b> ${esc(f.listing || "USA")}${etoro}${f.tv ? ` · ${link(tvUrl(f.tv), "Kurs bei TradingView")}` : ""}</p>`;
+  }
   function futureHtml() {
     loadFirms();
     const moonSyms = m => (firms && firms.moon && firms.moon[m.id] ? firms.moon[m.id].firms : m.ex);
@@ -297,7 +309,7 @@
     const worst = moonRet.filter(x => x.ret12m < -20).sort((a, b) => a.ret12m - b.ret12m).slice(0, 4);
     return `<article class="card" data-section="Trend-Empfehlung">
         <div class="card-head"><h2 class="card-title">Trend-Empfehlung: Welche Sparten in den nächsten Jahren wachsen</h2><span class="muted small">12-Monats-Renditen live aus den Tagesdaten</span></div>
-        <p class="small">Eingestuft nach zwei Fragen: Ist die Nachfrage durch offizielle Prognosen abgesichert? Und verdienen die Firmen schon Geld damit? Je Sparte stehen interessante, bei eToro handelbare Firmen – vom Marktführer bis zum spekulativen Wert – <b>keine Kaufempfehlung</b>. Ein Klick auf den Namen zeigt, was die Firma macht, warum gerade sie und worauf man achten muss; ein Klick auf das Kürzel öffnet sie im Aktien-Check.${firms ? ` <span class="muted">Steckbriefe: Stand ${esc(new Date(`${firms.asOf}T12:00:00Z`).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }))}, aus Firmenangaben und Presse; die 12-Monats-Rendite am Kürzel ist live.</span>` : ""}</p>
+        <p class="small">Eingestuft nach zwei Fragen: Ist die Nachfrage durch offizielle Prognosen abgesichert? Und verdienen die Firmen schon Geld damit? Je Sparte stehen interessante Firmen – vom Marktführer bis zum spekulativen Wert, auch von Börsen außerhalb von eToro (Seoul, Tokio, Stockholm, Oslo …) – <b>keine Kaufempfehlung</b>. Ein Klick auf den Namen zeigt, was die Firma macht, warum gerade sie und worauf man achten muss; ein Klick auf das Kürzel öffnet sie im Aktien-Check, Kürzel mit ↗ zeigen den Kurs bei TradingView.${firms ? ` <span class="muted">Steckbriefe: Stand ${esc(new Date(`${firms.asOf}T12:00:00Z`).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }))}, aus Firmenangaben und Presse; die 12-Monats-Rendite am Kürzel ist live.</span>` : ""}</p>
         <div class="future-grid">${FUTURE.map(f => { const L = LEVEL[f.level], syms = firms && firms.sectors && firms.sectors[f.id]; return `
           <article class="future">
             <div class="topic-kicker"><span class="light ${L[1]}">${L[0]}</span><span class="muted small">${L[2]}</span></div>

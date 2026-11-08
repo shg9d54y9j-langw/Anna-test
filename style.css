@@ -593,6 +593,13 @@ details.info .calc { margin-top: 12px; }
 /* Firmen-Steckbriefe der Theorie-Seite: Kürzel (live), Name, Rolle, Begründung zum Aufklappen */
 .chip-btn.off { cursor: default; color: var(--muted); border-style: dashed; }
 .chip-btn.off:hover { background: #000; color: var(--muted); border-color: var(--line-2); }
+a.chip-btn.ext { text-decoration: none; display: inline-block; }
+/* Broker-Vergleich (Bot-Seite, Karte „Echtgeld“) */
+.broker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); border: 1px solid var(--line); margin-top: 12px; }
+.broker { display: grid; gap: 6px; align-content: start; padding: 14px; background: var(--panel); box-shadow: 0 0 0 1px var(--line); min-width: 0; }
+.broker h3 { margin: 0; font-size: 16px; }
+.broker p { margin: 0; line-height: 1.45; }
+.broker .light { font-size: 9.5px; padding: 2px 7px; margin: 0 4px 4px 0; white-space: normal; }
 .firm-intro { margin: 4px 0 -4px; }
 .firm-list { border-top: 1px solid var(--line); }
 .firm { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--line); }

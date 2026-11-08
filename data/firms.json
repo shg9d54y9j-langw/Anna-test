@@ -1,307 +1,1042 @@
 {
-  "asOf": "2026-11-08",
-  "note": "Firmen-Steckbriefe für die Theorie-Seite: Fakten aus Firmenangaben und Presse, Stand siehe asOf. Rollen: leader = Marktführer, supplier = Zulieferer (verdient, egal wer gewinnt), challenger = Herausforderer, spec = spekulativ. Keine Kaufempfehlung. Alle Kürzel kommen automatisch in die Aktien-Daten (scripts/stock-universe.mjs).",
-  "firms": {
-    "NVDA": { "name": "NVIDIA", "role": "leader",
-      "what": "Entwickelt die Grafik- und KI-Chips, auf denen die meisten großen KI-Modelle trainiert werden – samt Netzwerktechnik und kompletten Server-Systemen.",
-      "why": "Die eigentliche Besonderheit ist die Software CUDA: Millionen Entwickler arbeiten seit fast 20 Jahren damit, wer wechselt, muss viel neu schreiben. Dazu liefert NVIDIA das ganze Paket aus Chip, Vernetzung und Software und bringt fast jedes Jahr eine neue Generation.",
-      "watch": "Die größten Kunden (Google, Amazon, Meta, Microsoft) entwickeln eigene Chips; Exportverbote für China; sehr hohe Erwartungen sind schon im Kurs.",
-      "src": [["https://investor.nvidia.com", "NVIDIA Investor Relations"]] },
-    "TSM": { "name": "TSMC", "role": "supplier",
-      "what": "Größter Auftragsfertiger für Chips weltweit: baut die Prozessoren für Apple, NVIDIA, AMD, Broadcom und viele andere.",
-      "why": "Bei den modernsten Fertigungsverfahren hat TSMC kaum ernsthafte Konkurrenz; auch die Verpackungstechnik für KI-Chips (CoWoS) ist ein Engpass, den TSMC kontrolliert. TSMC verdient, egal welcher Chip-Entwickler das Rennen macht.",
-      "watch": "Der Großteil der Fertigung liegt in Taiwan – ein Konflikt mit China wäre das größte Risiko; die neuen Werke in den USA, Japan und Deutschland sind teurer.",
-      "src": [["https://investor.tsmc.com/english", "TSMC Investor Relations"]] },
-    "ASML": { "name": "ASML", "role": "supplier",
-      "what": "Baut die Belichtungsmaschinen, mit denen Chips hergestellt werden.",
-      "why": "ASML ist weltweit der einzige Hersteller von EUV-Belichtungsmaschinen – ohne sie gibt es keine Spitzenchips, auch nicht bei TSMC, Samsung oder Intel. Ein europäisches Monopol mit Aufträgen für Jahre.",
-      "watch": "Exportbeschränkungen für China treffen einen wichtigen Markt; Chipfirmen investieren in Wellen – in Flauten werden Bestellungen verschoben.",
-      "src": [["https://www.asml.com/en/investors", "ASML Investors"]] },
-    "MU": { "name": "Micron", "role": "supplier",
-      "what": "Einer von nur drei großen Herstellern von Speicherchips – auch des schnellen Stapelspeichers HBM, den jeder KI-Beschleuniger braucht.",
-      "why": "KI-Chips brauchen riesige Mengen schnellen Speicher, und der ist knapp: Micron hat laut eigenen Angaben den Großteil seiner HBM-Produktion für das nächste Jahr schon zu höheren Preisen verkauft. Umsatz im Geschäftsjahr 2026: 133 Mrd. $ (+256 %).",
-      "watch": "Speicher ist der zyklischste Teil der Chipbranche: Auf Engpässe folgten bisher immer Preisstürze, dann fiel die Aktie oft um mehr als die Hälfte.",
-      "src": [["https://thenextweb.com/news/micron-record-quarter-memory-shortage-2028", "The Next Web: Micron sieht Engpass bis 2028 (2026)"]] },
-    "AMD": { "name": "AMD", "role": "challenger",
-      "what": "Zweitgrößter Anbieter von KI-Beschleunigern (Instinct-Reihe) und starker Herausforderer bei Server-Prozessoren (EPYC).",
-      "why": "Die großen KI-Firmen wollen nicht nur von NVIDIA abhängen – AMD ist die naheliegende zweite Quelle; OpenAI hat im Oktober 2025 eine große Liefervereinbarung über 6 Gigawatt geschlossen. Bei Server-Prozessoren nimmt AMD Intel seit Jahren Marktanteile ab.",
-      "watch": "Muss jedes Jahr technisch mit NVIDIA mithalten, auch bei der Software; nach starken Monaten anfällig für Enttäuschungen.",
-      "src": [["https://ir.amd.com", "AMD Investor Relations"]] },
-    "AVGO": { "name": "Broadcom", "role": "supplier",
-      "what": "Entwirft maßgeschneiderte KI-Chips für einzelne Großkunden (etwa Googles TPU) und liefert die Netzwerkchips für KI-Rechenzentren; dazu Software (VMware).",
-      "why": "Wer eigene Chips will, um NVIDIA-Kosten zu sparen, geht oft zu Broadcom – das Unternehmen gewinnt also auch dann, wenn sich Kunden von NVIDIA lösen. Die Netzwerktechnik wächst mit jedem neuen Rechenzentrum.",
-      "watch": "Wenige sehr große Kunden – fällt einer weg, fehlt viel Umsatz; hohe Schulden aus der VMware-Übernahme.",
-      "src": [["https://investors.broadcom.com", "Broadcom Investors"]] },
-    "GEV": { "name": "GE Vernova", "role": "leader",
-      "what": "Baut Gasturbinen, Netztechnik (Transformatoren, Hochspannung) und Windkraftanlagen – 2024 von General Electric abgespalten.",
-      "why": "Der Strombedarf der KI macht Gasturbinen zum Engpass: Ende Juni 2026 standen Aufträge und Reservierungen für 116 Gigawatt in den Büchern, das Unternehmen sieht sich bis 2030 weitgehend ausverkauft. Kunden zahlen heute an, um Liefertermine um 2030 zu sichern.",
-      "watch": "Entsprechend hohe Erwartungen im Kurs; die Windsparte (vor allem auf See) brachte immer wieder Verluste.",
-      "src": [["https://www.turbomachinerymag.com/view/ge-vernova-gas-turbine-backlog-hits-116-gw-as-power-orders-more-than-double", "Turbomachinery Magazine: Auftragsbestand 116 GW (Juli 2026)"]] },
-    "ENR.DE": { "name": "Siemens Energy", "role": "leader",
-      "what": "Gasturbinen, Netztechnik (Hochspannungs-Gleichstrom, Transformatoren) und Windkraft (Siemens Gamesa).",
-      "why": "Rekord-Auftragsbestand von 162 Mrd. € (Ende Juni 2026), getrieben von Rechenzentren in den USA und vom Netzausbau; bei Gasturbinen und Netztechnik weltweit unter den größten Anbietern. Der deutsche Weg, auf den Strom-Hunger der KI zu setzen.",
-      "watch": "Die Windkraft-Tochter Siemens Gamesa macht weiter Probleme; nach der Kursvervielfachung seit 2023 ist viel Optimismus eingepreist.",
-      "src": [["https://www.turbomachinerymag.com/view/siemens-energy-posts-record-backlog-joining-ge-vernova-and-baker-hughes-in-a-record-quarter-for-gas-turbines", "Turbomachinery Magazine: Rekord-Auftragsbestand (Aug. 2026)"]] },
-    "PRY.MI": { "name": "Prysmian", "role": "supplier",
-      "what": "Größter Kabelhersteller der Welt – von Hausleitungen bis zu Hochspannungs-Seekabeln, die Länder und Windparks verbinden.",
-      "why": "Ohne neue Leitungen kommt der Strom nicht beim Verbraucher an: Netzbetreiber in Europa und den USA investieren Hunderte Milliarden. Hochspannungs-Seekabel können weltweit nur eine Handvoll Firmen bauen, die Fabriken sind auf Jahre ausgelastet.",
-      "watch": "Großprojekte können sich verzögern; schwankende Kupferpreise.",
-      "src": [["https://www.prysmian.com/en/investors", "Prysmian Investors"]] },
-    "SU.PA": { "name": "Schneider Electric", "role": "leader",
-      "what": "Weltmarktführer für Stromverteilung und Energiemanagement in Gebäuden, Fabriken und Rechenzentren.",
-      "why": "Liefert fast alles, was zwischen Netzanschluss und Server-Schrank nötig ist – Schaltanlagen, Notstrom, Kühlung, Steuerungssoftware. Rechenzentren sind die am schnellsten wachsende Kundengruppe.",
-      "watch": "Hängt an den Investitionsbudgets der Tech-Konzerne; starke Konkurrenz durch Eaton, ABB und Vertiv.",
-      "src": [["https://www.se.com/ww/en/about-us/investor-relations/", "Schneider Electric Investor Relations"]] },
-    "ETN": { "name": "Eaton", "role": "supplier",
-      "what": "US-Spezialist für Stromverteilung, Schaltanlagen und Notstrom – seit dem Kauf von Boyd Thermal (März 2026) auch für die Flüssigkühlung von KI-Servern.",
-      "why": "Mit Stromtechnik und Flüssigkühlung aus einer Hand deckt Eaton zwei Engpässe moderner KI-Rechenzentren ab; der Auftragsbestand der Elektrosparte hat sich 2026 mehr als verdoppelt.",
-      "watch": "Die Übernahme für 9,5 Mrd. $ muss sich erst rechnen; abhängig vom Bauboom der Rechenzentren.",
-      "src": [["https://www.businesswire.com/news/home/20251103856036/en/Eaton-Signs-Agreement-to-Acquire-Boyd-Thermal-Expanding-Solutions-for-Data-Center-Customers-to-Include-Critical-Liquid-Cooling-Technology", "Eaton: Übernahme von Boyd Thermal (Nov. 2025)"], ["https://pulse2.com/eaton-electrical-global-backlog-more-than-doubles-as-orders-rise-33/", "Pulse 2: Auftragsbestand mehr als verdoppelt (2026)"]] },
-    "VRT": { "name": "Vertiv", "role": "challenger",
-      "what": "Reiner Rechenzentrums-Zulieferer: Stromversorgung, Notstrom und Kühlung – vor allem Flüssigkühlung für KI-Server.",
-      "why": "KI-Chips erzeugen so viel Wärme, dass Luftkühlung nicht mehr reicht; Vertiv entwickelt mit NVIDIA die Strom- und Kühlsysteme künftiger Server-Generationen. Die direkteste Wette auf neue Rechenzentren.",
-      "watch": "Hängt fast vollständig an einem einzigen Markt – stocken die Investitionen in Rechenzentren, trifft es Vertiv sofort und stark.",
-      "src": [["https://investors.vertiv.com", "Vertiv Investor Relations"]] },
-    "ABBN.ZU": { "name": "ABB", "role": "leader",
-      "what": "Schweizer Elektrotechnik-Konzern: Schaltanlagen, Antriebe, Ladesäulen und Netztechnik.",
-      "why": "Konzentriert sich ganz auf Elektrifizierung und Automatisierung – die Roboter-Sparte wird an SoftBank verkauft (Abschluss für Mitte bis Ende 2026 erwartet). Solide Margen und breite Kundschaft, weniger abhängig von einzelnen Rechenzentren.",
-      "watch": "Industrie-Konjunktur in Europa und China; der Verkaufserlös (rund 5,3 Mrd. $) muss sinnvoll angelegt werden.",
-      "src": [["https://new.abb.com/news/detail/129776/abb-to-divest-robotics-division-to-softbank-group", "ABB: Verkauf der Robotik an SoftBank (Okt. 2025)"]] },
-    "RHM.DE": { "name": "Rheinmetall", "role": "leader",
-      "what": "Größter Munitionshersteller Europas; dazu Panzer, Militär-Lkw und Flugabwehr.",
-      "why": "Europa muss Munitions- und Fahrzeugbestände nach Jahrzehnten der Abrüstung wieder auffüllen, und Rheinmetall baut seine Werke am schnellsten aus. Auftragsbestand Mitte 2026: über 80 Mrd. €.",
-      "watch": "Die Aktie hat sich vom Hoch im Herbst 2025 mehr als halbiert – sehr hohe Bewertung, schwacher Cashflow wegen des Ausbaus, verfehlte Umsatzziele. Ein Waffenstillstand in der Ukraine würde die Stimmung belasten.",
-      "src": [["https://www.rheinmetall.com/de/investor-relations/ueberblick", "Rheinmetall Investor Relations"], ["https://www.boerse-express.com/news/articles/rheinmetall-aktie-80-milliarden-euro-auftragspolster-934881", "Börse Express: 80 Mrd. € Auftragsbestand (2026)"]] },
-    "HAG.DE": { "name": "Hensoldt", "role": "supplier",
-      "what": "Deutscher Spezialist für Radare, Optronik und Sensoren – etwa das TRML-4D-Radar der Flugabwehr IRIS-T SLM.",
-      "why": "Moderne Waffen sind nur so gut wie ihre Sensoren; Hensoldts Radare haben sich in der Ukraine bewährt, und der Ausbau der europäischen Luftverteidigung braucht viele davon.",
-      "watch": "Kleinerer Konzern mit hoher Bewertung; abhängig von deutschen Beschaffungsentscheidungen.",
-      "src": [["https://investors.hensoldt.net", "Hensoldt Investor Relations"]] },
-    "BA.L": { "name": "BAE Systems", "role": "leader",
-      "what": "Größter Rüstungskonzern Europas: Kampfflugzeuge (Eurofighter, Teile für die F-35), U-Boote, Munition und Elektronik.",
-      "why": "Breit aufgestellt und mit großem US-Geschäft; als Partner des AUKUS-U-Boot-Programms (Großbritannien, USA, Australien) über Jahrzehnte ausgelastet. Gilt als einer der stabileren Rüstungswerte.",
-      "watch": "Großprojekte mit Kostenrisiken; abhängig vom britischen Haushalt.",
-      "src": [["https://investors.baesystems.com", "BAE Systems Investors"]] },
-    "LMT": { "name": "Lockheed Martin", "role": "leader",
-      "what": "Größter Rüstungskonzern der Welt: F-35-Kampfjet, PAC-3-Abfangraketen für Patriot, Hyperschall- und Weltraumtechnik.",
-      "why": "Die F-35 fliegt in über einem Dutzend Ländern, viele europäische Staaten haben sie neu bestellt; Patriot-Abfangraketen sind seit dem Ukraine-Krieg knapp. Zahlt verlässlich Dividende.",
-      "watch": "Abhängig vom US-Verteidigungshaushalt; Mehrkosten bei Festpreis-Programmen drückten zuletzt die Gewinne.",
-      "src": [["https://investors.lockheedmartin.com", "Lockheed Martin Investors"]] },
-    "CRWD": { "name": "CrowdStrike", "role": "leader",
-      "what": "Cybersicherheit aus der Cloud: Schutz für Computer, Server, Cloud-Konten und Identitäten (Falcon-Plattform).",
-      "why": "Ein einziger kleiner Software-Agent, auf den Kunden immer neue Module buchen – das macht das Wachstum planbar. Angriffe nehmen mit KI zu, und Sicherheit ist eines der letzten Budgets, die gekürzt werden.",
-      "watch": "Sehr hohe Bewertung; der weltweite IT-Ausfall durch ein fehlerhaftes Update im Juli 2024 zeigte das Klumpenrisiko.",
-      "src": [["https://ir.crowdstrike.com", "CrowdStrike Investor Relations"]] },
-    "PANW": { "name": "Palo Alto Networks", "role": "leader",
-      "what": "Größter reiner Anbieter für Netzwerk- und Cloud-Sicherheit; mit der Übernahme von CyberArk (2025 angekündigt) auch für Identitätsschutz.",
-      "why": "Will möglichst alle Sicherheitsprodukte eines Kunden aus einer Plattform liefern – Firmen wollen weniger Anbieter. Gilt neben CrowdStrike als der Konsolidierer der Branche.",
-      "watch": "Große Übernahmen müssen integriert werden; die Umstellung auf Plattform-Verträge drückt kurzfristig die Umsätze.",
-      "src": [["https://investors.paloaltonetworks.com", "Palo Alto Networks Investors"]] },
-    "PLTR": { "name": "Palantir", "role": "challenger",
-      "what": "Software, mit der Militär, Behörden und Firmen riesige Datenmengen auswerten und KI in ihre Abläufe einbauen (Gotham, Foundry, AIP).",
-      "why": "Wächst für seine Größe außergewöhnlich schnell: Umsatz im 1. Quartal 2026 +85 %, bei US-Firmenkunden +133 %, Prognose für 2026 rund 7,7 Mrd. $ (+71 %). Fest verankert bei US-Militär und -Behörden.",
-      "watch": "Eine der teuersten großen Aktien überhaupt (Anfang 2026 über das 60-Fache des Umsatzes) – schon kleine Enttäuschungen lösen starke Rückgänge aus; Datenschutz-Kritik in Europa.",
-      "src": [["https://www.tikr.com/blog/palantir-stock-is-down-38-while-revenue-grew-85-its-ceo-says-the-bears-have-it-backward", "TIKR: Umsatz +85 %, Aktie −38 % (2026)"]] },
-    "LLY": { "name": "Eli Lilly", "role": "leader",
-      "what": "Pharmakonzern mit den meistverkauften Abnehmmitteln (Mounjaro und Zepbound, Wirkstoff Tirzepatid).",
-      "why": "Tirzepatid wirkt stärker als die erste Generation; seit April 2026 ist zudem die Abnehm-Pille Foundayo (Orforglipron) in den USA zugelassen – Pillen lassen sich viel leichter in großen Mengen herstellen als Spritzen. Weitere Kandidaten folgen.",
-      "watch": "Hohe Bewertung; Preisdruck durch US-Politik und Krankenkassen; Nachahmer, sobald Patente auslaufen.",
-      "src": [["https://www.spglobal.com/market-intelligence/en/news-insights/research/2026/04/wegovy-s-early-lead-to-narrow-as-eli-lilly-prepares-foundayo-launch", "S&P Global: Foundayo vs. Wegovy-Pille (April 2026)"]] },
-    "NOVO-B.CO": { "name": "Novo Nordisk", "role": "challenger",
-      "what": "Dänischer Pionier der Abnehmmittel (Ozempic und Wegovy, Wirkstoff Semaglutid).",
-      "why": "Hat seit Januar 2026 als Erster eine Abnehm-Pille in den USA auf dem Markt (Wegovy-Pille) und viel Erfahrung mit Massenproduktion; nach dem Kurssturz deutlich günstiger bewertet als Lilly.",
-      "watch": "Hat Marktanteile an Lilly verloren; Preissenkungen in den USA und erste Nachahmer, weil der Patentschutz für Semaglutid in mehreren Ländern ab 2026 ausläuft.",
-      "src": [["https://www.biospace.com/fda/novos-wegovy-pill-wins-obesity-approval-securing-lead-in-oral-glp-1-race", "BioSpace: Zulassung der Wegovy-Pille (Dez. 2025)"]] },
-    "ISRG": { "name": "Intuitive Surgical", "role": "leader",
-      "what": "Hersteller des Operationsroboters da Vinci – mit großem Abstand Weltmarktführer.",
-      "why": "Jede Operation braucht neue Instrumente – der größte Teil des Umsatzes wiederholt sich also Jahr für Jahr. Chirurgen lernen auf da Vinci, Kliniken wechseln ungern; die neue Generation (da Vinci 5) wird gerade eingeführt.",
-      "watch": "Neue Konkurrenz (Medtronic, Johnson & Johnson); Abnehmmittel könnten manche Operationen seltener machen; Zölle verteuern Teile.",
-      "src": [["https://isrg.intuitive.com", "Intuitive Investor Relations"]] },
-    "VRTX": { "name": "Vertex", "role": "leader",
-      "what": "Biotech-Konzern mit einem faktischen Monopol bei Medikamenten gegen Mukoviszidose.",
-      "why": "Die hohen, stabilen Gewinne finanzieren neue Felder: 2025 wurde das erste neuartige Schmerzmittel ohne Opioid seit Jahrzehnten zugelassen (Journavx), dazu kommt die Gentherapie Casgevy gegen Sichelzellanämie.",
-      "watch": "Die neuen Produkte müssen erst groß werden; Rückschläge in Studien bewegen den Kurs stark.",
-      "src": [["https://investors.vrtx.com", "Vertex Investors"]] },
-    "SIE.DE": { "name": "Siemens", "role": "leader",
-      "what": "Europas größter Industriekonzern: Fabrik-Automatisierung (Steuerungen, Antriebe), Industriesoftware und Gebäude- und Netztechnik.",
-      "why": "Ein großer Teil der Fabriken weltweit läuft mit Siemens-Steuerungen; mit Software für digitale Zwillinge (virtuelle Fabriken) und KI-Partnerschaften, unter anderem mit NVIDIA, will Siemens die Automatisierung der nächsten Jahre prägen.",
-      "watch": "Die Industrie-Konjunktur, vor allem in China und Deutschland, bestimmt die Nachfrage.",
-      "src": [["https://www.siemens.com/global/en/company/investor-relations.html", "Siemens Investor Relations"]] },
-    "TER": { "name": "Teradyne", "role": "challenger",
-      "what": "Testsysteme für Chips – und mit Universal Robots und MiR einer der größten Anbieter von „Cobots“, Robotern, die direkt neben Menschen arbeiten.",
-      "why": "Eine doppelte Wette: Jeder KI-Chip muss getestet werden, und Cobots sind für kleinere Firmen der einfachste Einstieg in die Automatisierung.",
-      "watch": "Das Roboter-Geschäft wuchs zuletzt schwächer als erhofft; Chip-Tests sind zyklisch.",
-      "src": [["https://investors.teradyne.com", "Teradyne Investors"]] },
-    "ROK": { "name": "Rockwell Automation", "role": "leader",
-      "what": "Größter reiner Automatisierungs-Spezialist der USA: Steuerungen, Antriebe, Software für Fabriken.",
-      "why": "Profitiert direkt davon, dass Produktion in die USA zurückgeholt wird – neue Werke werden von Anfang an automatisiert.",
-      "watch": "Hängt an den Investitionen der Industrie; hohe Bewertung für ein eher langsam wachsendes Geschäft.",
-      "src": [["https://ir.rockwellautomation.com", "Rockwell Automation Investors"]] },
-    "SYM": { "name": "Symbotic", "role": "challenger",
-      "what": "Automatisierte Lager mit Robotern für Handelsketten – Hauptkunde ist Walmart.",
-      "why": "Hat Anfang 2025 die Robotik-Sparte von Walmart übernommen und dazu einen Großauftrag erhalten; Lagerlogistik ist einer der Bereiche, in denen Roboter schon heute Geld verdienen.",
-      "watch": "Sehr abhängig von Walmart; Bilanzkorrekturen 2024 haben Vertrauen gekostet.",
-      "src": [["https://ir.symbotic.com", "Symbotic Investor Relations"]] },
-    "TSLA": { "name": "Tesla", "role": "spec",
-      "what": "Elektroautos und Batteriespeicher – und der humanoide Roboter Optimus.",
-      "why": "Elon Musk sieht in Optimus langfristig Teslas wertvollstes Produkt. Die Fertigung in Fremont läuft langsam an (laut Presseberichten mehrere hundert Stück pro Woche im August 2026), der Verkauf an Privatleute ist für Ende 2027 geplant.",
-      "watch": "Bisher vor allem Versprechen: Die Roboterhände sind technisch schwierig, und das Autogeschäft schwächelt. Der Kurs bewertet sehr viel Zukunft.",
-      "src": [["https://www.techrepublic.com/article/news-tesla-optimus-robot-production-2027-sales-timeline/", "TechRepublic: Optimus-Zeitplan (2026)"]] },
-    "CEG": { "name": "Constellation Energy", "role": "leader",
-      "what": "Betreibt die größte Flotte von Kernkraftwerken in den USA; seit der Übernahme von Calpine (Januar 2026) der größte Stromerzeuger des Landes.",
-      "why": "Tech-Konzerne zahlen für rund um die Uhr verfügbaren CO₂-freien Strom Aufpreise: Für Microsoft wird das stillgelegte Kraftwerk Three Mile Island 1 (jetzt Crane) wieder hochgefahren, geplant für Mitte 2027; auch Meta hat langfristig abgeschlossen.",
-      "watch": "Hohe Bewertung für einen Versorger; Schulden aus der Calpine-Übernahme; politischer Streit über Strompreise für Rechenzentren.",
-      "src": [["https://www.industrialinfo.com/news/article/constellation-energy-completes-calpine-acquisition--351594", "Industrial Info: Calpine-Übernahme abgeschlossen (2026)"]] },
-    "VST": { "name": "Vistra", "role": "leader",
-      "what": "Großer US-Stromerzeuger mit Kern- und Gaskraftwerken.",
-      "why": "Hat 2026 mit Meta Lieferverträge über mehr als 2.600 Megawatt für 20 Jahre geschlossen (vor allem Kernkraft aus Ohio), dazu Amazon mit bis zu 1.200 Megawatt aus Comanche Peak. Solche Verträge machen bestehende Kraftwerke deutlich wertvoller.",
-      "watch": "Strompreise schwanken; die Gaskraftwerke tragen CO₂-Risiken; der Kurs reagiert stark auf die Stimmung rund um den KI-Strombedarf.",
-      "src": [["https://www.industrialinfo.com/iirenergy/industry-news/article/data-centers-push-vistra-to-grow-us-nuclear-natural-gas-fleet--361737", "Industrial Info: Vistra und Rechenzentren (2026)"]] },
-    "CCJ": { "name": "Cameco", "role": "supplier",
-      "what": "Einer der größten Uranproduzenten der Welt (Kanada) und mit 49 % Miteigentümer des Reaktorbauers Westinghouse.",
-      "why": "Neue und länger laufende Kraftwerke brauchen jahrzehntelang Brennstoff – Uran ist das „Schaufel“-Geschäft der Kernkraft. Über Westinghouse profitiert Cameco zusätzlich vom US-Programm für neue Großreaktoren (Partnerschaft über mindestens 80 Mrd. $, Oktober 2025).",
-      "watch": "Der Uranpreis schwankt stark; aus dem 80-Mrd.-Programm sind noch keine festen Bauaufträge bekannt.",
-      "src": [["https://www.power-eng.com/nuclear/new-partnership-targets-80b-of-new-reactors/", "Power Engineering: 80-Mrd.-$-Programm für Westinghouse-Reaktoren (Okt. 2025)"]] },
-    "RR.L": { "name": "Rolls-Royce", "role": "leader",
-      "what": "Britischer Triebwerksbauer – und Entwickler eines kleinen modularen Reaktors (SMR).",
-      "why": "Rolls-Royce SMR ist Europas am weitesten fortgeschrittenes SMR-Projekt: im April 2026 Vertrag mit Great British Energy – Nuclear für drei Reaktoren in Wylfa (Wales), dazu Vorarbeiten mit ČEZ in Tschechien. Das Kerngeschäft (Flugzeugtriebwerke und deren Wartung) verdient schon gut.",
-      "watch": "Die SMR-Sparte ist nur ein kleiner Teil des Konzerns; der erste Reaktor kommt frühestens in den 2030er-Jahren.",
-      "src": [["https://oenergetice.cz/en/nuclear-power/british-smr-company-part-owned-by-cez-gets-green-light-for-first-european-reactors", "oEnergetice: Rolls-Royce SMR erhält Zuschlag (2026)"]] },
-    "BWXT": { "name": "BWX Technologies", "role": "supplier",
-      "what": "Baut die Reaktoren für U-Boote und Flugzeugträger der US-Marine und liefert Brennstoff und Bauteile für die Kernkraft.",
-      "why": "Langfristige Verträge mit der US-Regierung sorgen für planbare Umsätze; dazu kommen neue Aufträge für Mikroreaktoren und Spezial-Brennstoff.",
-      "watch": "Abhängig von Rüstungshaushalten; nach dem Kernkraft-Boom hoch bewertet.",
-      "src": [["https://investors.bwxt.com", "BWXT Investors"]] },
-    "RKLB": { "name": "Rocket Lab", "role": "challenger",
-      "what": "Startet kleine Satelliten mit der Electron-Rakete und baut Satelliten und Bauteile; die größere Neutron-Rakete ist in Entwicklung.",
-      "why": "Nach SpaceX einer der aktivsten Raketenstarter des Westens und zugleich Satellitenhersteller – das meiste Geld kommt schon aus dem Satellitengeschäft. Gelingt Neutron, kann Rocket Lab auch große Konstellationen ins All bringen.",
-      "watch": "Neutron hat sich mehrfach verzögert (Erstflug frühestens Ende 2026); Verluste und neue Aktien zur Finanzierung.",
-      "src": [["https://spaceflightnow.com/2026/08/10/window-for-2026-launch-debut-of-rocket-labs-neutron-rocket-is-narrowing-as-development-continues/", "Spaceflight Now: Neutron-Zeitplan (Aug. 2026)"]] },
-    "PL": { "name": "Planet Labs", "role": "challenger",
-      "what": "Betreibt die größte Flotte von Erdbeobachtungs-Satelliten und fotografiert fast täglich die gesamte Landfläche der Erde.",
-      "why": "Daten für Verteidigung, Landwirtschaft und Versicherungen – Staaten, auch in Europa, kaufen zunehmend eigene Aufklärung aus dem All, und KI macht die Bilderflut auswertbar.",
-      "watch": "Lange mit Verlust; Konkurrenz durch staatliche Programme und andere Anbieter.",
-      "src": [["https://investors.planet.com", "Planet Labs Investors"]] },
-    "AIR.PA": { "name": "Airbus", "role": "leader",
-      "what": "Größter Flugzeugbauer der Welt und über Airbus Defence and Space einer der wichtigsten Satelliten- und Rüstungshersteller Europas.",
-      "why": "Ein stabiler Kern (Verkehrsflugzeuge mit Aufträgen für rund ein Jahrzehnt) plus Verteidigung und Raumfahrt; Airbus, Thales und Leonardo wollen ihre Satellitengeschäfte zusammenlegen (2025 angekündigt), um gegen SpaceX besser zu bestehen.",
-      "watch": "Probleme bei Triebwerken und Zulieferern bremsen die Auslieferungen; Raumfahrt ist nur ein kleiner Teil des Konzerns.",
-      "src": [["https://www.airbus.com/en/investors", "Airbus Investors"]] },
-    "IRDM": { "name": "Iridium", "role": "supplier",
-      "what": "Betreibt ein weltweites Satellitennetz für Telefonie und Datenfunk, das auch Pole und Ozeane abdeckt.",
-      "why": "Profitabel und mit stabilen Einnahmen; der neue Dienst NTN Direct soll gewöhnliche Geräte nach 5G-Standard direkt mit den Satelliten verbinden – Partner sind unter anderem die Deutsche Telekom und Vodafone IoT, der Start ist für 2026 geplant.",
-      "watch": "Viel weniger Bandbreite als Starlink oder AST SpaceMobile; harter Wettbewerb im Markt „Satellit direkt aufs Gerät“.",
-      "src": [["https://www.satellitetoday.com/finance/2026/04/23/iridium-continues-iot-subscriber-growth-in-q1-desch-talks-ntn-direct-launch-and-spectrum/", "Via Satellite: NTN Direct (April 2026)"]] },
-    "ASTS": { "name": "AST SpaceMobile", "role": "spec",
-      "what": "Baut riesige Satelliten (Antennenfläche über 200 m²), die gewöhnliche Handys direkt mit Breitband versorgen sollen – ganz ohne Spezialgerät.",
-      "why": "Partner sind große Mobilfunker wie AT&T, Verizon und Vodafone, die das Netz an ihre Kunden weiterverkaufen würden; im Juni 2026 starteten drei Satelliten der neuen Generation. Gelingt der Ausbau, wäre AST ein weltweiter Netzbetreiber ohne Funkmasten.",
-      "watch": "Der kommerzielle Start wurde auf Anfang 2027 verschoben; für Dauerbetrieb braucht es 45–60 Satelliten – sehr teuer, laufend neue Aktien; Konkurrenz durch SpaceX (Starlink Direct to Cell).",
-      "src": [["https://satnews.com/2026/07/16/ast-spacemobile-defers-commercial-direct-to-device-timeline-to-early-2027/", "SatNews: Start auf Anfang 2027 verschoben (Juli 2026)"]] },
-    "IBM": { "name": "IBM", "role": "leader",
-      "what": "IT-Konzern (Software, Beratung, Großrechner) mit einem der größten Quantencomputer-Programme.",
-      "why": "Hat einen öffentlichen Fahrplan bis zu einem großen, fehlerkorrigierten Quantencomputer (bis 2029) und betreibt viele Quantenrechner für Kunden in der Cloud. Das übrige Geschäft verdient das Geld – Quanten sind eine Zusatz-Chance mit begrenztem Risiko.",
-      "watch": "Quanten sind bisher ein winziger Teil des Umsatzes; der Kurs hängt am Software- und Beratungsgeschäft.",
-      "src": [["https://www.ibm.com/investor", "IBM Investor Relations"]] },
-    "GOOG": { "name": "Alphabet (Google)", "role": "leader",
-      "what": "Google-Mutterkonzern; die Abteilung Google Quantum AI entwickelt supraleitende Quantenchips wie „Willow“.",
-      "why": "Gilt technisch als führend: Willow zeigte Ende 2024, dass die Fehler mit mehr Qubits sinken statt steigen, 2025 folgte eine nachprüfbare Rechnung, die schneller war als jeder Supercomputer. Für Anleger eine Quanten-Option in einem hochprofitablen Konzern.",
-      "watch": "Quanten bewegen den Kurs kaum; Wettbewerbs- und Kartellrisiken im Kerngeschäft.",
-      "src": [["https://blog.google/technology/research/google-willow-quantum-chip/", "Google: Willow-Quantenchip (Dez. 2024)"]] },
-    "IONQ": { "name": "IonQ", "role": "spec",
-      "what": "Größter reiner Quantencomputer-Anbieter; baut Rechner mit Ionenfallen (einzelne geladene Atome als Qubits).",
-      "why": "Kauft sich mit dem Geld aus Kapitalerhöhungen eine komplette Kette zusammen – Netzwerk-, Sensor- und Chipfirmen, seit Juli 2026 auch die Chipfabrik SkyWater. Umsatz 2025: 130 Mio. $ (+202 %); für 2026 erwartet IonQ 450–460 Mio. $ (mit SkyWater).",
-      "watch": "Viel Wachstum ist zugekauft; ein nützlicher, fehlerkorrigierter Rechner ist noch weit weg; die Bewertung ist ein Vielfaches des Umsatzes.",
-      "src": [["https://thequantuminsider.com/2026/09/08/ionq-announces-increased-full-year-2026-financial-outlook-following-skywater-acquisition/", "The Quantum Insider: Prognose 2026 (Sept. 2026)"]] },
-    "RGTI": { "name": "Rigetti Computing", "role": "spec",
-      "what": "Baut supraleitende Quantenchips im Baukastenprinzip (Chiplets); die Rechner lassen sich über Amazon Braket und Microsoft Azure nutzen.",
-      "why": "Eigene Chipfabrik in Kalifornien und ein klarer Fahrplan: über 150 Qubits 2026, über 1.000 Qubits 2027. Gelingt der Sprung bei der Fehlerquote, wäre Rigetti ein Übernahmekandidat für große Tech-Konzerne.",
-      "watch": "Der Umsatz ist winzig und schwankt (2025: 7,1 Mio. $); der Kurs ist ein reines Zukunftsversprechen.",
-      "src": [["https://www.fool.com/coverage/charts/2026/04/20/rigetti-computing-vs-d-wave-quantum-navigating-volatile-revenue-trends/", "The Motley Fool: Rigetti und D-Wave (April 2026)"]] },
-    "QBTS": { "name": "D-Wave Quantum", "role": "spec",
-      "what": "Pionier des Quanten-Annealings – Spezialrechner für Optimierungsaufgaben wie Logistik und Planung; seit dem Kauf von Quantum Circuits auch universelle Quantenchips.",
-      "why": "Einer der wenigen Anbieter mit zahlenden Firmenkunden für konkrete Anwendungen; das neue System Advantage2 ist kommerziell verfügbar.",
-      "watch": "Der Umsatz ist 2026 eingebrochen (1. Halbjahr 5,9 statt 18,1 Mio. $); Annealing kann nicht alles, was universelle Quantenrechner können sollen.",
-      "src": [["https://www.fool.com/coverage/charts/2026/04/20/rigetti-computing-vs-d-wave-quantum-navigating-volatile-revenue-trends/", "The Motley Fool: Rigetti und D-Wave (April 2026)"]] },
-    "OKLO": { "name": "Oklo", "role": "spec",
-      "what": "Entwickelt kleine schnelle Reaktoren („Aurora“) und will den Strom direkt an Rechenzentren und Industrie verkaufen.",
-      "why": "Großes Interesse der Tech-Branche; 2026 hat das US-Energieministerium einen Vertrag für den ersten Aurora-Reaktor am Idaho National Laboratory geschlossen, und die US-Atomaufsicht hat die Auslegungs-Grundlagen beschleunigt genehmigt. Gelingt der erste Reaktor, könnte Oklo Dutzende bauen.",
-      "watch": "Noch kein Umsatz und keine Betriebsgenehmigung für Aurora; im 1. Halbjahr 2026 wurden 1,85 Mrd. $ über neue Aktien eingesammelt (Verwässerung). Der Kurs fiel vom Hoch im Oktober 2025 um rund 80 %.",
-      "src": [["https://www.implicator.ai/oklo-raised-1-85-billion-before-pricing-first-reactor/", "Implicator: Kapitalerhöhungen und Status (2026)"], ["https://247wallst.com/investing/2026/05/26/oklo-moves-one-step-closer-to-commercialization/", "24/7 Wall St.: Genehmigungsschritt (Mai 2026)"]] },
-    "SMR": { "name": "NuScale Power", "role": "spec",
-      "what": "Entwickelt kleine modulare Reaktoren (77 MW je Modul), die in Fabriken gebaut und zu Kraftwerken zusammengesetzt werden.",
-      "why": "Einziges SMR-Design mit Zulassung der US-Atomaufsicht (Mai 2025, 77-MW-Version); mit dem Partner ENTRA1 und dem Versorger TVA gibt es eine Vereinbarung über bis zu 6 Gigawatt – rund 72 Module.",
-      "watch": "Noch kein fester Auftrag und kein Reaktor im Bau; das erste Projekt in Utah wurde 2023 wegen gestiegener Kosten abgesagt.",
-      "src": [["https://www.ans.org/news/2025-09-03/article-7342/tva-and-entra1-to-deploy-6-gw-of-nuscale-smrs/", "American Nuclear Society: TVA und ENTRA1 (Sept. 2025)"]] },
-    "LEU": { "name": "Centrus Energy", "role": "spec",
-      "what": "Einziger US-Hersteller von HALEU – höher angereichertem Uran, das viele neue Reaktortypen brauchen.",
-      "why": "Ohne HALEU laufen die meisten neuen Mini-Reaktoren nicht, und bisher kam der Brennstoff vor allem aus Russland; das US-Energieministerium hat Centrus im Januar 2026 einen Auftrag über 900 Mio. $ für den Ausbau der Anlage in Ohio erteilt.",
-      "watch": "Der Ausbau dauert – neue Kapazität frühestens ab 2029; abhängig von staatlichen Aufträgen und vom Erfolg der neuen Reaktoren.",
-      "src": [["https://www.ans.org/news/2026-07-06/article-8180/doe-contract-boosts-centruss-haleu-goals-as-urenco-continues-leu-expansion/", "American Nuclear Society: DOE-Auftrag für Centrus (Juli 2026)"]] },
-    "NNE": { "name": "NANO Nuclear Energy", "role": "spec",
-      "what": "Entwickelt Mikroreaktoren (KRONOS, rund 15 MW) – den ersten zusammen mit der University of Illinois.",
-      "why": "Der Bauantrag für den KRONOS-Forschungsreaktor wurde im Mai 2026 von der US-Atomaufsicht zur Prüfung angenommen; Mikroreaktoren könnten abgelegene Orte, Militärbasen und Rechenzentren versorgen.",
-      "watch": "Kein Umsatz; die Prüfung läuft bis 2027, gebaut wird frühestens danach – ein sehr frühes, sehr riskantes Stadium.",
-      "src": [["https://nanonuclearenergy.com/nano-nuclears-kronos-mmr-microreactor-advances-to-critical-milestone-toward-reactor-deployment-with-university-of-illinois-urbana-champaign-submission-of-construction-permit-application-to-us-nuclear/", "NANO Nuclear: Bauantrag eingereicht (April 2026)"]] },
-    "XPEV": { "name": "XPeng", "role": "spec",
-      "what": "Chinesischer Elektroauto-Hersteller mit eigener Robotik-Sparte: dem humanoiden Roboter IRON.",
-      "why": "Nutzt Chips und Software aus dem autonomen Fahren auch für Roboter; die Serienfertigung von IRON soll Ende 2026 beginnen, Auslieferungen sind für 2027 geplant.",
-      "watch": "Harte Konkurrenz und Preiskrieg im chinesischen Automarkt; Roboter-Umsätze sind noch Zukunftsmusik; politische Risiken chinesischer Aktien.",
-      "src": [["https://emag.directindustry.com/2026/03/17/china-humanoid-robots-market-unitree-robotics-agibot-ubtech-leju-xpeng/", "DirectIndustry: Chinas Humanoiden-Markt (März 2026)"]] },
-    "9880.HK": { "name": "UBTech Robotics", "role": "spec",
-      "what": "Chinesischer Robotik-Spezialist (Börse Hongkong); baut den Industrie-Humanoiden Walker S2.",
-      "why": "Einer der ersten Hersteller mit echten Serienaufträgen aus Fabriken (rund 800 Mio. Yuan Ende 2025) und bereits laufender Massenfertigung.",
-      "watch": "Hohe Verluste; bei den Stückzahlen liegen nicht börsennotierte Konkurrenten wie AgiBot und Unitree vorn; möglicherweise bei eToro nicht handelbar.",
-      "src": [["https://www.roboticstomorrow.com/story/2025/11/ubtech-humanoid-robot-walker-s2-begins-mass-production-and-delivery-with-orders-exceeding-800-million-yuan/25810/", "Robotics Tomorrow: Walker S2 in Serie (Nov. 2025)"]] },
-    "SOUN": { "name": "SoundHound AI", "role": "spec",
-      "what": "Sprach-KI für Autos, Restaurants (Bestellannahme am Telefon und im Drive-in), Kundenservice und Banken.",
-      "why": "Wächst schnell (Umsatz im 2. Quartal 2026: 61,9 Mio. $, +45 %; Prognose 2026: 230–260 Mio. $) und ist über viele Branchen verteilt; die geplante Übernahme von LivePerson soll den Kundenservice stärken.",
-      "watch": "Hohe Verluste, Wachstum zum Teil zugekauft; große Plattformen (OpenAI, Google) bieten Sprach-KI günstig an.",
-      "src": [["https://www.barchart.com/story/news/3678894/soundhound-ai-nasdaqsoun-reports-bullish-q2-cy2026-stock-jumps-23-4", "Barchart: Zahlen 2. Quartal 2026"]] },
-    "PATH": { "name": "UiPath", "role": "challenger",
-      "what": "Software-Roboter, die Büroarbeit am Computer automatisieren – inzwischen mit KI-Agenten, die ganze Abläufe selbst erledigen.",
-      "why": "Kennt die Arbeitsabläufe Tausender Firmenkunden – ein guter Ausgangspunkt für KI-Agenten; wiederkehrende Erlöse von 1,85 Mrd. $ im Jahr.",
-      "watch": "Wächst nur noch moderat (rund 10–17 %); KI-Agenten der großen Plattformen könnten das klassische Geschäft ersetzen.",
-      "src": [["https://ir.uipath.com", "UiPath Investor Relations"]] },
-    "HIMS": { "name": "Hims & Hers Health", "role": "spec",
-      "what": "Telemedizin-Plattform: Behandlung per App (Haarausfall, Potenz, Haut, Abnehmen) mit Lieferung nach Hause.",
-      "why": "Starke Marke bei jüngeren Kunden und viele zahlende Abonnenten; verkauft inzwischen auch Original-Abnehmmittel wie Wegovy statt nachgemischter Kopien.",
-      "watch": "2026 schwer getroffen: Die US-Arzneimittelbehörde geht gegen nachgemischte Abnehmmittel vor, es gab eine Klage (inzwischen Einigung) mit Novo Nordisk und neue Konkurrenz durch Amazon; die Marge sinkt.",
-      "src": [["https://www.fool.com/investing/2026/02/09/hims-hers-collapses-after-fda-vows-to-restrict-cop", "The Motley Fool: FDA gegen Kopien (Feb. 2026)"]] },
-    "VKTX": { "name": "Viking Therapeutics", "role": "spec",
-      "what": "Kleine Biotech-Firma mit einem eigenen Abnehmmittel (VK2735) – als wöchentliche Spritze und als Pille.",
-      "why": "Zwei große Phase-3-Studien (VANQUISH, über 4.500 Patienten in der ersten) sind voll besetzt, Ergebnisse 2027; die Pillen-Version ist ebenfalls in Phase 3. Viel Geld in der Kasse (960 Mio. $) – ein klassischer Übernahmekandidat für große Pharmakonzerne.",
-      "watch": "Alles hängt an den Studienergebnissen; Lilly und Novo sind mit Pillen schon auf dem Markt.",
-      "src": [["https://ir.vikingtherapeutics.com/2026-03-26-Viking-Therapeutics-Announces-Completion-of-Enrollment-in-Phase-3-VANQUISH-2-Trial-of-VK2735", "Viking: VANQUISH-2 voll besetzt (März 2026)"]] },
-    "GPCR": { "name": "Structure Therapeutics", "role": "spec",
-      "what": "Entwickelt die Abnehm-Pille Aleniglipron – ein kleines Molekül, das sich günstig in großen Mengen herstellen lässt.",
-      "why": "In der Phase-2-Studie ACCESS II verloren die Teilnehmer nach 44 Wochen im Schnitt bis zu 15 % Gewicht (Placebo: +1 %); die Phase-3-Studien laufen seit 2026. Rund 1,5 Mrd. $ in der Kasse reichen laut Firma bis Ende 2028.",
-      "watch": "Phase-3-Ergebnisse gibt es erst in einigen Jahren; der Markt für Abnehm-Pillen wird hart umkämpft.",
-      "src": [["https://www.barchart.com/story/news/767382/structure-therapeutics-reports-positive-topline-data-from-phase-2-access-ii-trial-with-once-daily-oral-small-molecule-glp-1-receptor-agonist-aleniglipron", "Structure: Phase-2-Daten ACCESS II (März 2026)"]] }
+ "asOf": "2026-11-08",
+ "note": "Firmen-Steckbriefe für die Theorie-Seite: Fakten aus Firmenangaben und Presse, Stand siehe asOf. Rollen: leader = Marktführer, supplier = Zulieferer (verdient, egal wer gewinnt), challenger = Herausforderer, spec = spekulativ. Auch Firmen von Börsen außerhalb von eToro (listing = Börse, tv = TradingView-Symbol für den Kurs-Link). Keine Kaufempfehlung. Alle Kürzel kommen automatisch in die Aktien-Daten (scripts/stock-universe.mjs).",
+ "firms": {
+  "NVDA": {
+   "name": "NVIDIA",
+   "role": "leader",
+   "what": "Entwickelt die Grafik- und KI-Chips, auf denen die meisten großen KI-Modelle trainiert werden – samt Netzwerktechnik und kompletten Server-Systemen.",
+   "why": "Die eigentliche Besonderheit ist die Software CUDA: Millionen Entwickler arbeiten seit fast 20 Jahren damit, wer wechselt, muss viel neu schreiben. Dazu liefert NVIDIA das ganze Paket aus Chip, Vernetzung und Software und bringt fast jedes Jahr eine neue Generation.",
+   "watch": "Die größten Kunden (Google, Amazon, Meta, Microsoft) entwickeln eigene Chips; Exportverbote für China; sehr hohe Erwartungen sind schon im Kurs.",
+   "src": [
+    [
+     "https://investor.nvidia.com",
+     "NVIDIA Investor Relations"
+    ]
+   ]
   },
-  "sectors": {
-    "chips": ["NVDA", "TSM", "ASML", "MU", "AMD", "AVGO"],
-    "grid": ["GEV", "ENR.DE", "PRY.MI", "SU.PA", "ETN", "VRT", "ABBN.ZU"],
-    "defense": ["RHM.DE", "HAG.DE", "BA.L", "LMT", "CRWD", "PANW", "PLTR"],
-    "health": ["LLY", "NOVO-B.CO", "ISRG", "VRTX"],
-    "robots": ["SIE.DE", "ROK", "TER", "SYM", "TSLA"],
-    "nuclear": ["CEG", "VST", "CCJ", "RR.L", "BWXT"],
-    "space": ["RKLB", "PL", "AIR.PA", "IRDM"],
-    "quantum": ["IBM", "GOOG", "IONQ"]
+  "TSM": {
+   "name": "TSMC",
+   "role": "supplier",
+   "what": "Größter Auftragsfertiger für Chips weltweit: baut die Prozessoren für Apple, NVIDIA, AMD, Broadcom und viele andere.",
+   "why": "Bei den modernsten Fertigungsverfahren hat TSMC kaum ernsthafte Konkurrenz; auch die Verpackungstechnik für KI-Chips (CoWoS) ist ein Engpass, den TSMC kontrolliert. TSMC verdient, egal welcher Chip-Entwickler das Rennen macht.",
+   "watch": "Der Großteil der Fertigung liegt in Taiwan – ein Konflikt mit China wäre das größte Risiko; die neuen Werke in den USA, Japan und Deutschland sind teurer.",
+   "src": [
+    [
+     "https://investor.tsmc.com/english",
+     "TSMC Investor Relations"
+    ]
+   ]
   },
-  "moon": {
-    "quantum": { "firms": ["IONQ", "RGTI", "QBTS"],
-      "safer": "Sicherer: IBM und Alphabet (GOOG) – dort sind Quanten eine Zusatz-Chance in profitablen Konzernen.", "saferSyms": ["IBM", "GOOG"] },
-    "smr": { "firms": ["OKLO", "SMR", "LEU", "NNE"],
-      "note": ["Kernfusion: Reine Fusionsfirmen gibt es an der Börse kaum. TAE Technologies soll über eine Fusion mit Trump Media (DJT) börsennotiert werden – angekündigt im Dezember 2025, Abschluss noch offen. Ein politisch aufgeladener Sonderfall.", "https://world-nuclear-news.org/articles/trump-media-announces-merger-with-fusion-firm-tae-technologies", "World Nuclear News (Dez. 2025)"],
-      "safer": "Sicherer: Constellation (CEG), Cameco (CCJ) und Rolls-Royce (RR.L) – sie verdienen schon heute mit Kernkraft.", "saferSyms": ["CEG", "CCJ", "RR.L"] },
-    "d2d": { "firms": ["ASTS", "RKLB", "IRDM"],
-      "note": ["Was die Frequenzen wert sind: Amazon will den Satellitenbetreiber Globalstar (Partner von Apple) für rund 11,6 Mrd. $ kaufen (April 2026).", "https://www.rcrwireless.com/20260415/network-infrastructure/amazon-globalstar-space-race", "RCR Wireless (April 2026)"],
-      "safer": "Sicherer: Iridium (IRDM) – schon profitabel; Airbus (AIR.PA) baut Satelliten für viele Betreiber.", "saferSyms": ["IRDM", "AIR.PA"] },
-    "humanoid": { "firms": ["TSLA", "XPEV", "9880.HK"],
-      "safer": "Sicherer: NVIDIA (NVDA) liefert Chips und Software für fast alle Roboter-Entwickler; Siemens (SIE.DE) und Rockwell (ROK) automatisieren Fabriken schon heute.", "saferSyms": ["NVDA", "SIE.DE", "ROK"] },
-    "aisoft": { "firms": ["PLTR", "SOUN", "PATH"],
-      "safer": "Sicherer: Microsoft (MSFT) und ServiceNow (NOW) bauen KI-Agenten in Software ein, die Firmen ohnehin nutzen.", "saferSyms": ["MSFT", "NOW"] },
-    "telehealth": { "firms": ["HIMS", "VKTX", "GPCR"],
-      "safer": "Sicherer: Eli Lilly (LLY) und Novo Nordisk (NOVO-B.CO) – die Marktführer mit zugelassenen Medikamenten.", "saferSyms": ["LLY", "NOVO-B.CO"] }
+  "ASML": {
+   "name": "ASML",
+   "role": "supplier",
+   "what": "Baut die Belichtungsmaschinen, mit denen Chips hergestellt werden.",
+   "why": "ASML ist weltweit der einzige Hersteller von EUV-Belichtungsmaschinen – ohne sie gibt es keine Spitzenchips, auch nicht bei TSMC, Samsung oder Intel. Ein europäisches Monopol mit Aufträgen für Jahre.",
+   "watch": "Exportbeschränkungen für China treffen einen wichtigen Markt; Chipfirmen investieren in Wellen – in Flauten werden Bestellungen verschoben.",
+   "src": [
+    [
+     "https://www.asml.com/en/investors",
+     "ASML Investors"
+    ]
+   ]
+  },
+  "MU": {
+   "name": "Micron",
+   "role": "supplier",
+   "what": "Einer von nur drei großen Herstellern von Speicherchips – auch des schnellen Stapelspeichers HBM, den jeder KI-Beschleuniger braucht.",
+   "why": "KI-Chips brauchen riesige Mengen schnellen Speicher, und der ist knapp: Micron hat laut eigenen Angaben den Großteil seiner HBM-Produktion für das nächste Jahr schon zu höheren Preisen verkauft. Umsatz im Geschäftsjahr 2026: 133 Mrd. $ (+256 %).",
+   "watch": "Speicher ist der zyklischste Teil der Chipbranche: Auf Engpässe folgten bisher immer Preisstürze, dann fiel die Aktie oft um mehr als die Hälfte.",
+   "src": [
+    [
+     "https://thenextweb.com/news/micron-record-quarter-memory-shortage-2028",
+     "The Next Web: Micron sieht Engpass bis 2028 (2026)"
+    ]
+   ]
+  },
+  "AMD": {
+   "name": "AMD",
+   "role": "challenger",
+   "what": "Zweitgrößter Anbieter von KI-Beschleunigern (Instinct-Reihe) und starker Herausforderer bei Server-Prozessoren (EPYC).",
+   "why": "Die großen KI-Firmen wollen nicht nur von NVIDIA abhängen – AMD ist die naheliegende zweite Quelle; OpenAI hat im Oktober 2025 eine große Liefervereinbarung über 6 Gigawatt geschlossen. Bei Server-Prozessoren nimmt AMD Intel seit Jahren Marktanteile ab.",
+   "watch": "Muss jedes Jahr technisch mit NVIDIA mithalten, auch bei der Software; nach starken Monaten anfällig für Enttäuschungen.",
+   "src": [
+    [
+     "https://ir.amd.com",
+     "AMD Investor Relations"
+    ]
+   ]
+  },
+  "AVGO": {
+   "name": "Broadcom",
+   "role": "supplier",
+   "what": "Entwirft maßgeschneiderte KI-Chips für einzelne Großkunden (etwa Googles TPU) und liefert die Netzwerkchips für KI-Rechenzentren; dazu Software (VMware).",
+   "why": "Wer eigene Chips will, um NVIDIA-Kosten zu sparen, geht oft zu Broadcom – das Unternehmen gewinnt also auch dann, wenn sich Kunden von NVIDIA lösen. Die Netzwerktechnik wächst mit jedem neuen Rechenzentrum.",
+   "watch": "Wenige sehr große Kunden – fällt einer weg, fehlt viel Umsatz; hohe Schulden aus der VMware-Übernahme.",
+   "src": [
+    [
+     "https://investors.broadcom.com",
+     "Broadcom Investors"
+    ]
+   ]
+  },
+  "GEV": {
+   "name": "GE Vernova",
+   "role": "leader",
+   "what": "Baut Gasturbinen, Netztechnik (Transformatoren, Hochspannung) und Windkraftanlagen – 2024 von General Electric abgespalten.",
+   "why": "Der Strombedarf der KI macht Gasturbinen zum Engpass: Ende Juni 2026 standen Aufträge und Reservierungen für 116 Gigawatt in den Büchern, das Unternehmen sieht sich bis 2030 weitgehend ausverkauft. Kunden zahlen heute an, um Liefertermine um 2030 zu sichern.",
+   "watch": "Entsprechend hohe Erwartungen im Kurs; die Windsparte (vor allem auf See) brachte immer wieder Verluste.",
+   "src": [
+    [
+     "https://www.turbomachinerymag.com/view/ge-vernova-gas-turbine-backlog-hits-116-gw-as-power-orders-more-than-double",
+     "Turbomachinery Magazine: Auftragsbestand 116 GW (Juli 2026)"
+    ]
+   ]
+  },
+  "ENR.DE": {
+   "name": "Siemens Energy",
+   "role": "leader",
+   "what": "Gasturbinen, Netztechnik (Hochspannungs-Gleichstrom, Transformatoren) und Windkraft (Siemens Gamesa).",
+   "why": "Rekord-Auftragsbestand von 162 Mrd. € (Ende Juni 2026), getrieben von Rechenzentren in den USA und vom Netzausbau; bei Gasturbinen und Netztechnik weltweit unter den größten Anbietern. Der deutsche Weg, auf den Strom-Hunger der KI zu setzen.",
+   "watch": "Die Windkraft-Tochter Siemens Gamesa macht weiter Probleme; nach der Kursvervielfachung seit 2023 ist viel Optimismus eingepreist.",
+   "src": [
+    [
+     "https://www.turbomachinerymag.com/view/siemens-energy-posts-record-backlog-joining-ge-vernova-and-baker-hughes-in-a-record-quarter-for-gas-turbines",
+     "Turbomachinery Magazine: Rekord-Auftragsbestand (Aug. 2026)"
+    ]
+   ]
+  },
+  "PRY.MI": {
+   "name": "Prysmian",
+   "role": "supplier",
+   "what": "Größter Kabelhersteller der Welt – von Hausleitungen bis zu Hochspannungs-Seekabeln, die Länder und Windparks verbinden.",
+   "why": "Ohne neue Leitungen kommt der Strom nicht beim Verbraucher an: Netzbetreiber in Europa und den USA investieren Hunderte Milliarden. Hochspannungs-Seekabel können weltweit nur eine Handvoll Firmen bauen, die Fabriken sind auf Jahre ausgelastet.",
+   "watch": "Großprojekte können sich verzögern; schwankende Kupferpreise.",
+   "src": [
+    [
+     "https://www.prysmian.com/en/investors",
+     "Prysmian Investors"
+    ]
+   ]
+  },
+  "SU.PA": {
+   "name": "Schneider Electric",
+   "role": "leader",
+   "what": "Weltmarktführer für Stromverteilung und Energiemanagement in Gebäuden, Fabriken und Rechenzentren.",
+   "why": "Liefert fast alles, was zwischen Netzanschluss und Server-Schrank nötig ist – Schaltanlagen, Notstrom, Kühlung, Steuerungssoftware. Rechenzentren sind die am schnellsten wachsende Kundengruppe.",
+   "watch": "Hängt an den Investitionsbudgets der Tech-Konzerne; starke Konkurrenz durch Eaton, ABB und Vertiv.",
+   "src": [
+    [
+     "https://www.se.com/ww/en/about-us/investor-relations/",
+     "Schneider Electric Investor Relations"
+    ]
+   ]
+  },
+  "ETN": {
+   "name": "Eaton",
+   "role": "supplier",
+   "what": "US-Spezialist für Stromverteilung, Schaltanlagen und Notstrom – seit dem Kauf von Boyd Thermal (März 2026) auch für die Flüssigkühlung von KI-Servern.",
+   "why": "Mit Stromtechnik und Flüssigkühlung aus einer Hand deckt Eaton zwei Engpässe moderner KI-Rechenzentren ab; der Auftragsbestand der Elektrosparte hat sich 2026 mehr als verdoppelt.",
+   "watch": "Die Übernahme für 9,5 Mrd. $ muss sich erst rechnen; abhängig vom Bauboom der Rechenzentren.",
+   "src": [
+    [
+     "https://www.businesswire.com/news/home/20251103856036/en/Eaton-Signs-Agreement-to-Acquire-Boyd-Thermal-Expanding-Solutions-for-Data-Center-Customers-to-Include-Critical-Liquid-Cooling-Technology",
+     "Eaton: Übernahme von Boyd Thermal (Nov. 2025)"
+    ],
+    [
+     "https://pulse2.com/eaton-electrical-global-backlog-more-than-doubles-as-orders-rise-33/",
+     "Pulse 2: Auftragsbestand mehr als verdoppelt (2026)"
+    ]
+   ]
+  },
+  "VRT": {
+   "name": "Vertiv",
+   "role": "challenger",
+   "what": "Reiner Rechenzentrums-Zulieferer: Stromversorgung, Notstrom und Kühlung – vor allem Flüssigkühlung für KI-Server.",
+   "why": "KI-Chips erzeugen so viel Wärme, dass Luftkühlung nicht mehr reicht; Vertiv entwickelt mit NVIDIA die Strom- und Kühlsysteme künftiger Server-Generationen. Die direkteste Wette auf neue Rechenzentren.",
+   "watch": "Hängt fast vollständig an einem einzigen Markt – stocken die Investitionen in Rechenzentren, trifft es Vertiv sofort und stark.",
+   "src": [
+    [
+     "https://investors.vertiv.com",
+     "Vertiv Investor Relations"
+    ]
+   ]
+  },
+  "ABBN.ZU": {
+   "name": "ABB",
+   "role": "leader",
+   "what": "Schweizer Elektrotechnik-Konzern: Schaltanlagen, Antriebe, Ladesäulen und Netztechnik.",
+   "why": "Konzentriert sich ganz auf Elektrifizierung und Automatisierung – die Roboter-Sparte wird an SoftBank verkauft (Abschluss für Mitte bis Ende 2026 erwartet). Solide Margen und breite Kundschaft, weniger abhängig von einzelnen Rechenzentren.",
+   "watch": "Industrie-Konjunktur in Europa und China; der Verkaufserlös (rund 5,3 Mrd. $) muss sinnvoll angelegt werden.",
+   "src": [
+    [
+     "https://new.abb.com/news/detail/129776/abb-to-divest-robotics-division-to-softbank-group",
+     "ABB: Verkauf der Robotik an SoftBank (Okt. 2025)"
+    ]
+   ]
+  },
+  "RHM.DE": {
+   "name": "Rheinmetall",
+   "role": "leader",
+   "what": "Größter Munitionshersteller Europas; dazu Panzer, Militär-Lkw und Flugabwehr.",
+   "why": "Europa muss Munitions- und Fahrzeugbestände nach Jahrzehnten der Abrüstung wieder auffüllen, und Rheinmetall baut seine Werke am schnellsten aus. Auftragsbestand Mitte 2026: über 80 Mrd. €.",
+   "watch": "Die Aktie hat sich vom Hoch im Herbst 2025 mehr als halbiert – sehr hohe Bewertung, schwacher Cashflow wegen des Ausbaus, verfehlte Umsatzziele. Ein Waffenstillstand in der Ukraine würde die Stimmung belasten.",
+   "src": [
+    [
+     "https://www.rheinmetall.com/de/investor-relations/ueberblick",
+     "Rheinmetall Investor Relations"
+    ],
+    [
+     "https://www.boerse-express.com/news/articles/rheinmetall-aktie-80-milliarden-euro-auftragspolster-934881",
+     "Börse Express: 80 Mrd. € Auftragsbestand (2026)"
+    ]
+   ]
+  },
+  "HAG.DE": {
+   "name": "Hensoldt",
+   "role": "supplier",
+   "what": "Deutscher Spezialist für Radare, Optronik und Sensoren – etwa das TRML-4D-Radar der Flugabwehr IRIS-T SLM.",
+   "why": "Moderne Waffen sind nur so gut wie ihre Sensoren; Hensoldts Radare haben sich in der Ukraine bewährt, und der Ausbau der europäischen Luftverteidigung braucht viele davon.",
+   "watch": "Kleinerer Konzern mit hoher Bewertung; abhängig von deutschen Beschaffungsentscheidungen.",
+   "src": [
+    [
+     "https://investors.hensoldt.net",
+     "Hensoldt Investor Relations"
+    ]
+   ]
+  },
+  "BA.L": {
+   "name": "BAE Systems",
+   "role": "leader",
+   "what": "Größter Rüstungskonzern Europas: Kampfflugzeuge (Eurofighter, Teile für die F-35), U-Boote, Munition und Elektronik.",
+   "why": "Breit aufgestellt und mit großem US-Geschäft; als Partner des AUKUS-U-Boot-Programms (Großbritannien, USA, Australien) über Jahrzehnte ausgelastet. Gilt als einer der stabileren Rüstungswerte.",
+   "watch": "Großprojekte mit Kostenrisiken; abhängig vom britischen Haushalt.",
+   "src": [
+    [
+     "https://investors.baesystems.com",
+     "BAE Systems Investors"
+    ]
+   ]
+  },
+  "LMT": {
+   "name": "Lockheed Martin",
+   "role": "leader",
+   "what": "Größter Rüstungskonzern der Welt: F-35-Kampfjet, PAC-3-Abfangraketen für Patriot, Hyperschall- und Weltraumtechnik.",
+   "why": "Die F-35 fliegt in über einem Dutzend Ländern, viele europäische Staaten haben sie neu bestellt; Patriot-Abfangraketen sind seit dem Ukraine-Krieg knapp. Zahlt verlässlich Dividende.",
+   "watch": "Abhängig vom US-Verteidigungshaushalt; Mehrkosten bei Festpreis-Programmen drückten zuletzt die Gewinne.",
+   "src": [
+    [
+     "https://investors.lockheedmartin.com",
+     "Lockheed Martin Investors"
+    ]
+   ]
+  },
+  "CRWD": {
+   "name": "CrowdStrike",
+   "role": "leader",
+   "what": "Cybersicherheit aus der Cloud: Schutz für Computer, Server, Cloud-Konten und Identitäten (Falcon-Plattform).",
+   "why": "Ein einziger kleiner Software-Agent, auf den Kunden immer neue Module buchen – das macht das Wachstum planbar. Angriffe nehmen mit KI zu, und Sicherheit ist eines der letzten Budgets, die gekürzt werden.",
+   "watch": "Sehr hohe Bewertung; der weltweite IT-Ausfall durch ein fehlerhaftes Update im Juli 2024 zeigte das Klumpenrisiko.",
+   "src": [
+    [
+     "https://ir.crowdstrike.com",
+     "CrowdStrike Investor Relations"
+    ]
+   ]
+  },
+  "PANW": {
+   "name": "Palo Alto Networks",
+   "role": "leader",
+   "what": "Größter reiner Anbieter für Netzwerk- und Cloud-Sicherheit; mit der Übernahme von CyberArk (2025 angekündigt) auch für Identitätsschutz.",
+   "why": "Will möglichst alle Sicherheitsprodukte eines Kunden aus einer Plattform liefern – Firmen wollen weniger Anbieter. Gilt neben CrowdStrike als der Konsolidierer der Branche.",
+   "watch": "Große Übernahmen müssen integriert werden; die Umstellung auf Plattform-Verträge drückt kurzfristig die Umsätze.",
+   "src": [
+    [
+     "https://investors.paloaltonetworks.com",
+     "Palo Alto Networks Investors"
+    ]
+   ]
+  },
+  "PLTR": {
+   "name": "Palantir",
+   "role": "challenger",
+   "what": "Software, mit der Militär, Behörden und Firmen riesige Datenmengen auswerten und KI in ihre Abläufe einbauen (Gotham, Foundry, AIP).",
+   "why": "Wächst für seine Größe außergewöhnlich schnell: Umsatz im 1. Quartal 2026 +85 %, bei US-Firmenkunden +133 %, Prognose für 2026 rund 7,7 Mrd. $ (+71 %). Fest verankert bei US-Militär und -Behörden.",
+   "watch": "Eine der teuersten großen Aktien überhaupt (Anfang 2026 über das 60-Fache des Umsatzes) – schon kleine Enttäuschungen lösen starke Rückgänge aus; Datenschutz-Kritik in Europa.",
+   "src": [
+    [
+     "https://www.tikr.com/blog/palantir-stock-is-down-38-while-revenue-grew-85-its-ceo-says-the-bears-have-it-backward",
+     "TIKR: Umsatz +85 %, Aktie −38 % (2026)"
+    ]
+   ]
+  },
+  "LLY": {
+   "name": "Eli Lilly",
+   "role": "leader",
+   "what": "Pharmakonzern mit den meistverkauften Abnehmmitteln (Mounjaro und Zepbound, Wirkstoff Tirzepatid).",
+   "why": "Tirzepatid wirkt stärker als die erste Generation; seit April 2026 ist zudem die Abnehm-Pille Foundayo (Orforglipron) in den USA zugelassen – Pillen lassen sich viel leichter in großen Mengen herstellen als Spritzen. Weitere Kandidaten folgen.",
+   "watch": "Hohe Bewertung; Preisdruck durch US-Politik und Krankenkassen; Nachahmer, sobald Patente auslaufen.",
+   "src": [
+    [
+     "https://www.spglobal.com/market-intelligence/en/news-insights/research/2026/04/wegovy-s-early-lead-to-narrow-as-eli-lilly-prepares-foundayo-launch",
+     "S&P Global: Foundayo vs. Wegovy-Pille (April 2026)"
+    ]
+   ]
+  },
+  "NOVO-B.CO": {
+   "name": "Novo Nordisk",
+   "role": "challenger",
+   "what": "Dänischer Pionier der Abnehmmittel (Ozempic und Wegovy, Wirkstoff Semaglutid).",
+   "why": "Hat seit Januar 2026 als Erster eine Abnehm-Pille in den USA auf dem Markt (Wegovy-Pille) und viel Erfahrung mit Massenproduktion; nach dem Kurssturz deutlich günstiger bewertet als Lilly.",
+   "watch": "Hat Marktanteile an Lilly verloren; Preissenkungen in den USA und erste Nachahmer, weil der Patentschutz für Semaglutid in mehreren Ländern ab 2026 ausläuft.",
+   "src": [
+    [
+     "https://www.biospace.com/fda/novos-wegovy-pill-wins-obesity-approval-securing-lead-in-oral-glp-1-race",
+     "BioSpace: Zulassung der Wegovy-Pille (Dez. 2025)"
+    ]
+   ]
+  },
+  "ISRG": {
+   "name": "Intuitive Surgical",
+   "role": "leader",
+   "what": "Hersteller des Operationsroboters da Vinci – mit großem Abstand Weltmarktführer.",
+   "why": "Jede Operation braucht neue Instrumente – der größte Teil des Umsatzes wiederholt sich also Jahr für Jahr. Chirurgen lernen auf da Vinci, Kliniken wechseln ungern; die neue Generation (da Vinci 5) wird gerade eingeführt.",
+   "watch": "Neue Konkurrenz (Medtronic, Johnson & Johnson); Abnehmmittel könnten manche Operationen seltener machen; Zölle verteuern Teile.",
+   "src": [
+    [
+     "https://isrg.intuitive.com",
+     "Intuitive Investor Relations"
+    ]
+   ]
+  },
+  "VRTX": {
+   "name": "Vertex",
+   "role": "leader",
+   "what": "Biotech-Konzern mit einem faktischen Monopol bei Medikamenten gegen Mukoviszidose.",
+   "why": "Die hohen, stabilen Gewinne finanzieren neue Felder: 2025 wurde das erste neuartige Schmerzmittel ohne Opioid seit Jahrzehnten zugelassen (Journavx), dazu kommt die Gentherapie Casgevy gegen Sichelzellanämie.",
+   "watch": "Die neuen Produkte müssen erst groß werden; Rückschläge in Studien bewegen den Kurs stark.",
+   "src": [
+    [
+     "https://investors.vrtx.com",
+     "Vertex Investors"
+    ]
+   ]
+  },
+  "SIE.DE": {
+   "name": "Siemens",
+   "role": "leader",
+   "what": "Europas größter Industriekonzern: Fabrik-Automatisierung (Steuerungen, Antriebe), Industriesoftware und Gebäude- und Netztechnik.",
+   "why": "Ein großer Teil der Fabriken weltweit läuft mit Siemens-Steuerungen; mit Software für digitale Zwillinge (virtuelle Fabriken) und KI-Partnerschaften, unter anderem mit NVIDIA, will Siemens die Automatisierung der nächsten Jahre prägen.",
+   "watch": "Die Industrie-Konjunktur, vor allem in China und Deutschland, bestimmt die Nachfrage.",
+   "src": [
+    [
+     "https://www.siemens.com/global/en/company/investor-relations.html",
+     "Siemens Investor Relations"
+    ]
+   ]
+  },
+  "TER": {
+   "name": "Teradyne",
+   "role": "challenger",
+   "what": "Testsysteme für Chips – und mit Universal Robots und MiR einer der größten Anbieter von „Cobots“, Robotern, die direkt neben Menschen arbeiten.",
+   "why": "Eine doppelte Wette: Jeder KI-Chip muss getestet werden, und Cobots sind für kleinere Firmen der einfachste Einstieg in die Automatisierung.",
+   "watch": "Das Roboter-Geschäft wuchs zuletzt schwächer als erhofft; Chip-Tests sind zyklisch.",
+   "src": [
+    [
+     "https://investors.teradyne.com",
+     "Teradyne Investors"
+    ]
+   ]
+  },
+  "ROK": {
+   "name": "Rockwell Automation",
+   "role": "leader",
+   "what": "Größter reiner Automatisierungs-Spezialist der USA: Steuerungen, Antriebe, Software für Fabriken.",
+   "why": "Profitiert direkt davon, dass Produktion in die USA zurückgeholt wird – neue Werke werden von Anfang an automatisiert.",
+   "watch": "Hängt an den Investitionen der Industrie; hohe Bewertung für ein eher langsam wachsendes Geschäft.",
+   "src": [
+    [
+     "https://ir.rockwellautomation.com",
+     "Rockwell Automation Investors"
+    ]
+   ]
+  },
+  "SYM": {
+   "name": "Symbotic",
+   "role": "challenger",
+   "what": "Automatisierte Lager mit Robotern für Handelsketten – Hauptkunde ist Walmart.",
+   "why": "Hat Anfang 2025 die Robotik-Sparte von Walmart übernommen und dazu einen Großauftrag erhalten; Lagerlogistik ist einer der Bereiche, in denen Roboter schon heute Geld verdienen.",
+   "watch": "Sehr abhängig von Walmart; Bilanzkorrekturen 2024 haben Vertrauen gekostet.",
+   "src": [
+    [
+     "https://ir.symbotic.com",
+     "Symbotic Investor Relations"
+    ]
+   ]
+  },
+  "TSLA": {
+   "name": "Tesla",
+   "role": "spec",
+   "what": "Elektroautos und Batteriespeicher – und der humanoide Roboter Optimus.",
+   "why": "Elon Musk sieht in Optimus langfristig Teslas wertvollstes Produkt. Die Fertigung in Fremont läuft langsam an (laut Presseberichten mehrere hundert Stück pro Woche im August 2026), der Verkauf an Privatleute ist für Ende 2027 geplant.",
+   "watch": "Bisher vor allem Versprechen: Die Roboterhände sind technisch schwierig, und das Autogeschäft schwächelt. Der Kurs bewertet sehr viel Zukunft.",
+   "src": [
+    [
+     "https://www.techrepublic.com/article/news-tesla-optimus-robot-production-2027-sales-timeline/",
+     "TechRepublic: Optimus-Zeitplan (2026)"
+    ]
+   ]
+  },
+  "CEG": {
+   "name": "Constellation Energy",
+   "role": "leader",
+   "what": "Betreibt die größte Flotte von Kernkraftwerken in den USA; seit der Übernahme von Calpine (Januar 2026) der größte Stromerzeuger des Landes.",
+   "why": "Tech-Konzerne zahlen für rund um die Uhr verfügbaren CO₂-freien Strom Aufpreise: Für Microsoft wird das stillgelegte Kraftwerk Three Mile Island 1 (jetzt Crane) wieder hochgefahren, geplant für Mitte 2027; auch Meta hat langfristig abgeschlossen.",
+   "watch": "Hohe Bewertung für einen Versorger; Schulden aus der Calpine-Übernahme; politischer Streit über Strompreise für Rechenzentren.",
+   "src": [
+    [
+     "https://www.industrialinfo.com/news/article/constellation-energy-completes-calpine-acquisition--351594",
+     "Industrial Info: Calpine-Übernahme abgeschlossen (2026)"
+    ]
+   ]
+  },
+  "VST": {
+   "name": "Vistra",
+   "role": "leader",
+   "what": "Großer US-Stromerzeuger mit Kern- und Gaskraftwerken.",
+   "why": "Hat 2026 mit Meta Lieferverträge über mehr als 2.600 Megawatt für 20 Jahre geschlossen (vor allem Kernkraft aus Ohio), dazu Amazon mit bis zu 1.200 Megawatt aus Comanche Peak. Solche Verträge machen bestehende Kraftwerke deutlich wertvoller.",
+   "watch": "Strompreise schwanken; die Gaskraftwerke tragen CO₂-Risiken; der Kurs reagiert stark auf die Stimmung rund um den KI-Strombedarf.",
+   "src": [
+    [
+     "https://www.industrialinfo.com/iirenergy/industry-news/article/data-centers-push-vistra-to-grow-us-nuclear-natural-gas-fleet--361737",
+     "Industrial Info: Vistra und Rechenzentren (2026)"
+    ]
+   ]
+  },
+  "CCJ": {
+   "name": "Cameco",
+   "role": "supplier",
+   "what": "Einer der größten Uranproduzenten der Welt (Kanada) und mit 49 % Miteigentümer des Reaktorbauers Westinghouse.",
+   "why": "Neue und länger laufende Kraftwerke brauchen jahrzehntelang Brennstoff – Uran ist das „Schaufel“-Geschäft der Kernkraft. Über Westinghouse profitiert Cameco zusätzlich vom US-Programm für neue Großreaktoren (Partnerschaft über mindestens 80 Mrd. $, Oktober 2025).",
+   "watch": "Der Uranpreis schwankt stark; aus dem 80-Mrd.-Programm sind noch keine festen Bauaufträge bekannt.",
+   "src": [
+    [
+     "https://www.power-eng.com/nuclear/new-partnership-targets-80b-of-new-reactors/",
+     "Power Engineering: 80-Mrd.-$-Programm für Westinghouse-Reaktoren (Okt. 2025)"
+    ]
+   ]
+  },
+  "RR.L": {
+   "name": "Rolls-Royce",
+   "role": "leader",
+   "what": "Britischer Triebwerksbauer – und Entwickler eines kleinen modularen Reaktors (SMR).",
+   "why": "Rolls-Royce SMR ist Europas am weitesten fortgeschrittenes SMR-Projekt: im April 2026 Vertrag mit Great British Energy – Nuclear für drei Reaktoren in Wylfa (Wales), dazu Vorarbeiten mit ČEZ in Tschechien. Das Kerngeschäft (Flugzeugtriebwerke und deren Wartung) verdient schon gut.",
+   "watch": "Die SMR-Sparte ist nur ein kleiner Teil des Konzerns; der erste Reaktor kommt frühestens in den 2030er-Jahren.",
+   "src": [
+    [
+     "https://oenergetice.cz/en/nuclear-power/british-smr-company-part-owned-by-cez-gets-green-light-for-first-european-reactors",
+     "oEnergetice: Rolls-Royce SMR erhält Zuschlag (2026)"
+    ]
+   ]
+  },
+  "BWXT": {
+   "name": "BWX Technologies",
+   "role": "supplier",
+   "what": "Baut die Reaktoren für U-Boote und Flugzeugträger der US-Marine und liefert Brennstoff und Bauteile für die Kernkraft.",
+   "why": "Langfristige Verträge mit der US-Regierung sorgen für planbare Umsätze; dazu kommen neue Aufträge für Mikroreaktoren und Spezial-Brennstoff.",
+   "watch": "Abhängig von Rüstungshaushalten; nach dem Kernkraft-Boom hoch bewertet.",
+   "src": [
+    [
+     "https://investors.bwxt.com",
+     "BWXT Investors"
+    ]
+   ]
+  },
+  "RKLB": {
+   "name": "Rocket Lab",
+   "role": "challenger",
+   "what": "Startet kleine Satelliten mit der Electron-Rakete und baut Satelliten und Bauteile; die größere Neutron-Rakete ist in Entwicklung.",
+   "why": "Nach SpaceX einer der aktivsten Raketenstarter des Westens und zugleich Satellitenhersteller – das meiste Geld kommt schon aus dem Satellitengeschäft. Gelingt Neutron, kann Rocket Lab auch große Konstellationen ins All bringen.",
+   "watch": "Neutron hat sich mehrfach verzögert (Erstflug frühestens Ende 2026); Verluste und neue Aktien zur Finanzierung.",
+   "src": [
+    [
+     "https://spaceflightnow.com/2026/08/10/window-for-2026-launch-debut-of-rocket-labs-neutron-rocket-is-narrowing-as-development-continues/",
+     "Spaceflight Now: Neutron-Zeitplan (Aug. 2026)"
+    ]
+   ]
+  },
+  "PL": {
+   "name": "Planet Labs",
+   "role": "challenger",
+   "what": "Betreibt die größte Flotte von Erdbeobachtungs-Satelliten und fotografiert fast täglich die gesamte Landfläche der Erde.",
+   "why": "Daten für Verteidigung, Landwirtschaft und Versicherungen – Staaten, auch in Europa, kaufen zunehmend eigene Aufklärung aus dem All, und KI macht die Bilderflut auswertbar.",
+   "watch": "Lange mit Verlust; Konkurrenz durch staatliche Programme und andere Anbieter.",
+   "src": [
+    [
+     "https://investors.planet.com",
+     "Planet Labs Investors"
+    ]
+   ]
+  },
+  "AIR.PA": {
+   "name": "Airbus",
+   "role": "leader",
+   "what": "Größter Flugzeugbauer der Welt und über Airbus Defence and Space einer der wichtigsten Satelliten- und Rüstungshersteller Europas.",
+   "why": "Ein stabiler Kern (Verkehrsflugzeuge mit Aufträgen für rund ein Jahrzehnt) plus Verteidigung und Raumfahrt; Airbus, Thales und Leonardo wollen ihre Satellitengeschäfte zusammenlegen (2025 angekündigt), um gegen SpaceX besser zu bestehen.",
+   "watch": "Probleme bei Triebwerken und Zulieferern bremsen die Auslieferungen; Raumfahrt ist nur ein kleiner Teil des Konzerns.",
+   "src": [
+    [
+     "https://www.airbus.com/en/investors",
+     "Airbus Investors"
+    ]
+   ]
+  },
+  "IRDM": {
+   "name": "Iridium",
+   "role": "supplier",
+   "what": "Betreibt ein weltweites Satellitennetz für Telefonie und Datenfunk, das auch Pole und Ozeane abdeckt.",
+   "why": "Profitabel und mit stabilen Einnahmen; der neue Dienst NTN Direct soll gewöhnliche Geräte nach 5G-Standard direkt mit den Satelliten verbinden – Partner sind unter anderem die Deutsche Telekom und Vodafone IoT, der Start ist für 2026 geplant.",
+   "watch": "Viel weniger Bandbreite als Starlink oder AST SpaceMobile; harter Wettbewerb im Markt „Satellit direkt aufs Gerät“.",
+   "src": [
+    [
+     "https://www.satellitetoday.com/finance/2026/04/23/iridium-continues-iot-subscriber-growth-in-q1-desch-talks-ntn-direct-launch-and-spectrum/",
+     "Via Satellite: NTN Direct (April 2026)"
+    ]
+   ]
+  },
+  "ASTS": {
+   "name": "AST SpaceMobile",
+   "role": "spec",
+   "what": "Baut riesige Satelliten (Antennenfläche über 200 m²), die gewöhnliche Handys direkt mit Breitband versorgen sollen – ganz ohne Spezialgerät.",
+   "why": "Partner sind große Mobilfunker wie AT&T, Verizon und Vodafone, die das Netz an ihre Kunden weiterverkaufen würden; im Juni 2026 starteten drei Satelliten der neuen Generation. Gelingt der Ausbau, wäre AST ein weltweiter Netzbetreiber ohne Funkmasten.",
+   "watch": "Der kommerzielle Start wurde auf Anfang 2027 verschoben; für Dauerbetrieb braucht es 45–60 Satelliten – sehr teuer, laufend neue Aktien; Konkurrenz durch SpaceX (Starlink Direct to Cell).",
+   "src": [
+    [
+     "https://satnews.com/2026/07/16/ast-spacemobile-defers-commercial-direct-to-device-timeline-to-early-2027/",
+     "SatNews: Start auf Anfang 2027 verschoben (Juli 2026)"
+    ]
+   ]
+  },
+  "IBM": {
+   "name": "IBM",
+   "role": "leader",
+   "what": "IT-Konzern (Software, Beratung, Großrechner) mit einem der größten Quantencomputer-Programme.",
+   "why": "Hat einen öffentlichen Fahrplan bis zu einem großen, fehlerkorrigierten Quantencomputer (bis 2029) und betreibt viele Quantenrechner für Kunden in der Cloud. Das übrige Geschäft verdient das Geld – Quanten sind eine Zusatz-Chance mit begrenztem Risiko.",
+   "watch": "Quanten sind bisher ein winziger Teil des Umsatzes; der Kurs hängt am Software- und Beratungsgeschäft.",
+   "src": [
+    [
+     "https://www.ibm.com/investor",
+     "IBM Investor Relations"
+    ]
+   ]
+  },
+  "GOOG": {
+   "name": "Alphabet (Google)",
+   "role": "leader",
+   "what": "Google-Mutterkonzern; die Abteilung Google Quantum AI entwickelt supraleitende Quantenchips wie „Willow“.",
+   "why": "Gilt technisch als führend: Willow zeigte Ende 2024, dass die Fehler mit mehr Qubits sinken statt steigen, 2025 folgte eine nachprüfbare Rechnung, die schneller war als jeder Supercomputer. Für Anleger eine Quanten-Option in einem hochprofitablen Konzern.",
+   "watch": "Quanten bewegen den Kurs kaum; Wettbewerbs- und Kartellrisiken im Kerngeschäft.",
+   "src": [
+    [
+     "https://blog.google/technology/research/google-willow-quantum-chip/",
+     "Google: Willow-Quantenchip (Dez. 2024)"
+    ]
+   ]
+  },
+  "IONQ": {
+   "name": "IonQ",
+   "role": "spec",
+   "what": "Größter reiner Quantencomputer-Anbieter; baut Rechner mit Ionenfallen (einzelne geladene Atome als Qubits).",
+   "why": "Kauft sich mit dem Geld aus Kapitalerhöhungen eine komplette Kette zusammen – Netzwerk-, Sensor- und Chipfirmen, seit Juli 2026 auch die Chipfabrik SkyWater. Umsatz 2025: 130 Mio. $ (+202 %); für 2026 erwartet IonQ 450–460 Mio. $ (mit SkyWater).",
+   "watch": "Viel Wachstum ist zugekauft; ein nützlicher, fehlerkorrigierter Rechner ist noch weit weg; die Bewertung ist ein Vielfaches des Umsatzes.",
+   "src": [
+    [
+     "https://thequantuminsider.com/2026/09/08/ionq-announces-increased-full-year-2026-financial-outlook-following-skywater-acquisition/",
+     "The Quantum Insider: Prognose 2026 (Sept. 2026)"
+    ]
+   ]
+  },
+  "RGTI": {
+   "name": "Rigetti Computing",
+   "role": "spec",
+   "what": "Baut supraleitende Quantenchips im Baukastenprinzip (Chiplets); die Rechner lassen sich über Amazon Braket und Microsoft Azure nutzen.",
+   "why": "Eigene Chipfabrik in Kalifornien und ein klarer Fahrplan: über 150 Qubits 2026, über 1.000 Qubits 2027. Gelingt der Sprung bei der Fehlerquote, wäre Rigetti ein Übernahmekandidat für große Tech-Konzerne.",
+   "watch": "Der Umsatz ist winzig und schwankt (2025: 7,1 Mio. $); der Kurs ist ein reines Zukunftsversprechen.",
+   "src": [
+    [
+     "https://www.fool.com/coverage/charts/2026/04/20/rigetti-computing-vs-d-wave-quantum-navigating-volatile-revenue-trends/",
+     "The Motley Fool: Rigetti und D-Wave (April 2026)"
+    ]
+   ]
+  },
+  "QBTS": {
+   "name": "D-Wave Quantum",
+   "role": "spec",
+   "what": "Pionier des Quanten-Annealings – Spezialrechner für Optimierungsaufgaben wie Logistik und Planung; seit dem Kauf von Quantum Circuits auch universelle Quantenchips.",
+   "why": "Einer der wenigen Anbieter mit zahlenden Firmenkunden für konkrete Anwendungen; das neue System Advantage2 ist kommerziell verfügbar.",
+   "watch": "Der Umsatz ist 2026 eingebrochen (1. Halbjahr 5,9 statt 18,1 Mio. $); Annealing kann nicht alles, was universelle Quantenrechner können sollen.",
+   "src": [
+    [
+     "https://www.fool.com/coverage/charts/2026/04/20/rigetti-computing-vs-d-wave-quantum-navigating-volatile-revenue-trends/",
+     "The Motley Fool: Rigetti und D-Wave (April 2026)"
+    ]
+   ]
+  },
+  "OKLO": {
+   "name": "Oklo",
+   "role": "spec",
+   "what": "Entwickelt kleine schnelle Reaktoren („Aurora“) und will den Strom direkt an Rechenzentren und Industrie verkaufen.",
+   "why": "Großes Interesse der Tech-Branche; 2026 hat das US-Energieministerium einen Vertrag für den ersten Aurora-Reaktor am Idaho National Laboratory geschlossen, und die US-Atomaufsicht hat die Auslegungs-Grundlagen beschleunigt genehmigt. Gelingt der erste Reaktor, könnte Oklo Dutzende bauen.",
+   "watch": "Noch kein Umsatz und keine Betriebsgenehmigung für Aurora; im 1. Halbjahr 2026 wurden 1,85 Mrd. $ über neue Aktien eingesammelt (Verwässerung). Der Kurs fiel vom Hoch im Oktober 2025 um rund 80 %.",
+   "src": [
+    [
+     "https://www.implicator.ai/oklo-raised-1-85-billion-before-pricing-first-reactor/",
+     "Implicator: Kapitalerhöhungen und Status (2026)"
+    ],
+    [
+     "https://247wallst.com/investing/2026/05/26/oklo-moves-one-step-closer-to-commercialization/",
+     "24/7 Wall St.: Genehmigungsschritt (Mai 2026)"
+    ]
+   ]
+  },
+  "SMR": {
+   "name": "NuScale Power",
+   "role": "spec",
+   "what": "Entwickelt kleine modulare Reaktoren (77 MW je Modul), die in Fabriken gebaut und zu Kraftwerken zusammengesetzt werden.",
+   "why": "Einziges SMR-Design mit Zulassung der US-Atomaufsicht (Mai 2025, 77-MW-Version); mit dem Partner ENTRA1 und dem Versorger TVA gibt es eine Vereinbarung über bis zu 6 Gigawatt – rund 72 Module.",
+   "watch": "Noch kein fester Auftrag und kein Reaktor im Bau; das erste Projekt in Utah wurde 2023 wegen gestiegener Kosten abgesagt.",
+   "src": [
+    [
+     "https://www.ans.org/news/2025-09-03/article-7342/tva-and-entra1-to-deploy-6-gw-of-nuscale-smrs/",
+     "American Nuclear Society: TVA und ENTRA1 (Sept. 2025)"
+    ]
+   ]
+  },
+  "LEU": {
+   "name": "Centrus Energy",
+   "role": "spec",
+   "what": "Einziger US-Hersteller von HALEU – höher angereichertem Uran, das viele neue Reaktortypen brauchen.",
+   "why": "Ohne HALEU laufen die meisten neuen Mini-Reaktoren nicht, und bisher kam der Brennstoff vor allem aus Russland; das US-Energieministerium hat Centrus im Januar 2026 einen Auftrag über 900 Mio. $ für den Ausbau der Anlage in Ohio erteilt.",
+   "watch": "Der Ausbau dauert – neue Kapazität frühestens ab 2029; abhängig von staatlichen Aufträgen und vom Erfolg der neuen Reaktoren.",
+   "src": [
+    [
+     "https://www.ans.org/news/2026-07-06/article-8180/doe-contract-boosts-centruss-haleu-goals-as-urenco-continues-leu-expansion/",
+     "American Nuclear Society: DOE-Auftrag für Centrus (Juli 2026)"
+    ]
+   ]
+  },
+  "NNE": {
+   "name": "NANO Nuclear Energy",
+   "role": "spec",
+   "what": "Entwickelt Mikroreaktoren (KRONOS, rund 15 MW) – den ersten zusammen mit der University of Illinois.",
+   "why": "Der Bauantrag für den KRONOS-Forschungsreaktor wurde im Mai 2026 von der US-Atomaufsicht zur Prüfung angenommen; Mikroreaktoren könnten abgelegene Orte, Militärbasen und Rechenzentren versorgen.",
+   "watch": "Kein Umsatz; die Prüfung läuft bis 2027, gebaut wird frühestens danach – ein sehr frühes, sehr riskantes Stadium.",
+   "src": [
+    [
+     "https://nanonuclearenergy.com/nano-nuclears-kronos-mmr-microreactor-advances-to-critical-milestone-toward-reactor-deployment-with-university-of-illinois-urbana-champaign-submission-of-construction-permit-application-to-us-nuclear/",
+     "NANO Nuclear: Bauantrag eingereicht (April 2026)"
+    ]
+   ]
+  },
+  "XPEV": {
+   "name": "XPeng",
+   "role": "spec",
+   "what": "Chinesischer Elektroauto-Hersteller mit eigener Robotik-Sparte: dem humanoiden Roboter IRON.",
+   "why": "Nutzt Chips und Software aus dem autonomen Fahren auch für Roboter; die Serienfertigung von IRON soll Ende 2026 beginnen, Auslieferungen sind für 2027 geplant.",
+   "watch": "Harte Konkurrenz und Preiskrieg im chinesischen Automarkt; Roboter-Umsätze sind noch Zukunftsmusik; politische Risiken chinesischer Aktien.",
+   "src": [
+    [
+     "https://emag.directindustry.com/2026/03/17/china-humanoid-robots-market-unitree-robotics-agibot-ubtech-leju-xpeng/",
+     "DirectIndustry: Chinas Humanoiden-Markt (März 2026)"
+    ]
+   ]
+  },
+  "9880.HK": {
+   "name": "UBTech Robotics",
+   "role": "spec",
+   "what": "Chinesischer Robotik-Spezialist (Börse Hongkong); baut den Industrie-Humanoiden Walker S2.",
+   "why": "Einer der ersten Hersteller mit echten Serienaufträgen aus Fabriken (rund 800 Mio. Yuan Ende 2025) und bereits laufender Massenfertigung.",
+   "watch": "Hohe Verluste; bei den Stückzahlen liegen nicht börsennotierte Konkurrenten wie AgiBot und Unitree vorn.",
+   "src": [
+    [
+     "https://www.roboticstomorrow.com/story/2025/11/ubtech-humanoid-robot-walker-s2-begins-mass-production-and-delivery-with-orders-exceeding-800-million-yuan/25810/",
+     "Robotics Tomorrow: Walker S2 in Serie (Nov. 2025)"
+    ]
+   ],
+   "listing": "Börse Hongkong",
+   "tv": "HKEX:9880"
+  },
+  "SOUN": {
+   "name": "SoundHound AI",
+   "role": "spec",
+   "what": "Sprach-KI für Autos, Restaurants (Bestellannahme am Telefon und im Drive-in), Kundenservice und Banken.",
+   "why": "Wächst schnell (Umsatz im 2. Quartal 2026: 61,9 Mio. $, +45 %; Prognose 2026: 230–260 Mio. $) und ist über viele Branchen verteilt; die geplante Übernahme von LivePerson soll den Kundenservice stärken.",
+   "watch": "Hohe Verluste, Wachstum zum Teil zugekauft; große Plattformen (OpenAI, Google) bieten Sprach-KI günstig an.",
+   "src": [
+    [
+     "https://www.barchart.com/story/news/3678894/soundhound-ai-nasdaqsoun-reports-bullish-q2-cy2026-stock-jumps-23-4",
+     "Barchart: Zahlen 2. Quartal 2026"
+    ]
+   ]
+  },
+  "PATH": {
+   "name": "UiPath",
+   "role": "challenger",
+   "what": "Software-Roboter, die Büroarbeit am Computer automatisieren – inzwischen mit KI-Agenten, die ganze Abläufe selbst erledigen.",
+   "why": "Kennt die Arbeitsabläufe Tausender Firmenkunden – ein guter Ausgangspunkt für KI-Agenten; wiederkehrende Erlöse von 1,85 Mrd. $ im Jahr.",
+   "watch": "Wächst nur noch moderat (rund 10–17 %); KI-Agenten der großen Plattformen könnten das klassische Geschäft ersetzen.",
+   "src": [
+    [
+     "https://ir.uipath.com",
+     "UiPath Investor Relations"
+    ]
+   ]
+  },
+  "HIMS": {
+   "name": "Hims & Hers Health",
+   "role": "spec",
+   "what": "Telemedizin-Plattform: Behandlung per App (Haarausfall, Potenz, Haut, Abnehmen) mit Lieferung nach Hause.",
+   "why": "Starke Marke bei jüngeren Kunden und viele zahlende Abonnenten; verkauft inzwischen auch Original-Abnehmmittel wie Wegovy statt nachgemischter Kopien.",
+   "watch": "2026 schwer getroffen: Die US-Arzneimittelbehörde geht gegen nachgemischte Abnehmmittel vor, es gab eine Klage (inzwischen Einigung) mit Novo Nordisk und neue Konkurrenz durch Amazon; die Marge sinkt.",
+   "src": [
+    [
+     "https://www.fool.com/investing/2026/02/09/hims-hers-collapses-after-fda-vows-to-restrict-cop",
+     "The Motley Fool: FDA gegen Kopien (Feb. 2026)"
+    ]
+   ]
+  },
+  "VKTX": {
+   "name": "Viking Therapeutics",
+   "role": "spec",
+   "what": "Kleine Biotech-Firma mit einem eigenen Abnehmmittel (VK2735) – als wöchentliche Spritze und als Pille.",
+   "why": "Zwei große Phase-3-Studien (VANQUISH, über 4.500 Patienten in der ersten) sind voll besetzt, Ergebnisse 2027; die Pillen-Version ist ebenfalls in Phase 3. Viel Geld in der Kasse (960 Mio. $) – ein klassischer Übernahmekandidat für große Pharmakonzerne.",
+   "watch": "Alles hängt an den Studienergebnissen; Lilly und Novo sind mit Pillen schon auf dem Markt.",
+   "src": [
+    [
+     "https://ir.vikingtherapeutics.com/2026-03-26-Viking-Therapeutics-Announces-Completion-of-Enrollment-in-Phase-3-VANQUISH-2-Trial-of-VK2735",
+     "Viking: VANQUISH-2 voll besetzt (März 2026)"
+    ]
+   ]
+  },
+  "GPCR": {
+   "name": "Structure Therapeutics",
+   "role": "spec",
+   "what": "Entwickelt die Abnehm-Pille Aleniglipron – ein kleines Molekül, das sich günstig in großen Mengen herstellen lässt.",
+   "why": "In der Phase-2-Studie ACCESS II verloren die Teilnehmer nach 44 Wochen im Schnitt bis zu 15 % Gewicht (Placebo: +1 %); die Phase-3-Studien laufen seit 2026. Rund 1,5 Mrd. $ in der Kasse reichen laut Firma bis Ende 2028.",
+   "watch": "Phase-3-Ergebnisse gibt es erst in einigen Jahren; der Markt für Abnehm-Pillen wird hart umkämpft.",
+   "src": [
+    [
+     "https://www.barchart.com/story/news/767382/structure-therapeutics-reports-positive-topline-data-from-phase-2-access-ii-trial-with-once-daily-oral-small-molecule-glp-1-receptor-agonist-aleniglipron",
+     "Structure: Phase-2-Daten ACCESS II (März 2026)"
+    ]
+   ]
+  },
+  "000660.KS": {
+   "name": "SK hynix",
+   "role": "leader",
+   "listing": "Börse Seoul (KRX)",
+   "tv": "KRX:000660",
+   "what": "Südkoreanischer Speicherchip-Hersteller und Marktführer beim schnellen Stapelspeicher HBM für KI-Beschleuniger.",
+   "why": "Hat den HBM-Boom als Erster bedient und ist der wichtigste Speicherlieferant von NVIDIA: Für die nächste Plattform (Rubin) soll SK hynix laut Branchenberichten rund zwei Drittel des HBM4-Bedarfs liefern. Damit ist es der direkteste Wert auf KI-Speicher – noch direkter als Micron.",
+   "watch": "Speicher bleibt zyklisch; Samsung holt beim HBM auf; hohe Abhängigkeit von NVIDIA. Koreanische Aktien gibt es nur bei Brokern mit Zugang zur Börse Seoul.",
+   "src": [
+    [
+     "https://www.trendforce.com/news/2026/01/28/news-sk-hynix-reportedly-to-supply-about-two-thirds-of-nvidia-hbm4-samsung-targets-early-delivery/",
+     "TrendForce: zwei Drittel von NVIDIAs HBM4 (Jan. 2026)"
+    ]
+   ]
+  },
+  "6857.T": {
+   "name": "Advantest",
+   "role": "supplier",
+   "listing": "Börse Tokio",
+   "tv": "TSE:6857",
+   "what": "Japanischer Weltmarktführer für Testsysteme, mit denen Chips vor der Auslieferung geprüft werden.",
+   "why": "Jeder KI-Chip und jeder HBM-Stapel muss aufwendig getestet werden – je komplexer der Chip, desto länger. Advantest hält laut Branchendaten rund zwei Drittel des Markts für Prozessor-Tester und meldete 2025 Rekordzahlen; zusammen mit Teradyne bilden die beiden fast ein Duopol.",
+   "watch": "Zyklisch wie die ganze Chipbranche; abhängig von wenigen KI-Chip-Kunden; Yen-Schwankungen.",
+   "src": [
+    [
+     "https://www.rcrwireless.com/20260130/test-measurement/advantest-rises-with-the-ai-tide",
+     "RCR Wireless: Advantest und die KI-Welle (Jan. 2026)"
+    ]
+   ]
+  },
+  "6501.T": {
+   "name": "Hitachi",
+   "role": "leader",
+   "listing": "Börse Tokio",
+   "tv": "TSE:6501",
+   "what": "Japanischer Technologiekonzern; die Tochter Hitachi Energy baut Transformatoren, Schaltanlagen und Hochspannungs-Gleichstrom-Leitungen (HGÜ).",
+   "why": "Hitachi Energy gehört bei Transformatoren und HGÜ-Technik zur Weltspitze – genau bei den Teilen, auf die Netzbetreiber heute jahrelang warten. Dazu kommen Bahntechnik und Industrie-Software; das macht den Konzern breiter aufgestellt als reine Netzwerte.",
+   "watch": "Großer Mischkonzern, Netztechnik ist nur ein Teil davon; Yen-Schwankungen.",
+   "src": [
+    [
+     "https://www.hitachi.com/IR-e/",
+     "Hitachi Investor Relations"
+    ]
+   ]
+  },
+  "SAAB-B.ST": {
+   "name": "Saab",
+   "role": "leader",
+   "listing": "Börse Stockholm",
+   "tv": "OMXSTO:SAAB_B",
+   "what": "Schwedischer Rüstungskonzern: Kampfjet Gripen, Panzerabwehrwaffen (Carl-Gustaf), Radar und Frühwarnflugzeuge (GlobalEye), U-Boote.",
+   "why": "Der Auftragsbestand stieg bis Ende September 2026 auf rund 364 Mrd. Kronen (+80 % zum Vorjahr), unter anderem durch 16 Gripen E für die Ukraine. Schweden ist seit 2024 in der NATO, und Saab liefert Systeme, die Europa jetzt schnell braucht.",
+   "watch": "Nach dem Kursanstieg seit 2022 hoch bewertet; Großprojekte mit langen Lieferzeiten; Kronen-Kurs.",
+   "src": [
+    [
+     "https://www.airdatanews.com/saab-backlog-jumps-80-after-surge-in-new-orders/",
+     "AirData News: Auftragsbestand +80 % (2026)"
+    ]
+   ]
+  },
+  "KOG.OL": {
+   "name": "Kongsberg Gruppen",
+   "role": "supplier",
+   "listing": "Börse Oslo",
+   "tv": "OSL:KOG",
+   "what": "Norwegischer Technologie- und Rüstungskonzern: Luftabwehrsystem NASAMS (mit Raytheon) und die Marschflugkörper NSM und JSM.",
+   "why": "NASAMS schützt Hauptstädte und ist in der Ukraine im Einsatz; die Nachfrage nach Luftabwehr und Präzisionswaffen ließ den Auftragsbestand bis Mitte 2026 auf rund 158 Mrd. Kronen steigen (ein Jahr zuvor 117 Mrd.).",
+   "watch": "Hohe Bewertung; politisch getrieben; Kurs der norwegischen Krone.",
+   "src": [
+    [
+     "https://www.janes.com/defence-intelligence-insights/defence-news/air/joint-strike-missile-demand-helps-drive-kongsberg-backlog",
+     "Janes: Kongsbergs Auftragsbestand (2026)"
+    ]
+   ]
+  },
+  "ZEAL.CO": {
+   "name": "Zealand Pharma",
+   "role": "challenger",
+   "listing": "Börse Kopenhagen",
+   "tv": "OMXCOP:ZEAL",
+   "what": "Dänische Biotech-Firma; entwickelt mit Roche das Abnehmmittel Petrelintid, das am Sättigungshormon Amylin ansetzt statt an GLP-1.",
+   "why": "Amylin-Mittel sollen beim Abnehmen sanfter für Magen und Darm sein und lassen sich mit GLP-1 kombinieren; in Phase 2 verloren die Teilnehmer bis zu 10,7 % Gewicht bei Placebo-ähnlicher Verträglichkeit, das Phase-3-Programm läuft. Roche zahlte für die Partnerschaft eine hohe Vorab-Summe.",
+   "watch": "Die Phase-2-Werte blieben unter den Erwartungen vieler Analysten; Lilly entwickelt ein eigenes Amylin-Mittel; der Erfolg hängt an Roche und an Phase 3.",
+   "src": [
+    [
+     "https://medcitynews.com/2026/03/roche-zealand-pharma-obesity-drug-petrelintide-amylin-weight-loss-zeal-rhhby/",
+     "MedCity News: Petrelintid Phase 2 (März 2026)"
+    ]
+   ]
+  },
+  "6324.T": {
+   "name": "Harmonic Drive Systems",
+   "role": "supplier",
+   "listing": "Börse Tokio",
+   "tv": "TSE:6324",
+   "what": "Japanischer Spezialist für Präzisionsgetriebe (Wellgetriebe), die in den Gelenken von Industrie- und humanoiden Robotern stecken.",
+   "why": "Jeder humanoide Roboter braucht Dutzende Präzisionsgetriebe – ein klassischer Schaufel-Verkäufer des Roboter-Booms. Die Aufträge für Humanoide sind noch klein, sollen sich laut Firma aber im laufenden Geschäftsjahr verdoppeln bis verdreifachen, vor allem durch Prototyp-Bestellungen aus den USA.",
+   "watch": "Das Geschäft hängt noch überwiegend an Industrierobotern; günstigere chinesische Konkurrenz (Leaderdrive); Yen-Schwankungen.",
+   "src": [
+    [
+     "https://www.investing.com/news/stock-market-news/this-japanese-stock-is-surging-on-positive-outlook-for-humanoid-robot-orders-4367329",
+     "Investing.com: Ausblick auf Humanoiden-Aufträge"
+    ]
+   ]
+  },
+  "KAP.L": {
+   "name": "Kazatomprom",
+   "role": "supplier",
+   "listing": "London (GDR) und Astana",
+   "tv": "LSE:KAP",
+   "what": "Staatlicher Uranproduzent Kasachstans und größter Uranförderer der Welt.",
+   "why": "Fördert rund ein Fünftel des weltweiten Urans mit dem vergleichsweise günstigen In-situ-Verfahren; wenn die Kernkraft wächst, gehört Kazatomprom zu den wenigen Lieferanten, die schnell mehr liefern könnten.",
+   "watch": "Staatskonzern in einem autoritär regierten Land; Lieferwege über Russland und China; Förderziele wurden wiederholt gekürzt.",
+   "src": [
+    [
+     "https://www.kazatomprom.kz/en",
+     "Kazatomprom"
+    ]
+   ]
+  },
+  "034020.KS": {
+   "name": "Doosan Enerbility",
+   "role": "supplier",
+   "listing": "Börse Seoul (KRX)",
+   "tv": "KRX:034020",
+   "what": "Südkoreanischer Kraftwerksbauer: Reaktordruckbehälter, Dampferzeuger und Gasturbinen.",
+   "why": "Einer der wenigen Hersteller weltweit, die die schwersten Reaktorbauteile fertigen können – Zulieferer für große Reaktoren und für kleine modulare Reaktoren, etwa von NuScale. Wächst der Kraftwerksbau in den USA und Europa, verdient ein solcher Zulieferer an vielen Projekten mit.",
+   "watch": "Koreanische Börse, verschachtelte Struktur der Doosan-Gruppe; Kraftwerksprojekte verschieben sich oft.",
+   "src": [
+    [
+     "https://www.doosanenerbility.com/en/",
+     "Doosan Enerbility"
+    ]
+   ]
+  },
+  "OHB.DE": {
+   "name": "OHB",
+   "role": "challenger",
+   "listing": "Xetra (Frankfurt)",
+   "tv": "XETR:OHB",
+   "what": "Bremer Raumfahrtkonzern: baut Satelliten, unter anderem für das europäische Navigationssystem Galileo und die Radar-Aufklärung der Bundeswehr (SARah).",
+   "why": "Europa will in der Raumfahrt unabhängiger von den USA werden und gibt mehr für eigene Satelliten aus; OHB ist neben Airbus und Thales einer der wenigen großen Satellitenbauer des Kontinents.",
+   "watch": "Nur wenige Aktien im freien Handel (Mehrheit bei der Gründerfamilie); abhängig von staatlichen Aufträgen.",
+   "src": [
+    [
+     "https://www.ohb.de/en/investor-relations",
+     "OHB Investor Relations"
+    ]
+   ]
   }
+ },
+ "sectors": {
+  "chips": [
+   "NVDA",
+   "TSM",
+   "ASML",
+   "MU",
+   "AMD",
+   "AVGO",
+   "000660.KS",
+   "6857.T"
+  ],
+  "grid": [
+   "GEV",
+   "ENR.DE",
+   "PRY.MI",
+   "SU.PA",
+   "ETN",
+   "VRT",
+   "ABBN.ZU",
+   "6501.T"
+  ],
+  "defense": [
+   "RHM.DE",
+   "HAG.DE",
+   "BA.L",
+   "LMT",
+   "CRWD",
+   "PANW",
+   "PLTR",
+   "SAAB-B.ST",
+   "KOG.OL"
+  ],
+  "health": [
+   "LLY",
+   "NOVO-B.CO",
+   "ISRG",
+   "VRTX",
+   "ZEAL.CO"
+  ],
+  "robots": [
+   "SIE.DE",
+   "ROK",
+   "TER",
+   "SYM",
+   "TSLA",
+   "6324.T"
+  ],
+  "nuclear": [
+   "CEG",
+   "VST",
+   "CCJ",
+   "RR.L",
+   "BWXT",
+   "KAP.L",
+   "034020.KS"
+  ],
+  "space": [
+   "RKLB",
+   "PL",
+   "AIR.PA",
+   "IRDM",
+   "OHB.DE"
+  ],
+  "quantum": [
+   "IBM",
+   "GOOG",
+   "IONQ"
+  ]
+ },
+ "moon": {
+  "quantum": {
+   "firms": [
+    "IONQ",
+    "RGTI",
+    "QBTS"
+   ],
+   "safer": "Sicherer: IBM und Alphabet (GOOG) – dort sind Quanten eine Zusatz-Chance in profitablen Konzernen.",
+   "saferSyms": [
+    "IBM",
+    "GOOG"
+   ]
+  },
+  "smr": {
+   "firms": [
+    "OKLO",
+    "SMR",
+    "LEU",
+    "NNE"
+   ],
+   "note": [
+    "Kernfusion: Reine Fusionsfirmen gibt es an der Börse kaum. TAE Technologies soll über eine Fusion mit Trump Media (DJT) börsennotiert werden – angekündigt im Dezember 2025, Abschluss noch offen. Ein politisch aufgeladener Sonderfall.",
+    "https://world-nuclear-news.org/articles/trump-media-announces-merger-with-fusion-firm-tae-technologies",
+    "World Nuclear News (Dez. 2025)"
+   ],
+   "safer": "Sicherer: Constellation (CEG), Cameco (CCJ) und Rolls-Royce (RR.L) – sie verdienen schon heute mit Kernkraft.",
+   "saferSyms": [
+    "CEG",
+    "CCJ",
+    "RR.L"
+   ]
+  },
+  "d2d": {
+   "firms": [
+    "ASTS",
+    "RKLB",
+    "IRDM"
+   ],
+   "note": [
+    "Was die Frequenzen wert sind: Amazon will den Satellitenbetreiber Globalstar (Partner von Apple) für rund 11,6 Mrd. $ kaufen (April 2026).",
+    "https://www.rcrwireless.com/20260415/network-infrastructure/amazon-globalstar-space-race",
+    "RCR Wireless (April 2026)"
+   ],
+   "safer": "Sicherer: Iridium (IRDM) – schon profitabel; Airbus (AIR.PA) baut Satelliten für viele Betreiber.",
+   "saferSyms": [
+    "IRDM",
+    "AIR.PA"
+   ]
+  },
+  "humanoid": {
+   "firms": [
+    "TSLA",
+    "XPEV",
+    "9880.HK",
+    "6324.T"
+   ],
+   "safer": "Sicherer: NVIDIA (NVDA) liefert Chips und Software für fast alle Roboter-Entwickler; Siemens (SIE.DE) und Rockwell (ROK) automatisieren Fabriken schon heute.",
+   "saferSyms": [
+    "NVDA",
+    "SIE.DE",
+    "ROK"
+   ]
+  },
+  "aisoft": {
+   "firms": [
+    "PLTR",
+    "SOUN",
+    "PATH"
+   ],
+   "safer": "Sicherer: Microsoft (MSFT) und ServiceNow (NOW) bauen KI-Agenten in Software ein, die Firmen ohnehin nutzen.",
+   "saferSyms": [
+    "MSFT",
+    "NOW"
+   ]
+  },
+  "telehealth": {
+   "firms": [
+    "HIMS",
+    "VKTX",
+    "GPCR"
+   ],
+   "safer": "Sicherer: Eli Lilly (LLY) und Novo Nordisk (NOVO-B.CO) – die Marktführer mit zugelassenen Medikamenten.",
+   "saferSyms": [
+    "LLY",
+    "NOVO-B.CO"
+   ]
+  }
+ }
 }

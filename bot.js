@@ -260,6 +260,49 @@
     </article>`;
   }
 
+  // Echtes Geld in Österreich: Broker, Steuern und was davon für einen Bot taugt (Stand November 2026, Quellen verlinkt)
+  const BROKERS_AT = [
+    { name: "Scalable Capital", tax: ["ja", "seit 8.10.2026 für Neukunden (Wiener Niederlassung, österreichische IBAN)"], bot: ["halb", "offizielle Schnittstelle „Agentic Investing“ (Kommandozeile und MCP, seit Aug. 2026): Aufträge mit Vorschau und Bestätigung, regelmäßig Anmeldung mit zweitem Faktor"], cost: "0,99 € je Auftrag, ETF-Sparpläne gratis", note: "Guthabenzinsen werden als Bankzinsen mit 25 % besteuert.", src: [["https://www.broker-test.at/news/faq-scalable-capital-steuereinfach-in-oesterreich/", "broker-test.at"], ["https://de.scalable.capital/en/newsroom/scalable-agentic-investing", "Scalable: Agentic Investing"]] },
+    { name: "Bitpanda", tax: ["ja*", "Aktien und ETFs laut broker-test.at seit 29.1.2026 steuereinfach – andere Vergleiche widersprechen, vorher bestätigen lassen"], bot: ["voll", "offizielle API mit Schlüssel, Handelsrecht und Tageslimit je Schlüssel – läuft ohne Bestätigung, wie heute bei eToro"], cost: "1 € je Auftrag plus Spread (laut Vergleich 0,5–0,7 %)", note: "Der Spread macht häufiges Umschichten teuer.", src: [["https://www.broker-test.at/news/bitpanda-steuereinfache-aktien-und-etfs-ab-29-1-2026-in-oesterreich/", "broker-test.at"], ["https://support.bitpanda.com/hc/en-us/articles/29245292945052-Bitpanda-API-MCP-Broker", "Bitpanda: API & MCP"]] },
+    { name: "Trade Republic", tax: ["ja", "seit 24.4.2025"], bot: ["nein", "keine offizielle Schnittstelle – nur inoffizielle Werkzeuge (Risiko für Konto und AGB)"], cost: "1 € je Auftrag, Sparpläne gratis", note: "Bot nur als Vorschlag, Sie klicken selbst.", src: [["https://www.capitalo.at/depot/steuereinfach", "capitalo.at"]] },
+    { name: "flatex, DADAT, easybank", tax: ["ja", "österreichische Anbieter"], bot: ["nein", "keine öffentliche Handels-Schnittstelle"], cost: "meist teurer als Neobroker", note: "Bewährt, aber für einen Bot ungeeignet.", src: [["https://www.capitalo.at/depot/steuereinfach", "capitalo.at"]] },
+    { name: "Trading 212", tax: ["nein", "für Österreich nicht geplant – Steuer selbst über die Beilage E1kv"], bot: ["voll", "offizielle API (noch Beta), Marktorders auch im echten Konto"], cost: "keine Ordergebühr, 0,15 % beim Währungstausch", note: "Günstig, aber die Steuer inklusive ausschüttungsgleicher ETF-Erträge machen Sie selbst.", src: [["https://docs.trading212.com/api", "Trading 212 API"], ["https://www.broker-test.at/news/trading-212-wird-in-deutschland-steuereinfach-und-verschaerft-den-wettbewerb/", "broker-test.at"]] },
+    { name: "eToro", tax: ["nein", "Steuer selbst über E1kv (Hilfe z. B. über Steuer-Tools)"], bot: ["voll", "offizielle API – der Bot läuft dort schon im Demokonto"], cost: "ETFs ohne Kommission; mit EUR-Konto kein Währungstausch", note: "Gut zum Üben; für echtes Geld in Österreich steuerlich aufwendig.", src: [["https://www.capitalo.at/anbieter/etoro/produkte/depot", "capitalo.at"]] },
+    { name: "Interactive Brokers / LYNX", tax: ["nein", "LYNX liefert nur einen informativen Steuerbericht"], bot: ["voll", "die stärkste Schnittstelle am Markt – für Profis"], cost: "Mindestgebühr je Auftrag – bei kleinen Beträgen spürbar", note: "Für 2.000 € zu teuer und zu aufwendig; ab größeren Beträgen interessant.", src: [["https://finanzinfo.at/broker/lynx/", "finanzinfo.at"]] },
+  ];
+  function realMoneyCard() {
+    const tag = (k, t) => `<span class="light ${{ ja: "green", "ja*": "yellow", voll: "green", halb: "yellow", nein: "" }[k] ?? ""}">${t}</span>`;
+    return `<article class="card" data-section="Echtgeld">
+      <h2 class="card-title">Echtes Geld in Österreich: Welcher Broker, welche Steuern, was taugt für den Bot?</h2>
+      <p><b>Kurz gesagt:</b> Der Steuersatz ist überall gleich – <b>27,5 % KESt</b> auf Kursgewinne, Dividenden und Fondserträge, egal bei welchem Broker. „Steuerlich besser“ heißt deshalb vor allem: ein <b>steuereinfacher</b> Broker, der die KESt selbst abführt, Verluste im Depot verrechnet und die ETF-Erträge meldet – und ein Bot, der teure Steuerfallen meidet. Bei 2.000 € kosten Gebühren übrigens mehr als die Steuer.</p>
+      <div class="broker-grid">${BROKERS_AT.map(b => `
+        <div class="broker">
+          <h3>${esc(b.name)}</h3>
+          <p class="small">${tag(b.tax[0], `Steuereinfach: ${b.tax[0].replace("*", "")}`)} ${tag(b.bot[0], `Bot: ${b.bot[0] === "voll" ? "voll automatisch" : b.bot[0] === "halb" ? "halb automatisch" : "nein"}`)}</p>
+          <p class="small"><b>Steuer:</b> ${esc(b.tax[1])}</p>
+          <p class="small"><b>Bot:</b> ${esc(b.bot[1])}</p>
+          <p class="small"><b>Kosten:</b> ${esc(b.cost)}</p>
+          <p class="small muted">${esc(b.note)} · ${b.src.map(([u, t]) => SRC(u, esc(t))).join(" · ")}</p>
+        </div>`).join("")}</div>
+      <h3 style="margin:18px 0 6px">Die Steuer-Regeln, die für einen Bot zählen</h3>
+      <ul class="checklist">
+        <li><b>Bankzinsen 25 %, alles andere 27,5 %:</b> Zinsen auf Guthaben beim Broker werden wie Sparbuchzinsen mit 25 % besteuert, ein Geldmarkt-ETF mit 27,5 % (${SRC("https://www.bmf.gv.at/themen/steuern/sparen-veranlagen/information-zu-einkuenften-aus-kapitalvermoegen.html", "BMF")}). Für das freie Geld ist verzinstes Guthaben also besser als ein Geldmarkt-ETF – und spart Ordergebühren.</li>
+        <li><b>Nicht-Meldefonds meiden:</b> Fonds ohne Steuermeldung an die Kontrollbank (OeKB) werden jedes Jahr pauschal besteuert – 27,5 % auf 90 % des Jahresgewinns, mindestens auf 10 % des Werts, auch ohne Gewinn (${SRC("https://www.broker-test.at/news/nichtmeldefonds-pauschale-besteuerung/", "broker-test.at")}). Betroffen sind viele US-ETFs (etwa VOO, QQQ) – und laut OeKB auch das iShares-Gold-ETC IGLN, das der Bot im Demokonto nutzt (${SRC("https://www.broker-test.at/news/gold-und-silber-etc-als-aif-und-somit-nichtmeldefonds-isin-ie00b4nd3602-und-ie00b4ncwg09/", "broker-test.at")}).</li>
+        <li><b>Verluste nur im selben Jahr:</b> Verluste lassen sich nur mit Gewinnen desselben Kalenderjahres verrechnen, ein Vortrag ist nicht möglich; automatisch nur innerhalb eines Depots, über mehrere Broker nur per Steuererklärung (${SRC("https://www.broker-test.at/steuern/verlustausgleich/", "broker-test.at")}).</li>
+        <li><b>Ohne steuereinfachen Broker:</b> Alles kommt in die Beilage E1kv, bei ETFs auch die „ausschüttungsgleichen Erträge“ aus der OeKB-Datenbank – bei einem Bot mit vielen Käufen und Verkäufen viel Arbeit (${SRC("https://www.broker-test.at/steuern/ausschuettungsgleiche-ertraege/", "broker-test.at")}).</li>
+        <li><b>Vorsicht CFDs:</b> Nicht verbriefte Derivate wie CFDs bei ausländischen Brokern fallen laut Fachportalen nicht unter die 27,5 %, sondern unter den normalen Einkommensteuer-Tarif – das betrifft auch Copy-Trading mit Tradern, die CFDs nutzen (${SRC("https://www.broker-test.at/steuern/verlustausgleich/", "broker-test.at")}). Im Zweifel einen Steuerberater fragen.</li>
+      </ul>
+      <h3 style="margin:18px 0 6px">Unsere Empfehlung für Sie (Österreich, bis 2.000 €)</h3>
+      <ul class="checklist">
+        <li><b>Erst weiter üben:</b> 6–12 Monate im eToro-Demokonto, wie geplant.</li>
+        <li><b>Dann Scalable Capital</b> – steuereinfach, günstig, mit offizieller Schnittstelle. Der Bot würde dort im <b>halbautomatischen</b> Modus laufen: Er rechnet die Aufträge aus, Sie bestätigen sie einmal im Monat (Zwei-Faktor-Anmeldung).</li>
+        <li><b>Wer gar nichts bestätigen will:</b> Bitpanda mit API-Schlüssel und Tageslimit – vorher die Steuereinfachheit für ETFs schriftlich bestätigen lassen und die Spreads prüfen.</li>
+        <li><b>Für echtes Geld würde ich den Bot so anpassen:</b> nur Meldefonds (Prüfung gegen die OeKB-Liste), kein IGLN, freies Geld als verzinstes Guthaben statt Geldmarkt-ETF, weniger ETFs, Umschichten monatlich statt wöchentlich. Vor Jahresende verrechnet er Verluste gezielt gegen Gewinne.</li>
+      </ul>
+      <p class="hint">Stand: November 2026, aus Vergleichsportalen und Anbieterangaben. Konditionen ändern sich oft – vor einer Kontoeröffnung beim Anbieter prüfen. Keine Steuerberatung.</p>
+    </article>`;
+  }
+
   function rulesCard() {
     return `<article class="card" data-section="Regeln">
       <h2 class="card-title">Was der Bot tut – und warum genau so</h2>
@@ -317,7 +360,7 @@
     const host = $("botBody");
     if (!host) return;
     if (!st && loading) { host.innerHTML = `<article class="card"><p class="muted">Lade den Stand des Trend-Bots …</p></article>`; return; }
-    host.innerHTML = hero() + signalsCard() + learnCard() + backtestCard() + journalCard() + guideCard() + rulesCard() + researchCard() + honestCard();
+    host.innerHTML = hero() + signalsCard() + learnCard() + backtestCard() + journalCard() + guideCard() + realMoneyCard() + rulesCard() + researchCard() + honestCard();
     const B = st && st.backtest;
     if (B && B.daily && $("botChart")) chart($("botChart"), range === "weekly" && B.weekly ? B.weekly : B.daily);
     host.querySelectorAll("[data-range]").forEach(b => b.addEventListener("click", () => { range = b.dataset.range; render(); }));
