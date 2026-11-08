@@ -35,6 +35,8 @@
   <nav class="tabs" role="tablist" aria-label="Bereiche">
     <button class="tab" role="tab" id="tab-home" aria-controls="home" data-tab="home">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Übersicht</span></button>
+    <button class="tab" role="tab" id="tab-portfolio" aria-controls="portfolio" data-tab="portfolio">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M8 7V4h8v3M3 12.5h18"/></svg><span>Portfolio</span> <span class="new" id="pfBadge" hidden></span></button>
     <button class="tab" role="tab" id="tab-markt" aria-controls="markt" data-tab="markt">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Markt</span></button>
     <button class="tab" role="tab" id="tab-aktie" aria-controls="aktie" data-tab="aktie">
@@ -117,6 +119,15 @@
     </section>
 
     <!-- MARKT -->
+    <!-- PORTFOLIO -->
+    <section id="portfolio" class="view" role="tabpanel" aria-labelledby="tab-portfolio" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Portfolio · bleibt nur in diesem Browser</p><h1>Ihre Aktien: halten oder raus?</h1></div>
+        <p class="lead">Tragen Sie Ihre Aktien mit Kaufpreis ein. Die Seite zeigt Gewinn oder Verlust, wie riskant jede Aktie ist und was die Regeln sagen – halten, Stop nachziehen oder Verkauf prüfen. Auf Wunsch gibt es einen fertigen Ausstiegs-Plan für eToro, dazu Nachrichten je Aktie und Hinweise, wenn etwas Wichtiges passiert.</p>
+      </div>
+      <div id="portfolioBody" class="stack"></div>
+    </section>
+
     <section id="markt" class="view" role="tabpanel" aria-labelledby="tab-markt" hidden>
       <div class="view-head">
         <div><p class="eyebrow">Markt · Ampeln aus belegten Regeln</p><h1>Marktlage &amp; Heatmap</h1></div>
@@ -516,6 +527,7 @@
   <script src="stock.js"></script>
   <script src="hot.js"></script>
   <script src="swing.js"></script>
+  <script src="portfolio.js"></script>
   <script src="bot.js"></script>
   <script src="live.js"></script>
   <script src="nav.js"></script>

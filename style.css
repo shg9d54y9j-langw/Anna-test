@@ -473,7 +473,7 @@ details.info .calc { margin-top: 12px; }
   body { font-size: 14.5px; padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
   .tabs { display: none; }
   .bottomnav {
-    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
     background: #000; border-top: 1px solid var(--line-2); padding-bottom: env(safe-area-inset-bottom);
   }
   .bottomnav button {
@@ -686,3 +686,33 @@ table.swing-ledger td { vertical-align: top; }
   td.wrap { min-width: 110px; }
   .meter { width: 30px; }
 }
+
+/* ---------- Portfolio ---------- */
+.pf-list { display: grid; gap: 0; border: 1px solid var(--line); }
+.pf-card { display: grid; gap: 8px; padding: 16px; background: var(--panel); min-width: 0; }
+.pf-card + .pf-card { border-top: 1px solid var(--line); }
+.pf-card p { margin: 0; line-height: 1.5; }
+.pf-nums { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; padding: 8px 10px; border: 1px solid var(--line-2); background: #000; align-items: center; }
+.pf-nums .light { font-size: 10px; padding: 2px 7px; }
+.pf-alerts { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.pf-alerts li { font-size: 13px; padding: 6px 10px; border: 1px solid var(--line-2); color: var(--text-2); }
+.pf-alerts li.high { border-color: var(--down); color: var(--text); }
+.pf-alerts li.warn { border-color: var(--text); border-style: dashed; }
+.pf-actions .btn { padding: 7px 11px; font-size: 11px; }
+.pf-news { height: 420px; border: 1px solid var(--line); }
+.exit-plan { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--text); background: #000; }
+.exit-opt { padding: 10px 12px; border: 1px solid var(--line-2); }
+.exit-opt.best { border-color: #fff; }
+.exit-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.exit-title .light { font-size: 9.5px; padding: 2px 7px; }
+.exit-opt .steps { font-size: 13px; gap: 6px; }
+#pfBadge { min-width: 18px; text-align: center; }
+@media (max-width: 760px) {
+  .bottomnav button { letter-spacing: .03em; }
+  .pf-card { padding: 14px 12px; }
+  .pf-actions .btn { flex: 1 1 auto; text-align: center; }
+}
+#pfBadge[hidden] { display: none; }
+.bottomnav button { position: relative; }
+.nav-badge { position: absolute; top: 5px; left: calc(50% + 6px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--down); color: #fff; font: 800 9.5px/16px var(--font); letter-spacing: 0; text-align: center; }
+.nav-badge[hidden] { display: none; }
