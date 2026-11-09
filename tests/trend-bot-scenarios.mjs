@@ -95,8 +95,10 @@ await withServer("Start, gleicher Tag, Ihre eigene Position", async ({ run, acct
   check(vnq.weight > 0 && o.length === want.length + 1, `ein Kaufauftrag je Markt mit Anteil plus Geldmarkt (${o.length} von ${want.length + 1})`);
   check(want.filter(x => x.key !== "reits").every(x => o.some(y => y.body.InstrumentID === x.trade[0].id)), "gekauft wird das erste europäische Gegenstück, nicht der US-ETF");
   check(o.every(x => x.body.Leverage === 1 && x.body.IsBuy === true && x.body.IsNoTakeProfit === true), "nur Kauf ohne Hebel");
-  const priceOf = id => a.prices[Object.keys(a.ids).find(k => a.ids[k] === id)];
-  check(o.every(x => Math.abs(x.body.StopLossRate / priceOf(x.body.InstrumentID) - 0.7) < 0.05), "jede Position mit Notbremse 30 % unter dem Kurs des gekauften ETF");
+  // Bezug ist der Schlusskurs, den der Bot am (simulierten) Handelstag sah – nicht der neueste Kurs des Test-Servers,
+  // denn dessen Kursreihe endet am echten heutigen Tag und läuft je nach Datum ein paar Prozent davon
+  const lastOf = id => ([...sig.assets.flatMap(x => x.trade || []), ...((sig.cash && sig.cash.trade) || [])].find(v => v.id === id) || {}).last;
+  check(o.every(x => Math.abs(x.body.StopLossRate / lastOf(x.body.InstrumentID) - 0.7) < 0.001), "jede Position mit Notbremse 30 % unter dem Kurs des gekauften ETF");
   const okAmounts = want.every(x => { const b = o.find(y => assetOf(sig, y.body.InstrumentID) === x); return b && Math.abs(b.body.Amount - x.weightBase * sleeve) <= 0.5; });
   check(okAmounts, `Beträge = Zielanteil × 1.000 € Spielgeld (${Math.round(sleeve)} $): ${o.map(x => x.body.Amount).join(", ")}`);
   check(r.s.positions.length === want.length && r.s.orders.length === 0, "alle anderen Käufe (mit Geldmarkt) bestätigt und als Bot-Positionen gemerkt");
