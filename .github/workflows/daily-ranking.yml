@@ -40,7 +40,8 @@ jobs:
           rm -f data/returns.json
           node scripts/daily-ranking.mjs
           if [ -f data/returns.json ]; then
-            echo "ranking=$(base64 -w0 data/ranking.json)" >> "$GITHUB_OUTPUT"
+            # gepackt: ungepackt lag die Rangliste mit 126 KB knapp unter der Grenze von 128 KB je Umgebungsvariable
+            echo "ranking=$(gzip -9c data/ranking.json | base64 -w0)" >> "$GITHUB_OUTPUT"
             echo "returns=$(gzip -9c data/returns.json | base64 -w0)" >> "$GITHUB_OUTPUT"
           fi
 
@@ -62,7 +63,7 @@ jobs:
           RANKING_B64: ${{ needs.fetch.outputs.ranking }}
           RETURNS_B64: ${{ needs.fetch.outputs.returns }}
         run: |
-          printf '%s' "$RANKING_B64" | base64 -d > /tmp/ranking.json
+          printf '%s' "$RANKING_B64" | base64 -d | gunzip > /tmp/ranking.json
           printf '%s' "$RETURNS_B64" | base64 -d | gunzip > /tmp/returns.json
           python3 tests/verify_ranking.py /tmp/ranking.json /tmp/returns.json
 
@@ -84,7 +85,7 @@ jobs:
           RETURNS_B64: ${{ needs.fetch.outputs.returns }}
         run: |
           mkdir -p data
-          printf '%s' "$RANKING_B64" | base64 -d > data/ranking.json
+          printf '%s' "$RANKING_B64" | base64 -d | gunzip > data/ranking.json
           printf '%s' "$RETURNS_B64" | base64 -d | gunzip > data/returns.json
           node -e 'for (const f of ["data/ranking.json", "data/returns.json"]) JSON.parse(require("fs").readFileSync(f, "utf8"))'
           git config user.name "github-actions[bot]"
