@@ -10,7 +10,7 @@
   const pctCell = (x, d = 1) => (Number.isFinite(x) ? `<span class="${x < 0 ? "down" : "up"}">${sign(x, d)} %</span>` : "–");
   const price = x => (!Number.isFinite(x) ? "–" : x >= 1000 ? fmt(x, 0) : x >= 10 ? fmt(x, 2) : fmt(x, 4));
   const COST = 0.3;   // geschätzte Kosten hin und zurück in % (Spread)
-  let data = null, current = null, style = store.get("dtd-stock-style", "swing");
+  let data = null, current = null, style = store.get("dtd-stock-style", "swing"), chartMode = store.get("dtd-stock-chart", "line") === "candle" ? "candle" : "line";
 
   async function load() {
     const t = Date.now();
@@ -128,7 +128,11 @@
           ${kpi("Größter Rückgang 1 J.", "−" + fmt(x.mdd, 1) + " %", "down")}
           ${kpi("Beta", fmt(x.beta, 2))}
         </div>` : ""}
-        <div class="widget mini" id="skChart"></div>
+        <div class="seg chart-seg" role="group" aria-label="Diagramm-Art">
+          <button type="button" data-chart="line" aria-pressed="${chartMode === "line"}">Linie, 12 Monate</button>
+          <button type="button" data-chart="candle" aria-pressed="${chartMode === "candle"}">Kerzen-Diagramm</button>
+        </div>
+        <div class="widget ${chartMode === "candle" ? "big-chart" : "mini"}" id="skChart"></div>
       </section>
 
       <section class="block" data-section="Termine">
@@ -183,6 +187,15 @@
             <div class="level"><span>Ziel (Take-Profit)</span><b class="up">${price(L.target)}</b><small>+${fmt(L.tgtPct, 2)} % · ${L.day ? "1" : "4"} × ATR</small></div>
             <div class="level"><span>Betrag</span><b>${L.amount ? `${fmt(L.amount, 0)} ${cur}` : "–"}</b><small>${L.amount ? `≈ ${fmt(L.units, L.units < 10 ? 3 : 1)} Stück` : "Kontostand eintragen"}</small></div>
           </div>
+          ${levelLadder([
+            { label: "Kurs jetzt", v: x.last, kind: "now" },
+            { label: "Stop-Loss", v: L.stop, kind: "stop" },
+            { label: "Ziel", v: L.target, kind: "target" },
+            { label: "50-Tage-Schnitt", v: Number.isFinite(x.d50) ? x.last / (1 + x.d50 / 100) : null, kind: "avg" },
+            { label: "200-Tage-Schnitt", v: Number.isFinite(x.d200) ? x.last / (1 + x.d200 / 100) : null, kind: "avg" },
+            { label: "52-Wochen-Hoch", v: x.hi52, kind: "range" },
+            { label: "52-Wochen-Tief", v: x.lo52, kind: "range" },
+          ], "Stop und Ziel neben den Trendlinien")}
           <div class="stats-grid">
             ${kpi("Chance aufs Ziel ohne Vorteil", `${fmt(L.pNoEdge * 100, 0)} %`)}
             ${kpi("Nötige Trefferquote nach Kosten", `${fmt(L.pNeeded * 100, 0)} %`)}
@@ -207,7 +220,16 @@
       </section>`;
 
     // Live-Grafiken von TradingView (funktionieren für jedes Symbol)
-    tvWidget("skChart", "mini-symbol-overview", { ...COMMON, symbol: tv, width: "100%", height: "100%", dateRange: "12M", trendLineColor: "rgba(255,255,255,1)", underLineColor: "rgba(255,255,255,0.08)", underLineBottomColor: "rgba(255,255,255,0)", noTimeScale: false });
+    const drawChart = () => {
+      const el = $("skChart");
+      if (!el) return;
+      el.className = `widget ${chartMode === "candle" ? "big-chart" : "mini"}`;
+      if (chartMode === "candle") bigChart("skChart", tv);
+      else tvWidget("skChart", "mini-symbol-overview", { ...COMMON, symbol: tv, width: "100%", height: "100%", dateRange: "12M", trendLineColor: "rgba(255,255,255,1)", underLineColor: "rgba(255,255,255,0.08)", underLineBottomColor: "rgba(255,255,255,0)", noTimeScale: false });
+      host.querySelectorAll("[data-chart]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.chart === chartMode)));
+    };
+    drawChart();
+    host.querySelectorAll("[data-chart]").forEach(b => b.addEventListener("click", () => { chartMode = b.dataset.chart; store.set("dtd-stock-chart", chartMode); drawChart(); }));
     tvWidget("skNews", "timeline", { ...COMMON, feedMode: "symbol", symbol: tv, displayMode: "regular", width: "100%", height: "100%" });
     tvWidget("skProfile", "symbol-profile", { ...COMMON, symbol: tv, width: "100%", height: "100%" });
     host.querySelectorAll("[data-style]").forEach(b => b.addEventListener("click", () => { style = b.dataset.style; store.set("dtd-stock-style", style); render(x, q); }));

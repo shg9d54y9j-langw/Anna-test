@@ -112,6 +112,39 @@ function tvWidget(containerId, script, config) {
 }
 const COMMON = { colorTheme: "dark", isTransparent: true, locale: "de_DE" };
 
+// Großes Kursdiagramm einer Aktie: Tageskerzen der letzten 12 Monate (für Aktien-Check, Portfolio und Swing-Planer)
+function bigChart(containerId, symbol) {
+  tvWidget(containerId, "advanced-chart", {
+    ...COMMON, isTransparent: false, backgroundColor: "#000000", gridColor: "rgba(255,255,255,0.06)", autosize: true, symbol,
+    interval: "D", range: "12M", timezone: "Europe/Berlin", style: "1", allow_symbol_change: false, hide_side_toolbar: true, save_image: false,
+  });
+}
+// Kurs-Leiter: die wichtigen Marken einer Aktie auf einer gemeinsamen Skala, mit Abstand zum Kurs.
+// rows: [{ label, v, kind: "now" | "avg" | "buy" | "stop" | "target" | "range", from }] – from: Kaufpreis für die Gewinn-/Verlust-Strecke
+function levelLadder(rows, caption = "") {
+  const pts = rows.filter(r => r && Number.isFinite(r.v) && r.v > 0);
+  const now = pts.find(r => r.kind === "now");
+  if (pts.length < 3 || !now) return "";
+  let lo = Math.min(...pts.map(r => r.v)), hi = Math.max(...pts.map(r => r.v));
+  const pad = (hi - lo) * 0.05 || hi * 0.02;
+  lo -= pad; hi += pad;
+  const X = v => ((v - lo) / (hi - lo) * 100).toFixed(2);
+  const pr = v => (v >= 1000 ? fmt(v, 0) : v >= 1 ? fmt(v, 2) : fmt(v, 4));
+  const pct = v => `${v > 0 ? "+" : ""}${fmt(v, 1)} %`;
+  const guide = `<i class="lad-guide" style="left:${X(now.v)}%"></i>`;
+  const rowsHtml = [...pts].sort((a, b) => b.v - a.v || (a.kind === "now" ? -1 : 1)).map(r => {
+    const seg = r.kind === "now" && Number.isFinite(r.from) && r.from > 0
+      ? `<i class="lad-seg ${now.v >= r.from ? "up" : "down"}" style="left:${X(Math.min(r.from, now.v))}%;width:${(Math.abs(now.v - r.from) / (hi - lo) * 100).toFixed(2)}%"></i>` : "";
+    const dist = r.kind === "now" ? (Number.isFinite(r.from) && r.from > 0 ? `<small class="${now.v >= r.from ? "up" : "down"}">${pct((now.v / r.from - 1) * 100)}<span class="lad-x"> seit Kauf</span></small>` : "")
+      : `<small>${pct((r.v / now.v - 1) * 100)}</small>`;
+    return `<div class="lad-row ${r.kind || ""}"><span class="lad-label">${r.label}</span><span class="lad-val"><b class="num">${pr(r.v)}</b>${dist}</span><span class="lad-track">${guide}${seg}<b class="lad-dot" style="left:${X(r.v)}%"></b></span></div>`;
+  }).join("");
+  const aria = pts.map(r => `${r.label} ${pr(r.v)}`).join(", ");
+  return `<div class="ladder" role="img" aria-label="Kurs-Leiter: ${aria}">${caption ? `<p class="lad-cap">${caption}</p>` : ""}${rowsHtml}</div>`;
+}
+window.DTD.bigChart = bigChart;
+window.DTD.levelLadder = levelLadder;
+
 tvWidget("tickerTape", "ticker-tape", {
   ...COMMON,
   symbols: [

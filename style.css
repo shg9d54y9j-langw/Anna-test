@@ -716,3 +716,40 @@ table.swing-ledger td { vertical-align: top; }
 .bottomnav button { position: relative; }
 .nav-badge { position: absolute; top: 5px; left: calc(50% + 6px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--down); color: #fff; font: 800 9.5px/16px var(--font); letter-spacing: 0; text-align: center; }
 .nav-badge[hidden] { display: none; }
+
+/* ---------- Kurs-Leiter und großes Diagramm ---------- */
+/* Ein gemeinsames Raster für alle Zeilen: so liegen die Skalen exakt untereinander und die Kurslinie läuft gerade durch */
+.ladder { display: grid; grid-template-columns: minmax(104px, 1.2fr) auto minmax(64px, 1.6fr); column-gap: 10px; border: 1px solid var(--line-2); background: #000; padding: 6px 10px 8px; }
+.lad-cap { grid-column: 1 / -1; margin: 2px 0 6px !important; font: 800 10px var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.lad-row { display: contents; }
+.lad-row > span { display: flex; align-items: center; min-height: 28px; font-size: 12.5px; }
+.lad-row + .lad-row > span { border-top: 1px solid var(--line); }
+.lad-label { color: var(--text-2); min-width: 0; line-height: 1.25; padding: 3px 0; }
+.lad-val { gap: 6px; justify-content: flex-end; white-space: nowrap; }
+.lad-val small { color: var(--muted); font-size: 11px; }
+.lad-val small.up { color: var(--up); }
+.lad-val small.down { color: var(--down); }
+.lad-track { position: relative; }
+.lad-track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: var(--line); }
+.lad-guide { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--muted); }
+.lad-seg { position: absolute; top: 50%; height: 4px; margin-top: -2px; }
+.lad-seg.up { background: var(--up); }
+.lad-seg.down { background: var(--down); }
+.lad-dot { position: absolute; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; background: var(--text-2); border-radius: 50%; box-shadow: 0 0 0 2px #000; }
+.lad-row.now .lad-label, .lad-row.now .lad-val b { color: var(--text); font-weight: 800; }
+.lad-row.now .lad-dot { width: 12px; height: 12px; margin: -6px 0 0 -6px; background: #fff; }
+.lad-row.avg .lad-dot { background: #000; border: 2px solid var(--text-2); box-shadow: none; }
+.lad-row.buy .lad-dot { border-radius: 0; transform: rotate(45deg); background: #fff; }
+.lad-row.stop .lad-dot { background: var(--down); }
+.lad-row.target .lad-dot { background: var(--up); }
+.lad-row.range .lad-dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; background: var(--faint); }
+.big-chart { height: 440px; border: 1px solid var(--line); }
+.chart-seg { margin: 10px 0 8px; }
+@media (max-width: 760px) {
+  .ladder { grid-template-columns: minmax(0, 1fr) auto minmax(56px, 1fr); column-gap: 8px; }
+  .lad-row > span { font-size: 12px; }
+  .lad-val small { display: none; }
+  .lad-row.now .lad-val small { display: inline; }
+  .lad-val .lad-x { display: none; }
+  .big-chart { height: 380px; }
+}

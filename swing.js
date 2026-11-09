@@ -112,6 +112,20 @@
         ${dataLine(s)}
         ${howTo(s, z)}
       </details>
+      <details class="swing-more swing-chart" data-tv="${esc(s.tv || s.sym)}"><summary>Diagramm</summary>
+        ${window.DTD.levelLadder ? window.DTD.levelLadder([
+          { label: "Kurs jetzt", v: s.last, kind: "now" },
+          s.entryType !== "market" ? { label: s.entryType === "limit" ? "Kauf-Order" : "Kursalarm", v: s.entry, kind: "buy" } : null,
+          { label: "Stop Loss", v: s.stop, kind: "stop" },
+          { label: "Ziel für die Hälfte", v: s.target, kind: "target" },
+          { label: "50-Tage-Schnitt", v: s.s50, kind: "avg" },
+          { label: "200-Tage-Schnitt", v: s.s200, kind: "avg" },
+          { label: "52-Wochen-Hoch", v: s.hi52, kind: "range" },
+          { label: "52-Wochen-Tief", v: s.lo52, kind: "range" },
+        ], `Kauf, Stop und Ziel neben den Trendlinien · Kurs vom ${dDate(s.asOf)}`) : ""}
+        <div class="big-chart" id="swChart-${esc(s.sym.replace(/[^A-Za-z0-9_-]/g, "_"))}"></div>
+        <p class="small muted">Tageskerzen der letzten 12 Monate, live von TradingView.</p>
+      </details>
     </article>`;
   }
   const section = (name, title, sub, body, count) => `<article class="card" data-section="${name}">
@@ -210,6 +224,11 @@
       + section("Neu entdeckt", "Neu entdeckt: starke Aktien ohne Steckbrief", `Aus den rund ${fmt(700, 0)} beliebtesten Aktien bei eToro: Momentum unter den besten 10 %, Aufwärtstrend, höchstens 10 % unter dem Jahreshoch, Analysten nicht skeptisch. Die wöchentliche Recherche prüft die Geschichte dahinter.`, cards(found, info, "Heute erfüllt keine Aktie ohne Steckbrief alle Bedingungen."), found.length)
       + restCard(rest, info) + ledgerCard() + methodCard();
     host.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => window.DTD.openStock && window.DTD.openStock(b.dataset.open)));
+    // Kursdiagramm erst laden, wenn „Diagramm“ geöffnet wird
+    host.querySelectorAll("details.swing-chart").forEach(d => d.addEventListener("toggle", () => {
+      const el = d.querySelector(".big-chart");
+      if (d.open && el && !el.dataset.loaded && window.DTD.bigChart) { el.dataset.loaded = "1"; window.DTD.bigChart(el.id, d.dataset.tv); }
+    }));
     const budget = $("swingBudget"), risk = $("swingRisk");
     if (budget) budget.addEventListener("change", () => { const v = Number(budget.value); if (Number.isFinite(v) && v >= 100 && v <= 1e7) { pref.budget = Math.round(v); savePref(); render(); } else budget.value = pref.budget; });
     if (risk) risk.addEventListener("change", () => { pref.risk = Number(risk.value); savePref(); render(); });

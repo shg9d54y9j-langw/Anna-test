@@ -21,7 +21,7 @@
   const money = (v, sym) => (Number.isFinite(v) ? `${v < 0 ? "−" : v > 0 ? "+" : ""}${fmt(Math.abs(v), 2)}${currency(sym) ? ` ${currency(sym)}` : ""}` : "–");
 
   let list = read(), stocks = null, swing = null, firms = null, loading = false, editId = null;
-  const open = { exit: new Set(), news: new Set() };
+  const open = { exit: new Set(), news: new Set(), chart: new Set() };
   function read() {
     const raw = store.get(KEY, []);
     return (Array.isArray(raw) ? raw : []).filter(h => h && typeof h.sym === "string" && SYM.test(h.sym) && Number.isFinite(h.buy) && h.buy > 0)
@@ -102,6 +102,23 @@
     </div>`;
   }
 
+  // Diagramm: Kurs-Leiter mit Kaufpreis, Stops und Durchschnitten, darunter die Tageskerzen der letzten 12 Monate
+  function chartBlock(h, x, v, tv) {
+    const t = x ? trend(x) : {};
+    const ladder = x && window.DTD.levelLadder ? window.DTD.levelLadder([
+      { label: "Kurs jetzt", v: x.last, kind: "now", from: h.buy },
+      { label: "Ihr Kauf", v: h.buy, kind: "buy" },
+      v ? { label: v.key === "sell" ? "Stop, wer hält" : "Stop-Vorschlag", v: v.stop, kind: "stop" } : null,
+      h.stop ? { label: "Ihr Stop", v: h.stop, kind: "stop" } : null,
+      { label: "50-Tage-Schnitt", v: t.s50, kind: "avg" },
+      { label: "200-Tage-Schnitt", v: t.s200, kind: "avg" },
+      { label: "52-Wochen-Hoch", v: x.hi52, kind: "range" },
+      { label: "52-Wochen-Tief", v: x.lo52, kind: "range" },
+    ], `Wo der Kurs steht · Schlusskurs vom ${dDate(x.asOf)}`) : "";
+    return `<div class="pf-chart">${ladder}<div class="big-chart" id="pfChart-${esc(h.id)}" data-tv="${esc(tv)}"></div>
+      <p class="small muted">Tageskerzen der letzten 12 Monate, live von TradingView. Die 50- und 200-Tage-Linie und Ihre Marken stehen in der Leiste darüber.</p></div>`;
+  }
+
   // ---------- Anzeige ----------
   function card(h) {
     const x = item(h.sym), f = profile(h.sym), s = plan(h.sym);
@@ -132,11 +149,13 @@
       ${h.note ? `<p class="small muted">Notiz: ${esc(h.note)}</p>` : ""}
       <div class="btn-row pf-actions">
         ${x ? `<button type="button" class="btn ghost" data-act="exit" aria-expanded="${open.exit.has(h.id)}">Ich will raus – Plan</button>` : ""}
+        <button type="button" class="btn ghost" data-act="chart" aria-expanded="${open.chart.has(h.id)}">Diagramm</button>
         <button type="button" class="btn ghost" data-act="news" aria-expanded="${open.news.has(h.id)}">Nachrichten</button>
         <a class="btn ghost" href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/" target="_blank" rel="noopener noreferrer">Kurs live ↗</a>
         <button type="button" class="btn ghost" data-act="edit">Bearbeiten</button>
         <button type="button" class="btn ghost" data-act="del">Entfernen</button>
       </div>
+      ${open.chart.has(h.id) ? chartBlock(h, x, v, tv) : ""}
       ${x && open.exit.has(h.id) ? exitPlan(h, x, v) : ""}
       ${open.news.has(h.id) ? `<div class="pf-news" id="pfNews-${esc(h.id)}" data-tv="${esc(tv)}"></div>
         <p class="small muted">Mehr: <a href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/news/" target="_blank" rel="noopener noreferrer">alle Nachrichten bei TradingView ↗</a> · <a href="https://news.google.com/search?q=${encodeURIComponent(`${name || h.sym} Aktie`)}&hl=de&gl=AT&ceid=AT:de" target="_blank" rel="noopener noreferrer">deutsche Nachrichten bei Google News ↗</a></p>` : ""}
@@ -228,6 +247,10 @@
     host.innerHTML = (list.length ? summaryCard(rows) : `<article class="card"><h2 class="card-title">Noch keine Aktien eingetragen</h2><p class="small">Tragen Sie unten Ihre erste Aktie mit Kaufpreis ein – die Seite zeigt dann Ergebnis, Risiko, ob Halten oder Raus und Nachrichten.</p></article>`)
       + (list.length ? `<article class="card" data-section="Aktien"><div class="card-head"><h2 class="card-title">Ihre Aktien</h2><span class="muted small">${loading && !stocks ? "Lade Kennzahlen …" : "„Verkauf prüfen“ zuerst"}</span></div><div class="pf-list">${rows.map(r => card(r.h)).join("")}</div></article>` : "")
       + formCard() + notifyCard() + backupCard() + methodCard();
+    for (const id of open.chart) {
+      const el = document.getElementById(`pfChart-${id}`);
+      if (el && window.DTD.bigChart) window.DTD.bigChart(el.id, el.dataset.tv);
+    }
     for (const id of open.news) {
       const el = document.getElementById(`pfNews-${id}`);
       if (el && typeof tvWidget === "function") tvWidget(el.id, "timeline", { ...COMMON, feedMode: "symbol", symbol: el.dataset.tv, displayMode: "regular", width: "100%", height: 420 });
@@ -283,9 +306,10 @@
     if (act === "open" && h) return window.DTD.openStock && window.DTD.openStock(h.sym);
     if (act === "exit" && h) { open.exit.has(id) ? open.exit.delete(id) : open.exit.add(id); return render(); }
     if (act === "news" && h) { open.news.has(id) ? open.news.delete(id) : open.news.add(id); return render(); }
+    if (act === "chart" && h) { open.chart.has(id) ? open.chart.delete(id) : open.chart.add(id); return render(); }
     if (act === "edit" && h) { editId = id; render(); const f = $("pfForm"); if (f) f.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
     if (act === "cancel") { editId = null; return render(); }
-    if (act === "del" && h) { if (confirm(`${h.sym} aus dem Portfolio entfernen?`)) { list = list.filter(x => x.id !== id); open.exit.delete(id); open.news.delete(id); save(); render(); } return; }
+    if (act === "del" && h) { if (confirm(`${h.sym} aus dem Portfolio entfernen?`)) { list = list.filter(x => x.id !== id); open.exit.delete(id); open.news.delete(id); open.chart.delete(id); save(); render(); } return; }
     if (act === "notify") { Notification.requestPermission().then(() => render()); return; }
     if (act === "export" || act === "claude") {
       const lines = list.map(x => [x.sym, String(x.buy).replace(".", ","), x.qty ? String(x.qty).replace(".", ",") : "", x.date || "", x.stop ? String(x.stop).replace(".", ",") : "", x.note.replace(/;/g, ",")].join("; ").replace(/(; )+$/, ""));

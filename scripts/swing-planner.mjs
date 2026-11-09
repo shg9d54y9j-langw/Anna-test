@@ -218,7 +218,7 @@ export function plan(stocks, firms, prev, now = new Date()) {
     return {
       sym, name: x.name, tv: x.tv, src, role: (profiles[sym] && profiles[sym].role) || null, themes: keys, ...s,
       last: x.last, atr: x.atr, atrPct: x.atrPct, d50: x.d50, d200: x.d200, mom: x.mom, momRank: x.momRank ?? null, ret3m: x.ret3m, ret12m: x.ret12m,
-      dHi52: x.dHi52, hi52: x.hi52, ...analysts(x), earn: (x.earn && x.earn.date) || null,
+      dHi52: x.dHi52, hi52: x.hi52, lo52: x.lo52 ?? null, ...analysts(x), earn: (x.earn && x.earn.date) || null,
       surprise: x.lastEarn ? x.lastEarn.surprisePct : null, surpriseDate: x.lastEarn ? x.lastEarn.date : null,
       score: score(x, heat), heat, since: p && p.state === s.state && p.since ? p.since : today, asOf: x.asOf || null,
     };
