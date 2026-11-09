@@ -2,9 +2,9 @@
 (() => {
   const tabs = [...document.querySelectorAll(".tabs .tab")];
   const DESC = {
-    home: "Tag auf einen Blick", portfolio: "Ihre Aktien, halten?", markt: "Ampeln, Heatmap", aktie: "Symbol prüfen", tools: "Screener, Kalender, Alarme", news: "Nachrichten, Termine", ideen: "Belegte Muster",
-    hot: "Experten, Swing-Trades", swing: "Theorie, Kauf, Stop", bot: "Handelt selbst, Tagebuch",
-    setup: "Stop, Ziel, Stück", daily: "Wen kopieren?", copy: "Kopie einrichten", compare: "Eigene Kandidaten", journal: "Trades, Limit", theorie: "Forschung",
+    home: "Tag auf einen Blick", portfolio: "Aktien, Journal, Steuer", markt: "Ampeln, Heatmap, News", aktie: "Symbol prüfen", tools: "Screener, Kalender, Alarme", ideen: "Belegte Muster",
+    hot: "Experten-Favoriten", swing: "Theorie, Kauf, Stop", bot: "Handelt selbst, Tagebuch",
+    setup: "Stop, Ziel, Stück", daily: "Wen kopieren? Vergleich", theorie: "Forschung",
   };
   const MAIN = ["home", "portfolio", "markt", "aktie", "hot", "bot"];
   const icon = id => { const t = $(`tab-${id}`); const svg = t && t.querySelector("svg"); return svg ? svg.outerHTML : ""; };

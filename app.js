@@ -184,12 +184,19 @@ $("symbolBtn").addEventListener("click", () => loadSymbol(symIn.value.trim().toU
 symIn.addEventListener("keydown", e => { if (e.key === "Enter") loadSymbol(symIn.value.trim().toUpperCase()); });
 
 // ---------- Reiter-Navigation ----------
-const VIEWS = ["home", "portfolio", "markt", "aktie", "tools", "news", "ideen", "hot", "swing", "bot", "setup", "daily", "copy", "compare", "journal", "theorie"];
-const TITLES = { home: "Übersicht", portfolio: "Portfolio", markt: "Markt", aktie: "Aktien-Check", tools: "Werkzeuge", news: "News", ideen: "Trade-Ideen", hot: "HotStuff", swing: "Swing-Planer", bot: "Trend-Bot", setup: "Trade-Setup", daily: "Tagesempfehlung", copy: "Copy-Trading", compare: "Trader-Vergleich", journal: "Journal", theorie: "Theorie" };
+// Zusammengelegt: News → Markt, Journal (mit Steuer) → Portfolio, Copy-Trading und Trader-Vergleich → „daily“ (Reiter Copy-Trading).
+// Alte Adressen wie #news, #journal, #copy, #compare springen zum Abschnitt im neuen Bereich.
+const VIEWS = ["home", "portfolio", "markt", "aktie", "tools", "ideen", "hot", "swing", "bot", "setup", "daily", "theorie"];
+const TITLES = { home: "Übersicht", portfolio: "Portfolio", markt: "Markt", aktie: "Aktien-Check", tools: "Werkzeuge", ideen: "Trade-Ideen", hot: "HotStuff", swing: "Swing-Planer", bot: "Trend-Bot", setup: "Trade-Setup", daily: "Copy-Trading", theorie: "Theorie" };
+// Erst laden, wenn der Abschnitt in die Nähe kommt (TradingView-Fenster sind schwer)
+function whenNear(el, fn) {
+  if (!el || !("IntersectionObserver" in window)) return fn();
+  const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); fn(); } }, { rootMargin: "900px 0px" });
+  io.observe(el);
+}
 const VIEW_INIT = {
   portfolio: () => window.DTD.startPortfolio(),
-  markt: () => { loadHeatmap(heatSel.value); loadHotlist(); window.DTD.loadMarketLive(); },
-  news: () => { loadNews(); loadCalendar(); },
+  markt: () => { loadHeatmap(heatSel.value); loadHotlist(); window.DTD.loadMarketLive(); whenNear($("news"), () => { loadNews(); loadCalendar(); }); },
   aktie: () => window.DTD.startStock(),
   tools: () => window.DTD.startTools(),
   ideen: () => window.DTD.renderIdeas(),
@@ -216,8 +223,21 @@ function showView(id, { scrollTo = null } = {}) {
   // Diagramme kennen ihre Breite erst, wenn der Bereich sichtbar ist
   requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
   $(`tab-${id}`).scrollIntoView({ block: "nearest", inline: "nearest" });
-  if (scrollTo && $(scrollTo)) $(scrollTo).scrollIntoView({ behavior: "smooth", block: "start" });
+  if (scrollTo && $(scrollTo)) jumpTo($(scrollTo));
   else window.scrollTo({ top: 0 });
+}
+// Sprung zu einem Abschnitt: Inhalte darüber laden oft noch nach und schieben ihn weg – bis zu 3 Sekunden nachführen,
+// aber sofort aufhören, sobald der Besucher selbst scrollt oder tippt.
+function jumpTo(el) {
+  const evs = ["wheel", "touchstart", "keydown", "pointerdown"];
+  let ro = null, done = false;
+  const go = () => { if (!done) el.scrollIntoView({ block: "start" }); };
+  const stop = () => { done = true; if (ro) ro.disconnect(); evs.forEach(t => window.removeEventListener(t, stop, true)); };
+  evs.forEach(t => window.addEventListener(t, stop, { capture: true, passive: true }));
+  const view = el.closest(".view");
+  if ("ResizeObserver" in window && view) { ro = new ResizeObserver(go); ro.observe(view); }
+  go();
+  setTimeout(stop, 3000);
 }
 // Beim Öffnen springt der Browser sonst zum Anker (#home …) und schiebt Kopfzeile mit Logo und Live-Uhr aus dem Bild
 window.addEventListener("load", () => { const h = decodeURIComponent(location.hash.slice(1)); if (!h || VIEWS.includes(h)) setTimeout(() => window.scrollTo(0, 0), 0); });
@@ -227,7 +247,9 @@ function route() {
   const el = h && document.getElementById(h);
   const view = el && el.closest(".view");
   if (view) return showView(view.id, { scrollTo: h });
-  showView(store.get("dtd-tab", "home"));
+  // gespeicherter Reiter von früher (z. B. „journal“) → der Bereich, in dem er jetzt steckt
+  const saved = store.get("dtd-tab", "home"), home = !VIEWS.includes(saved) && document.getElementById(saved);
+  showView(home && home.closest(".view") ? home.closest(".view").id : saved);
 }
 document.querySelector(".tabs").addEventListener("click", e => {
   const tab = e.target.closest(".tab");
@@ -519,7 +541,7 @@ function renderEquity() {
     <text class="tick" x="${m.l}" y="${H - 6}">1. Trade</text><text class="tick" x="${m.l + pw}" y="${H - 6}" text-anchor="end">${trades.length}. Trade</text>
   </svg>`;
 }
-window.addEventListener("resize", () => { if (!$("journal").hidden) renderEquity(); });
+window.addEventListener("resize", () => { if (!$("portfolio").hidden) renderEquity(); });
 
 $("jForm").addEventListener("submit", e => {
   e.preventDefault();

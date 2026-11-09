@@ -797,3 +797,26 @@ table.scr .mob { display: none; }
   .al-row .al-del { grid-column: 3; grid-row: 1; }
   .al-row .light, .al-row > .muted { grid-column: 2; justify-self: start; }
 }
+
+/* ---------- Zusammengelegte Bereiche: Zwischenüberschrift wie ein kleiner Bereichskopf ---------- */
+.sub-head { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: end; gap: 12px 24px; margin-top: 28px; padding: 18px 0 14px; border-top: 2px solid var(--text); border-bottom: 1px solid var(--line-2); }
+.sub-head > :last-child:not(:first-child) { justify-self: end; }
+.sub-head .lead { justify-self: stretch; font-size: 14.5px; }
+.sub-head .eyebrow { margin-bottom: 8px; }
+.sub-title { font-size: clamp(22px, 3vw, 32px); font-weight: 850; line-height: 1.05; letter-spacing: -.035em; margin: 0; }
+@media (max-width: 720px) {
+  .sub-head { grid-template-columns: 1fr; margin-top: 18px; }
+  .sub-head > :last-child:not(:first-child) { justify-self: start; }
+}
+
+/* HotStuff: aktive Ideen des Swing-Planers */
+.hs-plan { display: grid; border: 1px solid var(--line); }
+.hs-plan-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 10px; align-items: center; padding: 8px 10px; background: #000; }
+.hs-plan-row + .hs-plan-row { border-top: 1px solid var(--line); }
+.hs-plan-text { min-width: 0; }
+.hs-plan-row .light { font-size: 9.5px; padding: 2px 7px; white-space: nowrap; }
+.hs-plan-text > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 560px) {
+  .hs-plan-row { grid-template-columns: auto minmax(0, 1fr); }
+  .hs-plan-row .light { grid-column: 2; justify-self: start; }
+}

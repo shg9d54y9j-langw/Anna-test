@@ -389,7 +389,7 @@
     }
     items.sort((a, b) => a.date - b.date);
     return `<div class="timeline">${items.map(it => { const l = dLabel(it.date); return `<div class="when-card ${it.soon ? "soon" : ""}"><div class="when-date"><b>${l.day}</b><span>${l.mon}</span></div><div class="when-text">${it.html}</div></div>`; }).join("")}</div>
-      <p class="muted small" style="margin-top:10px">Termine der US-Notenbank: ${A("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm", "Federal Reserve – Meeting calendars")}. Wichtige Wirtschaftsdaten stehen im Reiter <a href="#news">News</a>.</p>`;
+      <p class="muted small" style="margin-top:10px">Termine der US-Notenbank: ${A("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm", "Federal Reserve – Meeting calendars")}. Wichtige Wirtschaftsdaten stehen im Bereich Markt unter <a href="#news">Wirtschaftskalender</a>.</p>`;
   }
 
   // ================= Darstellung =================

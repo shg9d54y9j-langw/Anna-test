@@ -43,8 +43,6 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M7.5 12l2-2.5 2 1.5 2.5-3"/></svg><span>Aktien-Check</span> <span class="new">neu</span></button>
     <button class="tab" role="tab" id="tab-tools" aria-controls="tools" data-tab="tools">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5a4 4 0 0 0-5 5L4 16v4h4l5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/></svg><span>Werkzeuge</span> <span class="new" id="toolsBadge" hidden></span></button>
-    <button class="tab" role="tab" id="tab-news" aria-controls="news" data-tab="news">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M19 9h1a1 1 0 0 1 1 1v8a2 2 0 0 1-2 2M8 9h7M8 13h7M8 17h4"/></svg><span>News</span></button>
     <button class="tab" role="tab" id="tab-ideen" aria-controls="ideen" data-tab="ideen">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"/></svg><span>Trade-Ideen</span></button>
     <button class="tab" role="tab" id="tab-hot" aria-controls="hot" data-tab="hot">
@@ -56,13 +54,7 @@
     <button class="tab" role="tab" id="tab-setup" aria-controls="setup" data-tab="setup">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span>Trade-Setup</span></button>
     <button class="tab" role="tab" id="tab-daily" aria-controls="daily" data-tab="daily">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Tagesempfehlung</span></button>
-    <button class="tab" role="tab" id="tab-copy" aria-controls="copy" data-tab="copy">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><span>Copy-Trading</span></button>
-    <button class="tab" role="tab" id="tab-compare" aria-controls="compare" data-tab="compare">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V4M16 20v-7M21 20H3"/></svg><span>Trader-Vergleich</span></button>
-    <button class="tab" role="tab" id="tab-journal" aria-controls="journal" data-tab="journal">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z"/><path d="M5 19.5A2.5 2.5 0 0 1 7.5 17H20"/></svg><span>Journal</span></button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Copy-Trading</span></button>
     <button class="tab" role="tab" id="tab-theorie" aria-controls="theorie" data-tab="theorie">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 9 12 4 2 9l10 5 10-5z"/><path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5M22 9v6"/></svg><span>Theorie</span></button>
   </nav>
@@ -100,7 +92,7 @@
           <h2 class="card-title">Tagesregeln</h2>
           <ul class="checklist">
             <li>Erste 15 Minuten nach Börseneröffnung (Xetra 09:00, USA 15:30 Uhr) nur beobachten.</li>
-            <li>Kein Trade 5 Minuten vor und nach wichtigen Wirtschaftsdaten (siehe News → Kalender).</li>
+            <li>Kein Trade 5 Minuten vor und nach wichtigen Wirtschaftsdaten (siehe Markt → Wirtschaftskalender).</li>
             <li>Stop-Loss <strong>immer</strong> direkt mit der Order setzen und nie nachträglich vergrößern.</li>
             <li>Alle Positionen spätestens 15 Minuten vor Börsenschluss schließen – keine Übernacht-Positionen.</li>
             <li>Tageslimit: nach 3 Verlusttrades oder −3 % des Kontos ist Schluss für heute.</li>
@@ -120,20 +112,53 @@
       </div>
     </section>
 
-    <!-- MARKT -->
-    <!-- PORTFOLIO -->
+    <!-- PORTFOLIO · mit Journal, Tageslimit und Steuer-Schätzer -->
     <section id="portfolio" class="view" role="tabpanel" aria-labelledby="tab-portfolio" hidden>
       <div class="view-head">
         <div><p class="eyebrow">Portfolio · bleibt nur in diesem Browser</p><h1>Ihre Aktien: halten oder raus?</h1></div>
-        <p class="lead">Tragen Sie Ihre Aktien mit Kaufpreis ein. Die Seite zeigt Gewinn oder Verlust, wie riskant jede Aktie ist und was die Regeln sagen – halten, Stop nachziehen oder Verkauf prüfen. Auf Wunsch gibt es einen fertigen Ausstiegs-Plan für eToro, dazu Nachrichten je Aktie und Hinweise, wenn etwas Wichtiges passiert.</p>
+        <p class="lead">Tragen Sie Ihre Aktien mit Kaufpreis ein. Die Seite zeigt Gewinn oder Verlust, wie riskant jede Aktie ist und was die Regeln sagen – halten, Stop nachziehen oder Verkauf prüfen. Auf Wunsch gibt es einen fertigen Ausstiegs-Plan für eToro, dazu Nachrichten je Aktie und Hinweise, wenn etwas Wichtiges passiert. Darunter: Ihr Trade-Journal mit Tageslimit und der Steuer-Schätzer.</p>
       </div>
       <div id="portfolioBody" class="stack"></div>
+
+      <div class="sub-head" id="journal" data-section="Journal">
+        <div><p class="eyebrow">Trade-Journal · nur in Ihrem Browser gespeichert</p><h2 class="sub-title">Journal &amp; Tageslimit</h2></div>
+        <div class="btn-row">
+          <button type="button" class="btn ghost" id="jExport">Als CSV exportieren</button>
+        </div>
+      </div>
+      <div id="jToday"></div>
+      <article class="card" data-section="Trade eintragen">
+        <h2 class="card-title">Trade eintragen</h2>
+        <form id="jForm" class="calc">
+          <label>Symbol<input id="jSym" required placeholder="AAPL" maxlength="20"></label>
+          <label>Richtung<select id="jDir"><option>Long</option><option>Short</option></select></label>
+          <label>Einstieg<input id="jIn" type="number" step="any" required></label>
+          <label>Ausstieg<input id="jOut" type="number" step="any" required></label>
+          <label>Stück<input id="jQty" type="number" step="any" required></label>
+          <label>Notiz<input id="jNote" placeholder="Setup, Fehler, Lernpunkt" maxlength="200"></label>
+          <div class="btn-row"><button type="submit" class="btn">Eintragen</button></div>
+        </form>
+      </article>
+      <div class="stats" id="jStats"></div>
+      <article class="card" id="psychJournal"></article>
+      <article class="card">
+        <h2 class="card-title">Gewinn und Verlust über alle Trades</h2>
+        <div class="chart-host" id="jChart"></div>
+      </article>
+      <article class="card">
+        <h2 class="card-title">Alle Trades</h2>
+        <div class="table-wrap">
+          <table id="jTable"><thead></thead><tbody></tbody></table>
+        </div>
+      </article>
+      <div id="portfolioExtra" class="stack"></div>
     </section>
 
+    <!-- MARKT · mit News und Wirtschaftskalender -->
     <section id="markt" class="view" role="tabpanel" aria-labelledby="tab-markt" hidden>
       <div class="view-head">
         <div><p class="eyebrow">Markt · Ampeln aus belegten Regeln</p><h1>Marktlage &amp; Heatmap</h1></div>
-        <p class="lead">Oben die Marktlage mit Trend, Schwankung, Zinskurve und Finanzbedingungen – darunter Live-Kurse, die Heatmap nach Sektoren und die stärksten Bewegungen in den USA.</p>
+        <p class="lead">Oben die Marktlage mit Trend, Schwankung, Zinskurve und Finanzbedingungen – darunter Live-Kurse, die Heatmap nach Sektoren, die stärksten Bewegungen in den USA und ganz unten Nachrichten und der Wirtschaftskalender.</p>
       </div>
       <div id="cockpit" class="stack" data-section="Marktlage"></div>
       <article class="card" data-section="Live-Kurse">
@@ -156,6 +181,21 @@
         <div class="card-head"><h2 class="card-title">Top-Gewinner, -Verlierer und meistgehandelt (USA)</h2></div>
         <div id="hotlistWidget" class="widget tall"></div>
       </article>
+
+      <div class="sub-head" id="news">
+        <div><p class="eyebrow">News</p><h2 class="sub-title">Nachrichten und Termine</h2></div>
+        <p class="lead">Wichtige Wirtschaftsdaten bewegen die Kurse – davor und danach nicht handeln.</p>
+      </div>
+      <div class="grid-2">
+        <article class="card" data-section="News">
+          <div class="card-head"><h2 class="card-title">Top-News Aktienmarkt</h2></div>
+          <div id="newsWidget" class="widget tall"></div>
+        </article>
+        <article class="card" data-section="Wirtschaftskalender">
+          <div class="card-head"><h2 class="card-title">Wirtschaftskalender (wichtige Termine)</h2></div>
+          <div id="calendarWidget" class="widget tall"></div>
+        </article>
+      </div>
     </section>
 
     <!-- AKTIEN-CHECK -->
@@ -173,31 +213,13 @@
       <div id="stockBody" class="stack"><p class="muted">Symbol eingeben oder einen der beliebten Werte antippen.</p></div>
     </section>
 
-    <!-- NEWS -->
     <!-- WERKZEUGE -->
     <section id="tools" class="view" role="tabpanel" aria-labelledby="tab-tools" hidden>
       <div class="view-head">
-        <div><p class="eyebrow">Werkzeuge · Screener, Kalender, Insider, Alarme, Steuer</p><h1>Die Werkzeuge der Profis – eingebaut</h1></div>
-        <p class="lead">Aktien nach Regeln finden, Quartalszahlen im Blick behalten, sehen, wo Insider kaufen, Kursalarme setzen und die Steuer grob schätzen – mit den Daten dieser Seite, ohne Abo.</p>
+        <div><p class="eyebrow">Werkzeuge · Screener, Kalender, Insider, Alarme</p><h1>Die Werkzeuge der Profis – eingebaut</h1></div>
+        <p class="lead">Aktien nach Regeln finden, Quartalszahlen im Blick behalten, sehen, wo Insider kaufen, und Kursalarme setzen – mit den Daten dieser Seite, ohne Abo.</p>
       </div>
       <div id="toolsBody" class="stack"></div>
-    </section>
-
-    <section id="news" class="view" role="tabpanel" aria-labelledby="tab-news" hidden>
-      <div class="view-head">
-        <div><p class="eyebrow">News</p><h1>Nachrichten und Termine</h1></div>
-        <p class="lead">Wichtige Wirtschaftsdaten bewegen die Kurse – davor und danach nicht handeln.</p>
-      </div>
-      <div class="grid-2">
-        <article class="card" data-section="News">
-          <div class="card-head"><h2 class="card-title">Top-News Aktienmarkt</h2></div>
-          <div id="newsWidget" class="widget tall"></div>
-        </article>
-        <article class="card" data-section="Kalender">
-          <div class="card-head"><h2 class="card-title">Wirtschaftskalender (wichtige Termine)</h2></div>
-          <div id="calendarWidget" class="widget tall"></div>
-        </article>
-      </div>
     </section>
 
     <!-- TRADE-IDEEN -->
@@ -264,24 +286,21 @@
       </article>
     </section>
 
-    <!-- TAGESEMPFEHLUNG -->
+    <!-- COPY-TRADING · Tagesempfehlung, Kopie einrichten, Trader-Vergleich -->
     <section id="daily" class="view" role="tabpanel" aria-labelledby="tab-daily" hidden>
       <div class="view-head">
-        <div><p class="eyebrow">Copy-Trading · automatisch geprüft</p><h1>Tagesempfehlung &amp; Top 25</h1></div>
+        <div><p class="eyebrow">Copy-Trading · automatisch geprüft</p><h1>Wen kopieren? Tagesempfehlung &amp; Top 25</h1></div>
         <p class="lead" id="dailyUpdated"></p>
       </div>
-      <div id="dailyBody"><p class="muted">Lade Daten …</p></div>
+      <div id="dailyBody" data-section="Tagesempfehlung"><p class="muted">Lade Daten …</p></div>
       <div id="backtest" data-section="Rückblick-Test"></div>
-    </section>
 
-    <!-- COPY-TRADING -->
-    <section id="copy" class="view" role="tabpanel" aria-labelledby="tab-copy" hidden>
-      <div class="view-head">
-        <div><p class="eyebrow">Copy-Trading</p><h1>Trader bei eToro kopieren</h1></div>
+      <div class="sub-head" id="copy" data-section="Kopie einrichten">
+        <div><p class="eyebrow">Copy-Trading</p><h2 class="sub-title">Trader bei eToro kopieren</h2></div>
         <p class="lead">eToro übernimmt automatisch die Trades eines anderen Traders, anteilig zu Ihrem Betrag. Wie lange eine Position offen bleibt, entscheidet der kopierte Trader.</p>
       </div>
       <div class="grid-2">
-        <article class="card" data-section="Rechner">
+        <article class="card">
           <h2 class="card-title">1. Copy-Rechner</h2>
           <form id="copyCalc" class="calc">
             <label>Kontostand bei eToro ($)<input type="number" id="kAccount" value="5000" min="0" step="any" data-account></label>
@@ -296,7 +315,7 @@
         </article>
       </div>
 
-      <article class="card" data-section="Trader finden">
+      <article class="card">
         <h2 class="card-title">3. Passenden Trader finden</h2>
         <ol class="steps">
           <li>Am einfachsten: die geprüfte <a href="#daily">Tagesempfehlung</a> nutzen – sie wird an jedem Börsentag automatisch berechnet.</li>
@@ -316,11 +335,11 @@
             </div>
             <span class="muted small">Die Grenzwerte sind vorsichtige Richtwerte dieser Seite, keine Vorgaben von eToro.</span>
           </li>
-          <li>Die Werte der Kandidaten im <a href="#compare">Trader-Vergleich</a> eintragen – dort rechnet die Seite aus, welchen Trader Sie kopieren sollten.</li>
+          <li>Die Werte der Kandidaten weiter unten im <a href="#compare">Trader-Vergleich</a> eintragen – dort rechnet die Seite aus, welchen Trader Sie kopieren sollten.</li>
         </ol>
       </article>
 
-      <article class="card" data-section="Überwachen">
+      <article class="card">
         <h2 class="card-title">4. Überwachen und beenden</h2>
         <ul class="checklist">
           <li>Laufende Kopie ansehen: <b>„Portfolio“</b> → Trader antippen. Dort stehen alle kopierten Positionen.</li>
@@ -331,12 +350,9 @@
         </ul>
         <p class="muted small">eToro-Regeln laut eToro-Website: mindestens 200 $ pro kopiertem Trader, jede kopierte Position mindestens 1 $, Copy Stop Loss einstellbar von 5 % bis 95 % (Standard 40 %). Bezeichnungen können je nach App-Version abweichen.</p>
       </article>
-    </section>
 
-    <!-- TRADER-VERGLEICH -->
-    <section id="compare" class="view" role="tabpanel" aria-labelledby="tab-compare" hidden>
-      <div class="view-head">
-        <div><p class="eyebrow">Eigene Kandidaten prüfen</p><h1>Trader-Vergleich</h1></div>
+      <div class="sub-head" id="compare" data-section="Trader-Vergleich">
+        <div><p class="eyebrow">Eigene Kandidaten prüfen</p><h2 class="sub-title">Trader-Vergleich</h2></div>
         <div class="btn-row">
           <button type="button" class="btn ghost" id="cmpExamples">Beispiele laden</button>
           <button type="button" class="btn ghost" id="cmpClear">Alle löschen</button>
@@ -344,15 +360,15 @@
       </div>
       <p class="lead">Tragen Sie bis zu 8 Trader mit den Werten aus ihrem eToro-Profil ein. Die Seite rechnet für jeden aus, wie sicher seine Rendite auf Können statt auf Glück beruht, und empfiehlt den besten – oder ehrlicherweise keinen.</p>
 
-      <div class="reco" id="cmpReco" data-section="Empfehlung"></div>
+      <div class="reco" id="cmpReco"></div>
 
-      <article class="card" data-section="Wachstum">
+      <article class="card">
         <h2 class="card-title">Wachstum von 100 $</h2>
         <div class="legend-row" id="cmpLegend"></div>
         <div class="chart-host" id="cmpChart"></div>
       </article>
 
-      <article class="card" data-section="Tabelle">
+      <article class="card">
         <h2 class="card-title">Vergleich</h2>
         <p class="muted small">Auf eine Spaltenüberschrift tippen, um zu sortieren – noch einmal tippen kehrt die Reihenfolge um.</p>
         <div class="table-wrap">
@@ -360,7 +376,7 @@
         </div>
       </article>
 
-      <article class="card" data-section="Eintragen">
+      <article class="card" data-section="Kandidaten eintragen">
         <h2 class="card-title" id="tFormTitle">Trader eintragen</h2>
         <form id="tForm" class="calc">
           <label>Name des Traders<input id="tName" required maxlength="40" placeholder="eToro-Benutzername"></label>
@@ -439,46 +455,11 @@
       </article>
     </section>
 
-    <!-- JOURNAL -->
-    <section id="journal" class="view" role="tabpanel" aria-labelledby="tab-journal" hidden>
-      <div class="view-head">
-        <div><p class="eyebrow">Trade-Journal · nur in Ihrem Browser gespeichert</p><h1>Journal &amp; Tageslimit</h1></div>
-        <div class="btn-row">
-          <button type="button" class="btn ghost" id="jExport">Als CSV exportieren</button>
-        </div>
-      </div>
-      <div id="jToday" data-section="Heute"></div>
-      <article class="card" data-section="Eintragen">
-        <h2 class="card-title">Trade eintragen</h2>
-        <form id="jForm" class="calc">
-          <label>Symbol<input id="jSym" required placeholder="AAPL" maxlength="20"></label>
-          <label>Richtung<select id="jDir"><option>Long</option><option>Short</option></select></label>
-          <label>Einstieg<input id="jIn" type="number" step="any" required></label>
-          <label>Ausstieg<input id="jOut" type="number" step="any" required></label>
-          <label>Stück<input id="jQty" type="number" step="any" required></label>
-          <label>Notiz<input id="jNote" placeholder="Setup, Fehler, Lernpunkt" maxlength="200"></label>
-          <div class="btn-row"><button type="submit" class="btn">Eintragen</button></div>
-        </form>
-      </article>
-      <div class="stats" id="jStats"></div>
-      <article class="card" id="psychJournal" data-section="Verhalten"></article>
-      <article class="card" data-section="Kurve">
-        <h2 class="card-title">Gewinn und Verlust über alle Trades</h2>
-        <div class="chart-host" id="jChart"></div>
-      </article>
-      <article class="card" data-section="Alle Trades">
-        <h2 class="card-title">Alle Trades</h2>
-        <div class="table-wrap">
-          <table id="jTable"><thead></thead><tbody></tbody></table>
-        </div>
-      </article>
-    </section>
-
     <!-- HOTSTUFF -->
     <section id="hot" class="view" role="tabpanel" aria-labelledby="tab-hot" hidden>
       <div class="view-head">
-        <div><p class="eyebrow">HotStuff · Experten, Daten, Swing-Trades</p><h1>Was Experten und Daten gerade favorisieren</h1></div>
-        <p class="lead">Aktien, die Analysten mehrheitlich kaufen oder verkaufen würden – nur dann hervorgehoben, wenn auch der Kurstrend passt. Dazu Swing-Ideen für mehrere Monate mit Kauf, Stop und Ziel nach belegten Regeln.</p>
+        <div><p class="eyebrow">HotStuff · Experten und Kurstrend</p><h1>Was Experten und Daten gerade favorisieren</h1></div>
+        <p class="lead">Aktien, die Analysten mehrheitlich kaufen oder verkaufen würden – nur dann hervorgehoben, wenn auch der Kurstrend passt. Swing-Trades über Monate mit Kauf, Stop und Ziel stehen im Swing-Planer.</p>
       </div>
       <div id="hotBody" class="stack"></div>
     </section>

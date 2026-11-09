@@ -1,4 +1,5 @@
-// ---------- Werkzeuge: Screener, Quartalszahlen-Kalender, Insider-Käufe, Kursalarme, Steuer-Schätzer ----------
+// ---------- Werkzeuge: Screener, Quartalszahlen-Kalender, Insider-Käufe, Kursalarme ----------
+// (Der Steuer-Schätzer steht im Portfolio unter dem Journal, aus dem er rechnet.)
 // Die Funktionen bekannter Börsen-Werkzeuge, gebaut aus den Daten dieser Seite: stocks.json (eToro-Kurse, Analysten und
 // Quartalszahlen von Finnhub, 2× pro Börsentag), fund.json (Kennzahlen, Branche, Insider-Geschäfte – nachts von Finnhub),
 // swing.json (Swing-Planer). Kursalarme, Portfolio und Journal bleiben nur in diesem Browser.
@@ -52,11 +53,14 @@
     analysts: { label: "Analysten-Favoriten", note: "Mindestens 70 % der Analysten sagen Kauf (ab 5 Analysten), Aufwärtstrend.", f: { minBuy: 70, trend: "up" } },
     insider: { label: "Insider kaufen", note: "Mindestens zwei Insider haben in den letzten 90 Tagen am Markt gekauft (nur US-Aktien).", f: { minBuyers: 2 } },
     value: { label: "Wachstum zum fairen Preis", note: "KGV zwischen 0 und 25, Umsatz wächst um mehr als 10 %.", f: { maxPe: 25, minRevG: 10 } },
+    earnings: { label: "Nach starken Zahlen", note: "Gewinn je Aktie mindestens 5 % über der Erwartung, gemeldet in den letzten 45 Tagen, Kurs über dem 50-Tage-Schnitt. Nach positiven Überraschungen driftet der Kurs oft noch Wochen nach (Bernard &amp; Thomas 1989) – bei großen, viel beachteten Aktien heute deutlich schwächer (Martineau 2022). Haltedauer etwa bis 3 Monate nach der Meldung; Kauf, Stop und Ziel im Aktien-Check.", f: { minSurprise: 5, d50min: 0 }, sort: "surprise", phoneHide: ["momRank"] },
     dividend: { label: "Dividende", note: "Dividendenrendite ab 3 %, kein Abwärtstrend.", f: { minDiv: 3, trend: "notdown" } },
     theory: { label: "Theorie-Firmen", note: "Alle Firmen der Theorie-Seite.", f: { theory: "all" } },
     all: { label: "Alle", note: "Keine Vorauswahl – filtern Sie selbst.", f: {} },
   };
-  const filter = () => Object.assign({ type: "Aktie", region: "all", theory: "", ind: "", trend: "", minMom: null, maxBelowHigh: null, d50min: null, d50max: null, minBuy: null, minBuyers: null, maxPe: null, minRevG: null, minDiv: null, q: "" }, (PRESETS[ui.preset] || PRESETS.all).f, ui.custom || {});
+  const filter = () => Object.assign({ type: "Aktie", region: "all", theory: "", ind: "", trend: "", minMom: null, maxBelowHigh: null, d50min: null, d50max: null, minBuy: null, minBuyers: null, maxPe: null, minRevG: null, minDiv: null, minSurprise: null, q: "" }, (PRESETS[ui.preset] || PRESETS.all).f, ui.custom || {});
+  // Quartalszahlen-Überraschung der letzten 45 Tage (in %), sonst null
+  const surprise = x => (x.lastEarn && Number.isFinite(x.lastEarn.surprisePct) && (Date.now() - Date.parse(`${x.lastEarn.date}T12:00:00Z`)) / 864e5 <= 45 ? x.lastEarn.surprisePct : null);
   function screen(f) {
     if (!stocks) return [];
     const theory = f.theory === "all" ? new Set(Object.keys((firms && firms.firms) || {})) : f.theory ? new Set((themeSets().find(t => t.key === f.theory) || { syms: [] }).syms) : null;
@@ -79,6 +83,7 @@
       if (f.maxPe !== null && !(fx.pe > 0 && fx.pe <= f.maxPe)) return false;
       if (f.minRevG !== null && !(fx.revG >= f.minRevG)) return false;
       if (f.minDiv !== null && !(fx.div >= f.minDiv)) return false;
+      if (f.minSurprise !== null && !(surprise(x) >= f.minSurprise)) return false;
       if (q && !x.sym.includes(q) && !String(x.name || "").toUpperCase().includes(q)) return false;
       return true;
     });
@@ -93,11 +98,15 @@
     { key: "pe", label: "KGV", num: true, opt: true, get: x => F(x.sym).pe, cell: x => (Number.isFinite(F(x.sym).pe) ? fmt(F(x.sym).pe, 1) : "–") },
     { key: "revG", label: "Umsatz +", num: true, opt: true, get: x => F(x.sym).revG, cell: x => pc(F(x.sym).revG, 0) },
     { key: "buy", label: "Analysten", num: true, opt: true, get: x => buyPct(x), cell: x => (Number.isFinite(buyPct(x)) ? `${fmt(buyPct(x), 0)} %` : "–") },
+    { key: "surprise", label: "Zahlen", num: true, only: "earnings", get: x => surprise(x), cell: x => `${pc(surprise(x), 0)}<div class="muted small">${x.lastEarn ? new Date(`${x.lastEarn.date}T12:00:00Z`).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) : ""}</div>` },
     { key: "plan", label: "Planer", opt: true, get: x => planState(x.sym) || "", cell: x => { const p = PLAN[planState(x.sym)]; return p ? `<span class="light ${p[1]}">${p[0]}</span>` : `<span class="muted">–</span>`; } },
   ];
   function screenerCard() {
     const f = filter(), rows = screen(f);
-    const col = COLS.find(c => c.key === ui.sort) || COLS[3];
+    const cols = COLS.filter(c => !c.only || c.only === ui.preset);
+    const hide = new Set((PRESETS[ui.preset] || {}).phoneHide || []);
+    const cls = c => `${c.num ? "num " : ""}${c.opt || hide.has(c.key) ? "opt" : ""}`;
+    const col = cols.find(c => c.key === ui.sort) || cols.find(c => c.key === "momRank");
     rows.sort((a, b) => { const va = col.get(a), vb = col.get(b); if (va === vb) return 0; if (va === null || va === undefined || va === "") return 1; if (vb === null || vb === undefined || vb === "") return -1; return (va < vb ? -1 : 1) * ui.dir; });
     const inds = fund ? [...new Set(Object.values(fund.items).map(x => x.ind).filter(Boolean))].sort() : [];
     const sel = (id, opts, val) => `<select id="${id}">${opts.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(val ?? "") ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
@@ -124,8 +133,8 @@
         </div>
         <div class="btn-row" style="margin-top:10px"><button type="button" class="btn ghost" data-act="scApply">Filtern</button><button type="button" class="btn ghost" data-act="scReset">Zurücksetzen</button></div>
       </details>
-      <div class="table-wrap" style="margin-top:12px"><table class="scr"><thead><tr>${COLS.map(c => `<th class="${c.num ? "num " : ""}${c.opt ? "opt" : ""}"><button type="button" class="th-btn" data-sort="${c.key}">${c.label}${ui.sort === c.key ? (ui.dir < 0 ? " ↓" : " ↑") : ""}</button></th>`).join("")}</tr></thead>
-        <tbody>${rows.slice(0, 120).map(x => `<tr>${COLS.map(c => `<td class="${c.num ? "num " : ""}${c.opt ? "opt" : ""}">${c.cell(x)}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${COLS.length}" class="muted">Kein Wert erfüllt alle Bedingungen.</td></tr>`}</tbody></table></div>
+      <div class="table-wrap" style="margin-top:12px"><table class="scr"><thead><tr>${cols.map(c => `<th class="${cls(c)}"><button type="button" class="th-btn" data-sort="${c.key}">${c.label}${ui.sort === c.key ? (ui.dir < 0 ? " ↓" : " ↑") : ""}</button></th>`).join("")}</tr></thead>
+        <tbody>${rows.slice(0, 120).map(x => `<tr>${cols.map(c => `<td class="${cls(c)}">${c.cell(x)}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${cols.length}" class="muted">Kein Wert erfüllt alle Bedingungen.</td></tr>`}</tbody></table></div>
       ${rows.length > 120 ? `<p class="hint">Gezeigt werden die ersten 120 – enger filtern oder anders sortieren.</p>` : ""}
       <p class="hint">Ein Klick auf das Kürzel öffnet den Aktien-Check mit Diagramm, Kennzahlen und Kauf-Plan. Momentum-Rang: 100 = stärkste Rendite der letzten 12 Monate (ohne den letzten Monat) unter den rund 850 beliebtesten eToro-Werten.</p>
     </article>`;
@@ -219,34 +228,6 @@
     </article>`;
   }
 
-  // ---------- Steuer-Schätzer (Österreich) ----------
-  function taxCard() {
-    const j = store.get("daytrade-journal-v1", []);
-    const trades = (Array.isArray(j) ? j : []).filter(t => t && Number.isFinite(t.in) && Number.isFinite(t.out) && Number.isFinite(t.qty));
-    const cur = ($("cCur") && $("cCur").value) || "$";
-    const money = v => `${v < 0 ? "−" : ""}${fmt(Math.abs(v), 2)} ${cur}`;
-    const years = new Map();
-    for (const t of trades) {
-      const y = String(t.ts || "").slice(0, 4) || "unbekannt", pl = (t.out - t.in) * t.qty * (t.dir === "Short" ? -1 : 1);
-      if (!years.has(y)) years.set(y, { gain: 0, loss: 0, n: 0 });
-      const Y = years.get(y); Y.n++; if (pl >= 0) Y.gain += pl; else Y.loss += pl;
-    }
-    const thisYear = String(new Date().getFullYear());
-    const rows = [...years.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 4).map(([y, Y]) => {
-      const net = Y.gain + Y.loss, tax = Math.max(0, net) * 0.275;
-      return `<tr><td>${esc(y)}${y === thisYear ? " (laufend)" : ""}<div class="muted small">${Y.n} Trades<span class="mob"> · +${fmt(Y.gain, 0)} / −${fmt(-Y.loss, 0)}</span></div></td><td class="num up opt">${money(Y.gain)}</td><td class="num down opt">${money(Y.loss)}</td><td class="num"><b>${money(net)}</b></td><td class="num">${money(tax)}</td></tr>`;
-    }).join("");
-    const Y = years.get(thisYear), netNow = Y ? Y.gain + Y.loss : 0;
-    const losers = stocks ? portfolio().map(h => ({ h, x: lastOf(h.sym) })).filter(r => r.x && r.h.qty && r.x.last < r.h.buy).map(r => ({ sym: r.h.sym, loss: (r.x.last - r.h.buy) * r.h.qty })) : [];
-    return `<article class="card" data-section="Steuer">
-      <h2 class="card-title">Steuer-Schätzer (Österreich, 27,5 % KESt)</h2>
-      <p class="muted small" style="margin:-6px 0 12px">Aus den abgeschlossenen Trades in Ihrem Journal: Gewinne und Verluste je Kalenderjahr und die geschätzte Kapitalertragsteuer, die bei einem nicht steuereinfachen Broker wie eToro über die Beilage E1kv fällig wird.</p>
-      ${rows ? `<div class="table-wrap"><table class="scr"><thead><tr><th>Jahr</th><th class="num opt">Gewinne</th><th class="num opt">Verluste</th><th class="num">Saldo</th><th class="num">KESt ca.</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="muted">Noch keine abgeschlossenen Trades im <a href="#journal">Journal</a>.</p>`}
-      ${netNow > 0 && losers.length ? `<p class="small" style="margin-top:12px"><b>Vor dem 31.12. prüfen:</b> Ihr Portfolio hat Positionen im Minus (${losers.map(l => `${esc(l.sym)} ${fmt(l.loss, 0)}`).join(", ")} in Kurswährung). Ein Verkauf noch in diesem Jahr würde den Gewinn des Jahres mindern – Verluste lassen sich nur im selben Kalenderjahr verrechnen. Nur verkaufen, wenn die Aktie ohnehin nicht mehr überzeugt.</p>` : ""}
-      <p class="hint">Grobe Schätzung: Dividenden, ausländische Quellensteuer, Währungsgewinne, Ausschüttungen von ETFs (auch ausschüttungsgleiche Erträge) und Nicht-Meldefonds sind nicht enthalten. Bankzinsen werden mit 25 % besteuert. eToro stellt einen Jahres-Steuerbericht mit Hinweisen für Österreich bereit (${A("https://etoro.com/about/tax-report-faq-for-austrian-residents", "eToro: Steuerbericht für Österreich")}). Keine Steuerberatung.</p>
-    </article>`;
-  }
-
   // ---------- Was sich nicht nachbauen lässt ----------
   function moreCard() {
     const item = (t, body) => `<li><b>${t}</b> ${body}</li>`;
@@ -256,6 +237,7 @@
         ${item("Telefonkonferenzen zu Quartalszahlen:", `live und als Mitschrift in der kostenlosen ${A("https://quartr.com/app", "Quartr-App")} – Ton und Mitschriften lassen sich nicht frei einbinden.`)}
         ${item("Was große Investoren halten:", `${A("https://dataroma.com/", "Dataroma")} zeigt die Depots bekannter Investoren aus den Pflichtmeldungen (bis zu 45 Tage verzögert). Im Aktien-Check führt ein Link direkt zur jeweiligen Aktie.`)}
         ${item("Kursalarme in Echtzeit:", `${A("https://www.tradingview.com/", "TradingView")} (kostenloses Konto) – hier auf der Seite prüft der Alarm zweimal pro Börsentag.`)}
+        ${item("Steuer-Schätzer (Österreich, 27,5 % KESt):", `im <a href="#pfTax">Portfolio</a> unter Ihrem Journal – er rechnet aus den eingetragenen Trades.`)}
         ${item("Depot über mehrere Broker:", `${A("https://www.portfolio-performance.info/", "Portfolio Performance")} (kostenlos, am Computer) – sobald echtes Geld bei mehreren Anbietern liegt.`)}
         ${item("ETF-Mischungen zurückrechnen:", `${A("https://curvo.eu/backtest/", "Curvo Backtest")} (kostenlos, europäische ETFs).`)}
       </ul>
@@ -268,7 +250,7 @@
     if (!host || $("tools").hidden) { badge(); return; }
     const kept = ["scQ", "alSym", "alPrice", "alNote"].reduce((o, id) => { const el = $(id); if (el && el.value) o[id] = el.value; return o; }, {});
     host.innerHTML = (stocks ? "" : `<article class="card"><p class="muted">${loading ? "Lade die Aktien-Daten …" : "Noch keine Aktien-Daten vorhanden."}</p></article>`)
-      + screenerCard() + calendarCard() + insiderCard() + alarmCard() + taxCard() + moreCard();
+      + screenerCard() + calendarCard() + insiderCard() + alarmCard() + moreCard();
     for (const [id, v] of Object.entries(kept)) if ($(id)) $(id).value = v;
     badge();
     window.dispatchEvent(new Event("dtd:sections"));
@@ -283,7 +265,7 @@
     const b = e.target.closest("[data-preset],[data-sort],[data-cal],[data-act],[data-open]");
     if (!b || !host || !host.contains(b)) return;
     if (b.dataset.open) return open(b.dataset.open);
-    if (b.dataset.preset) { ui.preset = b.dataset.preset; ui.custom = null; saveUi(); return render(); }
+    if (b.dataset.preset) { const p = PRESETS[b.dataset.preset]; ui.preset = b.dataset.preset; ui.custom = null; if (p && p.sort) { ui.sort = p.sort; ui.dir = -1; } else if (COLS.some(c => c.key === ui.sort && c.only && c.only !== ui.preset)) { ui.sort = "momRank"; ui.dir = -1; } saveUi(); return render(); }
     if (b.dataset.sort) { ui.dir = ui.sort === b.dataset.sort ? -ui.dir : (b.dataset.sort === "sym" ? 1 : -1); ui.sort = b.dataset.sort; saveUi(); return render(); }
     if (b.dataset.cal) { ui.cal = b.dataset.cal; saveUi(); return render(); }
     if (b.dataset.act === "scApply") { ui.custom = readFilters(); ui.preset = "all"; return render(); }

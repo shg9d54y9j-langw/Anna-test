@@ -77,7 +77,7 @@
 
   function botLine() {
     const b = window.DTD.bot;
-    if (!b || b.setup === false) return `<p class="small muted">Copy-Bot noch nicht eingerichtet – Anleitung unter „Tagesempfehlung“.</p>`;
+    if (!b || b.setup === false) return `<p class="small muted">Copy-Bot noch nicht eingerichtet – Anleitung unter „Copy-Trading“.</p>`;
     if (!b.active) return `<p class="small muted">Copy-Bot ausgeschaltet.</p>`;
     const c = (b.copies || []).find(x => x && okName(x.userName) && Number.isFinite(x.pnlPct));
     return c ? `<p class="small">Bot (${b.mode === "real" ? "Echtgeld" : "Demo"}) kopiert <b>${esc(c.userName)}</b>: <b class="${c.pnlPct < 0 ? "down" : "up"}">${sign(c.pnlPct)} %</b>${c.closing ? " · wird beendet" : ""}</p>`

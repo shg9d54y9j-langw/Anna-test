@@ -1,4 +1,5 @@
 // ---------- Portfolio: eigene Aktien mit Kaufpreis – Gewinn/Verlust, Risiko, halten oder raus, Ausstiegs-Plan, Nachrichten ----------
+// Unter den Aktien steht das Trade-Journal (app.js), darunter Steuer-Schätzer, Sichern und Regeln (#portfolioExtra).
 // Der Bestand bleibt nur in diesem Browser (localStorage, Schlüssel dtd-portfolio) – er wird nirgends hochgeladen, auch nicht ins
 // öffentliche Repository. Kennzahlen: stocks.json (eToro-Kurse, Trend, Schwankung, Analysten, Quartalszahlen; 2× pro Börsentag),
 // swing.json (Zustand im Swing-Planer), data/firms.json (Theorie-Steckbriefe). Nachrichten: TradingView je Kürzel.
@@ -214,6 +215,33 @@
       <div class="btn-row" style="margin-top:8px"><button type="button" class="btn ghost" data-act="export">Liste kopieren</button><button type="button" class="btn ghost" data-act="import">Zeilen hinzufügen</button></div>
     </details>`;
   }
+  // Steuer-Schätzer (Österreich): abgeschlossene Trades aus dem Journal je Kalenderjahr, Verluste im Depot vor dem 31.12.
+  function taxCard() {
+    const j = store.get("daytrade-journal-v1", []);
+    const trades = (Array.isArray(j) ? j : []).filter(t => t && Number.isFinite(t.in) && Number.isFinite(t.out) && Number.isFinite(t.qty));
+    const cur = ($("cCur") && $("cCur").value) || "$";
+    const amount = v => `${v < 0 ? "−" : ""}${fmt(Math.abs(v), 2)} ${cur}`;
+    const years = new Map();
+    for (const t of trades) {
+      const y = String(t.ts || "").slice(0, 4) || "unbekannt", pl = (t.out - t.in) * t.qty * (t.dir === "Short" ? -1 : 1);
+      if (!years.has(y)) years.set(y, { gain: 0, loss: 0, n: 0 });
+      const Y = years.get(y); Y.n++; if (pl >= 0) Y.gain += pl; else Y.loss += pl;
+    }
+    const thisYear = String(new Date().getFullYear());
+    const rows = [...years.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 4).map(([y, Y]) => {
+      const net = Y.gain + Y.loss, tax = Math.max(0, net) * 0.275;
+      return `<tr><td>${esc(y)}${y === thisYear ? " (laufend)" : ""}<div class="muted small">${Y.n} Trades<span class="mob"> · +${fmt(Y.gain, 0)} / −${fmt(-Y.loss, 0)}</span></div></td><td class="num up opt">${amount(Y.gain)}</td><td class="num down opt">${amount(Y.loss)}</td><td class="num"><b>${amount(net)}</b></td><td class="num">${amount(tax)}</td></tr>`;
+    }).join("");
+    const Y = years.get(thisYear), netNow = Y ? Y.gain + Y.loss : 0;
+    const losers = stocks ? list.map(h => ({ h, x: item(h.sym) })).filter(r => r.x && r.h.qty && r.x.last < r.h.buy).map(r => ({ sym: r.h.sym, loss: (r.x.last - r.h.buy) * r.h.qty })) : [];
+    return `<article class="card" id="pfTax" data-section="Steuer">
+      <h2 class="card-title">Steuer-Schätzer (Österreich, 27,5 % KESt)</h2>
+      <p class="muted small" style="margin:-6px 0 12px">Aus den abgeschlossenen Trades im Journal oben: Gewinne und Verluste je Kalenderjahr und die geschätzte Kapitalertragsteuer, die bei einem nicht steuereinfachen Broker wie eToro über die Beilage E1kv fällig wird.</p>
+      ${rows ? `<div class="table-wrap"><table class="scr"><thead><tr><th>Jahr</th><th class="num opt">Gewinne</th><th class="num opt">Verluste</th><th class="num">Saldo</th><th class="num">KESt ca.</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="muted">Noch keine abgeschlossenen Trades im <a href="#journal">Journal</a>.</p>`}
+      ${netNow > 0 && losers.length ? `<p class="small" style="margin-top:12px"><b>Vor dem 31.12. prüfen:</b> Ihr Portfolio hat Positionen im Minus (${losers.map(l => `${esc(l.sym)} ${fmt(l.loss, 0)}`).join(", ")} in Kurswährung). Ein Verkauf noch in diesem Jahr würde den Gewinn des Jahres mindern – Verluste lassen sich nur im selben Kalenderjahr verrechnen. Nur verkaufen, wenn die Aktie ohnehin nicht mehr überzeugt.</p>` : ""}
+      <p class="hint">Grobe Schätzung: Dividenden, ausländische Quellensteuer, Währungsgewinne, Ausschüttungen von ETFs (auch ausschüttungsgleiche Erträge) und Nicht-Meldefonds sind nicht enthalten. Bankzinsen werden mit 25 % besteuert. eToro stellt einen Jahres-Steuerbericht mit Hinweisen für Österreich bereit (<a href="https://etoro.com/about/tax-report-faq-for-austrian-residents" target="_blank" rel="noopener noreferrer">eToro: Steuerbericht für Österreich</a>). Keine Steuerberatung.</p>
+    </article>`;
+  }
   function methodCard() {
     return `<article class="card" data-section="Regeln">
       <h2 class="card-title">Wie die Einschätzung entsteht</h2>
@@ -246,7 +274,9 @@
     rows.sort((a, b) => order(a) - order(b) || alerts(b.h, b.x).length - alerts(a.h, a.x).length || a.h.sym.localeCompare(b.h.sym));
     host.innerHTML = (list.length ? summaryCard(rows) : `<article class="card"><h2 class="card-title">Noch keine Aktien eingetragen</h2><p class="small">Tragen Sie unten Ihre erste Aktie mit Kaufpreis ein – die Seite zeigt dann Ergebnis, Risiko, ob Halten oder Raus und Nachrichten.</p></article>`)
       + (list.length ? `<article class="card" data-section="Aktien"><div class="card-head"><h2 class="card-title">Ihre Aktien</h2><span class="muted small">${loading && !stocks ? "Lade Kennzahlen …" : "„Verkauf prüfen“ zuerst"}</span></div><div class="pf-list">${rows.map(r => card(r.h)).join("")}</div></article>` : "")
-      + formCard() + notifyCard() + backupCard() + methodCard();
+      + formCard() + notifyCard();
+    const extra = $("portfolioExtra");
+    if (extra) extra.innerHTML = taxCard() + backupCard() + methodCard();
     for (const id of open.chart) {
       const el = document.getElementById(`pfChart-${id}`);
       if (el && window.DTD.bigChart) window.DTD.bigChart(el.id, el.dataset.tv);
@@ -280,7 +310,6 @@
     store.set(SEEN, A.map(a => a.key));
   }
 
-  const host = () => $("portfolioBody");
   document.addEventListener("submit", e => {
     if (e.target.id !== "pfForm") return;
     e.preventDefault();
@@ -300,7 +329,7 @@
   });
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-act]");
-    if (!b || !host() || !host().contains(b)) return;
+    if (!b || !$("portfolio") || !$("portfolio").contains(b)) return;
     const id = (b.closest("[data-id]") || {}).dataset?.id, h = list.find(x => x.id === id);
     const act = b.dataset.act;
     if (act === "open" && h) return window.DTD.openStock && window.DTD.openStock(h.sym);
@@ -360,6 +389,8 @@
   window.DTD.startPortfolio = () => load(false);
   window.DTD.reloadPortfolio = () => load(true);
   window.DTD.portfolioCount = () => list.length;
+  // neuer oder gelöschter Trade im Journal: nur den Steuer-Schätzer neu rechnen
+  window.addEventListener("dtd:journal", () => { const el = $("pfTax"); if (el && !$("portfolio").hidden) el.outerHTML = taxCard(); });
   // Mit Bestand gleich beim Öffnen der Seite die Hinweise rechnen (Zahl am Reiter, Browser-Meldungen)
   if (list.length) setTimeout(() => load(false), 1500);
 })();
