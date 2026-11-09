@@ -80,6 +80,20 @@ jobs:
           python3 tests/verify_swing.py /tmp/stocks.json /tmp/swing.json tests/swing-firms-test.json
           bash tests/check-publish.sh /tmp/stocks.json
 
+      - name: Kennzahlen und Insider-Geschäfte gegen den Test-Server, unabhängige Gegenrechnung (auch gesperrter Tarif)
+        env:
+          FINNHUB_BASE: http://localhost:8794/finnhub
+          FINNHUB_API_KEY: test-finnhub-0000
+          FINNHUB_THROTTLE_MS: "0"
+          STOCKS_IN: /tmp/stocks.json      # aus dem Aktien-Daten-Schritt
+        run: |
+          node tests/mock-etoro.mjs 8794 & sleep 1
+          FUND_OUT=/tmp/fund.json node scripts/fund-data.mjs
+          python3 tests/verify_fund.py /tmp/stocks.json /tmp/fund.json http://localhost:8794
+          curl -sf -X POST http://localhost:8794/__test/finnhub-flags -H 'content-type: application/json' -d '{"insiderForbidden":true}' > /dev/null
+          FUND_PREV=/tmp/fund.json FUND_OUT=/tmp/fund2.json node scripts/fund-data.mjs
+          python3 tests/verify_fund.py /tmp/stocks.json /tmp/fund2.json http://localhost:8794 --forbidden /tmp/fund.json
+
       - name: Copy-Bot gegen den Test-Server (Start, Wechsel, Stop Loss, eigene Kopien, Echtgeld-Obergrenze)
         run: node tests/bot-scenarios.mjs
 

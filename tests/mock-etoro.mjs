@@ -43,6 +43,7 @@ let nextPosition = 70000, nextOrder = 50000;
 // Handelsregeln je Instrument (wie eToros „eligibility“): unitsOnly – nur Aufträge nach ganzen Stückzahlen (wie beim ersten
 // echten Lauf IBTM.L, CMOD.L, IUSP.L …; Aufträge nach Betrag lehnt eToro danach mit 2021 ab); cfdOnly – für dieses Konto nur als CFD
 // (wie IB01.L); eligDown – die Abfrage der Regeln schlägt fehl; conv – Kurs in einer anderen Währung (Dollar je Kurseinheit)
+const finnhubFlags = { insiderForbidden: false, profileCalls: 0 };
 const trendFlags = { failNextOpen: false, pendingNextOpen: false, slowConfirm: false, foreignOrderIds: false, cfdBlocked: true, rejectIds: [], unitsOnly: [], cfdOnly: [], eligDown: false, conv: {} };
 const conv = id => Number(trendFlags.conv[id]) || 1;
 const usdPrice = id => trendPrice(id) * conv(id);
@@ -271,6 +272,7 @@ http.createServer(async (req, res) => {
     if (url.pathname === "/__test/fail-next-open") { trendFlags.failNextOpen = true; return send(200, { ok: true }); }
     if (url.pathname === "/__test/pending-next-open") { trendFlags.pendingNextOpen = true; return send(200, { ok: true }); }
     if (url.pathname === "/__test/trend-flags") { Object.assign(trendFlags, body); return send(200, { ok: true }); }
+    if (url.pathname === "/__test/finnhub-flags") { Object.assign(finnhubFlags, body); return send(200, { ...finnhubFlags }); }
     if (url.pathname === "/__test/confirm-orders") { for (const o of Object.values(acc.orders)) if (o.positionId) o.executed = true; return send(200, { ok: true }); }
     if (url.pathname === "/__test/fill-pending") { for (const o of acc.pendingOpen.splice(0)) openPosition(acc, o.instrumentID, o.amount, o.orderID); return send(200, { ok: true }); }
     if (url.pathname === "/__test/manual-position") { openPosition(acc, TREND_ETFS[body.sym] ?? UCITS_BY_SYM[body.sym], body.amount, nextOrder++); return send(200, { ok: true }); }
@@ -289,9 +291,13 @@ http.createServer(async (req, res) => {
   if (url.pathname.startsWith("/finnhub/")) {
     if (url.searchParams.get("token") !== "test-finnhub-0000") return send(401, { error: "invalid token" });
     if (url.pathname === "/finnhub/calendar/earnings") {
+      // Wie Finnhub: Pro Abfrage nur begrenzt viele Einträge, die spätesten zuerst – über mehr als 10 Tage fehlen die frühen
+      const f = url.searchParams.get("from") || "0000", t = url.searchParams.get("to") || "9999";
+      const wide = (Date.parse(t) - Date.parse(f)) / 864e5 > 10, cut = new Date(Date.parse(t) - 10 * 864e5).toISOString().slice(0, 10);
+      const clip = list => (wide ? list.filter(e => e.date >= cut) : list);
       const past = (url.searchParams.get("to") || "9999") < new Date().toISOString().slice(0, 10);
-      if (past) return send(200, { earningsCalendar: UNIVERSE.filter(u => u.instrumentTypeID === 5 && u.instrumentId % 3 === 1).map(u => ({ symbol: u.internalSymbolFull, date: new Date(Date.now() - (u.instrumentId % 50 + 2) * 864e5).toISOString().slice(0, 10), hour: "amc", epsEstimate: 1.0, epsActual: 1.0 + (u.instrumentId % 7 - 2) / 20, quarter: 3, year: 2026 })) });
-      return send(200, { earningsCalendar: UNIVERSE.filter(u => u.instrumentTypeID === 5 && u.instrumentId % 3 === 0).map(u => ({ symbol: u.internalSymbolFull, date: new Date(Date.now() + (u.instrumentId % 40 + 3) * 864e5).toISOString().slice(0, 10), hour: "amc", epsEstimate: 1.23, quarter: 4, year: 2026 })) });
+      if (past) return send(200, { earningsCalendar: clip([...UNIVERSE, ...UNSEARCHED].filter(u => u.instrumentTypeID === 5 && u.instrumentId % 3 === 1).map(u => ({ symbol: u.internalSymbolFull, date: new Date(Date.now() - (u.instrumentId % 50 + 2) * 864e5).toISOString().slice(0, 10), hour: "amc", epsEstimate: 1.0, epsActual: 1.0 + (u.instrumentId % 7 - 2) / 20, quarter: 3, year: 2026 }))) });
+      return send(200, { earningsCalendar: clip([...UNIVERSE, ...UNSEARCHED].filter(u => u.instrumentTypeID === 5 && u.instrumentId % 3 === 0).map(u => ({ symbol: u.internalSymbolFull, date: new Date(Date.now() + (u.instrumentId % 40 + 3) * 864e5).toISOString().slice(0, 10), hour: "amc", epsEstimate: 1.23, quarter: 4, year: 2026 }))) });
     }
     if (url.pathname === "/finnhub/stock/recommendation") {
       // US-Aktien (ohne Börsenkürzel): je Symbol andere, reproduzierbare Zahlen; Vormonat für Hoch-/Herabstufungen
@@ -301,6 +307,34 @@ http.createServer(async (req, res) => {
       const now = { symbol: sym, period: "2026-11-01", strongBuy: k % 7, buy: 4 + k % 9, hold: 3 + k % 5, sell: k % 4, strongSell: k % 3 === 0 ? 1 : 0 };
       const prev = { symbol: sym, period: "2026-10-01", strongBuy: Math.max(0, now.strongBuy + (k % 5) - 2), buy: now.buy, hold: now.hold + (k % 3) - 1, sell: now.sell, strongSell: now.strongSell };
       return send(200, [now, prev]);
+    }
+    // Kennzahlen, Insider-Geschäfte und Profil (nächtlicher Kennzahlen-Lauf): reproduzierbar je US-Aktie
+    const fsym = url.searchParams.get("symbol") || "", fu = [...UNIVERSE, ...UNSEARCHED].find(x => x.internalSymbolFull === fsym && x.instrumentTypeID === 5 && !fsym.includes("."));
+    if (url.pathname === "/finnhub/stock/metric") {
+      if (!fu) return send(200, { metric: {} });
+      const k = fu.instrumentId;
+      if (k % 10 === 4) return send(200, { metric: { marketCapitalization: 1000 + k } });   // lückenhafte Kennzahlen
+      return send(200, { metric: { peTTM: 8 + k % 40, psTTM: 1 + (k % 9) / 2, pbQuarterly: 1 + (k % 7), revenueGrowthTTMYoy: (k % 30) - 5, epsGrowthTTMYoy: (k % 50) - 10,
+        netProfitMarginTTM: (k % 25) - 3, grossMarginTTM: 20 + k % 50, roeTTM: (k % 35) - 5, "totalDebt/totalEquityQuarterly": (k % 20) / 10, currentDividendYieldTTM: (k % 6) / 2, marketCapitalization: 500 + k * 37 } });
+    }
+    if (url.pathname === "/finnhub/stock/insider-transactions") {
+      if (finnhubFlags.insiderForbidden) return send(403, { error: "You don't have access to this resource." });
+      if (!fu) return send(200, { data: [], symbol: fsym });
+      const k = fu.instrumentId, day = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+      const rows = [];
+      if (k % 4 === 0) rows.push({ name: "Anna Insider", change: 1000, transactionCode: "P", transactionPrice: 50, transactionDate: day(10), filingDate: day(8) },
+        { name: "Bert Vorstand", change: 500, transactionCode: "P", transactionPrice: 52, transactionDate: day(20), filingDate: day(18) },
+        { name: "Anna Insider", change: 200, transactionCode: "P", transactionPrice: 49, transactionDate: day(30), filingDate: day(28) });
+      if (k % 3 === 0) rows.push({ name: "Carl Finanzchef", change: -3000, transactionCode: "S", transactionPrice: 60, transactionDate: day(15), filingDate: day(13) });
+      rows.push({ name: "Dora Aufsicht", change: 10000, transactionCode: "M", transactionPrice: 0, transactionDate: day(5), filingDate: day(3) },   // Optionsausübung: zählt nicht
+        { name: "Emil Alt", change: 800, transactionCode: "P", transactionPrice: 40, transactionDate: day(120), filingDate: day(118) });           // älter als 90 Tage
+      return send(200, { data: rows, symbol: fsym });
+    }
+    if (url.pathname === "/finnhub/stock/profile2") {
+      if (!fu) return send(200, {});
+      finnhubFlags.profileCalls++;
+      const k = fu.instrumentId;
+      return send(200, { name: fu.displayname, finnhubIndustry: ["Technology", "Banking", "Pharmaceuticals", "Retail"][k % 4], weburl: k % 9 === 0 ? "http://unsicher.example" : `https://example.com/${fsym.toLowerCase()}` });
     }
     return send(404, { error: "unknown finnhub endpoint" });
   }

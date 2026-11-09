@@ -189,6 +189,21 @@ async function finnhub(path, params = {}) {
   if (!res.ok) throw new Error(`Finnhub ${path}: HTTP ${res.status}`);
   return res.json();
 }
+// Finnhubs Kalender liefert je Abfrage nur rund 1.500 Einträge – die spätesten zuerst. Über 100 Tage fielen so alle Termine
+// der nächsten Wochen weg. Deshalb in Wochenfenstern fragen und ein volles Fenster weiter teilen (bis auf einen Tag).
+const CAL_CAP = Number(process.env.FINNHUB_CAL_CAP || 1400);
+export async function earningsWindows(from, to, ask = (a, b) => finnhub("/calendar/earnings", { from: a, to: b })) {
+  const out = [], plus = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+  const span = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 864e5) + 1;
+  const get = async (a, b) => {
+    const d = await ask(a, b), list = ((d && d.earningsCalendar) || []).filter(e => e && e.date >= a && e.date <= b);
+    if (list.length >= CAL_CAP && span(a, b) > 1) { const mid = plus(a, Math.floor(span(a, b) / 2) - 1); await get(a, mid); await get(plus(mid, 1), b); return; }
+    if (list.length >= CAL_CAP) warn(`Finnhub-Kalender ${a}: ${list.length} Einträge an einem Tag – womöglich unvollständig`);
+    out.push(...list);
+  };
+  for (let a = from; a <= to; a = plus(a, 7)) { const b = plus(a, 6) < to ? plus(a, 6) : to; await get(a, b); }
+  return out;
+}
 const rankPct = (list, key) => {
   const vals = list.map(x => x[key]).filter(Number.isFinite).sort((a, b) => a - b);
   for (const x of list) if (Number.isFinite(x[key])) {
@@ -263,19 +278,18 @@ async function main() {
   let finn = "aus";
   if (FINNHUB_KEY) {
     try {
-      const from = new Date().toISOString().slice(0, 10), to = new Date(Date.now() + 100 * 864e5).toISOString().slice(0, 10);
-      const cal = await finnhub("/calendar/earnings", { from, to });
+      const day = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+      const cal = await earningsWindows(day(0), day(100));
       const next = new Map();
-      for (const e of (cal && cal.earningsCalendar) || []) {
+      for (const e of cal) {
         const sym = String(e.symbol || "").toUpperCase();
         if (!next.has(sym) || e.date < next.get(sym).date) next.set(sym, { date: e.date, hour: e.hour || "", eps: Number.isFinite(e.epsEstimate) ? e.epsEstimate : null });
       }
       // Zuletzt gemeldete Quartalszahlen (60 Tage zurück): Ist gegen Schätzung → Überraschung in %
       const last = new Map();
       try {
-        const pastFrom = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10), pastTo = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
-        const past = await finnhub("/calendar/earnings", { from: pastFrom, to: pastTo });
-        for (const e of (past && past.earningsCalendar) || []) {
+        const past = await earningsWindows(day(-60), day(-1));
+        for (const e of past) {
           const sym = String(e.symbol || "").toUpperCase();
           if (!Number.isFinite(e.epsActual) || !Number.isFinite(e.epsEstimate) || !e.date) continue;
           if (!last.has(sym) || e.date > last.get(sym).date) last.set(sym, { date: e.date, actual: e.epsActual, estimate: e.epsEstimate, surprisePct: Math.abs(e.epsEstimate) >= 0.01 ? r2((e.epsActual - e.epsEstimate) / Math.abs(e.epsEstimate) * 100) : null });

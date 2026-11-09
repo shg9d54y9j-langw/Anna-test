@@ -162,6 +162,18 @@ if "an:" in d.get("finnhub", ""):
         errors.append("keine Quartalszahlen-Termine übernommen")
     if not all("recPrev" in x for x in us):
         errors.append("Vormonat der Analysten fehlt (für Hoch- und Herabstufungen)")
+    # Termine: jede Aktie mit Termin beim Test-Server hat genau den frühesten (auch die in den nächsten Tagen)
+    today = __import__("datetime").date.today()
+    for x in us:
+        iid = id_of(x["sym"])
+        if iid % 3 == 0:
+            want_d = (today + __import__("datetime").timedelta(days=iid % 40 + 3)).isoformat()
+            if (x.get("earn") or {}).get("date") != want_d:
+                errors.append(f"{x['sym']}: nächster Termin {(x.get('earn') or {}).get('date')} statt {want_d}")
+        if iid % 3 == 1:
+            want_p = (today - __import__("datetime").timedelta(days=iid % 50 + 2)).isoformat()
+            if (x.get("lastEarn") or {}).get("date") != want_p:
+                errors.append(f"{x['sym']}: letzte Zahlen {(x.get('lastEarn') or {}).get('date')} statt {want_p}")
     surprises = [x for x in d["items"] if "lastEarn" in x]
     if not surprises:
         errors.append("keine gemeldeten Quartalszahlen übernommen")

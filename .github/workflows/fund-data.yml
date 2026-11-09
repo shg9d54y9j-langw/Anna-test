@@ -1,0 +1,95 @@
+name: Kennzahlen
+
+# Kennzahlen (Bewertung, Wachstum, Margen), Branche und Insider-Geschäfte der US-Aktien für Screener, Aktien-Check
+# und Werkzeuge. Nachts nach US-Börsenschluss; Quelle Finnhub (kostenloser Tarif: 60 Abfragen pro Minute).
+on:
+  schedule:
+    - cron: "43 2 * * 2-6"    # Di–Sa 02:43 UTC, also nach jedem US-Handelstag
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: fund-data
+  cancel-in-progress: false
+
+jobs:
+  # Kennt den Finnhub-Schlüssel, darf im Repository nichts ändern.
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      ready: ${{ steps.calc.outputs.ready }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Aktien-Daten und bisherige Kennzahlen holen
+        run: |
+          git fetch -q --depth=1 origin stock-data
+          git show FETCH_HEAD:stocks.json > "$RUNNER_TEMP/stocks.json"
+          if git fetch -q --depth=1 origin fund-data 2>/dev/null; then
+            git show FETCH_HEAD:fund.json > "$RUNNER_TEMP/fund-prev.json" || true
+          fi
+
+      - name: Kennzahlen und Insider-Geschäfte von Finnhub
+        id: calc
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          STOCKS_IN: ${{ runner.temp }}/stocks.json
+          FUND_PREV: ${{ runner.temp }}/fund-prev.json
+          FUND_OUT: data/fund.json
+        run: |
+          node scripts/fund-data.mjs
+          if [ -f data/fund.json ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Kennzahlen an den Veröffentlichungs-Schritt übergeben
+        if: steps.calc.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fund
+          path: data/fund.json
+          retention-days: 1
+          if-no-files-found: error
+
+  # Veröffentlicht die Kennzahlen auf dem Zweig fund-data – ohne Schlüssel.
+  save:
+    needs: fetch
+    if: needs.fetch.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: fund
+          path: incoming
+
+      - name: Kennzahlen veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir out && cd out
+          cp ../incoming/fund.json .
+          # ${…} gehört zum JavaScript, nicht zur Shell:
+          # shellcheck disable=SC2016
+          node -e '
+            const d = JSON.parse(require("fs").readFileSync("fund.json", "utf8"));
+            if (!d.items || d.count < 20) { console.log("::error::Zu wenige Aktien – nichts veröffentlicht"); process.exit(1); }
+            console.log(`${d.count} Aktien`);
+          '
+          git init -q -b fund-data
+          git add fund.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Kennzahlen $(date -u +%FT%TZ)"
+          for i in 1 2 3 4 5; do
+            git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:fund-data && break
+            [ "$i" = 5 ] && exit 1
+            sleep $((i * 4))
+          done
