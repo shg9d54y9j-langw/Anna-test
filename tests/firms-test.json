@@ -1,9 +1,38 @@
 {
   "asOf": "2026-11-08",
-  "note": "Testdaten für die Aktien-Daten: STK065 liegt jenseits der 60 beliebtesten und muss trotzdem dabei sein; STK005 ist eingestellt und STK007 nicht öffentlich – beide dürfen nicht hinein; ZZZZ gibt es nicht.",
+  "note": "Testdaten für die Aktien-Daten: STK065 liegt jenseits der 60 beliebtesten und muss trotzdem dabei sein; STK005 ist eingestellt und STK007 nicht öffentlich – beide dürfen nicht hinein; ZZZZ gibt es nicht. LOOKUP1 liefert die Suche nicht – sie muss über das Kürzel nachgeschlagen werden.",
   "firms": {
-    "STK065": { "name": "Testaktie 65", "role": "spec", "what": "Test.", "why": "Test.", "watch": "Test.", "src": [["https://example.com", "Test"]] }
+    "STK065": {
+      "name": "Testaktie 65",
+      "role": "spec",
+      "what": "Test.",
+      "why": "Test.",
+      "watch": "Test.",
+      "src": [
+        [
+          "https://example.com",
+          "Test"
+        ]
+      ]
+    }
   },
-  "sectors": { "test": ["STK065", "STK005"] },
-  "moon": { "test": { "firms": ["STK007"], "safer": "Sicherer: Test.", "saferSyms": ["ZZZZ", "NVDA"] } }
+  "sectors": {
+    "test": [
+      "STK065",
+      "STK005",
+      "LOOKUP1"
+    ]
+  },
+  "moon": {
+    "test": {
+      "firms": [
+        "STK007"
+      ],
+      "safer": "Sicherer: Test.",
+      "saferSyms": [
+        "ZZZZ",
+        "NVDA"
+      ]
+    }
+  }
 }

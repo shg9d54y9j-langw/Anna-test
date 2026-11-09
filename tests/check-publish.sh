@@ -7,8 +7,7 @@ stocks=$1
 root=$(cd "$(dirname "$0")/.." && pwd)
 tmp=$(mktemp -d)
 git init -q --bare "$tmp/remote.git"
-STOCKS_B64=$(gzip -9c "$stocks" | base64 -w0)
-export STOCKS_B64 REMOTE="file://$tmp/remote.git" PUSH_URL="file://$tmp/remote.git" REPO_DIR="$root"
+export STOCKS_FILE="$stocks" REMOTE="file://$tmp/remote.git" PUSH_URL="file://$tmp/remote.git" REPO_DIR="$root"
 fail() { echo "::error::Veröffentlichen: $1"; exit 1; }
 started() { git --git-dir="$tmp/remote.git" show stock-data:swing.json | node -e 'let s = ""; process.stdin.on("data", d => s += d).on("end", () => console.log(JSON.parse(s).ledger.startedAt))'; }
 
@@ -39,7 +38,7 @@ if REMOTE="file://$tmp/fehlt.git" PUSH_URL="file://$tmp/fehlt.git" bash "$root/s
 grep -q "nicht erreichbar" "$tmp/4.log" || { cat "$tmp/4.log"; fail "keine Meldung bei nicht erreichbarem Zweig"; }
 
 # 5. Zu wenige Werte: nichts veröffentlichen
-small=$(node -e 'const d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); d.items = d.items.slice(0, 10); process.stdout.write(JSON.stringify(d));' "$stocks" | gzip -9c | base64 -w0)
-if STOCKS_B64="$small" bash "$root/scripts/publish-stock-data.sh" > "$tmp/5.log" 2>&1; then fail "zu wenige Werte trotzdem veröffentlicht"; fi
+node -e 'const d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); d.items = d.items.slice(0, 10); process.stdout.write(JSON.stringify(d));' "$stocks" > "$tmp/small.json"
+if STOCKS_FILE="$tmp/small.json" bash "$root/scripts/publish-stock-data.sh" > "$tmp/5.log" 2>&1; then fail "zu wenige Werte trotzdem veröffentlicht"; fi
 [ "$(git --git-dir="$tmp/remote.git" rev-parse stock-data)" = "$before" ] || fail "Zweig trotz Abbruch verändert"
 echo "Veröffentlichen geprüft: erster Lauf, Bilanz übernommen, kaputter Planer lässt den Plan stehen, Abbruch ohne Zweig und bei zu wenigen Werten."

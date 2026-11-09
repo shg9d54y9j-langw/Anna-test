@@ -3,7 +3,8 @@ name: Aktien-Daten
 # Kennzahlen der beliebtesten Aktien und ETFs bei eToro für den Aktien-Check der Website.
 on:
   schedule:
-    - cron: "5 5 * * 1-5"     # Mo–Fr früh (06:05 Uhr Winterzeit / 07:05 Uhr Sommerzeit)
+    - cron: "20 8 * * 1-5"    # Mo–Fr nach Börsenbeginn in Europa (09:20 Uhr Winterzeit / 10:20 Uhr Sommerzeit) –
+                              # vorher fehlen in eToros Listen viele europäische ETFs
     - cron: "35 13 * * 1-5"   # Mo–Fr vor US-Eröffnung (14:35 / 15:35 Uhr)
   workflow_dispatch:
 
@@ -21,7 +22,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      stocks: ${{ steps.calc.outputs.stocks }}
+      ready: ${{ steps.calc.outputs.ready }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -37,15 +38,25 @@ jobs:
         run: |
           node scripts/stock-universe.mjs
           if [ -f data/stocks.json ]; then
-            echo "stocks=$(gzip -9c data/stocks.json | base64 -w0)" >> "$GITHUB_OUTPUT"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # Als Artefakt weitergeben: als Umgebungsvariable wären die Daten zu groß (Linux erlaubt höchstens 128 KB je Wert)
+      - name: Kennzahlen an den Veröffentlichungs-Schritt übergeben
+        if: steps.calc.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: stocks
+          path: data/stocks.json
+          retention-days: 1
+          if-no-files-found: error
 
   # Veröffentlicht die Kennzahlen und den Swing-Plan auf dem Zweig stock-data – ohne eToro-Schlüssel.
   # Der Swing-Planer (scripts/swing-planner.mjs) rechnet dabei aus den frischen Kennzahlen, den Firmen-Steckbriefen
   # und dem bisherigen Plan (Papier-Bilanz) den neuen Plan.
   save:
     needs: fetch
-    if: needs.fetch.outputs.stocks != ''
+    if: needs.fetch.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -55,11 +66,15 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: stocks
+          path: incoming
+
       - name: Aktien-Daten und Swing-Plan veröffentlichen
         env:
-          STOCKS_B64: ${{ needs.fetch.outputs.stocks }}
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          REMOTE="https://github.com/${REPO}.git" PUSH_URL="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" REPO_DIR="$PWD" \
-            bash scripts/publish-stock-data.sh
+          STOCKS_FILE="$PWD/incoming/stocks.json" REMOTE="https://github.com/${REPO}.git" \
+            PUSH_URL="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" REPO_DIR="$PWD" bash scripts/publish-stock-data.sh

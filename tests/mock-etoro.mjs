@@ -186,13 +186,15 @@ const UNIVERSE = [
   { instrumentId: 18, internalSymbolFull: "GOLD", displayname: "Gold", instrumentTypeID: 2, exchangeID: 2, buyHoldingPct: 80, popularityUniques7Day: 150000, isDelisted: false, isActiveInPlatform: true },
   { instrumentId: 27, internalSymbolFull: "SPX500", displayname: "US500", instrumentTypeID: 4, exchangeID: 3, buyHoldingPct: 85, popularityUniques7Day: 140000, isDelisted: false, isActiveInPlatform: true },
   { instrumentId: 1, internalSymbolFull: "EURUSD", displayname: "EUR/USD", instrumentTypeID: 1, exchangeID: 1, buyHoldingPct: 50, popularityUniques7Day: 130000, isDelisted: false, isActiveInPlatform: true },
-  ...Array.from({ length: 70 }, (_, i) => ({ instrumentId: 2000 + i, internalSymbolFull: ["AAPL", "MSFT", "NVDA"][i] || (i % 10 === 3 ? `DE${i}.DE` : `STK${String(i).padStart(3, "0")}`), displayname: `Testaktie ${i}`, instrumentTypeID: 5, exchangeID: i % 10 === 3 ? 6 : 4, buyHoldingPct: 60 + (i % 35), popularityUniques7Day: 100000 - i * 100, isDelisted: i === 5, isInternal: i === 7, isActiveInPlatform: true, isHiddenFromClient: false })),
+  ...Array.from({ length: 70 }, (_, i) => ({ instrumentId: 2000 + i, internalSymbolFull: ["AAPL", "MSFT", "NVDA"][i] || (i % 10 === 3 ? `DE${i}.DE` : `STK${String(i).padStart(3, "0")}`), displayname: `Testaktie ${i}`, instrumentTypeID: 5, exchangeID: i % 10 === 3 ? 6 : 4, buyHoldingPct: 60 + (i % 35), popularityUniques7Day: 100000 - i * 100, isDelisted: i === 5, isInternal: i === 7, isActiveInPlatform: i !== 8, isHiddenFromClient: false })),   // STK008: Börse gerade zu, hat aber einen Rang
   { instrumentId: 2999, internalSymbolFull: "BAD SYMBOL!", displayname: "Ungültig", instrumentTypeID: 5, exchangeID: 4, popularityUniques7Day: 99999, isDelisted: false, isActiveInPlatform: true },
   ...Array.from({ length: 15 }, (_, i) => ({ instrumentId: 3000 + i, internalSymbolFull: `ETF${String(i).padStart(2, "0")}`, displayname: `Test-ETF ${i}`, instrumentTypeID: 6, exchangeID: 5, buyHoldingPct: 90, popularityUniques7Day: 50000 - i * 100, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false })),
   { instrumentId: 2500, internalSymbolFull: "NOPOP", displayname: "Aktie ohne Beliebtheit", instrumentTypeID: 5, exchangeID: 4, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false },
 ];
 // Wie bei eToro ist die Beliebtheit ein Rang (1 = beliebteste): aus den erfundenen Zahlen oben einen Rang machen
 UNIVERSE.filter(u => u.popularityUniques7Day !== undefined).sort((a, b) => b.popularityUniques7Day - a.popularityUniques7Day).forEach((u, i) => { u.popularityUniques7Day = i + 1; });
+// Nur über das Kürzel zu finden: die Suche liefert sie nicht (wie bei eToro, wo rund 550 Instrumente nie in der Suche auftauchen)
+const UNSEARCHED = [{ instrumentId: 2950, internalSymbolFull: "LOOKUP1", displayname: "Nur über das Kürzel", instrumentTypeID: 5, exchangeID: 4 }];
 // alte, nicht mehr handelbare Einträge ohne Rang
 const DEAD = Array.from({ length: 30 }, (_, i) => ({ instrumentId: 4000 + i, internalSymbolFull: `OLD${i}`, displayname: `Alt ${i}`, instrumentTypeID: i % 3 ? 5 : 6, exchangeID: 4, isDelisted: i % 2 === 0, isActiveInPlatform: i % 2 === 0 }));
 const SEARCH_ORDER = [...DEAD, ...[...UNIVERSE].sort((a, b) => (a.instrumentId * 7919) % 1009 - (b.instrumentId * 7919) % 1009)];
@@ -293,7 +295,7 @@ http.createServer(async (req, res) => {
     }
     if (url.pathname === "/finnhub/stock/recommendation") {
       // US-Aktien (ohne Börsenkürzel): je Symbol andere, reproduzierbare Zahlen; Vormonat für Hoch-/Herabstufungen
-      const sym = url.searchParams.get("symbol"), u = UNIVERSE.find(x => x.internalSymbolFull === sym && x.instrumentTypeID === 5 && !sym.includes("."));
+      const sym = url.searchParams.get("symbol"), u = [...UNIVERSE, ...UNSEARCHED].find(x => x.internalSymbolFull === sym && x.instrumentTypeID === 5 && !sym.includes("."));
       if (!u) return send(200, []);
       const k = u.instrumentId;
       const now = { symbol: sym, period: "2026-11-01", strongBuy: k % 7, buy: 4 + k % 9, hold: 3 + k % 5, sell: k % 4, strongSell: k % 3 === 0 ? 1 : 0 };
@@ -332,13 +334,15 @@ http.createServer(async (req, res) => {
   if (url.pathname === "/api/v1/market-data/instruments") {   // offizielle Liste mit Typ je Instrument
     const want = (url.searchParams.get("instrumentTypeIds") || "").split(",").filter(Boolean).map(Number);
     const ucits = UCITS.map(v => ({ instrumentId: v.id, displayname: v.name, instrumentTypeID: 6, exchangeID: v.sym.endsWith(".L") ? 7 : 6, internalSymbolFull: v.sym }));
-    const list = [...UNIVERSE, ...DEAD, ...ucits].filter(u => !want.length || want.includes(u.instrumentTypeID));
+    const list = [...UNIVERSE, ...UNSEARCHED, ...DEAD, ...ucits].filter(u => !want.length || want.includes(u.instrumentTypeID));
     return send(200, { instrumentDisplayDatas: list.map(u => ({ instrumentID: u.instrumentId, instrumentDisplayName: u.displayname, instrumentTypeID: u.instrumentTypeID, exchangeID: u.exchangeID, symbolFull: u.internalSymbolFull, isInternalInstrument: Boolean(u.isInternal) })) });
   }
   if (url.pathname === "/api/v2/market-data/instruments") {
     const sym = url.searchParams.get("symbols");
     if (TREND_ETFS[sym]) return send(200, { results: [{ instrumentId: TREND_ETFS[sym], symbol: sym, displayName: `${sym} ETF`, type: "ETF" }], pagination: { hasNext: false } });
     if (sym === "EFA") return send(200, { results: [{ instrumentId: 3299, symbol: "EFA", displayName: "falscher Typ", type: "Stocks" }], pagination: { hasNext: false } });
+    const stock = [...UNIVERSE, ...UNSEARCHED].find(u => u.internalSymbolFull === sym && u.instrumentTypeID === 5);
+    if (stock) return send(200, { results: [{ instrumentId: stock.instrumentId, symbol: sym, displayName: stock.displayname, type: "Stocks" }], pagination: { hasNext: false } });
     const id = INSTRUMENTS[sym];
     return send(200, { results: id ? [{ instrumentId: id, symbol: sym, displayName: sym, type: "Indices" }] : [], pagination: { hasNext: false } });
   }
@@ -350,7 +354,7 @@ http.createServer(async (req, res) => {
   const candles = /^\/api\/v1\/market-data\/instruments\/(\d+)\/history\/candles\/(asc|desc)\/OneDay\/(\d+)$/.exec(url.pathname);
   if (candles) {
     const id = Number(candles[1]), n = Math.min(1000, Number(candles[3]));
-    if (!Object.values(INSTRUMENTS).includes(id) && !UNIVERSE.some(u => u.instrumentId === id)) return send(404, { error: "unknown instrument" });
+    if (!Object.values(INSTRUMENTS).includes(id) && ![...UNIVERSE, ...UNSEARCHED].some(u => u.instrumentId === id)) return send(404, { error: "unknown instrument" });
     const list = series(id, n);
     return send(200, { interval: "OneDay", candles: [{ instrumentId: id, candles: candles[2] === "desc" ? list.reverse() : list }] });
   }

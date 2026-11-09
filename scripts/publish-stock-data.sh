@@ -2,11 +2,11 @@
 # Veröffentlicht die Aktien-Daten (stocks.json) und den Swing-Plan (swing.json) auf dem Zweig stock-data – ohne eToro-Schlüssel.
 # Der Swing-Planer rechnet hier aus den frischen Kennzahlen und dem bisherigen Plan (mit der Papier-Bilanz) den neuen Plan.
 # Ist der bisherige Plan nicht lesbar, wird nichts veröffentlicht – sonst ginge die Bilanz verloren.
-# Erwartet: STOCKS_B64 (gzip + base64), REMOTE (zum Lesen), PUSH_URL (zum Schreiben), REPO_DIR (Checkout mit scripts/ und data/).
+# Erwartet: STOCKS_FILE (die frischen Kennzahlen), REMOTE (zum Lesen), PUSH_URL (zum Schreiben), REPO_DIR (Checkout mit scripts/ und data/).
 set -euo pipefail
 work=$(mktemp -d)
+cp "$STOCKS_FILE" "$work/stocks.json"
 cd "$work"
-printf '%s' "$STOCKS_B64" | base64 -d | gunzip > stocks.json
 # ${…} gehört zum JavaScript, nicht zur Shell:
 # shellcheck disable=SC2016
 node -e '

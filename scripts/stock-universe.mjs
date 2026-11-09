@@ -152,15 +152,19 @@ export function popularityIsRank(list) {
 }
 function popular(list, typeId, count, index, isRank, always = []) {
   const out = [];
+  let closed = 0;
   for (const it of list) {
     const id = num(field(it, "instrumentId")), sym = field(it, "internalSymbolFull");
     if (index.get(id) !== typeId || typeof sym !== "string" || !/^[A-Za-z0-9.\-_]{1,20}$/.test(sym)) continue;
-    if (field(it, "isDelisted") === true || field(it, "isHiddenFromClient") === true || field(it, "isActiveInPlatform") === false) continue;
+    if (field(it, "isDelisted") === true || field(it, "isHiddenFromClient") === true) continue;
+    // „nicht aktiv“ heißt bei eToro oft nur: Börse gerade geschlossen (morgens fast alle europäischen und viele US-Aktien).
+    // Ausgeschlossen wird so ein Wert nur ohne Beliebtheits-Rang – dann ist er wirklich nicht mehr handelbar.
+    if (field(it, "isActiveInPlatform") === false) { if (popVal(it) === null) continue; closed++; }
     out.push({ id, sym: sym.toUpperCase(), name: String(field(it, "displayname") || sym).slice(0, 60), crowd: num(field(it, "buyHoldingPct")) ?? null, pop: popVal(it) });
   }
   // beliebteste zuerst, ohne Wert ans Ende, bei Gleichstand kleinere ID
   out.sort((a, b) => (a.pop === null) - (b.pop === null) || (isRank ? a.pop - b.pop : b.pop - a.pop) || a.id - b.id);
-  log(`Typ ${typeId}: ${out.length} gültige, davon ${Math.min(count, out.length)} übernommen; beliebteste: ${out.slice(0, 6).map(x => x.sym).join(", ")}`);
+  log(`Typ ${typeId}: ${out.length} gültige (${closed} davon gerade ohne Handel), davon ${Math.min(count, out.length)} übernommen; beliebteste: ${out.slice(0, 6).map(x => x.sym).join(", ")}`);
   const top = out.slice(0, count), extra = out.slice(count).filter(x => always.includes(x.sym));
   if (always.length) {
     const missing = always.filter(s => !out.some(x => x.sym === s));
@@ -212,6 +216,26 @@ async function main() {
     ...popular(list, types.stock, CONFIG.stocks, index, isRank, always).map(x => ({ ...x, type: "Aktie" })),
     ...(Number.isInteger(types.etf) ? popular(list, types.etf, CONFIG.etfs, index, isRank).map(x => ({ ...x, type: "ETF" })) : []),
   ];
+  // Die Suche liest nie ganz alle Instrumente (rund 550 von 13.000 fehlen). Firmen der Theorie-Seite, die dort nicht
+  // auftauchen, über ihr Kürzel nachschlagen – aufgenommen wird nur, was die offizielle Liste als Aktie führt.
+  // nur, was die Suche gar nicht geliefert hat – was sie liefert und aussortiert (eingestellt, versteckt), bleibt draußen
+  const seen = new Set(list.map(it => String(field(it, "internalSymbolFull") || "").toUpperCase()));
+  const lost = always.filter(s => !seen.has(s) && !universe.some(u => u.sym === s));
+  if (lost.length) {
+    const found = [];
+    for (const s of lost) {
+      try {
+        const d = await call("/v2/market-data/instruments", { symbols: s });
+        const hit = findArray(d).find(x => String(field(x, "symbol", "internalSymbolFull") || "").toUpperCase() === s);
+        const id = hit ? num(field(hit, "instrumentId", "instrumentID")) : null;
+        if (Number.isInteger(id) && index.get(id) === types.stock && !universe.some(u => u.id === id)) {
+          universe.push({ id, sym: s, name: String(field(hit, "displayName", "displayname") || s).slice(0, 60), crowd: null, pop: null, type: "Aktie" });
+          found.push(s);
+        }
+      } catch (e) { warn(`${s} nachschlagen: ${e.message}`); }
+    }
+    log(`Firmen der Theorie-Seite über das Kürzel nachgeschlagen: ${found.length ? found.join(", ") : "keine"} gefunden${lost.length > found.length ? `; nicht bei eToro: ${lost.filter(s => !found.includes(s)).join(", ")}` : ""}`);
+  }
   log(`${universe.length} Werte: ${universe.slice(0, 8).map(x => x.sym).join(", ")} …`);
 
   // S&P 500 als Markt für das Beta

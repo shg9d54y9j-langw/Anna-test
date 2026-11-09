@@ -52,8 +52,15 @@ for sym, it in universe.items():
     if it.get("isDelisted") and sym in syms:
         errors.append(f"{sym}: nicht mehr gelistet, trotzdem enthalten")
 TYPE = {"Aktie": 5, "ETF": 6}
+by_symbol = {x["symbolFull"].upper(): x["instrumentID"] for x in official.values()}
+
+
+def id_of(sym):   # aus der Suche, sonst aus der offiziellen Liste (über das Kürzel nachgeschlagene Firmen)
+    return universe[sym]["instrumentId"] if sym in universe else by_symbol.get(sym)
+
+
 for x in d["items"]:
-    o = official.get(universe[x["sym"]]["instrumentId"])
+    o = official.get(id_of(x["sym"]))
     if not o or o["instrumentTypeID"] != TYPE.get(x["type"]):
         errors.append(f"{x['sym']}: als {x['type']} geführt, offiziell Typ {o and o['instrumentTypeID']}")
     elif o["isInternalInstrument"]:
@@ -63,8 +70,9 @@ for x in d["items"]:
 # Genau die beliebtesten gültigen Werte je Typ, in der gewünschten Anzahl
 def valid(it, t):
     o = official.get(it["instrumentId"])
+    # „nicht aktiv“ (Börse gerade zu) zählt, solange der Wert einen Beliebtheits-Rang hat
     return (o and o["instrumentTypeID"] == t and not o["isInternalInstrument"] and not it.get("isDelisted")
-            and it.get("isActiveInPlatform") is not False and not it.get("isHiddenFromClient")
+            and (it.get("isActiveInPlatform") is not False or "popularityUniques7Day" in it) and not it.get("isHiddenFromClient")
             and all(ch.isalnum() or ch in ".-_" for ch in it["internalSymbolFull"]))
 
 
@@ -81,6 +89,12 @@ for kind, t, env in (("Aktie", 5, "STOCK_COUNT"), ("ETF", 6, "ETF_COUNT")):
     want = {it["internalSymbolFull"].upper() for it in [it for it in ranked if valid(it, t)][:int(os.environ.get(env, "0") or 0)]}
     if kind == "Aktie":
         want |= {it["internalSymbolFull"].upper() for it in ranked if valid(it, t) and it["internalSymbolFull"].upper() in always}
+        # Firmen, die die Suche gar nicht liefert: über das Kürzel nachschlagen, wenn die offizielle Liste sie als Aktie führt
+        for sym in always - set(universe):
+            hit = [r for r in get(f"{base}/api/v2/market-data/instruments?symbols={sym}")["results"] if r["symbol"].upper() == sym]
+            o = hit and official.get(hit[0]["instrumentId"])
+            if o and o["instrumentTypeID"] == 5 and not o["isInternalInstrument"]:
+                want.add(sym)
     got = {x["sym"] for x in d["items"] if x["type"] == kind}
     if want and got != want:
         errors.append(f"{kind}: {len(got)} statt {len(want)} der beliebtesten gültigen Werte (fehlen {sorted(want - got)[:5]}, zu viel {sorted(got - want)[:5]})")
@@ -90,7 +104,7 @@ sc = candles(spx)
 spx_ret = {sc[i]["d"]: math.log(sc[i]["c"] / sc[i - 1]["c"]) for i in range(1, len(sc))}
 
 for x in d["items"]:
-    c = candles(universe[x["sym"]]["instrumentId"])
+    c = candles(id_of(x["sym"]))
     n = len(c)
     cl = [r["c"] for r in c]
     last = cl[-1]
@@ -156,6 +170,12 @@ if "an:" in d.get("finnhub", ""):
         want = (e["actual"] - e["estimate"]) / abs(e["estimate"]) * 100
         if abs(e["surprisePct"] - want) > 0.011:
             errors.append(f"{x['sym']}: Überraschung {e['surprisePct']} statt {want:.2f}")
+
+syms = {x["sym"] for x in d["items"]}
+if "STK008" not in syms:
+    errors.append("STK008 fehlt – Börse gerade zu, aber mit Rang: gehört dazu")
+if os.environ.get("FIRMS_IN") and "LOOKUP1" in always and "LOOKUP1" not in syms:
+    errors.append("LOOKUP1 fehlt – liefert die Suche nicht, muss über das Kürzel nachgeschlagen werden")
 
 if errors:
     print(f"::error::Gegenrechnung Aktien-Daten fehlgeschlagen – {len(errors)} Abweichung(en):")
