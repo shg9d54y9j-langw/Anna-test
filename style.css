@@ -820,3 +820,48 @@ table.scr .mob { display: none; }
   .hs-plan-row { grid-template-columns: auto minmax(0, 1fr); }
   .hs-plan-row .light { grid-column: 2; justify-self: start; }
 }
+
+/* ---------- Vorschläge beim Tippen (Aktien-Suche, Portfolio, Kursalarme) ---------- */
+.suggest-wrap { position: relative; display: block; min-width: 0; }
+.suggest-wrap > input { width: 100%; }
+.suggest { position: absolute; left: -1px; right: -1px; top: calc(100% + 1px); z-index: 40; max-height: min(420px, 60vh); overflow-y: auto; background: #000; border: 1px solid var(--text); box-shadow: 0 14px 36px rgba(0, 0, 0, .7); }
+/* Aktien-Suche: Liste über die ganze Breite von Feld und Knopf */
+.stock-search { position: relative; }
+.stock-search .suggest-wrap { position: static; }
+.stock-search .suggest { left: -1px; right: -1px; }
+.sugg-title { margin: 0; padding: 8px 12px 4px; color: var(--muted); font: 700 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.sugg-opt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 4px 12px; padding: 10px 12px; cursor: pointer; border-top: 1px solid var(--line); text-transform: none; letter-spacing: 0; }
+.sugg-title + .sugg-opt, .sugg-opt:first-child { border-top: none; }
+.sugg-opt:hover, .sugg-opt.on { background: var(--panel-3); }
+.sugg-sym { font: 700 13px var(--mono); color: var(--text); }
+.sugg-name { font: 500 13.5px var(--font); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sugg-meta { font: 600 12px var(--mono); color: var(--muted); white-space: nowrap; }
+@media (max-width: 520px) {
+  .sugg-opt { grid-template-columns: auto minmax(0, 1fr); }
+  .sugg-meta { grid-column: 2; }
+}
+
+/* Aktiennamen als Link zur Aktienübersicht */
+.name-link { background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.name-link:hover { color: var(--text); text-decoration-color: currentColor; }
+button.scr-name { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.idea-head .name-link.idea-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-btn.ext { border-style: dashed; }
+
+/* Aktien-Check: Diagramm mit Schaltern für Linien und Kennzahlen */
+.chart-tools { display: grid; gap: 8px; margin: 14px 0 10px; }
+.chart-tools .chart-seg { margin: 0; justify-self: start; }
+.tchips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tchips-lbl { width: 92px; flex: none; color: var(--muted); font: 700 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.tchip { border: 1px solid var(--line-2); background: #000; color: var(--muted); padding: 6px 11px; font: 700 12px var(--font); cursor: pointer; border-radius: 999px; }
+.tchip:hover { color: var(--text); border-color: var(--text-2); }
+.tchip[aria-pressed="true"] { background: #fff; color: #000; border-color: #fff; }
+.tchip[aria-pressed="true"]::before { content: "✓ "; }
+.chart-info { margin-top: 10px; }
+.chart-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; color: var(--text-2); }
+.chart-legend li { display: block; padding-left: 14px; position: relative; }
+.tchip-dot { position: absolute; left: 0; top: .55em; width: 6px; height: 6px; background: var(--text); }
+.chart-info .ladder { margin-top: 12px; }
+@media (max-width: 520px) {
+  .tchips-lbl { width: 100%; }
+}

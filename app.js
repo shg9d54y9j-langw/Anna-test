@@ -145,6 +145,122 @@ function levelLadder(rows, caption = "") {
 window.DTD.bigChart = bigChart;
 window.DTD.levelLadder = levelLadder;
 
+// Einstellbares Kursdiagramm (TradingView tv.js): Kerzen oder Linie, Tageskerzen, wählbare Linien und Kennzahlen.
+// studies: Einträge wie "RSI@tv-basicstudies" oder { id: "MASimple@tv-basicstudies", inputs: { length: 50 } }
+let tvLib = null;
+function loadTvLib() {
+  if (window.TradingView && window.TradingView.widget) return Promise.resolve(window.TradingView);
+  if (!tvLib) {
+    tvLib = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://s3.tradingview.com/tv.js";
+      s.async = true;
+      s.onload = () => (window.TradingView && window.TradingView.widget ? resolve(window.TradingView) : reject(new Error("tv.js ohne Widget")));
+      s.onerror = () => reject(new Error("tv.js nicht geladen"));
+      document.head.append(s);
+    }).catch(e => { tvLib = null; throw e; });
+  }
+  return tvLib;
+}
+function tvChart(containerId, symbol, { style = "1", studies = [], hideVolume = false, compact = false } = {}) {
+  const host = $(containerId);
+  if (!host) return;
+  const inner = `${containerId}-tv`;
+  host.innerHTML = `<div id="${inner}" style="height:100%"></div>`;
+  loadTvLib().then(TV => {
+    if (!document.getElementById(inner)) return;   // inzwischen neu gezeichnet
+    new TV.widget({
+      container_id: inner, autosize: true, symbol, interval: "D", range: "12M", timezone: "Europe/Vienna", theme: "dark", style, locale: "de_DE",
+      toolbar_bg: "#000000", backgroundColor: "#000000", gridColor: "rgba(255,255,255,0.06)", enable_publishing: false, allow_symbol_change: false,
+      withdateranges: false, hide_side_toolbar: compact, hide_top_toolbar: false, hide_legend: false, save_image: false, details: false,
+      hide_volume: hideVolume, studies,
+    });
+  }).catch(() => {
+    host.innerHTML = `<p class="muted small" style="padding:16px">Das Diagramm von TradingView ließ sich nicht laden. <a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}" target="_blank" rel="noopener noreferrer">Bei TradingView öffnen ↗</a></p>`;
+  });
+}
+window.DTD.tvChart = tvChart;
+
+// ---------- Aktie öffnen: jedes Element mit data-open="KÜRZEL" führt in jedem Bereich zum Aktien-Check ----------
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-open]");
+  if (!b || !b.dataset.open) return;
+  e.preventDefault();
+  if (window.DTD.openStock) window.DTD.openStock(b.dataset.open);
+});
+
+// ---------- Vorschläge beim Tippen (Aktien-Suche, Portfolio, Kursalarme) ----------
+// Treffer nach Güte: Kürzel genau, Kürzel beginnt so, Name beginnt so, ein Wort im Namen beginnt so, enthält – sonst nach Beliebtheit
+const normText = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+function matchStocks(items, query, max = 8) {
+  const q = normText(query).trim();
+  if (!q || !Array.isArray(items)) return [];
+  const out = [];
+  items.forEach((x, i) => {
+    const s = normText(x.sym), n = normText(x.name), base = s.split(".")[0];
+    const r = s === q || base === q ? 0 : s.startsWith(q) ? 1 : n.startsWith(q) ? 2 : n.split(/[\s\-.&,/()]+/).some(w => w.startsWith(q)) ? 3 : s.includes(q) ? 4 : n.includes(q) ? 5 : -1;
+    if (r >= 0) out.push({ x, r, i });
+  });
+  return out.sort((a, b) => a.r - b.r || a.i - b.i).slice(0, max).map(o => o.x);
+}
+// input: das Eingabefeld; source(text) liefert Einträge { sym, name, type?, last?, chg1d? }; onPick(sym) nach der Auswahl.
+// emptyTitle: Überschrift, wenn das Feld leer ist (dann liefert source("") z. B. die zuletzt angesehenen Werte).
+function attachSuggest(input, { source, onPick, emptyTitle = "" }) {
+  if (!input || input.dataset.suggest) return;
+  input.dataset.suggest = "1";
+  input.removeAttribute("list");
+  input.setAttribute("autocomplete", "off");
+  const wrap = document.createElement("span");
+  wrap.className = "suggest-wrap";
+  input.before(wrap);
+  wrap.append(input);
+  const box = document.createElement("div");
+  box.className = "suggest";
+  box.id = `${input.id || "in"}-vorschlaege`;
+  box.setAttribute("role", "listbox");
+  box.hidden = true;
+  wrap.append(box);
+  input.setAttribute("role", "combobox");
+  input.setAttribute("aria-autocomplete", "list");
+  input.setAttribute("aria-controls", box.id);
+  input.setAttribute("aria-expanded", "false");
+  let list = [], active = -1;
+  const price = v => (!Number.isFinite(v) ? "" : v >= 1000 ? fmt(v, 0) : v >= 1 ? fmt(v, 2) : fmt(v, 4));
+  const close = () => { box.hidden = true; active = -1; input.setAttribute("aria-expanded", "false"); input.removeAttribute("aria-activedescendant"); };
+  const mark = () => {
+    box.querySelectorAll(".sugg-opt").forEach((o, i) => { const on = i === active; o.classList.toggle("on", on); o.setAttribute("aria-selected", String(on)); if (on) o.scrollIntoView({ block: "nearest" }); });
+    if (active >= 0) input.setAttribute("aria-activedescendant", `${box.id}-${active}`); else input.removeAttribute("aria-activedescendant");
+  };
+  const update = () => {
+    const text = input.value.trim();
+    list = source(text) || [];
+    if (!list.length) return close();
+    box.innerHTML = (!text && emptyTitle ? `<p class="sugg-title">${esc(emptyTitle)}</p>` : "") + list.map((x, i) => `<div class="sugg-opt" role="option" id="${box.id}-${i}" data-i="${i}" aria-selected="false">
+        <b class="sugg-sym">${esc(x.sym)}</b><span class="sugg-name">${esc(x.name || "")}</span>
+        <span class="sugg-meta">${x.type ? esc(x.type) : ""}${Number.isFinite(x.last) ? ` · ${price(x.last)}` : ""}${Number.isFinite(x.chg1d) ? ` <span class="${x.chg1d < 0 ? "down" : "up"}">${x.chg1d > 0 ? "+" : ""}${fmt(x.chg1d, 1)} %</span>` : ""}</span></div>`).join("");
+    active = -1;
+    box.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+  };
+  const pick = i => { const x = list[i]; if (!x) return; input.value = x.sym; close(); onPick(x.sym); };
+  input.addEventListener("input", update);
+  input.addEventListener("focus", () => { if (!input.value.trim()) update(); });   // leeres Feld: z. B. zuletzt angesehen
+  input.addEventListener("blur", () => setTimeout(close, 150));
+  input.addEventListener("keydown", e => {
+    if (box.hidden) { if (e.key === "ArrowDown") { update(); e.preventDefault(); } return; }
+    if (e.key === "ArrowDown") { active = Math.min(list.length - 1, active + 1); mark(); e.preventDefault(); }
+    else if (e.key === "ArrowUp") { active = Math.max(-1, active - 1); mark(); e.preventDefault(); }
+    else if (e.key === "Enter" && active >= 0) { e.preventDefault(); pick(active); }
+    else if (e.key === "Escape") { close(); e.preventDefault(); }
+    else if (e.key === "Tab") close();
+  });
+  box.addEventListener("mousedown", e => e.preventDefault());   // Fokus im Feld lassen, sonst schließt die Liste vor dem Klick
+  // preventDefault: steht das Feld in einem <label>, würde der Klick sonst den Fokus zurück ins Feld holen
+  box.addEventListener("click", e => { e.preventDefault(); const o = e.target.closest(".sugg-opt"); if (o) pick(+o.dataset.i); });
+}
+window.DTD.matchStocks = matchStocks;
+window.DTD.attachSuggest = attachSuggest;
+
 tvWidget("tickerTape", "ticker-tape", {
   ...COMMON,
   symbols: [
@@ -491,7 +607,7 @@ function renderJ() {
   $("jTable").querySelector("tbody").innerHTML = sortRows(journal, J_COLS, jState).map(t => {
     const p = pl(t);
     const when = new Date(t.ts).getTime() ? new Date(t.ts).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }) : esc(t.date || "–");
-    return `<tr><td>${when}</td><td>${esc(t.sym)}</td><td>${t.dir === "Short" ? "Short" : "Long"}</td><td class="num">${fmt(t.in)}</td><td class="num">${fmt(t.out)}</td>
+    return `<tr><td>${when}</td><td>${/^[A-Z0-9][A-Z0-9.\-_:]{0,24}$/.test(String(t.sym || "")) ? `<button type="button" class="name-link" data-open="${esc(t.sym)}">${esc(t.sym)}</button>` : esc(t.sym)}</td><td>${t.dir === "Short" ? "Short" : "Long"}</td><td class="num">${fmt(t.in)}</td><td class="num">${fmt(t.out)}</td>
       <td class="num">${fmt(t.qty, 0)}</td><td class="num ${p >= 0 ? "up" : "down"}">${fmt(p)} ${cur}</td><td>${esc(t.note || "")}</td>
       <td class="actions"><button type="button" data-del="${esc(t.id)}" title="Löschen" aria-label="Trade löschen">✕</button></td></tr>`;
   }).join("") || `<tr><td colspan="9" class="muted">Noch keine Trades eingetragen.</td></tr>`;

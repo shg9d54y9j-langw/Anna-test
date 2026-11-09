@@ -53,7 +53,7 @@
       ? `<div class="idea-levels"><span>Ausstieg prüfen bei <b class="num">${price(x.last)}</b></span><span>Trend: ${pc(x.d200)} zum 200-Tage-Schnitt</span><span>Momentum ${pc(x.mom)}</span></div>`
       : `<div class="idea-levels"><span>Kauf <b class="num">${price(s.entry)}</b></span><span>Stop <b class="num">${price(s.stop)}</b> ${pc(s.stopPct)}</span><span>Ziel <b class="num">${price(s.target)}</b> ${pc(s.tgtPct)}</span><span>Haltedauer 2–6 Monate</span></div>`;
     return `<article class="idea">
-      <div class="idea-head"><button type="button" class="idea-sym" data-open="${esc(x.sym)}">${esc(x.sym)}</button><span class="muted small idea-name">${esc(x.name)}</span><span class="light ${kind === "sell" ? "red" : kind === "buy" ? "green" : "yellow"}">${label}</span></div>
+      <div class="idea-head"><button type="button" class="idea-sym" data-open="${esc(x.sym)}">${esc(x.sym)}</button><button type="button" class="name-link muted small idea-name" data-open="${esc(x.sym)}">${esc(x.name)}</button><span class="light ${kind === "sell" ? "red" : kind === "buy" ? "green" : "yellow"}">${label}</span></div>
       <div class="idea-meta muted small">Kurs ${price(x.last)} · 12 Monate ${pc(x.ret12m)} · Momentum-Rang ${Number.isFinite(x.momRank) ? x.momRank : "–"} von 100 · zum Jahreshoch ${pc(x.dHi52)}</div>
       ${x.rec ? recBar(x.rec, x.recPrev) : ""}
       ${extra}
@@ -86,7 +86,7 @@
     const act = plan && Array.isArray(plan.setups) ? plan.setups.filter(s => PLAN[s.state]).sort((a, b) => Object.keys(PLAN).indexOf(a.state) - Object.keys(PLAN).indexOf(b.state) || (b.score || 0) - (a.score || 0)).slice(0, 8) : [];
     const t = plan && plan.updated ? new Date(plan.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }) : null;
     const row = s => { const [l, c] = s.state === "buy" && s.earnSoon ? ["Zahlen abwarten", "yellow"] : PLAN[s.state]; return `<div class="hs-plan-row"><button type="button" class="chip-btn" data-open="${esc(s.sym)}">${esc(s.sym)}</button>
-        <div class="hs-plan-text"><span class="small">${esc(s.name || "")}</span><div class="muted small">Kauf ${price(s.entry)} · Stop ${price(s.stop)} ${pc(s.stopPct, 0)} · Teilziel ${price(s.target)}</div></div>
+        <div class="hs-plan-text"><button type="button" class="name-link small" data-open="${esc(s.sym)}">${esc(s.name || s.sym)}</button><div class="muted small">Kauf ${price(s.entry)} · Stop ${price(s.stop)} ${pc(s.stopPct, 0)} · Teilziel ${price(s.target)}</div></div>
         <span class="light ${c}">${l}</span></div>`; };
     return `<article class="card" data-section="Swing-Trades">
       <div class="card-head"><h2 class="card-title">Swing-Trades über Monate: im Swing-Planer</h2><span class="muted small">${t ? `Stand ${t} Uhr` : plan === null ? "lade …" : ""}</span></div>
@@ -127,7 +127,6 @@
       <p class="muted small">Keine Anlageberatung. Daten: eToro-Kurse${hasExperts ? ", Finnhub (Analysten, Quartalszahlen)" : ""}. Aktualisierung an Börsentagen gegen 6 und 14:35 Uhr.</p>
     </article>`;
     host.innerHTML = head + expertSections + planCard() + method;
-    host.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => window.DTD.openStock && window.DTD.openStock(b.dataset.open)));
     window.dispatchEvent(new Event("dtd:sections"));
   }
 

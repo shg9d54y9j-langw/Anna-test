@@ -261,8 +261,8 @@
     const x = stockMap && stockMap.get(sym), f = firms && firms.firms[sym];
     // nicht in den eToro-Daten: Firmen anderer Börsen verlinken den Kurs bei TradingView, sonst nur anzeigen
     if (stockMap && stockMap.size && !x) {
-      if (f && f.tv) return `<a class="chip-btn ext" href="${tvUrl(f.tv)}" target="_blank" rel="noopener noreferrer" title="${esc(f.listing || "")} – nicht in den eToro-Daten; Kurs bei TradingView">${esc(sym)} ↗</a>`;
-      return `<span class="chip-btn off" title="Noch nicht in den Aktien-Daten – erscheint nach dem nächsten Datenlauf, sofern bei eToro handelbar">${esc(sym)}</span>`;
+      if (f && f.tv) return `<button type="button" class="chip-btn ext" data-open="${esc(f.tv)}" title="${esc(f.listing || "")} – nicht in den eToro-Daten; Aktienübersicht mit Kurs und Diagramm von TradingView">${esc(sym)}</button>`;
+      return `<button type="button" class="chip-btn off" data-open="${esc(sym)}" title="Noch nicht in den Aktien-Daten – Aktienübersicht mit dem Diagramm von TradingView">${esc(sym)}</button>`;
     }
     const r = x && Number.isFinite(x.ret12m) ? ` <span class="${x.ret12m < 0 ? "down" : "up"}">${x.ret12m > 0 ? "+" : ""}${fmt(x.ret12m, 0)} %</span>` : "";
     return `<button type="button" class="chip-btn" data-open="${esc(sym)}" title="${x ? `${esc(x.name)} – 12-Monats-Rendite, im Aktien-Check öffnen` : "im Aktien-Check öffnen"}">${esc(sym)}${r}</button>`;
@@ -291,6 +291,7 @@
           <p><b>Warum diese Firma:</b> ${esc(f.why)}</p>
           <p class="firm-risk"><b>Worauf achten:</b> ${esc(f.watch)}</p>
           ${where(sym, f)}
+          <p class="small"><button type="button" class="name-link" data-open="${esc(stockMap && stockMap.size && !stockMap.has(sym) && f.tv ? f.tv : sym)}">Aktienübersicht mit Diagramm öffnen →</button></p>
           <p class="muted small">Quelle: ${(f.src || []).map(([u, t]) => link(u, t)).join(" · ")}</p>
         </div></details></div>`;
   };
@@ -418,7 +419,6 @@
       </div>
       <p class="muted small">Auswahl nach Bedeutung in Fachzeitschriften und aktueller Forschung (Stand November 2026). Beweisstärke ist eine Einschätzung dieser Seite anhand der Studienlage, keine amtliche Bewertung.</p></article>`;
     host.querySelectorAll("[data-cat]").forEach(b => b.addEventListener("click", () => { theoryFilter = b.dataset.cat; renderTheory(); }));
-    host.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => window.DTD.openStock && window.DTD.openStock(b.dataset.open)));
     window.dispatchEvent(new Event("dtd:sections"));
   }
 

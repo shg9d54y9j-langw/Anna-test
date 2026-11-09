@@ -1,6 +1,7 @@
 // ---------- Aktien-Check ----------
 // Symbol eingeben → Überblick, Termine, Experten & Nachrichten, Theorie & Faktoren, Kauf- und Verkaufsmarken.
 // Kennzahlen aus data/stocks.json (täglich aus eToro-Tageskerzen), Live-Grafiken von TradingView für jedes Symbol.
+// Suche mit Vorschlägen (Name oder Kürzel), Diagramm mit ein- und ausblendbaren Linien und Kennzahlen.
 (() => {
   const RAW = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/stock-data/stocks.json";
   const get = url => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
@@ -10,14 +11,38 @@
   const pctCell = (x, d = 1) => (Number.isFinite(x) ? `<span class="${x < 0 ? "down" : "up"}">${sign(x, d)} %</span>` : "–");
   const price = x => (!Number.isFinite(x) ? "–" : x >= 1000 ? fmt(x, 0) : x >= 10 ? fmt(x, 2) : fmt(x, 4));
   const COST = 0.3;   // geschätzte Kosten hin und zurück in % (Spread)
-  let data = null, current = null, style = store.get("dtd-stock-style", "swing"), chartMode = store.get("dtd-stock-chart", "line") === "candle" ? "candle" : "line";
+  let data = null, current = null, style = store.get("dtd-stock-style", "swing");
+  const RECENT = "dtd-stock-recent";
+  const recent = () => { const r = store.get(RECENT, []); return Array.isArray(r) ? r.filter(v => typeof v === "string").slice(0, 8) : []; };
+
+  // ---------- Diagramm: Linien und Kennzahlen zum Ein- und Ausblenden ----------
+  const avgOf = (x, d) => (Number.isFinite(x.last) && Number.isFinite(d) ? x.last / (1 + d / 100) : null);
+  const MA = n => ({ id: "MASimple@tv-basicstudies", inputs: { length: n } });
+  const IND = [
+    { k: "ma20", group: "Linien", label: "Ø 20 Tage", study: MA(20), val: x => avgOf(x, x.d20), why: "kurzfristiger Trend – Rücksetzer bis hierher sind im Aufwärtstrend normal." },
+    { k: "ma50", group: "Linien", label: "Ø 50 Tage", study: MA(50), val: x => avgOf(x, x.d50), why: "mittelfristiger Trend – hier beginnt die Kaufzone des Swing-Planers." },
+    { k: "ma200", group: "Linien", label: "Ø 200 Tage", study: MA(200), val: x => avgOf(x, x.d200), why: "langfristiger Trend – darüber gilt der Aufwärtstrend, darunter kauft der Swing-Planer nicht." },
+    { k: "bb", group: "Linien", label: "Bollinger-Bänder", study: "BB@tv-basicstudies", why: "Ø 20 Tage ± 2 Standardabweichungen: Am oberen Band läuft der Kurs gerade ungewöhnlich stark, am unteren ungewöhnlich schwach." },
+    { k: "vol", group: "Kennzahlen", label: "Volumen", why: "wie viel gehandelt wird – Ausbrüche mit hohem Volumen sind verlässlicher." },
+    { k: "rsi", group: "Kennzahlen", label: "RSI", study: "RSI@tv-basicstudies", why: "Stärke der letzten 14 Tage: über 70 überhitzt, unter 30 überverkauft – in starken Trends bleibt er oft lange oben." },
+    { k: "macd", group: "Kennzahlen", label: "MACD", study: "MACD@tv-basicstudies", why: "Schwung: Kreuzt die MACD-Linie ihre Signallinie nach oben, nimmt der Aufwärtsschwung zu." },
+    { k: "atr", group: "Kennzahlen", label: "ATR", study: "ATR@tv-basicstudies", val: x => x.atr, why: "durchschnittliche Tagesspanne der letzten 14 Tage – Grundlage für den Abstand des Stop-Loss." },
+    { k: "lvl", group: "Marken", label: "Kauf, Stop, Ziel", why: "die Marken dieser Seite auf einer Skala mit Kurs, Ø-Linien und 52-Wochen-Spanne." },
+  ];
+  const chartSet = (() => {
+    const c = store.get("dtd-stock-chart2", null) || {};
+    const on = Array.isArray(c.on) ? c.on.filter(k => IND.some(i => i.k === k)) : ["ma50", "ma200", "vol"];
+    return { style: c.style === "2" ? "2" : "1", on };
+  })();
+  const saveChart = () => store.set("dtd-stock-chart2", chartSet);
+  // TradingView-Symbol für Werte ohne tägliche Kennzahlen (wie scripts/stock-universe.mjs)
+  const SUFFIX = { DE: "XETR", L: "LSE", PA: "EURONEXT", AS: "EURONEXT", NV: "EURONEXT", BR: "EURONEXT", LSB: "EURONEXT", MI: "MIL", MC: "BME", ZU: "SIX", SW: "SIX", HK: "HKEX", OL: "OSL", ST: "OMXSTO", CO: "OMXCOP", HE: "OMXHEX", VI: "VIE", LS: "EURONEXT" };
+  const tvGuess = q => { const t = q.trim().toUpperCase(); if (t.includes(":")) return t; const m = /^([A-Z0-9-]+)\.([A-Z]+)$/.exec(t); return m && SUFFIX[m[2]] ? `${SUFFIX[m[2]]}:${m[1].replace(/-/g, "_")}` : t; };
 
   async function load() {
     const t = Date.now();
     const list = (await Promise.all([get(`data/stocks.json?t=${t}`), get(`${RAW}?t=${t}`)])).filter(d => d && Array.isArray(d.items));
     data = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
-    const dl = $("stockList");
-    if (dl && data) dl.innerHTML = data.items.map(x => `<option value="${esc(x.sym)}">${esc(x.name)}</option>`).join("");
     renderQuick();
     if (current) show(current.query, false);
   }
@@ -131,9 +156,32 @@
       <p class="small">${links}</p>`;
   }
 
+  const ladderRows = (x, L) => [
+    { label: "Kurs jetzt", v: x.last, kind: "now" },
+    { label: "Stop-Loss", v: L.stop, kind: "stop" },
+    { label: "Ziel", v: L.target, kind: "target" },
+    { label: "50-Tage-Schnitt", v: avgOf(x, x.d50), kind: "avg" },
+    { label: "200-Tage-Schnitt", v: avgOf(x, x.d200), kind: "avg" },
+    { label: "52-Wochen-Hoch", v: x.hi52, kind: "range" },
+    { label: "52-Wochen-Tief", v: x.lo52, kind: "range" },
+  ];
+  // Unter dem Diagramm: was jede eingeblendete Linie bedeutet, mit dem heutigen Wert aus den eToro-Tageskerzen
+  function chartInfo(x, L) {
+    const act = IND.filter(i => chartSet.on.includes(i.k) && i.k !== "lvl");
+    const line = i => {
+      const v = x && i.val ? i.val(x) : null;
+      const now = !Number.isFinite(v) ? "" : i.k === "atr" ? ` <b class="num">${price(v)}</b> <span class="muted">(${fmt(x.atrPct, 2)} % vom Kurs)</span>`
+        : ` <b class="num">${price(v)}</b> <span class="muted">· Kurs</span> ${pctCell((x.last / v - 1) * 100)} <span class="muted">${x.last >= v ? "darüber" : "darunter"}</span>`;
+      return `<li><span class="tchip-dot"></span><b>${i.label}</b>${now} – ${i.why}</li>`;
+    };
+    const lvl = chartSet.on.includes("lvl") && x && L ? levelLadder(ladderRows(x, L), `Marken für den ${L.day ? "Tageshandel" : "Swing-Trade"} – Einstellung unten bei „Kauf &amp; Verkauf“`) : "";
+    return (act.length ? `<ul class="chart-legend">${act.map(line).join("")}</ul>` : `<p class="muted small">Keine Linien eingeblendet – oben antippen, was Sie sehen möchten.</p>`) + lvl
+      + `<p class="hint">Die Linien zeichnet TradingView aus Tageskerzen; die Ø-Linien erkennen Sie oben links in der Legende am Zusatz „MA 20“, „MA 50“ und „MA 200“. Weitere Kennzahlen, Farben und Längen: im Diagramm auf „Indikatoren“ tippen. Ihre Auswahl bleibt in diesem Browser gespeichert.</p>`;
+  }
+
   function render(x, q) {
     const host = $("stockBody");
-    const tv = x ? x.tv : q.toUpperCase();
+    const tv = x ? x.tv : tvGuess(q);
     const etoroUrl = `https://www.etoro.com/markets/${encodeURIComponent((x ? x.sym : q).toLowerCase())}`;
     const dates = window.DTD.nextMarketDates ? window.DTD.nextMarketDates() : [];
     const f = x ? factors(x) : [];
@@ -149,7 +197,7 @@
             ${x ? `<p class="stock-price">${price(x.last)} <span class="${x.chg1d < 0 ? "down" : "up"}">${sign(x.chg1d, 2)} %</span></p>
               <p class="muted small">Schlusskurs ${esc(x.asOf)} laut eToro · Live-Kurs in der Grafik</p>` : `<p class="muted">Nicht unter den ${data ? data.count : "beliebtesten"} Werten mit täglichen Kennzahlen – unten nur Live-Daten von TradingView.</p>`}
           </div>
-          <div class="btn-row"><a class="btn ghost" href="${etoroUrl}" target="_blank" rel="noopener noreferrer">In eToro öffnen ↗</a></div>
+          <div class="btn-row">${x ? `<a class="btn ghost" href="${etoroUrl}" target="_blank" rel="noopener noreferrer">In eToro öffnen ↗</a>` : `<a class="btn ghost" href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/" target="_blank" rel="noopener noreferrer">Bei TradingView öffnen ↗</a>`}</div>
         </div>
         ${x ? `<div class="stats-grid">
           ${kpi("1 Monat", sign(x.ret1m) + " %", x.ret1m < 0 ? "down" : "up")}
@@ -161,11 +209,15 @@
           ${kpi("Größter Rückgang 1 J.", "−" + fmt(x.mdd, 1) + " %", "down")}
           ${kpi("Beta", fmt(x.beta, 2))}
         </div>` : ""}
-        <div class="seg chart-seg" role="group" aria-label="Diagramm-Art">
-          <button type="button" data-chart="line" aria-pressed="${chartMode === "line"}">Linie, 12 Monate</button>
-          <button type="button" data-chart="candle" aria-pressed="${chartMode === "candle"}">Kerzen-Diagramm</button>
+        <div class="chart-tools" id="skTools">
+          <div class="seg chart-seg" role="group" aria-label="Diagramm-Art">
+            <button type="button" data-cstyle="1" aria-pressed="${chartSet.style === "1"}">Kerzen</button>
+            <button type="button" data-cstyle="2" aria-pressed="${chartSet.style === "2"}">Linie</button>
+          </div>
+          ${["Linien", "Kennzahlen", "Marken"].map(g => { const its = IND.filter(i => i.group === g && (i.k !== "lvl" || L)); return its.length ? `<div class="tchips" role="group" aria-label="${g}"><span class="tchips-lbl">${g}</span>${its.map(i => `<button type="button" class="tchip" data-ind="${i.k}" aria-pressed="${chartSet.on.includes(i.k)}">${i.label}</button>`).join("")}</div>` : ""; }).join("")}
         </div>
-        <div class="widget ${chartMode === "candle" ? "big-chart" : "mini"}" id="skChart"></div>
+        <div class="widget big-chart" id="skChart"></div>
+        <div id="skChartInfo" class="chart-info"></div>
       </section>
 
       ${x && x.type === "Aktie" ? `<section class="block" data-section="Kennzahlen">
@@ -225,15 +277,7 @@
             <div class="level"><span>Ziel (Take-Profit)</span><b class="up">${price(L.target)}</b><small>+${fmt(L.tgtPct, 2)} % · ${L.day ? "1" : "4"} × ATR</small></div>
             <div class="level"><span>Betrag</span><b>${L.amount ? `${fmt(L.amount, 0)} ${cur}` : "–"}</b><small>${L.amount ? `≈ ${fmt(L.units, L.units < 10 ? 3 : 1)} Stück` : "Kontostand eintragen"}</small></div>
           </div>
-          ${levelLadder([
-            { label: "Kurs jetzt", v: x.last, kind: "now" },
-            { label: "Stop-Loss", v: L.stop, kind: "stop" },
-            { label: "Ziel", v: L.target, kind: "target" },
-            { label: "50-Tage-Schnitt", v: Number.isFinite(x.d50) ? x.last / (1 + x.d50 / 100) : null, kind: "avg" },
-            { label: "200-Tage-Schnitt", v: Number.isFinite(x.d200) ? x.last / (1 + x.d200 / 100) : null, kind: "avg" },
-            { label: "52-Wochen-Hoch", v: x.hi52, kind: "range" },
-            { label: "52-Wochen-Tief", v: x.lo52, kind: "range" },
-          ], "Stop und Ziel neben den Trendlinien")}
+          ${levelLadder(ladderRows(x, L), "Stop und Ziel neben den Trendlinien")}
           <div class="stats-grid">
             ${kpi("Chance aufs Ziel ohne Vorteil", `${fmt(L.pNoEdge * 100, 0)} %`)}
             ${kpi("Nötige Trefferquote nach Kosten", `${fmt(L.pNeeded * 100, 0)} %`)}
@@ -257,18 +301,33 @@
           : `<p class="muted">Für Werte ohne tägliche Kennzahlen rechnet die Seite keine Marken. Im <a href="#setup">Trade-Setup</a> können Sie Kurs und ATR selbst eintragen.</p>`}
       </section>`;
 
-    // Live-Grafiken von TradingView (funktionieren für jedes Symbol)
+    // Live-Diagramm von TradingView (funktioniert für jedes Symbol) mit den gewählten Linien und Kennzahlen
     const drawChart = () => {
       const el = $("skChart");
       if (!el) return;
-      el.className = `widget ${chartMode === "candle" ? "big-chart" : "mini"}`;
-      if (chartMode === "candle") bigChart("skChart", tv);
-      else tvWidget("skChart", "mini-symbol-overview", { ...COMMON, symbol: tv, width: "100%", height: "100%", dateRange: "12M", trendLineColor: "rgba(255,255,255,1)", underLineColor: "rgba(255,255,255,0.08)", underLineBottomColor: "rgba(255,255,255,0)", noTimeScale: false });
-      host.querySelectorAll("[data-chart]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.chart === chartMode)));
+      const phone = window.matchMedia("(max-width: 720px)").matches;
+      const panes = ["rsi", "macd", "atr"].filter(k => chartSet.on.includes(k)).length;
+      el.style.height = `${(phone ? 420 : 520) + panes * (phone ? 90 : 110)}px`;
+      const studies = IND.filter(i => i.study && chartSet.on.includes(i.k)).map(i => i.study);
+      window.DTD.tvChart("skChart", tv, { style: chartSet.style, studies, hideVolume: !chartSet.on.includes("vol"), compact: phone });
     };
+    const drawInfo = () => { const el = $("skChartInfo"); if (el) el.innerHTML = chartInfo(x, L); };
     drawChart();
+    drawInfo();
     if (x && x.type === "Aktie") fillFund(x);
-    host.querySelectorAll("[data-chart]").forEach(b => b.addEventListener("click", () => { chartMode = b.dataset.chart; store.set("dtd-stock-chart", chartMode); drawChart(); }));
+    host.querySelectorAll("[data-cstyle]").forEach(b => b.addEventListener("click", () => {
+      chartSet.style = b.dataset.cstyle; saveChart();
+      host.querySelectorAll("[data-cstyle]").forEach(o => o.setAttribute("aria-pressed", String(o.dataset.cstyle === chartSet.style)));
+      drawChart();
+    }));
+    host.querySelectorAll("[data-ind]").forEach(b => b.addEventListener("click", () => {
+      const k = b.dataset.ind, on = !chartSet.on.includes(k);
+      chartSet.on = on ? [...chartSet.on, k] : chartSet.on.filter(v => v !== k);
+      saveChart();
+      b.setAttribute("aria-pressed", String(on));
+      if (k !== "lvl") drawChart();
+      drawInfo();
+    }));
     tvWidget("skNews", "timeline", { ...COMMON, feedMode: "symbol", symbol: tv, displayMode: "regular", width: "100%", height: "100%" });
     tvWidget("skProfile", "symbol-profile", { ...COMMON, symbol: tv, width: "100%", height: "100%" });
     host.querySelectorAll("[data-style]").forEach(b => b.addEventListener("click", () => { style = b.dataset.style; store.set("dtd-stock-style", style); render(x, q); }));
@@ -278,14 +337,23 @@
 
   function show(q, push = true) {
     if (!q || !q.trim()) return;
-    const x = find(q);
-    current = { query: q.trim() };
-    store.set("dtd-stock", q.trim());
+    // genaues Kürzel oder genauer Name – sonst der beste Vorschlag (z. B. „apple“ → AAPL)
+    const x = find(q) || (data ? window.DTD.matchStocks(data.items, q, 1)[0] || null : null);
+    if (x && $("stockInput").value.trim().toUpperCase() !== x.sym) $("stockInput").value = x.sym;
+    current = { query: x ? x.sym : q.trim() };
+    store.set("dtd-stock", current.query);
+    if (x) store.set(RECENT, [x.sym, ...recent().filter(v => v !== x.sym)].slice(0, 8));
     render(x, q.trim());
     if (push) $("stockBody").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   $("stockForm").addEventListener("submit", e => { e.preventDefault(); show($("stockInput").value); });
+  // Vorschläge unter dem Suchfeld: beim Tippen die passenden Werte, im leeren Feld die zuletzt angesehenen
+  window.DTD.attachSuggest($("stockInput"), {
+    source: text => (!data ? [] : text ? window.DTD.matchStocks(data.items, text, 8) : recent().map(v => data.items.find(y => y.sym === v)).filter(Boolean)),
+    onPick: sym => show(sym),
+    emptyTitle: "Zuletzt angesehen",
+  });
   window.DTD.startStock = () => {
     load();
     const last = store.get("dtd-stock", "");
@@ -302,8 +370,6 @@
     const next = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0];
     if (!next || (data && next.updated === data.updated)) return false;
     data = next;
-    const dl = $("stockList");
-    if (dl) dl.innerHTML = data.items.map(x => `<option value="${esc(x.sym)}">${esc(x.name)}</option>`).join("");
     renderQuick();
     if (current && !$("aktie").hidden) show(current.query, false);
     return true;

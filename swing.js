@@ -103,7 +103,7 @@
     const [lab, cls] = label(s), z = size(s);
     const isNew = s.since && data && s.since === data.updated.slice(0, 10) && s.state === "buy";
     return `<article class="idea swing-card">
-      <div class="idea-head"><button type="button" class="idea-sym" data-open="${esc(s.sym)}">${esc(s.sym)}</button><span class="muted small idea-name">${esc(s.name || "")}</span><span class="light ${cls}">${lab}${isNew ? " · neu" : ""}</span></div>
+      <div class="idea-head"><button type="button" class="idea-sym" data-open="${esc(s.sym)}">${esc(s.sym)}</button><button type="button" class="name-link muted small idea-name" data-open="${esc(s.sym)}">${esc(s.name || "")}</button><span class="light ${cls}">${lab}${isNew ? " · neu" : ""}</span></div>
       ${themeChips(s, info)}
       ${thesis(s, false)}
       <div class="idea-levels"><span>Kauf <b class="num">${price(s.entry)}</b> <span class="muted">${s.entryType === "market" ? "Markt" : s.entryType === "limit" ? "Order" : "Alarm"}</span></span><span>Stop <b class="num">${price(s.stop)}</b> ${pc(s.stopPct)}</span><span>Ziel für die Hälfte <b class="num">${price(s.target)}</b> ${pc(s.targetPct)}</span><span>Betrag <b class="num">${z ? eur(z.amount) : "–"}</b></span></div>
@@ -185,7 +185,7 @@
     const L = data.ledger, S = L.stats || {};
     const kpi = (lbl, val) => `<div class="kpi"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`;
     const open = L.open.map(t => `<tr><td><button type="button" class="chip-btn" data-open="${esc(t.sym)}">${esc(t.sym)}</button><div class="muted small">seit ${dDate(t.opened)}</div></td><td class="num">${price(t.entry)}</td><td class="num">${price(t.stop)}</td><td class="opt">${t.half ? "✓ verkauft" : "–"}</td><td class="num">${pc(t.ret)}</td></tr>`).join("");
-    const closed = L.closed.slice(0, 12).map(t => `<tr><td><b>${esc(t.sym)}</b><div class="muted small">${dDate(t.opened)} – ${dDate(t.closed)}</div></td><td class="num">${pc(t.ret)}</td><td class="wrap small">${esc(t.exitB.why)}</td></tr>`).join("");
+    const closed = L.closed.slice(0, 12).map(t => `<tr><td><button type="button" class="chip-btn" data-open="${esc(t.sym)}">${esc(t.sym)}</button><div class="muted small">${dDate(t.opened)} – ${dDate(t.closed)}</div></td><td class="num">${pc(t.ret)}</td><td class="wrap small">${esc(t.exitB.why)}</td></tr>`).join("");
     return section("Bilanz", "Bilanz der Signale", `Jedes Kaufsignal wird verfolgt, als hätte man es genau so bei eToro eingestellt – mit Stop, Trailing-Stop und Teilziel, nach Kosten (${fmt(data.rules.cost, 1)} % je Trade). So sehen Sie ehrlich, ob die Regeln funktionieren. Läuft seit ${dDate(L.startedAt)}.`,
       `<div class="stats">${kpi("Abgeschlossen", S.n || 0)}${kpi("Trefferquote", S.n ? `${fmt(S.winRate, 0)} %` : "–")}${kpi("Ø je Trade", S.n ? pc(S.avgRet) : "–")}${kpi("Offen", `${S.open || 0}${Number.isFinite(S.openRet) ? ` · ${pc(S.openRet)}` : ""}`)}</div>
       ${open ? `<h3 class="swing-h3">Offene Signale</h3><div class="table-wrap"><table class="swing-ledger"><thead><tr><th>Aktie</th><th class="num">Kauf</th><th class="num">Stop jetzt</th><th class="opt">Teilziel</th><th class="num">Stand</th></tr></thead><tbody>${open}</tbody></table></div>` : `<p class="muted" style="margin-top:12px">Noch keine offenen Signale – das erste kommt, sobald eine Firma in die Kaufzone läuft.</p>`}
@@ -223,7 +223,6 @@
       + section("Bald kaufbar", "Bald kaufbar: Order oder Kursalarm setzen", "Aufwärtstrend, aber der Kurs ist gerade zu hoch, knapp unter dem Jahreshoch, kurz unter den 50-Tage-Schnitt gerutscht – oder es kommen in Kürze Quartalszahlen.", cards(soon, info, "Zurzeit keine."), soon.length)
       + section("Neu entdeckt", "Neu entdeckt: starke Aktien ohne Steckbrief", `Aus den rund ${fmt(700, 0)} beliebtesten Aktien bei eToro: Momentum unter den besten 10 %, Aufwärtstrend, höchstens 10 % unter dem Jahreshoch, Analysten nicht skeptisch. Die wöchentliche Recherche prüft die Geschichte dahinter.`, cards(found, info, "Heute erfüllt keine Aktie ohne Steckbrief alle Bedingungen."), found.length)
       + restCard(rest, info) + ledgerCard() + methodCard();
-    host.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => window.DTD.openStock && window.DTD.openStock(b.dataset.open)));
     host.querySelectorAll("[data-alarm]").forEach(b => b.addEventListener("click", () => {
       const ok = window.DTD.addAlarm && window.DTD.addAlarm(b.dataset.alarm, "up", Number(b.dataset.price), `Swing-Planer: ${b.dataset.why}`);
       if (ok) { b.textContent = "Alarm gesetzt ✓"; b.disabled = true; toast("Kursalarm", `${b.dataset.alarm}: Alarm bei ${b.dataset.price} gesetzt – zu sehen unter Werkzeuge.`, 5000); }

@@ -81,13 +81,13 @@
       const sym = viaSym(a);
       const v = (a.trade || []).find(t => t.sym === sym);
       if (!sym) return `<span class="muted small">kein kaufbares ETF – Anteil im Geldmarkt</span>`;
-      return `<b>${esc(sym)}</b>${v && v.name && !v.us ? ` <span class="muted small vname">${esc(v.name)}</span>` : v && v.us ? ` <span class="muted small">US-ETF</span>` : ""}`;
+      return `<button type="button" class="name-link" data-open="${esc(sym)}"><b>${esc(sym)}</b></button>${v && v.name && !v.us ? ` <span class="muted small vname">${esc(v.name)}</span>` : v && v.us ? ` <span class="muted small">US-ETF</span>` : ""}`;
     };
     const sq = checks => `<span class="sq-row" aria-label="${checks.filter(Boolean).length} von 4 Prüfungen erfüllt">${checks.map((c, i) => `<span class="sq ${c ? "on" : ""}" title="${["3 Monate", "6 Monate", "12 Monate", "200-Tage-Schnitt"][i]}: ${c ? "positiv" : "negativ"}"></span>`).join("")}</span>`;
     const split = a => (Number.isFinite(a.core) ? `<div class="muted small">${a.core > 0 ? `Kern ${pct(a.core, 0)}<br>` : ""}Trend ${pct(a.trend, 1)}</div>` : "");
     const rows = S.assets.map(a => {
       const goal = target ? target[a.key] : a.weightBase ?? a.weight, have = held.get(a.key);
-      return `<tr><td><b>${esc(a.sym)}</b> <span class="muted small aname">${esc(a.name)}</span>${viaSm(a)}</td><td class="opt">${via(a)}</td>
+      return `<tr><td><button type="button" class="name-link" data-open="${esc(a.sym)}"><b>${esc(a.sym)}</b></button> <span class="muted small aname">${esc(a.name)}</span>${viaSm(a)}</td><td class="opt">${via(a)}</td>
         <td>${sq(a.checks || [])} <span class="muted small opt">${fmt(a.score * 4, 0)}/4</span></td>
         <td class="num opt ${cls(a.r12)}">${sign(a.r12)} %</td><td class="num opt">${fmt(a.vol, 1)} %</td>
         <td class="num"><b>${pct(goal, 1)}</b>${split(a)}</td><td class="num">${st.enabled && have ? pct(have.pct, 1) : "–"}</td></tr>`;

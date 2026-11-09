@@ -135,7 +135,7 @@
       f ? `Theorie-Seite: ${{ leader: "Marktführer", supplier: "Zulieferer", challenger: "Herausforderer", spec: "spekulativ" }[f.role] || ""}` : null,
     ].filter(Boolean) : [];
     return `<article class="pf-card" data-id="${esc(h.id)}">
-      <div class="idea-head"><button type="button" class="idea-sym" data-act="open">${esc(h.sym)}</button><span class="muted small idea-name">${esc(name)}</span>
+      <div class="idea-head"><button type="button" class="idea-sym" data-open="${esc(h.sym)}">${esc(h.sym)}</button><button type="button" class="name-link muted small idea-name" data-open="${esc(h.sym)}">${esc(name || "Aktienübersicht")}</button>
         ${v ? `<span class="light ${v.cls}">${v.label}</span>` : `<span class="light">Keine Daten</span>`}</div>
       <div class="pf-nums">
         <span>Kauf <b class="num">${price(h.buy)}</b>${h.qty ? ` · ${fmt(h.qty, h.qty % 1 ? 2 : 0)} Stück` : ""}</span>
@@ -164,12 +164,11 @@
   }
   function formCard() {
     const h = editId ? list.find(x => x.id === editId) : null;
-    const opts = stocks ? stocks.items.map(x => `<option value="${esc(x.sym)}">${esc(x.name)}</option>`).join("") : "";
     const v = (k, d = "") => (h && h[k] !== null && h[k] !== undefined ? esc(String(h[k]).replace(".", ",")) : d);
     return `<article class="card" data-section="Eintragen">
       <h2 class="card-title">${h ? `${esc(h.sym)} bearbeiten` : "Aktie eintragen"}</h2>
       <form id="pfForm" class="calc" autocomplete="off" data-key="${h ? esc(h.id) : "neu"}">
-        <label>Kürzel wie bei eToro<input id="pfSym" list="pfSymList" required placeholder="z. B. NVDA oder SIE.DE" value="${h ? esc(h.sym) : ""}" style="text-transform:uppercase"></label>
+        <label>Kürzel wie bei eToro<input id="pfSym" required placeholder="Name oder Kürzel, z. B. Nvidia" value="${h ? esc(h.sym) : ""}" style="text-transform:uppercase"></label>
         <label>Kaufpreis je Stück<input id="pfBuy" inputmode="decimal" required placeholder="in der Währung bei eToro" value="${v("buy")}"></label>
         <label>Stück (freiwillig)<input id="pfQty" inputmode="decimal" placeholder="für Gewinn in Geld" value="${v("qty")}"></label>
         <label>Kaufdatum (freiwillig)<input id="pfDate" type="date" value="${h && h.date ? h.date : ""}"></label>
@@ -177,7 +176,6 @@
         <label>Notiz (freiwillig)<input id="pfNote" maxlength="200" placeholder="z. B. warum gekauft" value="${h ? esc(h.note) : ""}"></label>
         <div class="btn-row wide"><button type="submit">${h ? "Speichern" : "Hinzufügen"}</button>${h ? `<button type="button" class="btn ghost" data-act="cancel">Abbrechen</button>` : ""}</div>
       </form>
-      <datalist id="pfSymList">${opts}</datalist>
       <p class="hint">Ihre Liste bleibt nur in diesem Browser auf diesem Gerät – sie wird nirgends hochgeladen. Für ein zweites Gerät unten „Sichern und übertragen“ nutzen.</p>
     </article>`;
   }
@@ -286,6 +284,8 @@
       if (el && typeof tvWidget === "function") tvWidget(el.id, "timeline", { ...COMMON, feedMode: "symbol", symbol: el.dataset.tv, displayMode: "regular", width: "100%", height: 420 });
     }
     restoreForm(kept);
+    // Vorschläge beim Tippen: Name oder Kürzel → Kürzel eintragen, weiter zum Kaufpreis
+    if ($("pfSym") && window.DTD.attachSuggest) window.DTD.attachSuggest($("pfSym"), { source: text => (stocks && text ? window.DTD.matchStocks(stocks.items, text, 8) : []), onPick: () => { if ($("pfBuy")) $("pfBuy").focus(); } });
     badge();
     window.dispatchEvent(new Event("dtd:sections"));
   }

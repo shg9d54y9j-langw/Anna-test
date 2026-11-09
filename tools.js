@@ -45,7 +45,6 @@
     return out;
   };
   const themeName = key => { const info = window.DTD.themeInfo ? window.DTD.themeInfo() : {}; return info[key] ? info[key].title : key.replace(/^\w+:/, ""); };
-  const open = sym => window.DTD.openStock && window.DTD.openStock(sym);
 
   // ---------- Screener ----------
   const PRESETS = {
@@ -91,7 +90,7 @@
     });
   }
   const COLS = [
-    { key: "sym", label: "Aktie", get: x => x.sym, cell: x => `<button type="button" class="chip-btn" data-open="${esc(x.sym)}">${esc(x.sym)}</button><div class="muted small scr-name">${esc(x.name || "")}</div>` },
+    { key: "sym", label: "Aktie", get: x => x.sym, cell: x => `<button type="button" class="chip-btn" data-open="${esc(x.sym)}">${esc(x.sym)}</button><button type="button" class="name-link muted small scr-name" data-open="${esc(x.sym)}">${esc(x.name || "")}</button>` },
     { key: "last", label: "Kurs", num: true, opt: true, get: x => x.last, cell: x => price(x.last) },
     { key: "ret12m", label: "12 Mon.", num: true, get: x => x.ret12m, cell: x => pc(x.ret12m, 0) },
     { key: "momRank", label: "Mom.", num: true, get: x => x.momRank, cell: x => (Number.isFinite(x.momRank) ? x.momRank : "–") },
@@ -154,7 +153,7 @@
     for (const x of up) { if (!days.has(x.earn.date)) days.set(x.earn.date, []); days.get(x.earn.date).push(x); }
     const HOUR = { bmo: "vor Börsenbeginn", amc: "nach Börsenschluss", dmh: "während des Handels" };
     const row = x => `<div class="cal-row"><button type="button" class="chip-btn" data-open="${esc(x.sym)}">${esc(x.sym)}</button>
-        <span class="cal-name">${esc(x.name || "")}${mine.has(x.sym) ? ` <span class="light green">Ihre Aktie</span>` : ""}${ideas.has(x.sym) ? ` <span class="light yellow">Swing-Idee</span>` : ""}</span>
+        <span class="cal-name"><button type="button" class="name-link" data-open="${esc(x.sym)}">${esc(x.name || x.sym)}</button>${mine.has(x.sym) ? ` <span class="light green">Ihre Aktie</span>` : ""}${ideas.has(x.sym) ? ` <span class="light yellow">Swing-Idee</span>` : ""}</span>
         <span class="muted small">${HOUR[x.earn.hour] || ""}${Number.isFinite(x.earn.eps) ? ` · Gewinn je Aktie erwartet ${fmt(x.earn.eps, 2)}` : ""}${x.lastEarn && Number.isFinite(x.lastEarn.surprisePct) ? ` · letztes Mal ${sign(x.lastEarn.surprisePct, 0)} %` : ""}${Number.isFinite(buyPct(x)) ? ` · ${fmt(buyPct(x), 0)} % Kauf` : ""}</span></div>`;
     const recent = stocks.items.filter(x => x.lastEarn && Number.isFinite(x.lastEarn.surprisePct) && x.lastEarn.date >= new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10) && pick(x))
       .sort((a, b) => Math.abs(b.lastEarn.surprisePct) - Math.abs(a.lastEarn.surprisePct)).slice(0, 12);
@@ -181,7 +180,7 @@
     const all = Object.entries(fund.items).filter(([, v]) => v.ins && v.ins.buys > 0).map(([sym, v]) => ({ sym, x: map.get(sym), ins: v.ins, cty: foreign(v) ? v.cty : "" }));
     const by = (a, b) => b.ins.buyers - a.ins.buyers || b.ins.buyVal - a.ins.buyVal;
     const list = [...all.filter(r => !r.cty).sort(by).slice(0, 25), ...all.filter(r => r.cty && r.ins.buyers >= 2).sort(by).slice(0, 5)];
-    const rows = list.map(r => `<tr><td><button type="button" class="chip-btn" data-open="${esc(r.sym)}">${esc(r.sym)}</button><div class="muted small scr-name">${esc(r.x ? r.x.name : "")}${r.cty ? ` · <span title="Sitz außerhalb der USA – meist keine Meldung nach SEC-Formular 4">Sitz ${esc(r.cty)}</span>` : ""}</div></td>
+    const rows = list.map(r => `<tr><td><button type="button" class="chip-btn" data-open="${esc(r.sym)}">${esc(r.sym)}</button><div class="muted small scr-name"><button type="button" class="name-link" data-open="${esc(r.sym)}">${esc(r.x ? r.x.name : "")}</button>${r.cty ? ` · <span title="Sitz außerhalb der USA – meist keine Meldung nach SEC-Formular 4">Sitz ${esc(r.cty)}</span>` : ""}</div></td>
         <td class="num">${r.ins.buyers}</td><td class="num">${big(r.ins.buyVal)}</td><td class="num opt">${dDate(r.ins.lastBuy)}</td><td class="num opt">${r.ins.sellers}</td>
         <td>${r.x ? (() => { const [l, c] = TREND[trendOf(r.x)]; return `<span class="light ${c}">${l}</span>`; })() : "–"}</td>
         <td class="opt">${A(`http://openinsider.com/screener?s=${encodeURIComponent(r.sym)}`, "Details ↗")}</td></tr>`).join("");
@@ -220,13 +219,12 @@
     return `<article class="card" data-section="Kursalarme">
       <h2 class="card-title">Kursalarme</h2>
       <form id="alForm" class="calc" autocomplete="off">
-        <label>Kürzel<input id="alSym" list="alSyms" required placeholder="z. B. PLTR" style="text-transform:uppercase"></label>
+        <label>Kürzel<input id="alSym" required placeholder="Name oder Kürzel, z. B. Palantir" style="text-transform:uppercase"></label>
         <label>Wenn der Kurs<select id="alDir"><option value="up">über … steigt</option><option value="down">unter … fällt</option></select></label>
         <label>Preis<input id="alPrice" inputmode="decimal" required placeholder="in der Kurswährung"></label>
         <label>Notiz (freiwillig)<input id="alNote" maxlength="120" placeholder="z. B. Ausbruch über das Jahreshoch"></label>
         <div class="btn-row wide"><button type="submit">Alarm setzen</button></div>
       </form>
-      <datalist id="alSyms">${stocks ? stocks.items.map(x => `<option value="${esc(x.sym)}">${esc(x.name)}</option>`).join("") : ""}</datalist>
       ${rows ? `<div class="al-list">${rows}</div>` : `<p class="muted" style="margin-top:12px">Noch keine Alarme. Tipp: Bei Ideen im Swing-Planer mit „Kursalarm“ setzt ein Knopf den Alarm gleich richtig.</p>`}
       <p class="hint">Geprüft wird mit den Kursen der Aktien-Daten (zweimal pro Börsentag, mit Tageshoch und -tief). Ist die Seite offen, meldet sie erreichte Alarme auch als Browser-Meldung; die Zahl steht am Reiter „Werkzeuge“. Für Alarme in Echtzeit: den Kurs bei TradingView öffnen und dort die Glocke wählen. Die Alarme bleiben nur in diesem Browser.</p>
     </article>`;
@@ -256,6 +254,7 @@
     host.innerHTML = (stocks ? "" : `<article class="card"><p class="muted">${loading ? "Lade die Aktien-Daten …" : "Noch keine Aktien-Daten vorhanden."}</p></article>`)
       + screenerCard() + calendarCard() + insiderCard() + alarmCard() + moreCard();
     for (const [id, v] of Object.entries(kept)) if ($(id)) $(id).value = v;
+    if ($("alSym") && window.DTD.attachSuggest) window.DTD.attachSuggest($("alSym"), { source: text => (stocks && text ? window.DTD.matchStocks(stocks.items, text, 8) : []), onPick: () => { if ($("alPrice")) $("alPrice").focus(); } });
     badge();
     window.dispatchEvent(new Event("dtd:sections"));
   }
@@ -266,9 +265,8 @@
   }
   document.addEventListener("click", e => {
     const host = $("toolsBody");
-    const b = e.target.closest("[data-preset],[data-sort],[data-cal],[data-act],[data-open]");
+    const b = e.target.closest("[data-preset],[data-sort],[data-cal],[data-act]");
     if (!b || !host || !host.contains(b)) return;
-    if (b.dataset.open) return open(b.dataset.open);
     if (b.dataset.preset) { const p = PRESETS[b.dataset.preset]; ui.preset = b.dataset.preset; ui.custom = null; if (p && p.sort) { ui.sort = p.sort; ui.dir = -1; } else if (COLS.some(c => c.key === ui.sort && c.only && c.only !== ui.preset)) { ui.sort = "momRank"; ui.dir = -1; } saveUi(); return render(); }
     if (b.dataset.sort) { ui.dir = ui.sort === b.dataset.sort ? -ui.dir : (b.dataset.sort === "sym" ? 1 : -1); ui.sort = b.dataset.sort; saveUi(); return render(); }
     if (b.dataset.cal) { ui.cal = b.dataset.cal; saveUi(); return render(); }
