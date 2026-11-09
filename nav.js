@@ -2,7 +2,7 @@
 (() => {
   const tabs = [...document.querySelectorAll(".tabs .tab")];
   const DESC = {
-    home: "Tag auf einen Blick", portfolio: "Ihre Aktien, halten?", markt: "Ampeln, Heatmap", aktie: "Symbol prüfen", news: "Nachrichten, Termine", ideen: "Belegte Muster",
+    home: "Tag auf einen Blick", portfolio: "Ihre Aktien, halten?", markt: "Ampeln, Heatmap", aktie: "Symbol prüfen", tools: "Screener, Kalender, Alarme", news: "Nachrichten, Termine", ideen: "Belegte Muster",
     hot: "Experten, Swing-Trades", swing: "Theorie, Kauf, Stop", bot: "Handelt selbst, Tagebuch",
     setup: "Stop, Ziel, Stück", daily: "Wen kopieren?", copy: "Kopie einrichten", compare: "Eigene Kandidaten", journal: "Trades, Limit", theorie: "Forschung",
   };

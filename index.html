@@ -41,6 +41,8 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Markt</span></button>
     <button class="tab" role="tab" id="tab-aktie" aria-controls="aktie" data-tab="aktie">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M7.5 12l2-2.5 2 1.5 2.5-3"/></svg><span>Aktien-Check</span> <span class="new">neu</span></button>
+    <button class="tab" role="tab" id="tab-tools" aria-controls="tools" data-tab="tools">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5a4 4 0 0 0-5 5L4 16v4h4l5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/></svg><span>Werkzeuge</span> <span class="new" id="toolsBadge" hidden></span></button>
     <button class="tab" role="tab" id="tab-news" aria-controls="news" data-tab="news">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M19 9h1a1 1 0 0 1 1 1v8a2 2 0 0 1-2 2M8 9h7M8 13h7M8 17h4"/></svg><span>News</span></button>
     <button class="tab" role="tab" id="tab-ideen" aria-controls="ideen" data-tab="ideen">
@@ -172,6 +174,15 @@
     </section>
 
     <!-- NEWS -->
+    <!-- WERKZEUGE -->
+    <section id="tools" class="view" role="tabpanel" aria-labelledby="tab-tools" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Werkzeuge · Screener, Kalender, Insider, Alarme, Steuer</p><h1>Die Werkzeuge der Profis – eingebaut</h1></div>
+        <p class="lead">Aktien nach Regeln finden, Quartalszahlen im Blick behalten, sehen, wo Insider kaufen, Kursalarme setzen und die Steuer grob schätzen – mit den Daten dieser Seite, ohne Abo.</p>
+      </div>
+      <div id="toolsBody" class="stack"></div>
+    </section>
+
     <section id="news" class="view" role="tabpanel" aria-labelledby="tab-news" hidden>
       <div class="view-head">
         <div><p class="eyebrow">News</p><h1>Nachrichten und Termine</h1></div>
@@ -528,6 +539,7 @@
   <script src="hot.js"></script>
   <script src="swing.js"></script>
   <script src="portfolio.js"></script>
+  <script src="tools.js"></script>
   <script src="bot.js"></script>
   <script src="live.js"></script>
   <script src="nav.js"></script>

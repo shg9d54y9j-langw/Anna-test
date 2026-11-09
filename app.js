@@ -184,13 +184,14 @@ $("symbolBtn").addEventListener("click", () => loadSymbol(symIn.value.trim().toU
 symIn.addEventListener("keydown", e => { if (e.key === "Enter") loadSymbol(symIn.value.trim().toUpperCase()); });
 
 // ---------- Reiter-Navigation ----------
-const VIEWS = ["home", "portfolio", "markt", "aktie", "news", "ideen", "hot", "swing", "bot", "setup", "daily", "copy", "compare", "journal", "theorie"];
-const TITLES = { home: "Übersicht", portfolio: "Portfolio", markt: "Markt", aktie: "Aktien-Check", news: "News", ideen: "Trade-Ideen", hot: "HotStuff", swing: "Swing-Planer", bot: "Trend-Bot", setup: "Trade-Setup", daily: "Tagesempfehlung", copy: "Copy-Trading", compare: "Trader-Vergleich", journal: "Journal", theorie: "Theorie" };
+const VIEWS = ["home", "portfolio", "markt", "aktie", "tools", "news", "ideen", "hot", "swing", "bot", "setup", "daily", "copy", "compare", "journal", "theorie"];
+const TITLES = { home: "Übersicht", portfolio: "Portfolio", markt: "Markt", aktie: "Aktien-Check", tools: "Werkzeuge", news: "News", ideen: "Trade-Ideen", hot: "HotStuff", swing: "Swing-Planer", bot: "Trend-Bot", setup: "Trade-Setup", daily: "Tagesempfehlung", copy: "Copy-Trading", compare: "Trader-Vergleich", journal: "Journal", theorie: "Theorie" };
 const VIEW_INIT = {
   portfolio: () => window.DTD.startPortfolio(),
   markt: () => { loadHeatmap(heatSel.value); loadHotlist(); window.DTD.loadMarketLive(); },
   news: () => { loadNews(); loadCalendar(); },
   aktie: () => window.DTD.startStock(),
+  tools: () => window.DTD.startTools(),
   ideen: () => window.DTD.renderIdeas(),
   hot: () => window.DTD.startHot(),
   swing: () => window.DTD.startSwing(),

@@ -98,6 +98,35 @@
       <p class="muted small">${total} Analysten, Stand ${esc(r.period || "")} · Quelle: Finnhub</p>`;
   }
 
+  // Kennzahlen (nächtlich von Finnhub, nur US-Aktien) und Links zu Insider-, Investoren- und Konferenz-Werkzeugen
+  async function fillFund(x) {
+    const f = window.DTD.fundData ? await window.DTD.fundData() : null;
+    const el = $("skFund");
+    if (!el || $("stockInput").value.trim().toUpperCase() !== x.sym && current && String(current.query).toUpperCase() !== x.sym) return;
+    const it = f && f.items ? f.items[x.sym] : null, us = !x.sym.includes(".");
+    const A = (u, t) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${t}</a>`;
+    const n = (v, d = 1, suf = "") => (Number.isFinite(v) ? `${fmt(v, d)}${suf}` : "–");
+    const links = [
+      us ? A(`http://openinsider.com/screener?s=${encodeURIComponent(x.sym)}`, "Insider-Geschäfte bei OpenInsider ↗") : null,
+      us ? A(`https://www.dataroma.com/m/stock.php?sym=${encodeURIComponent(x.sym)}`, "Große Investoren bei Dataroma ↗") : null,
+      A("https://quartr.com/app", "Telefonkonferenzen in der Quartr-App ↗"),
+      it && it.web ? A(it.web.replace(/"/g, ""), "Webseite der Firma ↗") : null,
+    ].filter(Boolean).join(" · ");
+    if (!it) {
+      el.innerHTML = `<p class="muted small">${us ? (f ? "Für diese Aktie liefert Finnhub keine Kennzahlen." : "Die Kennzahlen kommen mit dem ersten nächtlichen Lauf.") : "Kennzahlen gibt es hier nur für US-Aktien."}</p><p class="small">${links}</p>`;
+      return;
+    }
+    const ins = it.ins, mcap = Number.isFinite(it.mcap) ? (it.mcap >= 1000 ? `${fmt(it.mcap / 1000, 1)} Mrd. $` : `${fmt(it.mcap, 0)} Mio. $`) : "–";
+    el.innerHTML = `<div class="stats-grid">
+        ${kpi("KGV", n(it.pe))}${kpi("KUV", n(it.ps))}${kpi("Kurs/Buchwert", n(it.pb))}${kpi("Umsatzwachstum", n(it.revG, 1, " %"), it.revG < 0 ? "down" : "up")}
+        ${kpi("Gewinnwachstum", n(it.epsG, 1, " %"), it.epsG < 0 ? "down" : "up")}${kpi("Nettomarge", n(it.netM, 1, " %"))}${kpi("Eigenkapitalrendite", n(it.roe, 1, " %"))}${kpi("Schulden/Eigenkapital", n(it.de, 2))}
+        ${kpi("Dividendenrendite", n(it.div, 2, " %"))}${kpi("Börsenwert", mcap)}${kpi("Branche", esc(it.ind || "–"))}
+        ${kpi("Insider (90 Tage)", ins ? `${ins.buyers} kaufen · ${ins.sellers} verkaufen` : "–")}
+      </div>
+      <p class="hint">KGV = Kurs geteilt durch den Gewinn je Aktie der letzten 12 Monate: unter 15 gilt meist als günstig, über 30 als teuer – je nach Branche sehr verschieden. Insider-Käufe am Markt haben mehr Aussagekraft als Verkäufe. Stand ${new Date(f.updated).toLocaleDateString("de-DE")}, Quelle Finnhub.</p>
+      <p class="small">${links}</p>`;
+  }
+
   function render(x, q) {
     const host = $("stockBody");
     const tv = x ? x.tv : q.toUpperCase();
@@ -134,6 +163,11 @@
         </div>
         <div class="widget ${chartMode === "candle" ? "big-chart" : "mini"}" id="skChart"></div>
       </section>
+
+      ${x && x.type === "Aktie" ? `<section class="block" data-section="Kennzahlen">
+        <h2 class="card-title">Kennzahlen und Insider</h2>
+        <div id="skFund"><p class="muted small">Lade Kennzahlen …</p></div>
+      </section>` : ""}
 
       <section class="block" data-section="Termine">
         <h2 class="card-title">Termine</h2>
@@ -229,6 +263,7 @@
       host.querySelectorAll("[data-chart]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.chart === chartMode)));
     };
     drawChart();
+    if (x && x.type === "Aktie") fillFund(x);
     host.querySelectorAll("[data-chart]").forEach(b => b.addEventListener("click", () => { chartMode = b.dataset.chart; store.set("dtd-stock-chart", chartMode); drawChart(); }));
     tvWidget("skNews", "timeline", { ...COMMON, feedMode: "symbol", symbol: tv, displayMode: "regular", width: "100%", height: "100%" });
     tvWidget("skProfile", "symbol-profile", { ...COMMON, symbol: tv, width: "100%", height: "100%" });

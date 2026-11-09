@@ -12,7 +12,7 @@
   chip.innerHTML = `<span class="dot on" aria-hidden="true"></span><b>Live</b><span class="lc-clock num"></span><span class="lc-age muted"></span>`;
   bar.append(chip);
   const clock = chip.querySelector(".lc-clock"), age = chip.querySelector(".lc-age");
-  let checked = Date.now(), lastStocks = 0, lastSwing = Date.now(), lastPortfolio = Date.now();
+  let checked = Date.now(), lastStocks = 0, lastSwing = Date.now(), lastPortfolio = Date.now(), lastTools = Date.now();
   const tick = () => {
     clock.textContent = new Date().toLocaleTimeString("de-DE");
     const s = Math.round((Date.now() - checked) / 1000);
@@ -33,6 +33,8 @@
     // Portfolio: mit Bestand alle 5 Minuten auf neue Kennzahlen prüfen – auch wenn ein anderer Bereich offen ist (Hinweise, Meldungen)
     if (Date.now() - lastPortfolio > 5 * 60 * 1000 && D.portfolioCount && D.portfolioCount() && D.reloadPortfolio) { lastPortfolio = Date.now(); D.reloadPortfolio(); }
     if (Date.now() - lastSwing > 5 * 60 * 1000 && visible("swing") && D.reloadSwing) { lastSwing = Date.now(); D.reloadSwing(); }
+    // Werkzeuge: offen oder mit Kursalarmen alle 5 Minuten auf neue Kurse prüfen
+    if (Date.now() - lastTools > 5 * 60 * 1000 && D.reloadTools && (visible("tools") || (D.alarmCount && D.alarmCount()))) { lastTools = Date.now(); D.reloadTools(); }
   }
   tick();
   setInterval(tick, 1000);

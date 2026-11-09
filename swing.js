@@ -81,7 +81,7 @@
       ? `Erst nach den Quartalszahlen am ${dDate(s.earnSoon)} kaufen – an Zahlentagen springt der Kurs oft über den Stop hinweg. Danach gilt der Plan, wenn der Kurs noch in der Kaufzone liegt.`
       : s.entryType === "market" ? `„Kaufen“, Marktpreis – jetzt etwa <b class="num">${price(s.entry)}</b>.`
       : s.entryType === "limit" ? `„Order“ statt sofort kaufen, Kurs <b class="num">${price(s.entry)}</b>: eToro kauft, sobald der Kurs dorthin zurückfällt. Fällt er nicht, entgeht Ihnen nur ein überhitzter Kauf.`
-      : `Kursalarm bei <b class="num">${price(s.entry)}</b> setzen (z. B. in der eToro-App oder bei TradingView). eToro-Orders kaufen nur unter dem aktuellen Kurs – kaufen Sie erst, wenn der Kurs ${s.why === "high" ? "über das Jahreshoch steigt" : "wieder über den 50-Tage-Schnitt steigt"}.`;
+      : `Kursalarm bei <b class="num">${price(s.entry)}</b> setzen – <button type="button" class="btn ghost small-btn" data-alarm="${esc(s.sym)}" data-price="${s.entry}" data-why="${s.why === "high" ? "Ausbruch über das Jahreshoch" : "zurück über den 50-Tage-Schnitt"}">hier in RojkoMoney</button> oder in der eToro-App bzw. bei TradingView. eToro-Orders kaufen nur unter dem aktuellen Kurs – kaufen Sie erst, wenn der Kurs ${s.why === "high" ? "über das Jahreshoch steigt" : "wieder über den 50-Tage-Schnitt steigt"}.`;
     return `<div class="howto">
         <p class="howto-title">So stellen Sie es bei eToro ein</p>
         <ol class="steps">
@@ -224,6 +224,10 @@
       + section("Neu entdeckt", "Neu entdeckt: starke Aktien ohne Steckbrief", `Aus den rund ${fmt(700, 0)} beliebtesten Aktien bei eToro: Momentum unter den besten 10 %, Aufwärtstrend, höchstens 10 % unter dem Jahreshoch, Analysten nicht skeptisch. Die wöchentliche Recherche prüft die Geschichte dahinter.`, cards(found, info, "Heute erfüllt keine Aktie ohne Steckbrief alle Bedingungen."), found.length)
       + restCard(rest, info) + ledgerCard() + methodCard();
     host.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => window.DTD.openStock && window.DTD.openStock(b.dataset.open)));
+    host.querySelectorAll("[data-alarm]").forEach(b => b.addEventListener("click", () => {
+      const ok = window.DTD.addAlarm && window.DTD.addAlarm(b.dataset.alarm, "up", Number(b.dataset.price), `Swing-Planer: ${b.dataset.why}`);
+      if (ok) { b.textContent = "Alarm gesetzt ✓"; b.disabled = true; toast("Kursalarm", `${b.dataset.alarm}: Alarm bei ${b.dataset.price} gesetzt – zu sehen unter Werkzeuge.`, 5000); }
+    }));
     // Kursdiagramm erst laden, wenn „Diagramm“ geöffnet wird
     host.querySelectorAll("details.swing-chart").forEach(d => d.addEventListener("toggle", () => {
       const el = d.querySelector(".big-chart");
