@@ -1,8 +1,9 @@
 // Kennzahlen und Insider-Geschäfte (GitHub Actions, nachts an Börsentagen) – für Screener, Aktien-Check und Werkzeuge.
 // Quelle: Finnhub (Secret FINNHUB_API_KEY), nur US-Aktien aus den Aktien-Daten. Je Aktie: Bewertung (KGV, KUV, KBV),
 // Wachstum, Margen, Eigenkapitalrendite, Verschuldung, Dividende, Börsenwert, Branche und die Insider-Käufe und -Verkäufe
-// der letzten 90 Tage (SEC-Formular 4: Code P = Kauf am Markt, S = Verkauf am Markt). Branche und Webseite werden zwischen
-// den Läufen weitergetragen, damit nur neue Aktien nachgeschlagen werden. Der Schlüssel geht nur an finnhub.io.
+// der letzten 90 Tage (SEC-Formular 4: Code P = Kauf am Markt, S = Verkauf am Markt). Branche, Webseite und Sitzland (cty –
+// Firmen außerhalb der USA melden meist nicht nach Formular 4) werden zwischen den Läufen weitergetragen, damit nur neue
+// Aktien nachgeschlagen werden. Der Schlüssel geht nur an finnhub.io.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
@@ -78,12 +79,13 @@ async function main() {
       try { const d = await finnhub("/stock/insider-transactions", { symbol: sym, from, to: today }); it.ins = summarizeInsider(d && d.data, today); avail.insider = true; }
       catch (e) { if (e.status === 401 || e.status === 403) { avail.insider = false; log(`Insider-Geschäfte: im Finnhub-Tarif nicht enthalten (HTTP ${e.status})`); } else errors.push(`${sym} Insider: ${e.message}`); }
     }
-    if (old && old.ind) { it.ind = old.ind; if (old.web) it.web = old.web; }
+    if (old && old.ind && typeof old.cty === "string") { it.ind = old.ind; if (old.web) it.web = old.web; it.cty = old.cty; }
     else if (avail.profile !== false) {
       try {
         const d = await finnhub("/stock/profile2", { symbol: sym });
         if (d && d.finnhubIndustry) it.ind = String(d.finnhubIndustry).slice(0, 60);
         if (d && /^https:\/\/[^\s"<>]+$/.test(d.weburl || "")) it.web = d.weburl;
+        if (d && it.ind) it.cty = /^[A-Za-z]{2}$/.test(d.country || "") ? d.country.toUpperCase() : "";
         avail.profile = true;
       } catch (e) { if (e.status === 401 || e.status === 403) avail.profile = false; else errors.push(`${sym} Profil: ${e.message}`); }
     }

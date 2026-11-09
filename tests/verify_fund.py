@@ -42,8 +42,8 @@ for sym in us:
     if forbidden:
         if "ins" in it:
             errors.append(f"{sym}: Insider-Daten trotz gesperrtem Tarif")
-        if prev["items"].get(sym, {}).get("ind") != it.get("ind"):
-            errors.append(f"{sym}: Branche nicht aus dem vorherigen Lauf übernommen")
+        if prev["items"].get(sym, {}).get("ind") != it.get("ind") or prev["items"].get(sym, {}).get("cty") != it.get("cty"):
+            errors.append(f"{sym}: Branche oder Sitzland nicht aus dem vorherigen Lauf übernommen")
         continue
     rows = [t for t in get(f"/stock/insider-transactions?symbol={sym}&from=2000-01-01&to={today.isoformat()}")["data"]
             if t["transactionCode"] in ("P", "S") and (t.get("transactionDate") or t.get("filingDate")) >= cut]
@@ -58,6 +58,8 @@ for sym in us:
     p = get(f"/stock/profile2?symbol={sym}")
     if it.get("ind") != p.get("finnhubIndustry"):
         errors.append(f"{sym}: Branche {it.get('ind')} statt {p.get('finnhubIndustry')}")
+    if p.get("finnhubIndustry") and it.get("cty") != p.get("country", ""):
+        errors.append(f"{sym}: Sitzland {it.get('cty')!r} statt {p.get('country', '')!r}")
     web_ok = p.get("weburl", "").startswith("https://")
     if web_ok != ("web" in it):
         errors.append(f"{sym}: Webseite {'fehlt' if web_ok else 'ohne https übernommen'}")

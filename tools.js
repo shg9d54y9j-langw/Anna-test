@@ -33,6 +33,8 @@
   const total = r => (r ? r.sb + r.b + r.h + r.s + r.ss : 0);
   const buyPct = x => (x.rec && total(x.rec) >= 5 ? (x.rec.sb + x.rec.b) / total(x.rec) * 100 : null);
   const F = sym => (fund && fund.items && fund.items[sym]) || {};
+  // Sitz außerhalb der USA: meist keine Meldungen nach SEC-Formular 4 – Insider-Zahlen nur eingeschränkt vergleichbar
+  const foreign = fx => !!(fx && fx.cty && fx.cty !== "US");
   const planState = sym => { const s = swing && Array.isArray(swing.setups) ? swing.setups.find(y => y.sym === sym) : null; return s ? s.state : null; };
   const PLAN = { buy: ["Kaufzone", "green"], wait: ["Order", "yellow"], alert: ["Alarm", "yellow"], watch: ["Beobachten", ""], avoid: ["Finger weg", "red"] };
   const portfolio = () => { const l = store.get("dtd-portfolio", []); return Array.isArray(l) ? l.filter(h => h && typeof h.sym === "string") : []; };
@@ -51,7 +53,7 @@
     pullback: { label: "Rücksetzer im Aufwärtstrend", note: "Aufwärtstrend, aber zurück am 50-Tage-Schnitt (−3 % bis +2 %): klassische Kaufzone.", f: { trend: "up", d50min: -3, d50max: 2 } },
     highs: { label: "Neue Jahreshochs", note: "Höchstens 1 % unter dem 52-Wochen-Hoch.", f: { maxBelowHigh: 1 } },
     analysts: { label: "Analysten-Favoriten", note: "Mindestens 70 % der Analysten sagen Kauf (ab 5 Analysten), Aufwärtstrend.", f: { minBuy: 70, trend: "up" } },
-    insider: { label: "Insider kaufen", note: "Mindestens zwei Insider haben in den letzten 90 Tagen am Markt gekauft (nur US-Aktien).", f: { minBuyers: 2 } },
+    insider: { label: "Insider kaufen", note: "Mindestens zwei Insider haben in den letzten 90 Tagen am Markt gekauft (nur Firmen mit Sitz in den USA – sie melden nach SEC-Formular 4).", f: { minBuyers: 2 } },
     value: { label: "Wachstum zum fairen Preis", note: "KGV zwischen 0 und 25, Umsatz wächst um mehr als 10 %.", f: { maxPe: 25, minRevG: 10 } },
     earnings: { label: "Nach starken Zahlen", note: "Gewinn je Aktie mindestens 5 % über der Erwartung, gemeldet in den letzten 45 Tagen, Kurs über dem 50-Tage-Schnitt. Nach positiven Überraschungen driftet der Kurs oft noch Wochen nach (Bernard &amp; Thomas 1989) – bei großen, viel beachteten Aktien heute deutlich schwächer (Martineau 2022). Haltedauer etwa bis 3 Monate nach der Meldung; Kauf, Stop und Ziel im Aktien-Check.", f: { minSurprise: 5, d50min: 0 }, sort: "surprise", phoneHide: ["momRank"] },
     dividend: { label: "Dividende", note: "Dividendenrendite ab 3 %, kein Abwärtstrend.", f: { minDiv: 3, trend: "notdown" } },
@@ -79,7 +81,7 @@
       if (f.d50min !== null && !(x.d50 >= f.d50min)) return false;
       if (f.d50max !== null && !(x.d50 <= f.d50max)) return false;
       if (f.minBuy !== null && !(buyPct(x) >= f.minBuy)) return false;
-      if (f.minBuyers !== null && !((fx.ins && fx.ins.buyers) >= f.minBuyers)) return false;
+      if (f.minBuyers !== null && !((fx.ins && fx.ins.buyers) >= f.minBuyers && !foreign(fx))) return false;
       if (f.maxPe !== null && !(fx.pe > 0 && fx.pe <= f.maxPe)) return false;
       if (f.minRevG !== null && !(fx.revG >= f.minRevG)) return false;
       if (f.minDiv !== null && !(fx.div >= f.minDiv)) return false;
@@ -175,9 +177,11 @@
       </article>`;
     }
     const map = new Map(stocks ? stocks.items.map(x => [x.sym, x]) : []);
-    const list = Object.entries(fund.items).filter(([, v]) => v.ins && v.ins.buys > 0).map(([sym, v]) => ({ sym, x: map.get(sym), ins: v.ins }))
-      .sort((a, b) => b.ins.buyers - a.ins.buyers || b.ins.buyVal - a.ins.buyVal).slice(0, 25);
-    const rows = list.map(r => `<tr><td><button type="button" class="chip-btn" data-open="${esc(r.sym)}">${esc(r.sym)}</button><div class="muted small scr-name">${esc(r.x ? r.x.name : "")}</div></td>
+    // zuerst US-Firmen (SEC-Formular 4), darunter höchstens 5 Firmen mit Sitz im Ausland und Käufen mehrerer Insider
+    const all = Object.entries(fund.items).filter(([, v]) => v.ins && v.ins.buys > 0).map(([sym, v]) => ({ sym, x: map.get(sym), ins: v.ins, cty: foreign(v) ? v.cty : "" }));
+    const by = (a, b) => b.ins.buyers - a.ins.buyers || b.ins.buyVal - a.ins.buyVal;
+    const list = [...all.filter(r => !r.cty).sort(by).slice(0, 25), ...all.filter(r => r.cty && r.ins.buyers >= 2).sort(by).slice(0, 5)];
+    const rows = list.map(r => `<tr><td><button type="button" class="chip-btn" data-open="${esc(r.sym)}">${esc(r.sym)}</button><div class="muted small scr-name">${esc(r.x ? r.x.name : "")}${r.cty ? ` · <span title="Sitz außerhalb der USA – meist keine Meldung nach SEC-Formular 4">Sitz ${esc(r.cty)}</span>` : ""}</div></td>
         <td class="num">${r.ins.buyers}</td><td class="num">${big(r.ins.buyVal)}</td><td class="num opt">${dDate(r.ins.lastBuy)}</td><td class="num opt">${r.ins.sellers}</td>
         <td>${r.x ? (() => { const [l, c] = TREND[trendOf(r.x)]; return `<span class="light ${c}">${l}</span>`; })() : "–"}</td>
         <td class="opt">${A(`http://openinsider.com/screener?s=${encodeURIComponent(r.sym)}`, "Details ↗")}</td></tr>`).join("");
@@ -185,7 +189,7 @@
       <div class="card-head"><h2 class="card-title">Insider-Käufe der letzten 90 Tage</h2><span class="muted small">US-Aktien · Stand ${new Date(fund.updated).toLocaleDateString("de-DE")}</span></div>
       <p class="muted small" style="margin:-6px 0 12px">Vorstände und Aufsichtsräte, die mit eigenem Geld am Markt kaufen (SEC-Formular 4, Code P). Laut Forschung haben vor allem gezielte Käufe Aussagekraft, Verkäufe kaum – sie haben oft private Gründe (${A("https://doi.org/10.1111/j.1540-6261.2012.01740.x", "Cohen, Malloy &amp; Pomorski 2012")}).</p>
       ${rows ? `<div class="table-wrap"><table class="scr"><thead><tr><th>Aktie</th><th class="num">Käufer</th><th class="num">gekauft für</th><th class="num opt">letzter Kauf</th><th class="num opt">Verkäufer</th><th>Trend</th><th class="opt">Quelle</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="muted">In den letzten 90 Tagen keine Insider-Käufe in den Aktien dieser Seite.</p>`}
-      <p class="hint">Am stärksten gilt ein Kauf mehrerer Insider in einem Aufwärtstrend. Gegen den Trend lieber abwarten.</p>
+      <p class="hint">Am stärksten gilt ein Kauf mehrerer Insider in einem Aufwärtstrend. Gegen den Trend lieber abwarten. Firmen mit Sitz außerhalb der USA (Kennzeichen „Sitz …“, unten in der Liste) melden meist nicht nach SEC-Formular 4 – ihre Zahlen stammen aus anderen Quellen und sind nur eingeschränkt vergleichbar.</p>
     </article>`;
   }
 

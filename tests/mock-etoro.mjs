@@ -334,7 +334,8 @@ http.createServer(async (req, res) => {
       if (!fu) return send(200, {});
       finnhubFlags.profileCalls++;
       const k = fu.instrumentId;
-      return send(200, { name: fu.displayname, finnhubIndustry: ["Technology", "Banking", "Pharmaceuticals", "Retail"][k % 4], weburl: k % 9 === 0 ? "http://unsicher.example" : `https://example.com/${fsym.toLowerCase()}` });
+      return send(200, { name: fu.displayname, finnhubIndustry: ["Technology", "Banking", "Pharmaceuticals", "Retail"][k % 4], weburl: k % 9 === 0 ? "http://unsicher.example" : `https://example.com/${fsym.toLowerCase()}`,
+        ...(k % 11 === 0 ? { country: "TW" } : k % 13 === 0 ? {} : { country: "US" }) });   // Sitz außerhalb der USA bzw. ohne Angabe
     }
     return send(404, { error: "unknown finnhub endpoint" });
   }

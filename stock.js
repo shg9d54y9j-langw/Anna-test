@@ -116,14 +116,18 @@
       el.innerHTML = `<p class="muted small">${us ? (f ? "Für diese Aktie liefert Finnhub keine Kennzahlen." : "Die Kennzahlen kommen mit dem ersten nächtlichen Lauf.") : "Kennzahlen gibt es hier nur für US-Aktien."}</p><p class="small">${links}</p>`;
       return;
     }
-    const ins = it.ins, mcap = Number.isFinite(it.mcap) ? (it.mcap >= 1000 ? `${fmt(it.mcap / 1000, 1)} Mrd. $` : `${fmt(it.mcap, 0)} Mio. $`) : "–";
+    // Finnhub gibt den Börsenwert in Millionen an – bei Firmen mit Sitz im Ausland teils in der Heimatwährung (TSMC in
+    // Taiwan-Dollar, Sony in Yen). Dort und bei unmöglichen Werten (über 10 Billionen) keine Dollar-Angabe.
+    const abroad = it.cty && it.cty !== "US";
+    const cap = Number.isFinite(it.mcap) && !abroad && it.mcap < 1e7 ? it.mcap : null;
+    const ins = it.ins, mcap = cap === null ? (Number.isFinite(it.mcap) ? "siehe eToro" : "–") : cap >= 1e6 ? `${fmt(cap / 1e6, 2)} Bio. $` : cap >= 1000 ? `${fmt(cap / 1000, 1)} Mrd. $` : `${fmt(cap, 0)} Mio. $`;
     el.innerHTML = `<div class="stats-grid">
         ${kpi("KGV", n(it.pe))}${kpi("KUV", n(it.ps))}${kpi("Kurs/Buchwert", n(it.pb))}${kpi("Umsatzwachstum", n(it.revG, 1, " %"), it.revG < 0 ? "down" : "up")}
         ${kpi("Gewinnwachstum", n(it.epsG, 1, " %"), it.epsG < 0 ? "down" : "up")}${kpi("Nettomarge", n(it.netM, 1, " %"))}${kpi("Eigenkapitalrendite", n(it.roe, 1, " %"))}${kpi("Schulden/Eigenkapital", n(it.de, 2))}
         ${kpi("Dividendenrendite", n(it.div, 2, " %"))}${kpi("Börsenwert", mcap)}${kpi("Branche", esc(it.ind || "–"))}
         ${kpi("Insider (90 Tage)", ins ? `${ins.buyers} kaufen · ${ins.sellers} verkaufen` : "–")}
       </div>
-      <p class="hint">KGV = Kurs geteilt durch den Gewinn je Aktie der letzten 12 Monate: unter 15 gilt meist als günstig, über 30 als teuer – je nach Branche sehr verschieden. Insider-Käufe am Markt haben mehr Aussagekraft als Verkäufe. Stand ${new Date(f.updated).toLocaleDateString("de-DE")}, Quelle Finnhub.</p>
+      <p class="hint">KGV = Kurs geteilt durch den Gewinn je Aktie der letzten 12 Monate: unter 15 gilt meist als günstig, über 30 als teuer – je nach Branche sehr verschieden. Insider-Käufe am Markt haben mehr Aussagekraft als Verkäufe.${abroad ? ` <b>Sitz außerhalb der USA (${esc(it.cty)}):</b> Die Firma meldet meist nicht nach SEC-Formular 4, die Insider-Zahlen sind nur eingeschränkt vergleichbar; Finnhub rechnet hier teils in der Heimatwährung – Bewertungen mit Vorsicht lesen.` : ""} Stand ${new Date(f.updated).toLocaleDateString("de-DE")}, Quelle Finnhub.</p>
       <p class="small">${links}</p>`;
   }
 
