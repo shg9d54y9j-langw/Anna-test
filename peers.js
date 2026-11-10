@@ -59,6 +59,42 @@
   }
   window.DTD.peersHtml = html;
   window.DTD.peerGroup = group;
+
+  // ---------- Ähnliche Aktien: dasselbe Profil der sechs Teilnoten – auch aus anderen Branchen ----------
+  // Abstand über die Teilnoten, die beide Aktien haben (mindestens vier); Ähnlichkeit = 100 minus mittlerer Abstand.
+  // Gleiche Firma in anderer Aktiengattung (z. B. GOOG/GOOGL) zählt nicht.
+  const PART_KEYS = ["trend", "quality", "value", "growth", "experts", "risk"];
+  const base = n => String(n || "").toLowerCase().replace(/\b(class [a-z]|cl [a-z]|inc|corp|corporation|co|ltd|plc|sa|ag|nv|se|holdings?|group|the|adr|-|\.|,)\b/g, " ").replace(/\s+/g, " ").trim();
+  function similar(sym, n = 5) {
+    const all = window.DTD.scoreAll ? window.DTD.scoreAll() : null, me = all && all.get(sym), x = S.item(sym);
+    if (!me || !x) return [];
+    const myBase = base(x.name);
+    const out = [];
+    for (const [s, o] of all) {
+      if (s === sym || !o.parts) continue;
+      const y = S.item(s);
+      if (!y || y.type !== x.type || (myBase && base(y.name) === myBase)) continue;
+      let sum = 0, k = 0;
+      for (const p of PART_KEYS) { const a = me.parts[p], b = o.parts[p]; if (fin(a) && fin(b)) { sum += (a - b) ** 2; k++; } }
+      if (k < 4) continue;
+      out.push({ sym: s, y, o, sim: Math.max(0, Math.round(100 - Math.sqrt(sum / k))), k });
+    }
+    // je Firma nur eine Aktiengattung (Alphabet A und C sind dieselbe Firma)
+    const seen = new Set();
+    return out.sort((a, b) => b.sim - a.sim || (b.o.note || 0) - (a.o.note || 0)).filter(r => { const k = base(r.y.name) || r.sym; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, n);
+  }
+  function similarHtml(sym) {
+    const L = similar(sym);
+    if (!L.length) return `<p class="muted small">Für diesen Wert gibt es zu wenige Teilnoten für einen Profil-Vergleich.</p>`;
+    const myInd = (S.fund(sym) || {}).ind;
+    const cmp = window.DTD.compare;
+    return `<p class="small">Aktien mit dem ähnlichsten Profil aus Trend, Qualität, Bewertung, Wachstum, Experten und Sicherheit – oft aus anderen Branchen. Gut, um Alternativen zu finden.</p>
+      <div class="sim-list">${L.map(r => { const ind = (S.fund(r.sym) || {}).ind; return `<div class="sim-row"><button type="button" class="chip-btn" data-open="${esc(r.sym)}">${esc(r.sym)}</button>
+        <div class="sim-main"><button type="button" class="name-link" data-open="${esc(r.sym)}">${esc(r.y.name || r.sym)}</button><div class="muted small">${ind ? esc(ind) : r.y.type}${ind && myInd && ind === myInd ? " · gleiche Branche" : ""} · ${r.sim} % ähnlich</div></div>
+        <b class="num ${window.DTD.scoreTone(r.o.note)}" title="Gesamtnote">${fin(r.o.note) ? r.o.note : "–"}</b>${cmp ? cmp.button(r.sym, true) : ""}</div>`; }).join("")}</div>`;
+  }
+  window.DTD.similar = similar;
+  window.DTD.similarHtml = similarHtml;
   // Branche im Screener öffnen
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-industry]");
