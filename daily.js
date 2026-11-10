@@ -448,7 +448,7 @@
       if (ym.endsWith("-01")) svgEl("text", { x: x + w / 2, y: H - 6, "text-anchor": "middle", class: "tick" }, svg).textContent = ym.slice(0, 4);
     });
     const hit = svgEl("rect", { x: m.l, y: m.t, width: pw, height: ph, fill: "transparent", class: "hit" }, svg);
-    const mark = svgEl("rect", { y: m.t, height: ph, width: bw, fill: "rgba(255,255,255,.06)", visibility: "hidden" }, svg);
+    const mark = svgEl("rect", { y: m.t, height: ph, width: bw, fill: LIGHT_THEME ? "rgba(0,0,0,.05)" : "rgba(255,255,255,.06)", visibility: "hidden" }, svg);
     svg.insertBefore(mark, svg.firstChild);
     host.replaceChildren(svg);
     const tip = tipFor(host);
@@ -536,7 +536,7 @@
 
     const svg = svgEl("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img",
       "aria-label": `Streudiagramm: ${pts.length} Trader nach Können-Sicherheit und Rendite pro Jahr, davon ${pts.filter(p => p.k === "safe" || p.k === "rec").length} sicher.` });
-    svgEl("rect", { x: X(thr), y: m.t, width: X(1) - X(thr), height: ph, fill: "rgba(255,255,255,.05)" }, svg);
+    svgEl("rect", { x: X(thr), y: m.t, width: X(1) - X(thr), height: ph, fill: LIGHT_THEME ? "rgba(0,0,0,.04)" : "rgba(255,255,255,.05)" }, svg);
     for (const t of yt) {
       svgEl("line", { x1: m.l, x2: m.l + pw, y1: Y(t), y2: Y(t), class: t === 0 ? "base" : "grid" }, svg);
       svgEl("text", { x: m.l - 8, y: Y(t) + 4, "text-anchor": "end", class: "tick" }, svg).textContent = `${fmt(t, 0)} %`;

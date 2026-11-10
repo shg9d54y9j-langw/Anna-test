@@ -6,7 +6,7 @@
   const STORE = "daytrade-traders-v1";
   // Kein Grün und kein Rot: diese Farben sind Gewinn und Verlust vorbehalten
   // Reihenfolge mit dem Farbprüfer bestätigt (Nachbarn auch bei Farbsehschwäche unterscheidbar); Weiß und Grau zuletzt
-  const COLORS = ["#3987e5", "#d95926", "#9085e9", "#c98500", "#d55181", "#f2f2f2", "#9a9a9a", "#5f5f5f"];
+  const COLORS = ["#3987e5", "#d95926", "#9085e9", "#c98500", "#d55181", LIGHT_THEME ? "#2b2b36" : "#f2f2f2", "#9a9a9a", LIGHT_THEME ? "#4a4a55" : "#5f5f5f"];
   const SURFACE = PAL.surface;
   const MAX_TRADERS = COLORS.length;
   const MIN_COPY = 200; // eToro-Mindestbetrag pro kopiertem Trader ($)

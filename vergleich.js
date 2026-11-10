@@ -107,7 +107,7 @@
     document.querySelectorAll("#vergleich [data-tv]").forEach(el => {
       if (el.dataset.done) return;
       el.dataset.done = "1";
-      if (typeof tvWidget === "function") tvWidget(el.id, "mini-symbol-overview", { ...COMMON, symbol: el.dataset.tv, width: "100%", height: "100%", dateRange: "12M", trendLineColor: "rgba(255,255,255,1)", underLineColor: "rgba(255,255,255,0.08)", underLineBottomColor: "rgba(255,255,255,0)" });
+      if (typeof tvWidget === "function") tvWidget(el.id, "mini-symbol-overview", { ...COMMON, symbol: el.dataset.tv, width: "100%", height: "100%", dateRange: "12M", trendLineColor: PAL.series1, underLineColor: LIGHT_THEME ? "rgba(79,86,232,0.12)" : "rgba(143,149,255,0.14)", underLineBottomColor: "rgba(0,0,0,0)" });
     });
   }
   window.DTD.compare = { list, has, toggle, button, card, charts };

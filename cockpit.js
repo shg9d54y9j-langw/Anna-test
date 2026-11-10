@@ -131,10 +131,10 @@
   let loadedOnce = false;
   window.DTD.loadMarketLive = () => tvWidget("marketOverview", "market-overview", {
     ...COMMON, dateRange: "1D", showChart: true, width: "100%", height: "100%", showSymbolLogo: true, showFloatingTooltip: true,
-    plotLineColorGrowing: PAL.up, plotLineColorFalling: PAL.down, gridLineColor: "rgba(255,255,255,0.06)", scaleFontColor: "#8d8d96",
+    plotLineColorGrowing: PAL.up, plotLineColorFalling: PAL.down, gridLineColor: TV.grid, scaleFontColor: TV.muted,
     belowLineFillColorGrowing: "rgba(0,230,118,0.12)", belowLineFillColorFalling: "rgba(255,61,87,0.12)",
     belowLineFillColorGrowingBottom: "rgba(0,230,118,0)", belowLineFillColorFallingBottom: "rgba(255,61,87,0)",
-    symbolActiveColor: "rgba(255,255,255,0.08)",
+    symbolActiveColor: TV.hover,
     tabs: [
       { title: "Indizes", symbols: [{ s: "FOREXCOM:SPXUSD", d: "S&P 500" }, { s: "FOREXCOM:NSXUSD", d: "Nasdaq 100" }, { s: "XETR:DAX", d: "DAX" }, { s: "TVC:VIX", d: "VIX (Angst-Index)" }] },
       { title: "Rohstoffe", symbols: [{ s: "TVC:GOLD", d: "Gold" }, { s: "TVC:USOIL", d: "Öl (WTI)" }, { s: "TVC:SILVER", d: "Silber" }] },

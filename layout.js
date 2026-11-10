@@ -34,7 +34,11 @@
     const c = get(), hide = new Set(c.hide), hh = new Set(c.homeHide);
     const row = (kind, id, label, on, i, n) => `<li><label><input type="checkbox" data-lay="${kind}" data-id="${id}"${on ? " checked" : ""}> ${esc(label)}</label>${n ? `<button type="button" class="icon-btn" data-lay-move="${kind}" data-id="${id}" data-dir="-1" aria-label="${esc(label)} nach oben"${i === 0 ? " disabled" : ""}>↑</button><button type="button" class="icon-btn" data-lay-move="${kind}" data-id="${id}" data-dir="1" aria-label="${esc(label)} nach unten"${i === n - 1 ? " disabled" : ""}>↓</button>` : ""}</li>`;
     const label = (all, k) => (all.find(([x]) => x === k) || [k, k])[1];
+    const th = window.RojkoTheme ? window.RojkoTheme.get() : "auto";
+    const themeRow = window.RojkoTheme ? `<h3 class="swing-h3">Farbschema</h3>
+      <div class="seg" role="group" aria-label="Farbschema">${[["auto", "Wie das Gerät"], ["light", "Hell"], ["dark", "Dunkel"]].map(([k, l]) => `<button type="button" data-theme-set="${k}" aria-pressed="${th === k}">${l}</button>`).join("")}</div>` : "";
     return `<p class="small">Was Sie nicht brauchen, blenden Sie hier aus. Gespeichert nur in diesem Browser – „Sicherung herunterladen“ im Portfolio nimmt es mit.</p>
+      ${themeRow}
       <h3 class="swing-h3">Bereiche</h3>
       <ul class="lay-list">${VIEWS.filter(v => v.id !== "home").map(v => row("view", v.id, v.label, !hide.has(v.id))).join("")}</ul>
       <h3 class="swing-h3">Startseite: Ihre Karten oben</h3>
@@ -48,6 +52,8 @@
 
   document.addEventListener("click", e => {
     if (e.target.closest("[data-layout-open]")) { e.preventDefault(); return open(); }
+    const ts = e.target.closest("[data-theme-set]");
+    if (ts && window.RojkoTheme) { window.RojkoTheme.set(ts.dataset.themeSet); return refresh(); }
     const mv = e.target.closest("[data-lay-move]");
     if (mv) {
       const c = get(), list = c[mv.dataset.layMove], i = list.indexOf(mv.dataset.id), j = i + Number(mv.dataset.dir);

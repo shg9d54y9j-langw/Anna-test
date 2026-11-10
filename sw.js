@@ -3,7 +3,7 @@
 // zuletzt geladenen Stand (Seite, Skripte, Aktien-Daten, Nachrichten). TradingView und andere fremde Seiten bleiben unberührt.
 const CACHE = "rojko-v1";
 const CORE = ["./", "index.html", "style.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon.svg", "fonts/inter-latin-wght-normal.woff2",
-  "app.js", "data.js", "glossary.js", "score.js", "bilanz.js", "watch.js", "peers.js", "vergleich.js", "sectors.js", "alerts.js", "neu.js", "layout.js", "home.js", "news.js", "econ.js",
+  "theme.js", "app.js", "data.js", "glossary.js", "score.js", "bilanz.js", "watch.js", "peers.js", "vergleich.js", "sectors.js", "alerts.js", "neu.js", "layout.js", "home.js", "news.js", "econ.js",
   "stats.js", "compare.js", "daily.js", "overview.js", "cockpit.js", "knowledge.js", "backtest.js", "psych.js", "stock.js", "hot.js", "swing.js",
   "linechart.js", "verlauf.js", "portfolio.js", "tools.js", "bot.js", "live.js", "quicksearch.js", "nav.js", "pull.js"];
 self.addEventListener("install", e => {

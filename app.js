@@ -7,7 +7,13 @@
 const $ = id => document.getElementById(id);
 // Farben für Diagramme und Widgets (gleiche Werte wie in style.css; Reihenfarben gegen die schwarze Fläche geprüft)
 // Grün und Rot nur für Gewinn und Verlust; Linien sonst in Weiß und Grau (unterschieden durch Strichart und Beschriftung)
-const PAL = { up: "#3fd98a", down: "#ff6b72", surface: "#0f0f14", series1: "#8f95ff", series2: "#d4d4de", gray: "#70707f", ink: "#f3f3f6" };
+// Farbschema (theme.js setzt es vor dem ersten Zeichnen): Diagramme und TradingView-Fenster in passenden Farben
+const LIGHT_THEME = document.documentElement.dataset.theme === "light";
+const PAL = LIGHT_THEME
+  ? { up: "#0d7343", down: "#b5262e", surface: "#ffffff", series1: "#4f56e8", series2: "#2b2b36", gray: "#8c8c99", ink: "#121218" }
+  : { up: "#3fd98a", down: "#ff6b72", surface: "#0f0f14", series1: "#8f95ff", series2: "#d4d4de", gray: "#70707f", ink: "#f3f3f6" };
+const TV = LIGHT_THEME ? { theme: "light", bg: "#ffffff", grid: "rgba(0,0,0,0.06)", muted: "#676776", hover: "rgba(0,0,0,0.05)" }
+  : { theme: "dark", bg: "#0f0f14", grid: "rgba(255,255,255,0.06)", muted: "#8d8d96", hover: "rgba(255,255,255,0.08)" };
 // Zahlen deutsch formatiert; je Nachkommastellen ein Formatierer (toLocaleString mit Optionen baut sonst bei jedem Aufruf einen
 // neuen – in großen Tabellen war das der teuerste Teil beim Zeichnen)
 const NUMF = new Map();
@@ -118,12 +124,12 @@ function tvWidget(containerId, script, config) {
   wrap.appendChild(s);
   host.appendChild(wrap);
 }
-const COMMON = { colorTheme: "dark", isTransparent: true, locale: "de_DE" };
+const COMMON = { colorTheme: TV.theme, isTransparent: true, locale: "de_DE" };
 
 // Großes Kursdiagramm einer Aktie: Tageskerzen der letzten 12 Monate (für Aktien-Check, Portfolio und Swing-Planer)
 function bigChart(containerId, symbol) {
   tvWidget(containerId, "advanced-chart", {
-    ...COMMON, isTransparent: false, backgroundColor: "#0f0f14", gridColor: "rgba(255,255,255,0.06)", autosize: true, symbol,
+    ...COMMON, isTransparent: false, backgroundColor: TV.bg, gridColor: TV.grid, autosize: true, symbol,
     interval: "D", range: "12M", timezone: "Europe/Berlin", style: "1", allow_symbol_change: false, hide_side_toolbar: true, save_image: false,
   });
 }
@@ -180,8 +186,8 @@ function tvChart(containerId, symbol, { style = "1", studies = [], hideVolume = 
     const el = document.getElementById(inner);
     if (!el || el.dataset.tv !== token) return;   // inzwischen neu gezeichnet: sonst entstünden zwei Diagramme übereinander
     new TV.widget({
-      container_id: inner, autosize: true, symbol, interval: "D", range: "12M", timezone: "Europe/Vienna", theme: "dark", style, locale: "de_DE",
-      toolbar_bg: "#0f0f14", backgroundColor: "#0f0f14", gridColor: "rgba(255,255,255,0.06)", enable_publishing: false, allow_symbol_change: false,
+      container_id: inner, autosize: true, symbol, interval: "D", range: "12M", timezone: "Europe/Vienna", theme: TV.theme, style, locale: "de_DE",
+      toolbar_bg: TV.bg, backgroundColor: TV.bg, gridColor: TV.grid, enable_publishing: false, allow_symbol_change: false,
       withdateranges: false, hide_side_toolbar: compact, hide_top_toolbar: false, hide_legend: false, save_image: false, details: false,
       hide_volume: hideVolume, studies,
     });
@@ -302,7 +308,7 @@ const loadCalendar = () => tvWidget("calendarWidget", "events", { ...COMMON, imp
 const symIn = $("symbolInput");
 function loadSymbol(sym) {
   tvWidget("chartWidget", "advanced-chart", {
-    ...COMMON, isTransparent: false, backgroundColor: "#0f0f14", gridColor: "rgba(255,255,255,0.06)", autosize: true, symbol: sym, interval: "15",
+    ...COMMON, isTransparent: false, backgroundColor: TV.bg, gridColor: TV.grid, autosize: true, symbol: sym, interval: "15",
     timezone: "Europe/Berlin", style: "1", studies: ["STD;VWAP", "STD;Average_True_Range"], allow_symbol_change: true, hide_side_toolbar: false,
   });
   tvWidget("taWidget", "technical-analysis", { ...COMMON, interval: "15m", symbol: sym, showIntervalTabs: true, displayMode: "single", width: "100%", height: "100%" });

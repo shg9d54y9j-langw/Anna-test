@@ -18,6 +18,24 @@
     if (b) go(b.dataset.go);
   });
 
+  // Farbschema-Schalter in der Kopfzeile: automatisch → hell → dunkel
+  const THEME_ICON = {
+    auto: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor" stroke="none"/></svg>',
+    light: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg>',
+    dark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',
+  };
+  const THEME_NAME = { auto: "wie das Gerät", light: "hell", dark: "dunkel" };
+  const appbar = document.querySelector(".appbar");
+  if (appbar && window.RojkoTheme) {
+    const tb = document.createElement("button");
+    tb.type = "button";
+    tb.className = "icon-btn theme-btn";
+    const paint = () => { const p = window.RojkoTheme.get(); tb.innerHTML = THEME_ICON[p]; tb.setAttribute("aria-label", `Farbschema: ${THEME_NAME[p]} – umschalten`); tb.title = `Farbschema: ${THEME_NAME[p]} (antippen zum Wechseln)`; };
+    paint();
+    tb.addEventListener("click", () => { window.RojkoTheme.next(); paint(); });
+    appbar.insertBefore(tb, appbar.querySelector(".livechip"));
+  }
+
   // Unter-Navigation: Knöpfe für alle Abschnitte mit data-section im sichtbaren Bereich
   function buildSubnav(view) {
     if (!view) return;
