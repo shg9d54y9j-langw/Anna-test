@@ -969,3 +969,35 @@ table.cmp tr.cmp-sub th[scope="row"] { color: var(--muted); padding-left: 16px; 
   .sec-head > .sec-up.on, .sec-row > summary > .sec-up.on { grid-column: 3; }
   .sec-head:has(.sec-up.on) .sec-vals, .sec-row > summary:has(.sec-up.on) .sec-vals { display: none; }
 }
+
+/* ---------- Startseite: Hinweise, Neu heute ---------- */
+.sa-icon { display: inline-grid; place-items: center; width: 18px; height: 18px; font: 800 11px var(--mono); border: 1px solid currentColor; margin-right: 4px; vertical-align: 1px; }
+.warn-t { color: #ffd23f; }
+.sa-set, .sa-more { margin-top: 12px; }
+.sa-set summary, .sa-more summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
+.sa-set .tchips { margin: 10px 0 6px; }
+.nh-list { display: grid; gap: 0; border: 1px solid var(--line); }
+.nh-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 6px 12px; align-items: center; padding: 10px 12px; }
+.nh-row + .nh-row { border-top: 1px solid var(--line); }
+.nh-l { font: 700 12px var(--font); letter-spacing: .04em; color: var(--text-2); text-decoration: none; }
+.nh-l:hover { color: var(--text); }
+.nh-c { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 560px) { .nh-row { grid-template-columns: 1fr; } }
+
+/* Seitenkopf am Handy: Logo und Live-Uhr in einer Zeile, beide Börsen nebeneinander */
+@media (max-width: 720px) {
+  .appbar { gap: 8px 12px; padding-bottom: 8px; }
+  .appbar .brand { order: 0; }
+  .appbar .livechip { order: 1; margin-left: auto; }
+  .appbar .sessions { order: 2; flex-wrap: nowrap; }
+  .appbar .pill { flex: 1 1 50%; padding: 5px 10px; }
+  .appbar .pill + .pill { border-top: none; border-left: 1px solid var(--line); }
+  .pill-x { display: none; }
+  #home .view-head .lead { display: none; }
+}
+@media (max-width: 400px) {
+  .appbar .wordmark { font-size: 14px; letter-spacing: .1em; }
+  .appbar .logo { width: 28px; height: 28px; }
+  .appbar .brand { gap: 9px; }
+  .appbar .livechip { padding: 4px 8px; gap: 6px; }
+}

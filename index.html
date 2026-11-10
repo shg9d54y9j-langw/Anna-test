@@ -34,7 +34,7 @@
 
   <nav class="tabs" role="tablist" aria-label="Bereiche">
     <button class="tab" role="tab" id="tab-home" aria-controls="home" data-tab="home">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Übersicht</span></button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Übersicht</span> <span class="new" id="homeBadge" hidden></span></button>
     <button class="tab" role="tab" id="tab-portfolio" aria-controls="portfolio" data-tab="portfolio">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M8 7V4h8v3M3 12.5h18"/></svg><span>Portfolio</span> <span class="new" id="pfBadge" hidden></span></button>
     <button class="tab" role="tab" id="tab-markt" aria-controls="markt" data-tab="markt">
@@ -67,8 +67,9 @@
           <p class="eyebrow" id="ovDate"></p>
           <h1 id="ovGreeting">Übersicht</h1>
         </div>
-        <p class="lead">Ihr Handelstag auf einen Blick: Marktlage, Börsenzeiten, geprüfte Tagesempfehlung, Live-Wächter und Ihr Journal.</p>
+        <p class="lead">Hinweise zu Ihren Aktien, Depot, Merkliste, neue Signale, Termine und die Marktlage – darunter Copy-Trading und Ihr Handelstag.</p>
       </div>
+      <div id="ovSmart" class="stack"></div>
       <div id="ovMarket"></div>
       <div class="dash">
         <article class="card">
@@ -520,6 +521,8 @@
   <script src="peers.js"></script>
   <script src="vergleich.js"></script>
   <script src="sectors.js"></script>
+  <script src="alerts.js"></script>
+  <script src="home.js"></script>
   <script src="stats.js"></script>
   <script src="compare.js"></script>
   <script src="daily.js"></script>

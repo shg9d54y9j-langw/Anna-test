@@ -345,7 +345,7 @@ function showView(id, { scrollTo = null } = {}) {
   else window.scrollTo({ top: 0 });
 }
 // Abschnitte, die erst beim ersten Öffnen ihres Bereichs entstehen (Werkzeuge, Portfolio): kurz warten, dann springen
-const LAZY = { vergleich: "tools", screener: "tools", branchen: "tools", lexikon: "tools", pfTax: "portfolio" };
+const LAZY = { vergleich: "tools", screener: "tools", branchen: "tools", lexikon: "tools", kalender: "tools", pfTax: "portfolio", hinweise: "home" };
 function waitAndJump(id, tries = 50) {
   if ($(id)) return jumpTo($(id));
   if (tries > 0) setTimeout(() => waitAndJump(id, tries - 1), 100);
@@ -422,7 +422,7 @@ function duration(ms) {
 const marketsNow = () => MARKETS.map(mk => ({ ...mk, ...marketState(mk) }));
 function renderSessions() {
   $("sessions").innerHTML = marketsNow().map(mk =>
-    `<span class="pill"><span class="status-dot ${mk.open ? "open" : ""}"></span><b>${mk.name}</b> ${mk.open ? "offen" : "zu"} · ${mk.open ? "schließt" : "öffnet"} in ${duration(mk.ms)}</span>`).join("");
+    `<span class="pill"><span class="status-dot ${mk.open ? "open" : ""}"></span><b>${mk.name}</b> ${mk.open ? "offen" : "zu"}<span class="pill-x"> · ${mk.open ? "schließt" : "öffnet"} in ${duration(mk.ms)}</span></span>`).join("");
   window.dispatchEvent(new Event("dtd:clock"));
 }
 renderSessions();

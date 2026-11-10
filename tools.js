@@ -159,7 +159,7 @@
         <span class="muted small">${HOUR[x.earn.hour] || ""}${Number.isFinite(x.earn.eps) ? ` · Gewinn je Aktie erwartet ${fmt(x.earn.eps, 2)}` : ""}${x.lastEarn && Number.isFinite(x.lastEarn.surprisePct) ? ` · letztes Mal ${sign(x.lastEarn.surprisePct, 0)} %` : ""}${Number.isFinite(buyPct(x)) ? ` · ${fmt(buyPct(x), 0)} % Kauf` : ""}</span></div>`;
     const recent = stocks.items.filter(x => x.lastEarn && Number.isFinite(x.lastEarn.surprisePct) && x.lastEarn.date >= new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10) && pick(x))
       .sort((a, b) => Math.abs(b.lastEarn.surprisePct) - Math.abs(a.lastEarn.surprisePct)).slice(0, 12);
-    return `<article class="card" data-section="Kalender">
+    return `<article class="card" data-section="Kalender" id="kalender">
       <div class="card-head"><h2 class="card-title">Quartalszahlen: die nächsten 4 Wochen</h2><span class="muted small">${up.length} Termine</span></div>
       <div class="seg" role="group" aria-label="Auswahl">${[["alle", "Alle"], ["meine", `Meine Aktien (${mine.size})`], ["ideen", "Swing-Ideen"], ["theorie", "Theorie-Firmen"]].map(([k, l]) => `<button type="button" data-cal="${k}" aria-pressed="${ui.cal === k}">${l}</button>`).join("")}</div>
       ${days.size ? `<div class="cal">${[...days.entries()].slice(0, 20).map(([d, xs]) => `<div class="cal-day"><p class="cal-date">${dDate(d)}</p>${xs.map(row).join("")}</div>`).join("")}</div>` : `<p class="muted" style="margin-top:12px">In den nächsten 4 Wochen keine Termine in dieser Auswahl.</p>`}

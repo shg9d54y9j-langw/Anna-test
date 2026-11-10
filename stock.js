@@ -180,6 +180,7 @@
       + `<p class="hint">Die Linien zeichnet TradingView aus Tageskerzen; die Ø-Linien erkennen Sie oben links in der Legende am Zusatz „MA 20“, „MA 50“ und „MA 200“. Weitere Kennzahlen, Farben und Längen: im Diagramm auf „Indikatoren“ tippen. Ihre Auswahl bleibt in diesem Browser gespeichert.</p>`;
   }
 
+  let lastSize = null;
   function render(x, q) {
     const host = $("stockBody");
     const tv = x ? x.tv : tvGuess(q);
@@ -189,6 +190,7 @@
     const f = x ? factors(x) : [];
     const score = f.reduce((s, y) => s + y.v, 0);
     const L = x && Number.isFinite(x.atr) ? levels(x) : null;
+    lastSize = L ? L.size : lastSize;
     const cur = $("cCur") ? $("cCur").value || "$" : "$";
     host.innerHTML = `
       <section class="block" data-section="Überblick">
@@ -372,7 +374,9 @@
     if (last && !current) { $("stockInput").value = last; current = { query: last }; }
     if (current) show(current.query, false);
   };
-  window.addEventListener("dtd:market", () => { if (current && !$("aktie").hidden) show(current.query, false); });
+  // Marktlage beeinflusst nur die Positionsgröße: neu zeichnen, wenn sich der Faktor geändert hat (sonst lädt das Diagramm doppelt)
+  const sizeNow = () => { const m = window.DTD.market; return m && m.overall && Number.isFinite(m.overall.sizeFactor) ? m.overall.sizeFactor : 1; };
+  window.addEventListener("dtd:market", () => { if (current && !$("aktie").hidden && sizeNow() !== lastSize) show(current.query, false); });
   // Von anderen Bereichen (HotStuff) direkt einen Wert öffnen
   window.DTD.openStock = sym => { store.set("dtd-stock", sym); $("stockInput").value = sym; current = { query: sym }; location.hash = "aktie"; if (data) show(sym); };
   window.DTD.stockData = () => data;
