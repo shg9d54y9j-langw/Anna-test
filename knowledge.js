@@ -317,9 +317,10 @@
             <h3>${f.title}</h3>
             <p class="core">${f.why}</p>
             <p class="small"><b>Welche Sparten profitieren:</b> ${f.sparten}</p>
+            <details class="more"><summary>${syms ? `${syms.length} Firmen, ` : ""}Risiko und Quellen</summary>
             ${syms ? `<p class="small firm-intro"><b>Interessante Firmen</b> <span class="muted">– Name antippen für die Begründung</span></p>${firmList(syms)}` : `<div class="chips">${f.ex.map(chipFor).join("")}</div>`}
             <p class="small risk"><b>Risiko:</b> ${f.risk}</p>
-            <ul class="srcs">${f.src.map(x => `<li>${x}</li>`).join("")}</ul>
+            <ul class="srcs">${f.src.map(x => `<li>${x}</li>`).join("")}</ul></details>
           </article>`; }).join("")}</div>
         <p class="hint"><b>Unsere Einschätzung:</b> Am sichersten wachsen die „Schaufel-Verkäufer“ – Netze, Chips, Strom – und Bereiche mit fest beschlossenem Geld wie Verteidigung. Am meisten Fantasie, aber auch am meisten Totalverlust-Risiko steckt in Quanten, kleinen Reaktoren und Raumfahrt. Wichtig: Ein wachsender Markt heißt nicht, dass die Aktie steigt – bekannte Themen sind oft schon im Preis; Themen-ETFs verloren nach Auflage im Schnitt rund 30 % gegenüber dem Markt in fünf Jahren (${A("https://doi.org/10.1093/rfs/hhac048", "Ben-David u. a., RFS 2023")}).</p>
       </article>
@@ -331,9 +332,9 @@
           <article class="moon-card">
             <h3>${m.title}</h3>
             <p class="core">${m.why}</p>
-            ${M ? `${firmList(M.firms)}
+            ${M ? `<details class="more"><summary>${M.firms.length} Firmen und der sicherere Weg</summary>${firmList(M.firms)}
             ${M.note ? `<p class="small moon-note">${esc(M.note[0])} <span class="muted">(${link(M.note[1], M.note[2])})</span></p>` : ""}
-            <p class="small moon-safer">${esc(M.safer)}</p><div class="chips">${(M.saferSyms || []).map(chipFor).join("")}</div>` : `<div class="chips">${m.ex.map(chipFor).join("")}</div>`}
+            <p class="small moon-safer">${esc(M.safer)}</p><div class="chips">${(M.saferSyms || []).map(chipFor).join("")}</div></details>` : `<div class="chips">${m.ex.map(chipFor).join("")}</div>`}
           </article>`; }).join("")}</div>
         ${worst.length ? `<p class="small" style="margin-top:12px"><b>Die Lehre aus 2025/26:</b> Genau solche Werte waren 2025 die großen Stars – in den letzten 12 Monaten: ${worst.map(x => `${esc(x.sym)} <span class="down">${fmt(x.ret12m, 0)} %</span>`).join(", ")}. Wer 1000 % will, muss −80 % aushalten können.</p>` : ""}
         <ul class="checklist">
@@ -413,8 +414,9 @@
           <h3>${t.title}</h3>
           <p class="core">${t.core}</p>
           <p class="means"><b>Was es für Sie heißt:</b> ${t.means}</p>
+          <details class="more"><summary>Aktueller Stand und Quellen</summary>
           <p class="now"><b>Aktuell:</b> ${t.now}</p>
-          <ul class="srcs">${t.src.map(s => `<li>${s}</li>`).join("")}</ul>
+          <ul class="srcs">${t.src.map(s => `<li>${s}</li>`).join("")}</ul></details>
         </article>`).join("")}
       </div>
       <p class="muted small">Auswahl nach Bedeutung in Fachzeitschriften und aktueller Forschung (Stand November 2026). Beweisstärke ist eine Einschätzung dieser Seite anhand der Studienlage, keine amtliche Bewertung.</p></article>`;

@@ -1076,3 +1076,11 @@ table.earn-t td { vertical-align: middle; }
 .offline-bar { position: fixed; left: 0; right: 0; top: 0; z-index: 70; background: #ffd23f; color: #000; font: 700 12.5px var(--font); padding: calc(6px + env(safe-area-inset-top)) 14px 6px; text-align: center; }
 .offline-bar[hidden] { display: none; }
 .nw-mention .nw-t { color: var(--text-2); }
+
+/* Aufklappbare Details (Theorie-Seite) */
+details.more { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+details.more > summary { cursor: pointer; font: 700 12px var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); list-style: none; padding: 4px 0; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::before { content: "+ "; color: var(--muted); }
+details.more[open] > summary::before { content: "− "; }
+details.more > summary:hover { color: var(--text); }
