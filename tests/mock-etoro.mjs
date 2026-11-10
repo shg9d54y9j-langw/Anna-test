@@ -347,6 +347,19 @@ http.createServer(async (req, res) => {
         { name: "Emil Alt", change: 800, transactionCode: "P", transactionPrice: 40, transactionDate: day(120), filingDate: day(118) });           // älter als 90 Tage
       return send(200, { data: rows, symbol: fsym });
     }
+    if (url.pathname === "/finnhub/stock/earnings") {
+      if (!fu || fu.instrumentId % 6 === 1) return send(200, []);
+      const k = fu.instrumentId, P = ["2026-09-30", "2026-06-30", "2026-03-31", "2025-12-31", "2025-09-30"];
+      // 5 Quartale (eines zu viel), unsortiert, eines ohne Ist-Wert – übernommen werden die neuesten 4 vollständigen
+      return send(200, [3, 0, 4, 1, 2].map(i => ({ symbol: fsym, period: P[i], quarter: [3, 2, 1, 4, 3][i], year: [2026, 2026, 2026, 2025, 2025][i],
+        actual: i === 1 ? null : Math.round((1 + (k % 7) / 10 + i / 20) * 100) / 100, estimate: Math.round((1 + (k % 5) / 10) * 100) / 100 })));
+    }
+    if (url.pathname === "/finnhub/stock/peers") {
+      if (!fu) return send(200, []);
+      const all = [...UNIVERSE, ...UNSEARCHED].filter(u => u.instrumentTypeID === 5 && !u.internalSymbolFull.includes(".") && /^[A-Z0-9]+$/.test(u.internalSymbolFull)).map(u => u.internalSymbolFull);
+      const k = fu.instrumentId;
+      return send(200, [fsym, ...Array.from({ length: 3 + (k % 4) }, (_, i) => all[(k + i * 7) % all.length]), fsym.toLowerCase()]);
+    }
     if (url.pathname === "/finnhub/stock/profile2") {
       if (!fu) return send(200, {});
       finnhubFlags.profileCalls++;

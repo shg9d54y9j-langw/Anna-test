@@ -44,6 +44,9 @@ for sym in us:
             errors.append(f"{sym}: Insider-Daten trotz gesperrtem Tarif")
         if prev["items"].get(sym, {}).get("ind") != it.get("ind") or prev["items"].get(sym, {}).get("cty") != it.get("cty"):
             errors.append(f"{sym}: Branche oder Sitzland nicht aus dem vorherigen Lauf übernommen")
+        for k in ("earn", "peers", "earnAt", "peersAt"):
+            if prev["items"].get(sym, {}).get(k) != it.get(k):
+                errors.append(f"{sym}: {k} nicht aus dem vorherigen Lauf übernommen (wöchentlich)")
         continue
     rows = [t for t in get(f"/stock/insider-transactions?symbol={sym}&from=2000-01-01&to={today.isoformat()}")["data"]
             if t["transactionCode"] in ("P", "S") and (t.get("transactionDate") or t.get("filingDate")) >= cut]
@@ -55,6 +58,20 @@ for sym in us:
     for k, v in exp.items():
         if ins.get(k) != v:
             errors.append(f"{sym} Insider {k}: Lauf {ins.get(k)}, Gegenrechnung {v}")
+    # Quartalszahlen: neueste 4 vollständige, Überraschung in % gegen die Erwartung
+    rows = [r for r in get(f"/stock/earnings?symbol={sym}") if r.get("actual") is not None and r.get("estimate") is not None]
+    rows.sort(key=lambda r: r["period"], reverse=True)
+    want_e = [{"p": r["period"], "a": r2(r["actual"]), "e": r2(r["estimate"]), "sp": r2((r["actual"] - r["estimate"]) / abs(r["estimate"]) * 100) if abs(r["estimate"]) >= 0.01 else None} for r in rows[:4]]
+    got_e = [{k: q.get(k) for k in ("p", "a", "e", "sp")} for q in it.get("earn", [])]
+    if got_e != want_e:
+        errors.append(f"{sym}: Quartalszahlen {got_e} statt {want_e}")
+    peers = []
+    for q in get(f"/stock/peers?symbol={sym}"):
+        q = q.upper()
+        if q != sym and q not in peers:
+            peers.append(q)
+    if it.get("peers", []) != peers[:10]:
+        errors.append(f"{sym}: Konkurrenten {it.get('peers')} statt {peers[:10]}")
     p = get(f"/stock/profile2?symbol={sym}")
     if it.get("ind") != p.get("finnhubIndustry"):
         errors.append(f"{sym}: Branche {it.get('ind')} statt {p.get('finnhubIndustry')}")

@@ -1055,3 +1055,10 @@ table.cmp tr.cmp-sub th[scope="row"] { color: var(--muted); padding-left: 16px; 
 }
 /* Kopfzeile am Computer einzeilig halten: Countdown steht auch in der Karte „Börsen“ */
 @media (max-width: 1400px) { .appbar .pill-x, .appbar .livechip .lc-age { display: none; } }
+
+/* Quartalszahlen-Historie */
+table.earn-t td { vertical-align: middle; }
+.eb { display: block; position: relative; height: 4px; margin-top: 4px; background: var(--panel-3); border-radius: 2px; min-width: 70px; }
+.eb::before { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line-2); }
+.eb i { position: absolute; top: 0; bottom: 0; border-radius: 2px; background: var(--up); }
+.eb i.neg { background: var(--down); }

@@ -3,7 +3,8 @@
 // Wachstum, Margen, Eigenkapitalrendite, Verschuldung, Dividende, Börsenwert, Branche und die Insider-Käufe und -Verkäufe
 // der letzten 90 Tage (SEC-Formular 4: Code P = Kauf am Markt, S = Verkauf am Markt). Branche, Webseite und Sitzland (cty –
 // Firmen außerhalb der USA melden meist nicht nach Formular 4) werden zwischen den Läufen weitergetragen, damit nur neue
-// Aktien nachgeschlagen werden. Der Schlüssel geht nur an finnhub.io.
+// Aktien nachgeschlagen werden. Dazu die letzten 4 Quartalszahlen (Ist gegen Erwartung) und die Konkurrenten laut Finnhub –
+// beides wöchentlich erneuert (Quartalszahlen sofort, wenn neue gemeldet wurden). Der Schlüssel geht nur an finnhub.io.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
@@ -56,6 +57,15 @@ export function summarizeInsider(rows, today) {
   const last = l => l.map(t => String(t.transactionDate || t.filingDate || "")).sort().pop() || null;
   return { buyers: names(buys), sellers: names(sells), buys: buys.length, sells: sells.length, buyVal: Math.round(value(buys)), sellVal: Math.round(value(sells)), lastBuy: last(buys), lastSell: last(sells) };
 }
+// Letzte 4 Quartale: Gewinn je Aktie Ist (a) gegen Erwartung (e), Überraschung in % (sp), neueste zuerst
+export function pickEarnings(rows) {
+  return (Array.isArray(rows) ? rows : []).filter(r => r && /^\d{4}-\d{2}-\d{2}$/.test(String(r.period || "")) && Number.isFinite(r.actual) && Number.isFinite(r.estimate))
+    .sort((a, b) => (a.period < b.period ? 1 : -1)).slice(0, 4)
+    .map(r => ({ p: r.period, q: Number.isFinite(r.quarter) ? r.quarter : null, y: Number.isFinite(r.year) ? r.year : null, a: r2(r.actual), e: r2(r.estimate), sp: Math.abs(r.estimate) >= 0.01 ? r2((r.actual - r.estimate) / Math.abs(r.estimate) * 100) : null }));
+}
+// Konkurrenten laut Finnhub (gleiches Land und gleiche Branche), ohne die Aktie selbst, höchstens 10
+export const pickPeers = (rows, sym) => [...new Set((Array.isArray(rows) ? rows : []).map(s => String(s || "").toUpperCase()).filter(s => /^[A-Z0-9][A-Z0-9.\-]{0,11}$/.test(s) && s !== sym))].slice(0, 10);
+const ageDays = iso => (iso ? (Date.now() - Date.parse(`${iso}T00:00:00Z`)) / 864e5 : Infinity);
 
 async function main() {
   if (!KEY) { console.log("::warning::Kein FINNHUB_API_KEY – Kennzahlen übersprungen."); return; }
@@ -65,7 +75,8 @@ async function main() {
   let prev = null;
   if (PREV) { try { prev = JSON.parse(await readFile(PREV, "utf8")); } catch (e) { if (e.code !== "ENOENT") log(`::warning::Vorherige Kennzahlen unlesbar (${e.message}) – Branchen werden neu geholt.`); } }
   const today = new Date().toISOString().slice(0, 10), from = new Date(Date.now() - 95 * 864e5).toISOString().slice(0, 10);
-  const avail = { metric: null, insider: null, profile: null };   // null = noch unbekannt, false = Tarif erlaubt es nicht
+  const avail = { metric: null, insider: null, profile: null, earnings: null, peers: null };   // null = noch unbekannt, false = Tarif erlaubt es nicht
+  const lastEarn = new Map((stocks.items || []).map(x => [x.sym, x.lastEarn && x.lastEarn.date]));
   const items = {}, errors = [];
   const n = k => Object.values(items).filter(x => k(x)).length;
   for (const sym of syms) {
@@ -89,18 +100,32 @@ async function main() {
         avail.profile = true;
       } catch (e) { if (e.status === 401 || e.status === 403) avail.profile = false; else errors.push(`${sym} Profil: ${e.message}`); }
     }
+    // Quartalszahlen: wöchentlich oder sobald neue gemeldet wurden; sonst aus dem letzten Lauf
+    if (old && old.earnAt && ageDays(old.earnAt) < 7 && !(lastEarn.get(sym) && lastEarn.get(sym) > old.earnAt)) { if (old.earn) it.earn = old.earn; it.earnAt = old.earnAt; }
+    else if (avail.earnings !== false) {
+      try { const d = await finnhub("/stock/earnings", { symbol: sym }); const e = pickEarnings(d); if (e.length) it.earn = e; it.earnAt = today; avail.earnings = true; }
+      catch (e) { if (e.status === 401 || e.status === 403) { avail.earnings = false; log(`Quartalszahlen-Historie: im Finnhub-Tarif nicht enthalten (HTTP ${e.status})`); } else errors.push(`${sym} Quartalszahlen: ${e.message}`); if (old && old.earn) { it.earn = old.earn; it.earnAt = old.earnAt; } }
+    } else if (old && old.earn) { it.earn = old.earn; it.earnAt = old.earnAt; }
+    // Konkurrenten: wöchentlich
+    if (old && old.peersAt && ageDays(old.peersAt) < 7) { if (old.peers) it.peers = old.peers; it.peersAt = old.peersAt; }
+    else if (avail.peers !== false) {
+      try { const d = await finnhub("/stock/peers", { symbol: sym }); const p = pickPeers(d, sym); if (p.length) it.peers = p; it.peersAt = today; avail.peers = true; }
+      catch (e) { if (e.status === 401 || e.status === 403) { avail.peers = false; log(`Konkurrenten: im Finnhub-Tarif nicht enthalten (HTTP ${e.status})`); } else errors.push(`${sym} Konkurrenten: ${e.message}`); if (old && old.peers) { it.peers = old.peers; it.peersAt = old.peersAt; } }
+    } else if (old && old.peers) { it.peers = old.peers; it.peersAt = old.peersAt; }
     if (Object.keys(it).length) items[sym] = it;
   }
   const out = {
     updated: new Date().toISOString(), source: "Finnhub (Kennzahlen, Insider-Geschäfte nach SEC-Formular 4, Branche)",
     // Branchen aus dem letzten Lauf zählen als vorhanden, auch wenn heute kein Profil nachgeschlagen werden musste
-    available: { metric: avail.metric === true, insider: avail.insider === true, profile: avail.profile === true || (avail.profile === null && n(x => x.ind) > 0) },
+    available: { metric: avail.metric === true, insider: avail.insider === true, profile: avail.profile === true || (avail.profile === null && n(x => x.ind) > 0),
+      earnings: avail.earnings === true || (avail.earnings === null && n(x => x.earn) > 0), peers: avail.peers === true || (avail.peers === null && n(x => x.peers) > 0) },
     count: Object.keys(items).length, errors: errors.slice(0, 20), items,
   };
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(out));
   log(`Kennzahlen: ${n(x => Number.isFinite(x.pe) || Number.isFinite(x.mcap))} Aktien mit Bewertung, ${n(x => x.ins)} mit Insider-Daten (${n(x => x.ins && x.ins.buyers >= 2)} mit Käufen mehrerer Insider), ${n(x => x.ind)} mit Branche; ${errors.length} Fehler`);
-  log(`Im Tarif: Kennzahlen ${out.available.metric ? "ja" : "nein"}, Insider ${out.available.insider ? "ja" : "nein"}, Profil ${out.available.profile ? "ja" : "nein"}`);
+  log(`Quartalszahlen-Historie: ${n(x => x.earn)} Aktien, Konkurrenten: ${n(x => x.peers)} Aktien`);
+  log(`Im Tarif: Kennzahlen ${out.available.metric ? "ja" : "nein"}, Insider ${out.available.insider ? "ja" : "nein"}, Profil ${out.available.profile ? "ja" : "nein"}, Quartalszahlen ${out.available.earnings ? "ja" : "nein"}, Konkurrenten ${out.available.peers ? "ja" : "nein"}`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

@@ -21,11 +21,15 @@
     const f = S.fund(sym), x = S.item(sym);
     if (!x || !f || !f.ind) return null;
     const fund = S.get("fund"), stocks = S.get("stocks");
+    const bySym = new Map(stocks.items.map(y => [y.sym, y]));
     const all = stocks.items.filter(y => y.type === "Aktie" && y.sym !== sym && fund.items[y.sym] && fund.items[y.sym].ind === f.ind);
     const cap = v => (fin(v) && v > 0 ? Math.log(v) : null), me = cap(f.mcap);
-    const near = all.map(y => ({ y, d: me !== null && cap(fund.items[y.sym].mcap) !== null ? Math.abs(cap(fund.items[y.sym].mcap) - me) : 99 })).sort((a, b) => a.d - b.d).slice(0, 6).map(o => o.y);
+    // zuerst die Konkurrenten laut Finnhub, die es in den Daten gibt; aufgefüllt mit Firmen derselben Branche und ähnlichem Börsenwert
+    const named = (Array.isArray(f.peers) ? f.peers : []).map(s => bySym.get(s)).filter(y => y && y.type === "Aktie" && y.sym !== sym).slice(0, 6);
+    const near = all.filter(y => !named.includes(y)).map(y => ({ y, d: me !== null && cap(fund.items[y.sym].mcap) !== null ? Math.abs(cap(fund.items[y.sym].mcap) - me) : 99 })).sort((a, b) => a.d - b.d).map(o => o.y);
+    const pick = [...named, ...near].slice(0, 6);
     const row = y => { const s = window.DTD.score ? window.DTD.score(y.sym) : null; return { sym: y.sym, x: y, f: fund.items[y.sym] || {}, note: s ? s.note : null }; };
-    return { ind: f.ind, size: all.length + 1, rows: [row(x), ...near.map(row)] };
+    return { ind: f.ind, size: all.length + 1, named: named.length, rows: [row(x), ...pick.map(row)] };
   }
   function html(sym) {
     const g = group(sym);
@@ -46,7 +50,7 @@
     const good = lines.filter(l => l.m.good && l.wins / l.of >= 0.6), bad = lines.filter(l => l.m.bad && l.losses / l.of >= 0.6);
     const nl = lines.find(l => l.k === "note");
     const cmp = window.DTD.compare;
-    return `<p class="small">${esc(sym)} gegen die ${n - 1} Firmen mit dem ähnlichsten Börsenwert in der Branche <b>${esc(g.ind)}</b> (${g.size} Firmen in den Daten).${nl ? ` Gesamtnote: Platz ${nl.losses + 1} von ${nl.of + 1}.` : ""}</p>
+    return `<p class="small">${esc(sym)} gegen ${g.named ? `${g.named} direkte Konkurrenten laut Finnhub${n - 1 > g.named ? ` und ${n - 1 - g.named} weitere Firmen` : ""}` : `die ${n - 1} Firmen mit dem ähnlichsten Börsenwert`} aus der Branche <b>${esc(g.ind)}</b> (${g.size} Firmen in den Daten).${nl ? ` Gesamtnote: Platz ${nl.losses + 1} von ${nl.of + 1}.` : ""}</p>
       ${good.length || bad.length ? `<ul class="checklist peer-says">${good.map(l => `<li><span class="up">▲</span> ${esc(sym)} ${l.m.good(l.wins, l.of)}</li>`).join("")}${bad.map(l => `<li><span class="down">▼</span> ${esc(sym)} ${l.m.bad(l.losses, l.of)}</li>`).join("")}</ul>` : ""}
       <div class="table-wrap"><table class="scr peers"><thead><tr><th>Aktie</th>${METRICS.map(m => `<th class="num${["netM", "buy", "ret12m"].includes(m.k) ? " opt" : ""}">${T(m.term, m.label)}</th>`).join("")}${cmp ? `<th class="opt"></th>` : ""}</tr></thead>
         <tbody>${g.rows.map((r, i) => `<tr${i === 0 ? ` class="me"` : ""}><td><button type="button" class="chip-btn" data-open="${esc(r.sym)}">${esc(r.sym)}</button><button type="button" class="name-link muted small scr-name" data-open="${esc(r.sym)}">${esc(r.x.name || "")}</button></td>

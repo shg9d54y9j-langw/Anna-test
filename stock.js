@@ -124,6 +124,19 @@
   }
 
   // Kennzahlen (nächtlich von Finnhub, nur US-Aktien) und Links zu Insider-, Investoren- und Konferenz-Werkzeugen
+  // Quartalszahlen: letzte 4 Quartale Ist gegen Erwartung (Finnhub, nachts), nächster Termin aus den Aktien-Daten
+  function earnHtml(x, it) {
+    const e = it && Array.isArray(it.earn) ? it.earn : [];
+    const next = x.earn && x.earn.date ? `<p class="small"><b>Nächste Zahlen:</b> ${new Date(`${x.earn.date}T12:00:00Z`).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })}${x.earn.hour === "bmo" ? ", vor Börsenbeginn" : x.earn.hour === "amc" ? ", nach Börsenschluss" : ""}${Number.isFinite(x.earn.eps) ? ` · erwartet ${fmt(x.earn.eps, 2)} je Aktie` : ""}</p>` : "";
+    if (!e.length) return `${next}<p class="muted small">${x.sym.includes(".") ? "Die Quartalszahlen-Historie gibt es nur für US-Aktien." : "Die Quartalszahlen-Historie kommt mit dem nächsten nächtlichen Lauf."}</p>`;
+    const beats = e.filter(q => q.a > q.e).length, sps = e.map(q => q.sp).filter(Number.isFinite), avg = sps.length ? sps.reduce((s, v) => s + v, 0) / sps.length : null;
+    const max = Math.max(1, ...sps.map(v => Math.min(Math.abs(v), 100)));
+    const rows = e.map(q => { const v = Number.isFinite(q.sp) ? Math.max(-100, Math.min(100, q.sp)) : null; return `<tr><td>${q.q && q.y ? `Q${q.q} ${q.y}` : esc(q.p)}<div class="muted small">bis ${new Date(`${q.p}T12:00:00Z`).toLocaleDateString("de-DE")}</div></td><td class="num">${fmt(q.e, 2)}</td><td class="num"><b>${fmt(q.a, 2)}</b></td>
+      <td class="num">${Number.isFinite(q.sp) ? `<span class="${q.sp < 0 ? "down" : "up"}">${q.sp > 0 ? "+" : ""}${fmt(q.sp, 0)} %</span>` : "–"}${v !== null ? `<span class="eb" aria-hidden="true"><i class="${v < 0 ? "neg" : "pos"}" style="${v < 0 ? "right:50%" : "left:50%"};width:${(Math.abs(v) / max * 50).toFixed(1)}%"></i></span>` : ""}</td></tr>`; }).join("");
+    return `${next}<p class="small">In <b>${beats} von ${e.length}</b> Quartalen über der Erwartung der Analysten${avg !== null ? ` · im Schnitt <span class="${avg < 0 ? "down" : "up"}">${avg > 0 ? "+" : ""}${fmt(avg, 0)} %</span>` : ""}. ${beats === e.length ? "Durchgehend übertroffen – das ist bei großen Firmen häufig, weil sie die Erwartungen gezielt niedrig halten." : beats <= 1 ? "Meist enttäuscht – ein Warnsignal." : ""}</p>
+      <div class="table-wrap"><table class="scr earn-t"><thead><tr><th>Quartal</th><th class="num">Erwartet</th><th class="num">Tatsächlich</th><th class="num">Überraschung</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="hint">Gewinn je Aktie (bereinigt) laut Finnhub. Nach deutlichen Überraschungen driftet der Kurs oft noch Wochen in dieselbe Richtung – bei großen Aktien heute schwächer.</p>`;
+  }
   async function fillFund(x) {
     const f = window.DTD.fundData ? await window.DTD.fundData() : null;
     const el = $("skFund");
@@ -137,6 +150,8 @@
       A("https://quartr.com/app", "Telefonkonferenzen in der Quartr-App ↗"),
       it && it.web ? A(it.web.replace(/"/g, ""), "Webseite der Firma ↗") : null,
     ].filter(Boolean).join(" · ");
+    const ee = $("skEarn");
+    if (ee) ee.innerHTML = earnHtml(x, it);
     if (!it) {
       el.innerHTML = `<p class="muted small">${us ? (f ? "Für diese Aktie liefert Finnhub keine Kennzahlen." : "Die Kennzahlen kommen mit dem ersten nächtlichen Lauf.") : "Kennzahlen gibt es hier nur für US-Aktien."}</p><p class="small">${links}</p>`;
       return;
@@ -232,6 +247,10 @@
       ${x && x.type === "Aktie" ? `<section class="block" data-section="Kennzahlen">
         <h2 class="card-title">Kennzahlen und Insider</h2>
         <div id="skFund"><p class="muted small">Lade Kennzahlen …</p></div>
+      </section>
+      <section class="block" data-section="Quartalszahlen">
+        <h2 class="card-title">${T("zahlen", "Quartalszahlen")}</h2>
+        <div id="skEarn"><p class="muted small">Lade die Quartalszahlen …</p></div>
       </section>
       <section class="block" data-section="Konkurrenz">
         <h2 class="card-title">Konkurrenz-Vergleich</h2>
