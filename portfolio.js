@@ -6,9 +6,6 @@
 // Regeln wie im Swing-Planer: Aufwärtstrend = über dem 200-Tage-Schnitt, 50er darüber, Momentum positiv; Stop 3 Tagesspannen (ATR).
 (() => {
   const KEY = "dtd-portfolio", SEEN = "dtd-portfolio-seen";
-  const BASE = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/stock-data/";
-  const get = url => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
-  const newest = list => list.filter(d => d && d.updated).sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
   const sign = (x, d = 1) => (Number.isFinite(x) ? (x > 0 ? "+" : "") + fmt(x, d) : "–");
   const pc = (x, d = 1) => (Number.isFinite(x) ? `<span class="${x < 0 ? "down" : "up"}">${sign(x, d)} %</span>` : "–");
   const price = x => (!Number.isFinite(x) ? "–" : x >= 1000 ? fmt(x, 0) : x >= 1 ? fmt(x, 2) : fmt(x, 4));
@@ -540,15 +537,11 @@
     if (loading || (stocks && !force)) { if (stocks) render(); return; }
     loading = true;
     if (!stocks) render();
-    const t = Date.now();
-    const shared = !force && window.DTD.stockData ? window.DTD.stockData() : null;
-    const [s1, s2, w1, w2, f] = await Promise.all([
-      shared ? Promise.resolve(shared) : get(`data/stocks.json?t=${t}`), shared ? Promise.resolve(null) : get(`${BASE}stocks.json?t=${t}`),
-      get(`data/swing.json?t=${t}`), get(`${BASE}swing.json?t=${t}`), firms ? Promise.resolve(firms) : get(`data/firms.json?t=${t}`),
-    ]);
-    const next = newest([s1, s2]);
+    // gemeinsamer Lader (data.js): Aktien-, Swing- und Firmen-Daten nur einmal übers Netz für alle Bereiche
+    const S = window.DTD.shared;
+    const [next, w, f] = await Promise.all([S.load("stocks", force), S.load("swing", force), firms ? Promise.resolve(firms) : S.load("firms")]);
     if (next && Array.isArray(next.items)) stocks = next;
-    swing = newest([w1, w2]) || swing;
+    swing = w || swing;
     if (f && f.firms) firms = f;
     loading = false;
     render();

@@ -2,8 +2,6 @@
 // Daten: swing.json (Zweig stock-data; nach jedem Aktien-Datenlauf neu gerechnet von scripts/swing-planner.mjs) und
 // data/firms.json (Firmen-Steckbriefe). Budget und Risiko je Trade stellt der Besitzer ein; das bleibt nur in diesem Browser.
 (() => {
-  const RAW = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/stock-data/swing.json";
-  const get = url => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
   const A = (url, text) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
   const DOI = (doi, text) => A(`https://doi.org/${doi}`, text);
   const sign = (x, d = 1) => (Number.isFinite(x) ? (x > 0 ? "+" : "") + fmt(x, d) : "–");
@@ -242,11 +240,11 @@
     if (loading || (data && !force)) return;
     loading = true;
     if (!data) render();
-    const t = Date.now();
-    const [local, remote, f] = await Promise.all([get(`data/swing.json?t=${t}`), get(`${RAW}?t=${t}`), firms ? Promise.resolve(firms) : get(`data/firms.json?t=${t}`),
+    // gemeinsamer Lader (data.js): Swing- und Firmen-Daten nur einmal übers Netz
+    const S = window.DTD.shared;
+    const [next, f] = await Promise.all([S.load("swing", force), firms ? Promise.resolve(firms) : S.load("firms"),
       window.DTD.scoreReady ? window.DTD.scoreReady() : null]);   // Gesamtnote in den Karten
     if (f && f.firms) firms = f;
-    const next = [local, remote].filter(d => d && Array.isArray(d.setups)).sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
     loading = false;
     if (data && next && next.updated === data.updated) return;   // nichts Neues
     data = next || data;

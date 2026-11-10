@@ -8,7 +8,15 @@ const $ = id => document.getElementById(id);
 // Farben für Diagramme und Widgets (gleiche Werte wie in style.css; Reihenfarben gegen die schwarze Fläche geprüft)
 // Grün und Rot nur für Gewinn und Verlust; Linien sonst in Weiß und Grau (unterschieden durch Strichart und Beschriftung)
 const PAL = { up: "#1ed760", down: "#ff4545", surface: "#070707", series1: "#f2f2f2", series2: "#9a9a9a", gray: "#6a6a6a", ink: "#f2f2f2" };
-const fmt = (n, d = 2) => (Number.isFinite(n) ? n.toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d }) : "–");
+// Zahlen deutsch formatiert; je Nachkommastellen ein Formatierer (toLocaleString mit Optionen baut sonst bei jedem Aufruf einen
+// neuen – in großen Tabellen war das der teuerste Teil beim Zeichnen)
+const NUMF = new Map();
+const fmt = (n, d = 2) => {
+  if (!Number.isFinite(n)) return "–";
+  let f = NUMF.get(d);
+  if (!f) { f = new Intl.NumberFormat("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d }); NUMF.set(d, f); }
+  return f.format(n);
+};
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const kpi = (lbl, val, cls = "") => `<div class="kpi"><div class="lbl">${lbl}</div><div class="val ${cls}">${val}</div></div>`;
 const v = x => `<span class="v">${x}</span>`;
@@ -401,10 +409,14 @@ const MARKETS = [
   { name: "Xetra", tz: "Europe/Berlin", open: [9, 0], close: [17, 30] },
   { name: "NYSE", tz: "America/New_York", open: [9, 30], close: [16, 0] },
 ];
+const TZF = new Map();   // ein Formatierer je Zeitzone (läuft im Sekundentakt)
 function tzParts(tz, d = new Date()) {
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
-    timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric", weekday: "short",
-  }).formatToParts(d).map(x => [x.type, x.value]));
+  let f = TZF.get(tz);
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric", weekday: "short" });
+    TZF.set(tz, f);
+  }
+  const p = Object.fromEntries(f.formatToParts(d).map(x => [x.type, x.value]));
   return { y: +p.year, m: +p.month, d: +p.day, H: +p.hour % 24, M: +p.minute, S: +p.second, wd: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(p.weekday) };
 }
 function marketState(mk, now = new Date()) {
@@ -422,9 +434,12 @@ function duration(ms) {
   return h ? `${h} Std. ${m % 60} Min.` : `${m} Min.`;
 }
 const marketsNow = () => MARKETS.map(mk => ({ ...mk, ...marketState(mk) }));
+let sessHtml = "";
 function renderSessions() {
-  $("sessions").innerHTML = marketsNow().map(mk =>
+  if (document.hidden) return;   // im Hintergrund nichts zeichnen (Akku); beim Zurückkehren folgt die nächste Sekunde
+  const html = marketsNow().map(mk =>
     `<span class="pill"><span class="status-dot ${mk.open ? "open" : ""}"></span><b>${mk.name}</b> ${mk.open ? "offen" : "zu"}<span class="pill-x"> · ${mk.open ? "schließt" : "öffnet"} in ${duration(mk.ms)}</span></span>`).join("");
+  if (html !== sessHtml) { $("sessions").innerHTML = html; sessHtml = html; }   // ändert sich nur jede Minute
   window.dispatchEvent(new Event("dtd:clock"));
 }
 renderSessions();

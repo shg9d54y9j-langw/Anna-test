@@ -18,24 +18,31 @@
   const pct = p => (!Number.isFinite(p) ? "–" : p > 0.995 ? "über 99 %" : p < 0.005 ? "unter 1 %" : `${fmt(p * 100, 0)} %`);
   const sign = x => (x > 0 ? "+" : "") + fmt(x, 2);
   const okName = u => typeof u === "string" && /^[A-Za-z0-9_.-]{1,40}$/.test(u);
-  const berlin = d => d.toLocaleTimeString("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit" });
+  // Formatierer einmal anlegen – sie laufen im Sekundentakt
+  const F_TIME = new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit" });
+  const F_HOUR = new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "numeric", hour12: false });
+  const F_DATE = new Intl.DateTimeFormat("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" });
+  const berlin = d => F_TIME.format(d);
+  const setText = (id, t) => { const el = $(id); if (el && el.textContent !== t) el.textContent = t; };
   const goto = (id, text) => `<a class="btn ghost" href="#${id}">${text} →</a>`;
 
   function renderHead() {
-    const h = Number(new Date().toLocaleString("de-DE", { timeZone: "Europe/Berlin", hour: "numeric", hour12: false }));
-    $("ovGreeting").textContent = h < 11 ? "Guten Morgen" : h < 18 ? "Guten Tag" : "Guten Abend";
-    $("ovDate").textContent = new Date().toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" });
+    const now = new Date(), h = parseInt(F_HOUR.format(now), 10);   // „14 Uhr“ – Number() ergab NaN, die Begrüßung war immer „Guten Abend“
+    setText("ovGreeting", h < 11 ? "Guten Morgen" : h < 18 ? "Guten Tag" : "Guten Abend");
+    setText("ovDate", F_DATE.format(now));
   }
 
+  let sessHtml = "";
   function renderSessions() {
     const now = Date.now();
-    $("ovSessions").innerHTML = marketsNow().map(mk => {
+    const html = marketsNow().map(mk => {
       const at = Number.isFinite(mk.ms) ? berlin(new Date(now + mk.ms)) : "–";
       return `<div class="session">
         <div class="name"><span class="status-dot ${mk.open ? "open" : ""}"></span>${mk.name}<span class="chip ${mk.open ? "open" : ""}">${mk.open ? "offen" : "geschlossen"}</span></div>
         <div class="when">${mk.open ? "schließt" : "öffnet"} um ${at} Uhr · in <b>${duration(mk.ms)}</b></div>
       </div>`;
     }).join("");
+    if (html !== sessHtml) { $("ovSessions").innerHTML = html; sessHtml = html; }   // ändert sich nur jede Minute
   }
 
   function renderReco() {
@@ -116,7 +123,8 @@
   renderReco();
   renderLive();
   renderJournal();
-  window.addEventListener("dtd:clock", () => { renderHead(); renderSessions(); });
+  window.addEventListener("dtd:clock", () => { if ($("home").hidden) return; renderHead(); renderSessions(); });
+  window.addEventListener("dtd:view", e => { if (e.detail === "home") { renderHead(); renderSessions(); } });
   window.addEventListener("dtd:data", () => { renderReco(); renderLive(); });
   window.addEventListener("dtd:journal", renderJournal);
   $("cAccount").addEventListener("input", renderReco);

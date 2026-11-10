@@ -1,10 +1,9 @@
 // ---------- Aktien-Check ----------
 // Symbol eingeben → Überblick, Termine, Experten & Nachrichten, Theorie & Faktoren, Kauf- und Verkaufsmarken.
-// Kennzahlen aus data/stocks.json (täglich aus eToro-Tageskerzen), Live-Grafiken von TradingView für jedes Symbol.
+// Kennzahlen aus stocks.json (2× pro Börsentag aus eToro-Tageskerzen, über den gemeinsamen Lader data.js), Live-Grafiken von
+// TradingView für jedes Symbol.
 // Suche mit Vorschlägen (Name oder Kürzel), Diagramm mit ein- und ausblendbaren Linien und Kennzahlen.
 (() => {
-  const RAW = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/stock-data/stocks.json";
-  const get = url => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
   const A = (url, text) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
   const DOI = (doi, text) => A(`https://doi.org/${doi}`, text);
   const sign = (x, d = 1) => (Number.isFinite(x) ? (x > 0 ? "+" : "") + fmt(x, d) : "–");
@@ -39,13 +38,17 @@
   const SUFFIX = { DE: "XETR", L: "LSE", PA: "EURONEXT", AS: "EURONEXT", NV: "EURONEXT", BR: "EURONEXT", LSB: "EURONEXT", MI: "MIL", MC: "BME", ZU: "SIX", SW: "SIX", HK: "HKEX", OL: "OSL", ST: "OMXSTO", CO: "OMXCOP", HE: "OMXHEX", VI: "VIE", LS: "EURONEXT" };
   const tvGuess = q => { const t = q.trim().toUpperCase(); if (t.includes(":")) return t; const m = /^([A-Z0-9-]+)\.([A-Z]+)$/.exec(t); return m && SUFFIX[m[2]] ? `${SUFFIX[m[2]]}:${m[1].replace(/-/g, "_")}` : t; };
 
-  async function load() {
-    const t = Date.now();
-    const list = (await Promise.all([get(`data/stocks.json?t=${t}`), get(`${RAW}?t=${t}`)])).filter(d => d && Array.isArray(d.items));
-    data = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
+  // Daten über den gemeinsamen Lader (data.js): eine Aktien-Datei für alle Bereiche. Gezeichnet wird je Datenstand einmal –
+  // renderQuick zeigt dabei auch den gewählten Wert (sonst lud das Diagramm doppelt).
+  let shown = null;
+  function adopt(d) {
+    if (d && d === shown) return;
+    data = d || data;
+    shown = data;
     renderQuick();
-    if (current) show(current.query, false);
   }
+  async function load() { adopt(await window.DTD.shared.load("stocks")); }
+  window.addEventListener("dtd:shared", e => { if (e.detail === "stocks" && !$("aktie").hidden && shown) adopt(window.DTD.shared.get("stocks")); });
   const find = q => {
     if (!data) return null;
     const s = q.trim().toUpperCase();
@@ -400,15 +403,12 @@
   window.addEventListener("dtd:market", () => { if (current && !$("aktie").hidden && sizeNow() !== lastSize) show(current.query, false); });
   // Von anderen Bereichen (HotStuff) direkt einen Wert öffnen
   window.DTD.openStock = sym => { store.set("dtd-stock", sym); $("stockInput").value = sym; current = { query: sym }; location.hash = "aktie"; if (data) show(sym); };
-  window.DTD.stockData = () => data;
+  window.DTD.stockData = () => data || window.DTD.shared.get("stocks");
   window.DTD.reloadStocks = async () => {
-    const t = Date.now();
-    const list = (await Promise.all([get(`data/stocks.json?t=${t}`), get(`${RAW}?t=${t}`)])).filter(d => d && Array.isArray(d.items));
-    const next = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0];
-    if (!next || (data && next.updated === data.updated)) return false;
-    data = next;
-    renderQuick();
-    if (current && !$("aktie").hidden) show(current.query, false);
+    const before = data && data.updated;
+    const next = await window.DTD.shared.load("stocks", true);
+    if (!next || next.updated === before) return false;
+    if (!$("aktie").hidden) adopt(next); else data = next;
     return true;
   };
 })();

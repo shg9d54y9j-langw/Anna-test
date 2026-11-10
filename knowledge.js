@@ -245,13 +245,7 @@
   async function loadStocks() {
     if (stockMap || stockLoading) return;
     stockLoading = true;
-    const shared = window.DTD.stockData && window.DTD.stockData();
-    let d = shared;
-    if (!d) {
-      const t = Date.now(), get = u => fetch(u, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
-      const list = (await Promise.all([get(`data/stocks.json?t=${t}`), get(`https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/stock-data/stocks.json?t=${t}`)])).filter(x => x && Array.isArray(x.items));
-      d = list.sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
-    }
+    const d = await window.DTD.shared.load("stocks");   // gemeinsamer Lader: nur einmal übers Netz
     stockMap = d ? new Map(d.items.map(x => [x.sym, x])) : new Map();
     stockLoading = false;
     if (!$("theorie").hidden) renderTheory();
@@ -273,7 +267,7 @@
   async function loadFirms() {
     if (firms || firmsLoading) return;
     firmsLoading = true;
-    try { const r = await fetch(`data/firms.json?t=${Date.now()}`, { cache: "no-store" }); const d = r.ok ? await r.json() : null; firms = d && d.firms ? d : null; } catch { firms = null; }
+    firms = await window.DTD.shared.load("firms");
     firmsLoading = false;
     if (firms && $("theorie") && !$("theorie").hidden) renderTheory();
   }

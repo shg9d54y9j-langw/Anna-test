@@ -4,9 +4,6 @@
 // sagen mehr als der Stand (Jegadeesh u. a. 2004). Swing-Trades über Monate (Momentum nahe dem Jahreshoch) stehen im
 // Swing-Planer – HotStuff zeigt nur dessen aktive Ideen; „Nach starken Zahlen“ ist eine Vorlage im Screener (Werkzeuge).
 (() => {
-  const RAW = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/stock-data/stocks.json";
-  const SWING_RAW = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/stock-data/swing.json";
-  const get = url => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
   const A = (url, text) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
   const DOI = (doi, text) => A(`https://doi.org/${doi}`, text);
   const sign = (x, d = 1) => (Number.isFinite(x) ? (x > 0 ? "+" : "") + fmt(x, d) : "–");
@@ -136,15 +133,9 @@
     if (loading || (data && !force)) return;
     loading = true;
     if (!data) render();
-    let next = window.DTD.stockData && window.DTD.stockData();
-    const t = Date.now();
-    const newest = l => l.filter(d => d && d.updated).sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
-    const plans = Promise.all([get(`data/swing.json?t=${t}`), get(`${SWING_RAW}?t=${t}`)]).then(l => newest(l.filter(d => d && Array.isArray(d.setups))));
-    if (!next || force) {
-      const list = (await Promise.all([get(`data/stocks.json?t=${t}`), get(`${RAW}?t=${t}`)])).filter(d => d && Array.isArray(d.items));
-      next = newest(list) || next || null;
-    }
-    const p = await plans;
+    // gemeinsamer Lader (data.js): dieselbe Aktien-Datei wie in allen Bereichen, nur einmal übers Netz
+    let [next, p] = await Promise.all([window.DTD.shared.load("stocks", force), window.DTD.shared.load("swing", force)]);
+    next = next || data;
     if (window.DTD.scoreReady) await window.DTD.scoreReady();   // Gesamtnote in den Karten
     loading = false;
     const newPlan = p && (!plan || p.updated !== plan.updated);

@@ -44,7 +44,16 @@
   let main = null, mainAt = 0;
   const co = new Map();   // Kürzel → Promise der Firmennachrichten
   const byId = new Map();
-  const loadMain = async (force = false) => { if (!main || force || Date.now() - mainAt > 10 * 60 * 1000) { const d = await get(`${RAW}news.json?t=${Date.now()}`); if (d && Array.isArray(d.market)) { main = d; mainAt = Date.now(); } } return main; };
+  // ein Abruf für alle, die gleichzeitig fragen; neu nach 10 Minuten – fehlt die Datei, höchstens alle 2 Minuten ein neuer Versuch
+  let mainP = null, mainTried = 0;
+  const loadMain = (force = false) => {
+    if (mainP) return mainP;
+    const fresh = main ? Date.now() - mainAt < 10 * 60 * 1000 : mainTried && Date.now() - mainTried < 2 * 60 * 1000;
+    if (!force && fresh) return Promise.resolve(main);
+    mainTried = Date.now();
+    mainP = get(`${RAW}news.json?t=${Date.now()}`).then(d => { if (d && Array.isArray(d.market)) { main = d; mainAt = Date.now(); } return main; }).finally(() => { mainP = null; });
+    return mainP;
+  };
   const loadCo = sym => {
     if (!SYM.test(sym) || sym.includes(".")) return Promise.resolve([]);
     if (!co.has(sym)) co.set(sym, loadMain().then(m => (m && Array.isArray(m.syms) && !m.syms.includes(sym) ? null : get(`${RAW}co/${encodeURIComponent(sym)}.json?t=${Date.now()}`))).then(d => (d && Array.isArray(d.items) ? d.items : [])));
