@@ -2,7 +2,7 @@
 // Push-Liste, Stop und Kursalarme (jede Berührung genau einmal), 200-Tage-Schnitt, große Bewegungen, Analysten, Zahlen und
 // Notenwechsel nur im ersten Lauf des Tages, Nachrichten nach Kennung, Wochenbericht, Probe-Meldung, nur ntfy.sh als Ziel,
 // und dass die Protokolle weder Kanal noch Kürzel enthalten. Aufruf: node tests/notify.mjs
-import { parseWatch, crossed, events, newsEvents, weekly } from "../scripts/notify.mjs";
+import { parseWatch, crossed, events, newsEvents, weekly, briefing } from "../scripts/notify.mjs";
 import { createServer } from "node:http";
 import { execFile } from "node:child_process";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync } from "node:fs";
@@ -99,6 +99,17 @@ check(/Merkliste:\n• AAPL \+2,5 %\n• MSFT ±0,0 %/.test(wk), "Merkliste");
 check(/Zahlen in den nächsten 7 Tagen: NVDA Di\., 17\.11\.$/m.test(wk) && !/MSFT Mo/.test(wk), "Termine der nächsten 7 Tage");
 check(/Unter dem 200-Tage-Schnitt: NVDA – Halten prüfen\./.test(wk), "Depot-Aktien unter dem 200-Tage-Schnitt");
 
+// 5b) Morgen-Briefing: Stop erreicht oder nah, Kursalarm in Reichweite, Zahlen heute, Marktlage
+check(parseWatch('{"d":["A1"],"b":1}').b === true && parseWatch('{"d":["A1"]}').b === false, "Briefing nur mit \"b\":1 eingeschaltet");
+const bCfg = parseWatch(JSON.stringify({ d: ["NVDA", "KO", "AMD"], w: ["AAPL"], a: [["AAPL", ">", 203], ["MSFT", "<", 90]], s: { NVDA: 100, KO: 97, AMD: 50 }, b: 1 }));
+const bStocks = { items: [base("NVDA", { last: 99, lo1d: 98 }), base("KO", { last: 99.5, lo1d: 99.2 }), base("AMD", { last: 100 }), base("AAPL", { last: 200, earn: { date: "2026-11-10", hour: "bmo" } }), base("MSFT", { last: 100 })] };
+const bl = briefing(bCfg, bStocks, { overall: { light: "red", sizeFactor: 0.5 } }, now).join("\n");
+check(/▼ NVDA: Stop 100,00 erreicht/.test(bl) && /! KO: nur 2,6 % über Ihrem Stop 97,00/.test(bl) && !/AMD/.test(bl), `Stops: erreicht und nah, weit weg nicht (${bl.split("\n").length} Zeilen)`);
+check(/• AAPL: noch 1,5 % bis zu Ihrem Kursalarm 203,00/.test(bl) && !/MSFT/.test(bl), "Kursalarm in Reichweite, weit entfernte nicht");
+check(/• AAPL: Quartalszahlen heute vor Börsenbeginn\./.test(bl), "Zahlen heute (Merkliste ohne Stop-Hinweis)");
+check(/Marktlage: Gegenwind – neue Positionen mit 50 % der üblichen Größe\./.test(bl), "Marktlage");
+check(briefing({ d: ["AMD"], w: [], a: [], s: {} }, bStocks, null, now).join() === "Heute nichts Dringendes bei Ihren Aktien.", "ruhiger Tag: kurze Meldung");
+
 // 6) Ganzer Lauf mit Dateien und nachgebautem ntfy-Server
 const dir = mkdtempSync(join(tmpdir(), "notify-"));
 const f = name => join(dir, name);
@@ -151,6 +162,13 @@ got.length = 0;
 r = await run({ NOTIFY_MODE: "test" });
 check(got.length === 1 && /3 im Depot, 2 auf der Merkliste, 2 Kursalarme, 1 Stops/.test(JSON.parse(got[0].body).message), "Probe-Meldung mit Push-Liste");
 got.length = 0;
+// Morgen-Briefing: nur wenn eingeschaltet
+writeFileSync(f("market.json"), JSON.stringify({ overall: { light: "green", sizeFactor: 1 } }));
+r = await run({ NOTIFY_MODE: "briefing", STOCKS_NEW: f("next-today.json"), MARKET: f("market.json") });
+check(got.length === 0 && /nicht eingeschaltet/.test(r.out), "Briefing ohne \"b\":1: nichts gesendet");
+r = await run({ NOTIFY_MODE: "briefing", STOCKS_NEW: f("next-today.json"), MARKET: f("market.json"), PUSH_WATCH: JSON.stringify({ ...JSON.parse(WATCH), b: 1 }) });
+const bm = got.length === 1 ? JSON.parse(got[0].body) : {};
+check(got.length === 1 && bm.title === "RojkoMoney: Heute wichtig" && /Marktlage: Rückenwind\./.test(bm.message) && secretFree(r.out), `Briefing gesendet (${bm.title})`);
 // lange Liste: höchstens 12 Zeilen und ein Hinweis
 const many = { updated: isoNow, items: Array.from({ length: 15 }, (_, i) => base(`S${i}`, { asOf: "2026-11-10", chg1d: -6 - i })) };
 const manyPrev = { updated: "2000-01-01T00:00:00Z", items: many.items.map(x => ({ ...x, asOf: "2026-11-09", chg1d: 0 })) };

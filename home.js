@@ -134,6 +134,7 @@
     }
     // eigene Karten in der Reihenfolge aus „Seite anpassen“ (layout.js); ausgeblendete fehlen
     const parts = {
+      brief: () => (window.DTD.briefingCard ? window.DTD.briefingCard() : ""),
       neu: () => (window.DTD.whatsNewCard ? window.DTD.whatsNewCard() : ""),
       since: sinceCard,
       alerts: () => (window.DTD.smartAlertsCard ? window.DTD.smartAlertsCard() : ""),
@@ -148,7 +149,7 @@
     window.dispatchEvent(new Event("dtd:sections"));
   }
   window.DTD.renderHome = render;
-  for (const ev of ["dtd:shared", "dtd:watch", "dtd:smart", "dtd:backup", "dtd:layout"]) window.addEventListener(ev, () => render());
+  for (const ev of ["dtd:shared", "dtd:watch", "dtd:smart", "dtd:backup", "dtd:layout", "dtd:market", "dtd:alarms"]) window.addEventListener(ev, () => render());
   window.addEventListener("dtd:view", e => { if (e.detail === "home") render(); });
   document.addEventListener("DOMContentLoaded", render);
   setTimeout(render, 0);

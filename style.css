@@ -1265,8 +1265,22 @@ details.more > summary { font-size: 13.5px; color: var(--text-2); }
 
 /* Meldungen aufs Handy (ntfy): Kanalname und Push-Liste zum Kopieren */
 .push-setup .steps { font-size: 14px; }
+.push-brief { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; cursor: pointer; }
+.push-brief input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
 .push-row { display: flex; gap: 8px; align-items: center; margin: 8px 0 4px; flex-wrap: wrap; }
 .push-val { flex: 1 1 220px; min-width: 0; font: 13px var(--mono); color: var(--text); background: var(--bg); border: 1px solid var(--line-2); border-radius: var(--r-sm); padding: 8px 10px; }
 textarea.push-val { display: block; width: 100%; margin-top: 8px; resize: vertical; }
 .push-val[hidden] { display: none; }
 .push-setup code, #pfPush code { font: 12px var(--mono); color: var(--text); background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--r-xs); padding: 0 5px; white-space: nowrap; }
+
+/* Tagesbriefing „Heute wichtig“ */
+.brief { box-shadow: inset 3px 0 0 var(--accent); }
+.brief-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.brief-row { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; padding: 8px 10px; border-radius: var(--r-sm); }
+.brief-row.now { background: var(--down-bg); }
+.brief-row.now.up { background: var(--up-bg); }
+.brief-row .sa-icon { margin: 1px 0 0; }
+.brief-t { min-width: 0; line-height: 1.45; }
+.brief-t .name-link, .brief-t a { color: var(--text); text-decoration: none; text-align: left; }
+.brief-t .name-link:hover, .brief-t a:hover { text-decoration: underline; text-decoration-color: var(--accent); }
+.brief-foot { margin: 10px 0 0; }

@@ -53,7 +53,7 @@ const fx = n => (FX[n] ? path.join(__dirname, 'fixtures', FX[n]) : path.join(pro
   check(rows.some(r => /^AAPL/.test(r) && /Kurs [−-]3,0 %/.test(r) && /MERKLISTE/i.test(r)), 'AAPL −3 % (Merkliste)');
   check(rows.some(r => /^TSLA/.test(r) && !/Kurs/.test(r) && new RegExp(`Gesamtnote ${notes.TSLA + 6} → ${notes.TSLA} ▼`).test(r)), 'TSLA: nur die Note fiel um 6 Punkte (ohne Kurszeile)');
   check(!rows.some(r => /^KO/.test(r)), 'KO (−0,2 %, Note gleich) nicht aufgeführt');
-  check(await A.p.$eval('#ovSmart', e => { const c = e.querySelector('[data-section="Seit dem letzten Besuch"]'); return c && c.closest('#ovSmart > [data-home]') === e.firstElementChild; }), 'steht oben auf der Startseite');
+  check(await A.p.$eval('#ovSmart', e => { const c = e.querySelector('[data-section="Seit dem letzten Besuch"]'); return c && c.closest('#ovSmart > [data-home]') === [...e.children].find(k => k.dataset.home !== 'brief'); }), 'steht oben auf der Startseite (gleich nach „Heute wichtig“)');
   try { await card.screenshot({ path: `${out}/since-phone.png` }); } catch { /* Bildschirmfoto nur zur Ansicht */ }
   // Verlassen → neuer Vergleichsstand
   await A.p.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });

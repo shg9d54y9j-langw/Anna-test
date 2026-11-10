@@ -4,11 +4,11 @@
 (() => {
   const KEY = "dtd-layout";
   const VIEWS = [...document.querySelectorAll(".tabs .tab")].map(t => ({ id: t.dataset.tab, label: (t.querySelector("span") || t).textContent.trim() }));
-  const TOP = [["neu", "Neu in RojkoMoney"], ["since", "Seit Ihrem letzten Besuch"], ["alerts", "Hinweise (smarte Alarme)"], ["depot", "Depot und Merkliste"], ["today", "Neu heute und Termine"]];
+  const TOP = [["brief", "Heute wichtig (Tagesbriefing)"], ["neu", "Neu in RojkoMoney"], ["since", "Seit Ihrem letzten Besuch"], ["alerts", "Hinweise (smarte Alarme)"], ["depot", "Depot und Merkliste"], ["today", "Neu heute und Termine"]];
   const DASH = [["market", "Marktlage"], ["sessions", "Börsen"], ["reco", "Tagesempfehlung (Copy-Trading)"], ["live", "Live-Wächter"], ["journal", "Mein Handelstag"], ["rules", "Tagesregeln"], ["quick", "Schnellzugriff"]];
   const arr = a => (Array.isArray(a) ? a.filter(x => typeof x === "string") : []);
   // gespeicherte Reihenfolge, ergänzt um später hinzugekommene Karten
-  const order = (saved, all) => { const ids = all.map(([k]) => k), s = arr(saved).filter(k => ids.includes(k)); return [...s, ...ids.filter(k => !s.includes(k))]; };
+  const order = (saved, all) => { const ids = all.map(([k]) => k), s = arr(saved).filter(k => ids.includes(k)); const add = ids.filter(k => !s.includes(k)); return [...add.filter(k => k === "brief"), ...s, ...add.filter(k => k !== "brief")]; };
   function get() {
     const c = store.get(KEY, {}) || {};
     return { hide: arr(c.hide).filter(id => id !== "home" && VIEWS.some(v => v.id === id)), homeHide: arr(c.homeHide), top: order(c.top, TOP), dash: order(c.dash, DASH) };

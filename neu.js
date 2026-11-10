@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-10-briefing", t: "Heute wichtig", d: "Ganz oben auf der Startseite die fünf wichtigsten Punkte des Tages: Stops, Kursalarme, Zahlen, Zinsentscheid, Marktlage, Chancen auf der Merkliste. Auf Wunsch morgens als Handy-Meldung (Portfolio → Benachrichtigungen).", href: "#briefing" },
     { id: "2026-11-10-theme", t: "Hell oder dunkel", d: "Oben neben der Uhr: das Farbschema wie das Gerät, hell für Tageslicht oder dunkel – auch unter „Seite anpassen“." },
     { id: "2026-11-10-groups", t: "Sieben statt zwölf Bereiche", d: "Ähnliches ist zusammengelegt: „Ideen“ (HotStuff, Swing-Planer, Trade-Ideen, Theorie), „Bots“ (Trend-Bot, Copy-Trading) und „Trade planen“ im Aktien-Check – oben im Bereich umschalten. Am Handy stehen jetzt alle Bereiche direkt in der Leiste unten.", href: "#hot" },
     { id: "2026-11-10-design", t: "Neues Design", d: "Ruhiger und übersichtlicher: am Computer links alle Bereiche in Gruppen, klare Zahlen, farbige Ampeln, aufgeräumte Karten – am Handy die Leiste unten mit hervorgehobenem Bereich." },

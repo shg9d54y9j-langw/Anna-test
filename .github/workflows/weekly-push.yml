@@ -1,16 +1,18 @@
 name: Wochenbericht aufs Handy
 
-# Freitags nach dem letzten Lauf der Aktien-Daten: Wochenbericht zu Depot und Merkliste über ntfy – nur wenn die Secrets
-# NTFY_TOPIC und PUSH_WATCH eingerichtet sind (Portfolio → Benachrichtigungen). Von Hand gestartet auch als Probe-Meldung.
+# Über ntfy – nur wenn die Secrets NTFY_TOPIC und PUSH_WATCH eingerichtet sind (Portfolio → Benachrichtigungen):
+# freitags der Wochenbericht, an Börsentagen morgens das Tagesbriefing (nur wenn in der Push-Liste eingeschaltet).
+# Von Hand gestartet auch als Probe-Meldung.
 on:
   schedule:
-    - cron: "47 16 * * 5"   # Freitag 16:47 UTC (17:47 Uhr Winterzeit / 18:47 Uhr Sommerzeit in Wien)
+    - cron: "47 16 * * 5"   # Freitag 16:47 UTC (17:47 Uhr Winterzeit / 18:47 Uhr Sommerzeit in Wien): Wochenbericht
+    - cron: "37 6 * * 1-5"  # Mo–Fr 06:37 UTC (07:37 Uhr Winterzeit / 08:37 Uhr Sommerzeit): Tagesbriefing
   workflow_dispatch:
     inputs:
       mode:
-        description: "weekly = Wochenbericht, test = Probe-Meldung"
+        description: "test = Probe-Meldung, weekly = Wochenbericht, briefing = Tagesbriefing"
         type: choice
-        options: [test, weekly]
+        options: [test, weekly, briefing]
         default: test
 
 permissions: {}
@@ -26,17 +28,19 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Aktien-Daten und Notenverlauf holen
+      - name: Aktien-Daten, Notenverlauf und Marktlage holen
         run: |
           git fetch -q --depth=1 origin stock-data
           git show FETCH_HEAD:stocks.json > "$RUNNER_TEMP/stocks.json"
           git show FETCH_HEAD:note-recent.json > "$RUNNER_TEMP/note-recent.json" 2> /dev/null || rm -f "$RUNNER_TEMP/note-recent.json"
+          if git fetch -q --depth=1 origin live-data; then git show FETCH_HEAD:market.json > "$RUNNER_TEMP/market.json" 2> /dev/null || rm -f "$RUNNER_TEMP/market.json"; fi
 
       - name: Meldung aufs Handy (ntfy), falls eingerichtet
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           PUSH_WATCH: ${{ secrets.PUSH_WATCH }}
-          NOTIFY_MODE: ${{ inputs.mode || 'weekly' }}
+          NOTIFY_MODE: ${{ inputs.mode || (github.event.schedule == '37 6 * * 1-5' && 'briefing' || 'weekly') }}
           STOCKS_NEW: ${{ runner.temp }}/stocks.json
           NOTE_RECENT: ${{ runner.temp }}/note-recent.json
+          MARKET: ${{ runner.temp }}/market.json
         run: node scripts/notify.mjs

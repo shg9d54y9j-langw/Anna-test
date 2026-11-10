@@ -302,7 +302,7 @@
     const a = (Array.isArray(al) ? al : []).filter(x => x && PUSH_SYM.test(x.sym) && Number.isFinite(x.price) && x.price > 0 && (x.dir === "up" || x.dir === "down")).map(x => [x.sym, x.dir === "up" ? ">" : "<", x.price]);
     const st = {};
     for (const h of list) if (PUSH_SYM.test(h.sym) && Number.isFinite(h.stop) && h.stop > 0) st[h.sym] = h.stop;
-    return JSON.stringify({ v: 1, d, w, a, s: st });
+    return JSON.stringify({ v: 1, d, w, a, s: st, ...(store.get("dtd-push-brief", false) === true ? { b: 1 } : {}) });
   }
   // 22 Zeichen aus 64 möglichen (gleich verteilt) – rund 132 Bit Zufall, nicht zu erraten
   const newTopic = () => { const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"; return `rojko-${[...crypto.getRandomValues(new Uint8Array(22))].map(b => abc[b % 64]).join("")}`; };
@@ -328,7 +328,8 @@
           <li><button type="button" class="btn ghost" data-act="ntfy-topic">${topic ? "Neuen Kanalnamen erzeugen" : "Kanalnamen erzeugen"}</button>
             ${topic ? `<span class="push-row"><input id="pfTopic" class="push-val" readonly value="${esc(topic)}" aria-label="Ihr Kanalname"><button type="button" class="btn ghost" data-act="ntfy-copy">Kopieren</button></span>` : ""}
             In der App auf „+“ tippen, den Namen eintragen (Server ntfy.sh) und abonnieren. Der Name wirkt wie ein Passwort – nicht weitergeben.</li>
-          <li><button type="button" class="btn ghost" data-act="ntfy-list">Push-Liste kopieren</button> <span class="muted small">${counts}</span>
+          <li><label class="push-brief"><input type="checkbox" data-push-brief${store.get("dtd-push-brief", false) === true ? " checked" : ""}> Morgens das Tagesbriefing schicken (Mo–Fr gegen 7:40 Uhr)</label>
+            <button type="button" class="btn ghost" data-act="ntfy-list">Push-Liste kopieren</button> <span class="muted small">${counts}</span>
             <textarea id="pfPushText" class="push-val" rows="3" readonly hidden aria-label="Ihre Push-Liste"></textarea></li>
           <li>Auf GitHub zwei Secrets anlegen (im Browser, angemeldet): ${ext(`${REPO_URL}/settings/secrets/actions/new`, "Neues Secret")} → Name <code>NTFY_TOPIC</code>, Wert: der Kanalname. Noch einmal → Name <code>PUSH_WATCH</code>, Wert: die Push-Liste.</li>
           <li>Probe: ${ext(`${REPO_URL}/actions/workflows/weekly-push.yml`, "Ablauf „Wochenbericht aufs Handy“")} → „Run workflow“ (Probe-Meldung). Nach etwa einer Minute meldet sich das Handy.</li>
@@ -338,6 +339,12 @@
       <p class="small" style="margin-top:10px">Lieber mit Einschätzung durch Claude? <button type="button" class="btn ghost" data-act="claude">Liste für Claude kopieren</button> und im Claude-Chat senden.</p>
     </article>`;
   }
+  document.addEventListener("change", e => {
+    const cb = e.target.closest && e.target.closest("[data-push-brief]");
+    if (!cb) return;
+    store.set("dtd-push-brief", cb.checked);
+    const el = $("pfPush"); if (el) el.outerHTML = notifyCard();   // Hinweis „Liste geändert“ sofort zeigen
+  });
   // in die Zwischenablage; ohne Zugriff das Feld zum Markieren zeigen
   function copyOut(text, done, field) {
     const manual = () => { if (field) { field.hidden = false; field.value = text; field.focus(); field.select(); } note("Bitte den markierten Text kopieren."); };

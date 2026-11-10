@@ -69,6 +69,13 @@ const stocks = fs.readFileSync(path.join(__dirname, 'fixtures', 'stocks.json'), 
   check(w[0] <= w[1], `Handy: nichts zu breit (${w})`);
   try { await (await p.$('#pfPush')).screenshot({ path: `${out}/push-card.png` }); } catch { /* Bildschirmfoto nur zur Ansicht */ }
 
+  // Morgen-Briefing einschalten: Push-Liste bekommt "b":1, Hinweis zum neuen Kopieren
+  await p.check('[data-push-brief]'); await p.waitForTimeout(200);
+  check(/Liste geändert/i.test(await text(p, '#pfPush')), 'Briefing eingeschaltet: Liste geändert');
+  await p.click('[data-act="ntfy-list"]'); await p.waitForTimeout(300);
+  const withB = parseWatch(await p.evaluate(() => navigator.clipboard.readText()));
+  check(withB && withB.b === true && await p.isChecked('[data-push-brief]'), 'Push-Liste mit Morgen-Briefing');
+
   // Was ist neu
   await p.goto(`http://localhost:${port}/#home`); await p.waitForTimeout(600);
   check(await p.$('a[href="#pfPush"]') !== null, '„Neu in RojkoMoney“ führt zur Einrichtung');

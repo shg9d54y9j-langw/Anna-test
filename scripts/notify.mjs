@@ -7,6 +7,8 @@
 //            (STOCKS_PREV, STOCKS_NEW, NOTE_RECENT)
 //   news   – nach jedem Nachrichten-Lauf: neue wichtige Meldungen zu Ihren US-Aktien (NEWS_DIR neu, NEWS_PREV_DIR bisher)
 //   weekly – freitags: Wochenbericht zu Depot und Merkliste, Noten und Termine der nächsten Woche (STOCKS_NEW, NOTE_RECENT)
+//   briefing – an Börsentagen morgens, nur wenn in der Push-Liste eingeschaltet ("b":1): Stops und Kursalarme in der Nähe,
+//            Quartalszahlen heute, Marktlage (STOCKS_NEW, MARKET)
 //   test   – eine Probe-Meldung, um die Einrichtung zu prüfen
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -39,7 +41,7 @@ export function parseWatch(text) {
   const s = {};
   if (c.s && typeof c.s === "object") for (const [k, v] of Object.entries(c.s)) if (d.includes(k) && fin(v) && v > 0) s[k] = v;
   if (!d.length && !w.length && !a.length) return null;
-  return { d, w, a, s };
+  return { d, w, a, s, b: c.b === 1 || c.b === true };
 }
 
 // Wurde die Marke seit dem letzten Lauf erreicht? Neue Tageskerze: ihr Tief bzw. Hoch zählt; dieselbe Kerze (Lauf am selben
@@ -147,6 +149,33 @@ export function weekly(cfg, stocks, recent, now = new Date()) {
   return lines;
 }
 
+// Morgen-Briefing: was heute zählt (Stand des letzten Laufs am Vortag)
+const LIGHT_TXT = { green: "Rückenwind", yellow: "gemischte Lage", red: "Gegenwind" };
+export function briefing(cfg, stocks, market, now = new Date()) {
+  const N = bySym(stocks), today = viennaDay(now), lines = [];
+  for (const sym of cfg.d) {
+    const x = N.get(sym), stop = cfg.s[sym];
+    if (!x || !fin(x.last) || !fin(stop)) continue;
+    const dist = (x.last / stop - 1) * 100;
+    if (x.last <= stop || (fin(x.lo1d) && x.lo1d <= stop)) lines.push(`▼ ${sym}: Stop ${price(stop)} erreicht (zuletzt ${price(x.last)}) – in eToro prüfen, ob verkauft wurde.`);
+    else if (dist <= 3) lines.push(`! ${sym}: nur ${de(dist, 1)} % über Ihrem Stop ${price(stop)}.`);
+  }
+  for (const a of cfg.a) {
+    const x = N.get(a.sym);
+    if (!x || !fin(x.last)) continue;
+    const gap = (a.p / x.last - 1) * 100;
+    if ((a.dir === ">" && gap > 0 && gap <= 2) || (a.dir === "<" && gap < 0 && gap >= -2)) lines.push(`• ${a.sym}: noch ${de(Math.abs(gap), 1)} % bis zu Ihrem Kursalarm ${price(a.p)}.`);
+  }
+  for (const sym of [...cfg.d, ...cfg.w]) {
+    const x = N.get(sym);
+    if (x && x.earn && x.earn.date === today) lines.push(`• ${sym}: Quartalszahlen heute${x.earn.hour === "bmo" ? " vor Börsenbeginn" : x.earn.hour === "amc" ? " nach Börsenschluss" : ""}${cfg.d.includes(sym) ? " – Stop prüfen" : ""}.`);
+  }
+  if (!lines.length) lines.push("Heute nichts Dringendes bei Ihren Aktien.");
+  const o = market && market.overall;
+  if (o && LIGHT_TXT[o.light]) lines.push(`Marktlage: ${LIGHT_TXT[o.light]}${fin(o.sizeFactor) && o.sizeFactor < 1 ? ` – neue Positionen mit ${Math.round(o.sizeFactor * 100)} % der üblichen Größe` : ""}.`);
+  return lines;
+}
+
 // Senden: nur an ntfy.sh (für die Tests auch an einen Server auf diesem Rechner); der Kanal steht im Inhalt, nicht in der Adresse
 export async function send(topic, msg) {
   const base = (env.NTFY_BASE || "https://ntfy.sh").replace(/\/+$/, "");
@@ -194,6 +223,12 @@ export async function main() {
     lines = weekly(cfg, await readJson(env.STOCKS_NEW), await readJson(env.NOTE_RECENT));
     title = "RojkoMoney: Ihr Wochenbericht";
     tags = ["calendar"];
+  } else if (mode === "briefing") {
+    if (!cfg.b) { log("Morgen-Briefing ist in der Push-Liste nicht eingeschaltet – nichts gesendet."); return 0; }
+    lines = briefing(cfg, await readJson(env.STOCKS_NEW), await readJson(env.MARKET));
+    title = "RojkoMoney: Heute wichtig";
+    tags = ["sunrise"];
+    if (lines.some(l => l.startsWith("▼"))) { priority = 4; tags = ["sunrise", "warning"]; }
   } else if (mode === "test") {
     lines = [cfg ? `Die Einrichtung klappt. Beobachtet: ${cfg.d.length} im Depot, ${cfg.w.length} auf der Merkliste, ${cfg.a.length} Kursalarme, ${Object.keys(cfg.s).length} Stops.`
       : "Der Kanal klappt – es fehlt noch das Secret PUSH_WATCH mit Ihrer Push-Liste aus der Seite."];

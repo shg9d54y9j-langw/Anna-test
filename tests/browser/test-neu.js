@@ -24,8 +24,8 @@ const fx = n => (FX[n] ? path.join(__dirname, 'fixtures', FX[n]) : path.join(pro
   await p.waitForSelector('#ovSmart .whatsnew', { timeout: 15000 }).catch(() => null);
   const items = await p.$$eval('#ovSmart .whatsnew .wn-list li b', l => l.map(x => x.textContent));
   check(items.length >= 18 && !!items[0], `Karte mit ${items.length} neuen Funktionen: ${items.slice(0, 4).join(', ')} …`);
-  const firstCard = await p.$eval('#ovSmart', e => (e.firstElementChild ? e.firstElementChild.dataset.home : 'leer'));
-  check(firstCard === 'neu', `Karte steht ganz oben (erste Karte: ${firstCard})`);
+  const firstCards = await p.$eval('#ovSmart', e => [...e.children].slice(0, 2).map(c => c.dataset.home).join());
+  check(firstCards === 'brief,neu', `Karte steht oben gleich nach „Heute wichtig“ (${firstCards})`);
   try { await (await p.$('#ovSmart .whatsnew')).screenshot({ path: `${out}/neu-phone.png` }); } catch { /* Bildschirmfoto nur zur Ansicht */ }
   // jeder Link führt an ein vorhandenes Ziel
   const targets = await p.$$eval('#ovSmart .whatsnew a[href^="#"]', l => l.map(a => a.getAttribute('href')));
