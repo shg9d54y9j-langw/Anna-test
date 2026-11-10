@@ -1284,3 +1284,7 @@ textarea.push-val { display: block; width: 100%; margin-top: 8px; resize: vertic
 .brief-t .name-link, .brief-t a { color: var(--text); text-decoration: none; text-align: left; }
 .brief-t .name-link:hover, .brief-t a:hover { text-decoration: underline; text-decoration-color: var(--accent); }
 .brief-foot { margin: 10px 0 0; }
+
+/* Risiko-Check */
+table.risk-t td.wrap { min-width: 220px; white-space: normal; line-height: 1.45; }
+@media (max-width: 760px) { table.risk-t .opt { display: none; } table.risk-t td.wrap { min-width: 150px; } }

@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-10-risk", t: "Risiko-Check", d: "Im Portfolio: wie viel Sie verlieren, wenn alle Stops greifen – in Euro und in % des Depots, Positionen ohne Stop und je Aktie ein Vorschlag zur Größe nach Ihrem Risikobudget.", href: "#pfRisk" },
     { id: "2026-11-10-euro", t: "Depot in Euro", d: "Im Portfolio: Depotwert und Ergebnis in Euro mit EZB-Kursen – aufgeteilt in Kursgewinn und Währungseffekt, je Aktie und im Steuer-Schätzer (Kurs am Verkaufstag).", href: "#portfolio" },
     { id: "2026-11-10-briefing", t: "Heute wichtig", d: "Ganz oben auf der Startseite die fünf wichtigsten Punkte des Tages: Stops, Kursalarme, Zahlen, Zinsentscheid, Marktlage, Chancen auf der Merkliste. Auf Wunsch morgens als Handy-Meldung (Portfolio → Benachrichtigungen).", href: "#briefing" },
     { id: "2026-11-10-theme", t: "Hell oder dunkel", d: "Oben neben der Uhr: das Farbschema wie das Gerät, hell für Tageslicht oder dunkel – auch unter „Seite anpassen“." },

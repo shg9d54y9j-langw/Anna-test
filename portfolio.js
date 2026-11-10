@@ -352,6 +352,60 @@
   const newTopic = () => { const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"; return `rojko-${[...crypto.getRandomValues(new Uint8Array(22))].map(b => abc[b % 64]).join("")}`; };
   let pushOpen = false;
   document.addEventListener("toggle", e => { if (e.target && e.target.id === "pfPushSetup") pushOpen = e.target.open; }, true);
+  // ---------- Risiko-Check: was passiert, wenn alle Stops greifen? ----------
+  // Verlust je Position bis zum Stop (Stück × Abstand, in Euro zum aktuellen EZB-Kurs), Summe in % des Depotwerts, Positionen
+  // ohne Stop, und je Aktie ein Vorschlag nach dem Risikobudget: höchstens so viele Stück, dass ein Stop-Treffer nicht mehr
+  // als das Budget kostet – oder wo der Stop dafür liegen müsste.
+  const BUDGETS = [0.5, 1, 2, 3];
+  const budget = () => { const b = store.get("dtd-risk-budget", 1); return BUDGETS.includes(b) ? b : 1; };
+  function riskCard(rows) {
+    const R = rows.filter(r => r.x && Number.isFinite(r.x.last)).map(r => {
+      const e = euro(r.h, r.x), cur = currency(r.h.sym), now = cur ? rateOn(cur, null) : null;
+      const stop = r.h.stop, v = verdict(r.h, r.x);
+      const dist = stop ? (stop / r.x.last - 1) * 100 : null;
+      const loss = e && stop && now && stop < r.x.last ? r.h.qty * (stop - r.x.last) / now : null;   // negativ = Verlust in Euro
+      return { ...r, e, now, stop, dist, loss, suggest: v ? v.stop : null };
+    });
+    if (!R.length) return "";
+    const total = R.reduce((a, r) => a + (r.e ? r.e.value : 0), 0);
+    const b = budget(), limit = total * b / 100;
+    const withStop = R.filter(r => r.stop), without = R.filter(r => !r.stop);
+    const lossSum = withStop.reduce((a, r) => a + (Number.isFinite(r.loss) ? Math.min(0, r.loss) : 0), 0);
+    const share = v => (total > 0 && Number.isFinite(v) ? -v / total * 100 : null);
+    const worst = withStop.filter(r => Number.isFinite(r.loss)).sort((a, c) => a.loss - c.loss)[0];
+    const advice = r => {
+      if (!r.stop) return `<span class="warn-t">Kein Stop</span>${r.suggest ? ` – Vorschlag nach den Regeln: <b class="num">${price(r.suggest)}</b> (${pc((r.suggest / r.x.last - 1) * 100)})` : ""}`;
+      if (r.stop >= r.x.last) return `<span class="warn-t">Stop über dem Kurs</span> – in eToro prüfen, ob die Position noch offen ist`;
+      if (!Number.isFinite(r.loss) || !(total > 0)) return `<span class="muted">Stück und Euro-Kurs nötig</span>`;
+      if (-r.loss <= limit * 1.0001) return `<span class="up">passt</span> zum Budget`;
+      const perShare = (r.x.last - r.stop) / r.now, maxQty = Math.floor(limit / perShare * 100) / 100;
+      const fitStop = r.x.last - limit * r.now / r.h.qty;
+      return `<span class="warn-t">zu groß</span> – höchstens <b class="num">${fmt(maxQty, maxQty % 1 ? 2 : 0)}</b> Stück${fitStop > 0 ? ` oder Stop bei <b class="num">${price(fitStop)}</b>` : ""}`;
+    };
+    const rowsHtml = R.map(r => `<tr><td><button type="button" class="chip-btn" data-open="${esc(r.h.sym)}">${esc(r.h.sym)}</button></td>
+      <td class="num">${r.stop ? `${price(r.stop)} <span class="muted">(${pc(r.dist)})</span>` : "–"}</td>
+      <td class="num">${Number.isFinite(r.loss) ? `<span class="down">${eur(r.loss, true)}</span>` : "–"}</td>
+      <td class="num opt">${Number.isFinite(r.loss) && share(r.loss) !== null ? `${fmt(share(r.loss), 1)} %` : "–"}</td>
+      <td class="wrap">${advice(r)}</td></tr>`).join("");
+    return `<article class="card" id="pfRisk" data-section="Risiko">
+      <div class="card-head"><h2 class="card-title">Risiko-Check: wenn alle Stops greifen</h2>
+        <div class="seg" role="group" aria-label="Risikobudget je Aktie">${BUDGETS.map(x => `<button type="button" data-risk-budget="${x}" aria-pressed="${x === b}">${fmt(x, x % 1 ? 1 : 0)} %</button>`).join("")}</div></div>
+      <div class="stats">
+        ${kpi("Verlust, wenn alle Stops greifen", total > 0 && withStop.length ? `<span class="down">${eur(lossSum, true)}</span>` : "–")}
+        ${kpi("Anteil am Depot", total > 0 && withStop.length ? `${fmt(share(lossSum) || 0, 1)} %` : "–")}
+        ${kpi("Ohne Stop", `<span class="${without.length ? "warn-t" : "up"}">${without.length}</span>`)}
+        ${kpi("Größtes Einzelrisiko", worst ? `${esc(worst.h.sym)} ${fmt(share(worst.loss) || 0, 1)} %` : "–")}
+      </div>
+      <div class="table-wrap" style="margin-top:14px"><table class="scr risk-t"><thead><tr><th>Aktie</th><th class="num">Stop</th><th class="num">Verlust bis Stop</th><th class="num opt">vom Depot</th><th>Vorschlag (Budget ${fmt(b, b % 1 ? 1 : 0)} % = ${total > 0 ? eur(limit) : "–"})</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
+      <p class="hint">Risikobudget = höchstens so viel verlieren, wenn der Stop einer Aktie greift (Profis: 0,5–2 % des Depots je Position). Gerechnet in Euro zum aktuellen EZB-Kurs; Kurslücken (z. B. nach Quartalszahlen) können den Verlust über den Stop hinaus vergrößern. ${without.length ? "Positionen ohne Stop haben kein begrenztes Risiko – den Stop tragen Sie beim Bearbeiten der Aktie ein." : ""}</p>
+    </article>`;
+  }
+  document.addEventListener("click", e => {
+    const t = e.target.closest("[data-risk-budget]");
+    if (!t) return;
+    store.set("dtd-risk-budget", Number(t.dataset.riskBudget));
+    const el = $("pfRisk"); if (el) el.outerHTML = riskCard(list.map(h => ({ h, x: item(h.sym) })));
+  });
   function notifyCard() {
     const can = "Notification" in window, perm = can ? Notification.permission : "unsupported";
     const topic = String(store.get(NTFY_KEY, "") || ""), cur = pushList(), copied = String(store.get(PUSH_COPIED, "") || "");
@@ -588,7 +642,7 @@
     const rows = list.map(h => ({ h, x: item(h.sym) }));
     const order = r => (!r.x ? 3 : { sell: 0, holdstop: 1, secure: 2, hold: 2 }[(verdict(r.h, r.x) || {}).key] ?? 3);
     rows.sort((a, b) => order(a) - order(b) || alerts(b.h, b.x).length - alerts(a.h, a.x).length || a.h.sym.localeCompare(b.h.sym));
-    host.innerHTML = (list.length ? summaryCard(rows) + mixCard(rows) + (window.DTD.depotHistoryCard ? window.DTD.depotHistoryCard() : "") : `<article class="card"><h2 class="card-title">Noch keine Aktien eingetragen</h2><p class="small">Tragen Sie unten Ihre erste Aktie mit Kaufpreis ein – die Seite zeigt dann Ergebnis, Risiko, ob Halten oder Raus und Nachrichten.</p></article>`)
+    host.innerHTML = (list.length ? summaryCard(rows) + mixCard(rows) + riskCard(rows) + (window.DTD.depotHistoryCard ? window.DTD.depotHistoryCard() : "") : `<article class="card"><h2 class="card-title">Noch keine Aktien eingetragen</h2><p class="small">Tragen Sie unten Ihre erste Aktie mit Kaufpreis ein – die Seite zeigt dann Ergebnis, Risiko, ob Halten oder Raus und Nachrichten.</p></article>`)
       + (list.length ? `<article class="card" data-section="Aktien"><div class="card-head"><h2 class="card-title">Ihre Aktien</h2><span class="muted small">${loading && !stocks ? "Lade Kennzahlen …" : "„Verkauf prüfen“ zuerst"}</span></div><div class="pf-list">${rows.map(r => card(r.h)).join("")}</div></article>` : "")
       + formCard() + notifyCard();
     const extra = $("portfolioExtra");
