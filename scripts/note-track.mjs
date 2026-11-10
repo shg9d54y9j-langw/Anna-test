@@ -148,6 +148,20 @@ export function evaluate(hist, closes, today, { minStocks = 50, minGroup = 5 } =
   };
 }
 
+// Notenverlauf je Aktie für die Seite (klein): Note der letzten Momentaufnahme und der Momentaufnahmen davor –
+// d1 = vorherige, w1 = mindestens 7 Tage, m1 = mindestens 30 Tage, m3 = mindestens 91 Tage vor der letzten.
+export function recent(hist) {
+  const snaps = (hist && Array.isArray(hist.snaps) ? hist.snaps : []).filter(s => s && DAY.test(s.d) && s.n).sort((a, b) => (a.d < b.d ? -1 : 1));
+  if (!snaps.length) return { dates: {}, n: {} };
+  const last = snaps[snaps.length - 1], t = Date.parse(`${last.d}T12:00:00Z`);
+  const before = days => { const lim = new Date(t - days * 864e5).toISOString().slice(0, 10); for (let i = snaps.length - 2; i >= 0; i--) if (snaps[i].d <= lim) return snaps[i]; return null; };
+  const lag = { now: last, d1: snaps.length > 1 ? snaps[snaps.length - 2] : null, w1: before(7), m1: before(30), m3: before(91) };
+  const keys = ["now", "d1", "w1", "m1", "m3"];
+  const n = {};
+  for (const sym of Object.keys(last.n)) n[sym] = keys.map(k => (lag[k] && fin(lag[k].n[sym]) ? lag[k].n[sym] : null));
+  return { updated: new Date().toISOString(), dates: Object.fromEntries(keys.map(k => [k, lag[k] ? lag[k].d : null])), keys, n };
+}
+
 async function getJson(url, tries = 3) {
   const u = new URL(url);
   if (!["raw.githubusercontent.com", "localhost", "127.0.0.1"].includes(u.hostname)) throw new Error(`Unzulässige Adresse ${u.hostname}`);
@@ -190,11 +204,11 @@ async function main() {
     else warn(`Nur ${n} Aktien mit Note – heute keine Momentaufnahme.`);
   } else warn("Ohne Kennzahlen (fund.json) heute keine Momentaufnahme – die Bilanz rechnet mit den bisherigen.");
   const track = evaluate(hist, closes, today, { minStocks, minGroup });
-  const hOut = env.HISTORY_OUT || here("../data/note-history.json"), tOut = env.TRACK_OUT || here("../data/note-track.json");
-  await mkdir(dirname(hOut), { recursive: true });
-  await mkdir(dirname(tOut), { recursive: true });
+  const hOut = env.HISTORY_OUT || here("../data/note-history.json"), tOut = env.TRACK_OUT || here("../data/note-track.json"), rOut = env.RECENT_OUT || here("../data/note-recent.json");
+  for (const f of [hOut, tOut, rOut]) await mkdir(dirname(f), { recursive: true });
   await writeFile(hOut, JSON.stringify(hist));
   await writeFile(tOut, JSON.stringify(track));
+  await writeFile(rOut, JSON.stringify(recent(hist)));
   const h = track.horizons.map(x => `${x.label}: ${x.days ? `${x.days} Messtage, Note 80+ ${x.g["80"] ? `${x.g["80"].rel >= 0 ? "+" : ""}${x.g["80"].rel}` : "–"} Punkte gegenüber dem Schnitt` : `ab ${x.firstAt}`}`).join(" · ");
   log(`Note-Bilanz: ${hist.snaps.length} Messtage (vorher ${before}), seit ${track.since}. ${h}`);
 }

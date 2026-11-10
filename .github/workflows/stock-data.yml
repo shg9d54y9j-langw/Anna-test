@@ -62,6 +62,7 @@ jobs:
             data/stocks.json
             data/note-history.json
             data/note-track.json
+            data/note-recent.json
           retention-days: 1
           if-no-files-found: error
 

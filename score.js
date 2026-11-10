@@ -152,6 +152,7 @@
     const partial = s.coverage < 0.6;
     return `<div class="note-wrap">
         <div class="note-big"><span class="note-num num ${tone(s.note)}">${fin(s.note) ? s.note : "–"}</span><span class="note-of">von 100</span><span class="note-lbl">${label(s.note)}</span>
+          ${historyLine(sym, s.note)}
           <p class="muted small">${T("note", "Wie entsteht die Note?")}${partial ? ` · Teilnote: ${x.type === "ETF" ? "bei ETFs nur Trend und Sicherheit" : "Bilanz-Kennzahlen fehlen (nur für US-Aktien)"}` : ""} · <a href="#notebilanz">Trifft die Note? Bilanz →</a></p></div>
         ${bars(s, sym)}
       </div>
@@ -198,11 +199,31 @@
       ${fsd.warn ? `<p class="small down"><b>Achtung:</b> knappe Liquidität (weniger kurzfristiges Vermögen als kurzfristige Schulden) und kein Geldzufluss oder Verlust.</p>` : ""}
       <ul class="fs-list">${fsd.tests.map(t => `<li class="${t.pass ? "ok" : "no"}"><span aria-hidden="true">${t.pass ? "✓" : "✗"}</span><b>${t.t}</b><span class="muted small">${esc(t.txt)}</span></li>`).join("")}</ul>`;
   }
+  // ---------- Notenverlauf: Note der letzten Momentaufnahmen (note-recent.json, täglich vom Server) ----------
+  const LAG = { d1: "zuletzt", w1: "vor 1 Woche", m1: "vor 1 Monat", m3: "vor 3 Monaten" };
+  function noteHistory(sym) {
+    const r = S.get("recent"), row = r && r.n && r.n[sym];
+    if (!row) return null;
+    const keys = r.keys || ["now", "d1", "w1", "m1", "m3"], v = Object.fromEntries(keys.map((k, i) => [k, fin(row[i]) ? row[i] : null]));
+    const base = fin(v.m1) ? "m1" : fin(v.w1) ? "w1" : null;
+    return { ...v, dates: r.dates || {}, base, delta: base && fin(v.now) ? v.now - v[base] : null };
+  }
+  function historyLine(sym, live) {
+    const r = S.get("recent");
+    if (!r) return "";
+    const h = noteHistory(sym);
+    const past = h ? ["m3", "m1", "w1"].filter(k => fin(h[k])) : [];
+    if (!past.length) return `<p class="muted small nt-hist">Notenverlauf: Die Seite merkt sich die Noten seit dem ${r.dates && r.dates.now ? new Date(`${(S.get("recent").dates || {}).now}T12:00:00Z`).toLocaleDateString("de-DE") : "10.11.2026"} – erste Vergleiche nach einer Woche.</p>`;
+    const now = fin(live) ? live : h.now;
+    const d = fin(now) && h.base ? now - h[h.base] : null;
+    return `<p class="small nt-hist">Notenverlauf: ${past.map(k => `${LAG[k]} <b>${h[k]}</b>`).join(" · ")} · heute <b>${fin(now) ? now : "–"}</b>${fin(d) && d !== 0 ? ` <span class="${d > 0 ? "up" : "down"}">${d > 0 ? "▲ +" : "▼ "}${d}</span>` : ""}</p>`;
+  }
+  window.DTD.noteHistory = noteHistory;
   window.DTD.finStrength = finStrength;
   window.DTD.finCard = finCard;
   window.DTD.score = sym => { const t = ensure(); return t ? t.get(sym) || null : null; };
   window.DTD.scoreAll = () => ensure();
-  window.DTD.scoreReady = () => Promise.all([S.load("stocks"), S.load("fund")]).then(ensure);
+  window.DTD.scoreReady = () => Promise.all([S.load("stocks"), S.load("fund"), S.load("recent")]).then(ensure);
   window.DTD.scoreCard = card;
   window.DTD.scoreLabel = label;
   window.DTD.scoreTone = tone;

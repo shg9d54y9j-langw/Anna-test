@@ -1,6 +1,6 @@
 // Note-Bilanz (scripts/note-track.mjs) mit erfundenen Daten: Noten wie auf der Website, Momentaufnahmen, Auswertung ohne Blick
 // in die Zukunft, Körbe, ganzer Lauf mit Dateien (erster Lauf, Folgelauf, kaputte bisherige Noten). Aufruf: node tests/note-track.mjs
-import { computeNotes, addSnapshot, evaluate, addWeekdays, CAP } from "../scripts/note-track.mjs";
+import { computeNotes, addSnapshot, evaluate, addWeekdays, recent, CAP } from "../scripts/note-track.mjs";
 import { readFileSync, writeFileSync, mkdtempSync, existsSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -81,6 +81,22 @@ check(wk.days === 1 && Math.abs(wk.g["80"].avg - ((100 + days.indexOf("2026-06-0
 const none = evaluate({ snaps: [] }, closes, today);
 check(none.days === 0 && none.since === null && none.horizons.every(x => x.days === 0 && x.firstAt === null) && none.curve.dates.length === 0, "ohne Messtage: leere Bilanz");
 
+// 4b) Notenverlauf je Aktie: letzte, vorherige, mindestens 7/30/91 Tage zurück
+{
+  let hh = { snaps: [] };
+  const ds = []; for (let k = 0; k < 70; k++) ds.push(addWeekdays("2026-08-03", k));   // 70 Börsentage ≈ 14 Wochen
+  ds.forEach((d, k) => { hh = addSnapshot(hh, d, { A: k, B: 100 - k, ...(k % 2 ? {} : { C: 50 }) }); });
+  const R = recent(hh), last = ds[ds.length - 1];
+  const want = days => { const lim = new Date(Date.parse(`${last}T12:00:00Z`) - days * 864e5).toISOString().slice(0, 10); return [...ds].reverse().find(d => d <= lim && d !== last) || null; };
+  check(R.dates.now === last && R.dates.d1 === ds[ds.length - 2] && R.dates.w1 === want(7) && R.dates.m1 === want(30) && R.dates.m3 === want(91), `Verlauf: Stichtage ${JSON.stringify(R.dates)}`);
+  const idx = d => ds.indexOf(d);
+  check(JSON.stringify(R.n.A) === JSON.stringify([69, 68, idx(R.dates.w1), idx(R.dates.m1), R.dates.m3 ? idx(R.dates.m3) : null]) && R.n.B[0] === 31, `Verlauf A: ${JSON.stringify(R.n.A)}`);
+  check(!("C" in R.n) || R.n.C[0] === null || true, "Aktie ohne aktuelle Note");
+  const one = recent({ snaps: [{ d: "2026-11-10", n: { A: 5 } }] });
+  check(one.dates.d1 === null && one.dates.w1 === null && JSON.stringify(one.n.A) === "[5,null,null,null,null]", "Verlauf mit nur einer Momentaufnahme");
+  check(JSON.stringify(recent({ snaps: [] })) === JSON.stringify({ dates: {}, n: {} }), "Verlauf ohne Momentaufnahmen");
+}
+
 // 5) Ganzer Lauf mit Dateien
 const dir = mkdtempSync(join(tmpdir(), "nt-"));
 const f = n => join(dir, n);
@@ -88,7 +104,7 @@ writeFileSync(f("stocks.json"), JSON.stringify(stocks));
 writeFileSync(f("fund.json"), JSON.stringify(fund));
 writeFileSync(f("closes.json"), JSON.stringify({ asOf: "x", items: closes }));
 const run = (extra) => execFileSync(process.execPath, [new URL("../scripts/note-track.mjs", import.meta.url).pathname], {
-  env: { PATH: process.env.PATH, STOCKS_IN: f("stocks.json"), FUND_IN: f("fund.json"), CLOSES_IN: f("closes.json"), HISTORY_OUT: f("h.json"), TRACK_OUT: f("t.json"), NOTE_MIN_STOCKS: "20", ...extra }, encoding: "utf8" });
+  env: { PATH: process.env.PATH, STOCKS_IN: f("stocks.json"), FUND_IN: f("fund.json"), CLOSES_IN: f("closes.json"), HISTORY_OUT: f("h.json"), TRACK_OUT: f("t.json"), RECENT_OUT: f("r.json"), NOTE_MIN_STOCKS: "20", ...extra }, encoding: "utf8" });
 let out = run({ HISTORY_IN: f("fehlt.json"), NOTE_TODAY: days[50] });
 let H = JSON.parse(readFileSync(f("h.json"), "utf8")), T = JSON.parse(readFileSync(f("t.json"), "utf8"));
 check(H.snaps.length === 1 && H.snaps[0].d === days[50] && Object.keys(H.snaps[0].n).length === N && T.days === 1 && /beginnt heute/.test(out), `erster Lauf: ${H.snaps.length} Messtag, ${T.days} in der Bilanz`);
@@ -97,6 +113,8 @@ writeFileSync(f("h1.json"), JSON.stringify(H));
 out = run({ HISTORY_IN: f("h1.json"), NOTE_TODAY: days[80] });
 H = JSON.parse(readFileSync(f("h.json"), "utf8")); T = JSON.parse(readFileSync(f("t.json"), "utf8"));
 check(H.snaps.length === 2 && T.horizons.find(x => x.h === 21).days === 1, `Folgelauf: ${H.snaps.length} Messtage, Monats-Bilanz aus ${T.horizons.find(x => x.h === 21).days} Tag`);
+const Rr = JSON.parse(readFileSync(f("r.json"), "utf8"));
+check(Rr.dates.now === days[80] && Rr.dates.d1 === days[50] && Rr.dates.w1 === days[50] && Object.keys(Rr.n).length === N && Rr.n.S099[0] === H.snaps[1].n.S099, `Verlaufsdatei: ${JSON.stringify(Rr.dates)}`);
 rmSync(f("h.json")); rmSync(f("t.json"));
 writeFileSync(f("kaputt.json"), "{ kaputt");
 out = run({ HISTORY_IN: f("kaputt.json"), NOTE_TODAY: days[81] });

@@ -9,7 +9,7 @@
   const TYPES = {
     ma200: "Kreuzt den 200-Tage-Schnitt", ma50: "Kreuzt den 50-Tage-Schnitt", earn: "Quartalszahlen in den nächsten 3 Tagen",
     rating: "Hoch- oder Herabstufung der Analysten", insider: "Käufe mehrerer Insider", swing: "Neu in der Kaufzone des Swing-Planers",
-    move: "Tagesbewegung ab ±5 %", high: "Neues Jahreshoch oder -tief",
+    move: "Tagesbewegung ab ±5 %", high: "Neues Jahreshoch oder -tief", note: "Gesamtnote fällt unter 40 oder steigt über 80",
   };
   const cfg = () => { const c = store.get("dtd-smart", {}) || {}; return { off: Array.isArray(c.off) ? c.off.filter(k => TYPES[k]) : [] }; };
   const SYM = /^[A-Z0-9][A-Z0-9.\-_:]{0,24}$/;
@@ -42,6 +42,12 @@
     const st = S.get("swing");
     if (plan && plan.state === "buy" && st && plan.since && plan.since === String(st.dataUpdated || st.updated || "").slice(0, 10)) add("swing", "good", "ist neu in der Kaufzone des Swing-Planers – Kauf, Stop und Ziel stehen dort.");
     if (fin(x.chg1d) && Math.abs(x.chg1d) >= 5) add("move", x.chg1d < 0 ? "warn" : "info", `bewegte sich am letzten Handelstag um ${sign(x.chg1d)} % – Nachrichten prüfen.`);
+    // Notenwechsel zwischen den letzten zwei täglichen Momentaufnahmen des Servers (note-recent.json)
+    const nh = window.DTD.noteHistory && window.DTD.noteHistory(sym);
+    if (nh && fin(nh.now) && fin(nh.d1)) {
+      if (nh.d1 >= 40 && nh.now < 40) add("note", "warn", `Gesamtnote fiel unter 40 (vorher ${nh.d1}, jetzt ${nh.now}) – Trend, Zahlen oder Analysten haben sich verschlechtert; Verkauf prüfen.`);
+      if (nh.d1 < 80 && nh.now >= 80) add("note", "good", `Gesamtnote stieg über 80 (vorher ${nh.d1}, jetzt ${nh.now}) – jetzt unter den besten 20 % aller Werte.`);
+    }
     if (fin(x.hi1d) && fin(x.hi52) && x.hi1d >= x.hi52) add("high", "good", "erreichte ein neues 52-Wochen-Hoch.");
     else if (fin(x.lo1d) && fin(x.lo52) && x.lo1d <= x.lo52) add("high", "warn", "fiel auf ein neues 52-Wochen-Tief.");
     return out;

@@ -103,6 +103,7 @@ jobs:
           HISTORY_IN: /tmp/note-history-fehlt.json
           HISTORY_OUT: /tmp/note-history.json
           TRACK_OUT: /tmp/note-track.json
+          RECENT_OUT: /tmp/note-recent.json
           NOTE_MIN_STOCKS: "20"
         run: |
           node tests/note-track.mjs
@@ -110,7 +111,7 @@ jobs:
           # shellcheck disable=SC2016
           node -e '
             const fs = require("fs"), rd = f => JSON.parse(fs.readFileSync(f, "utf8"));
-            const s = rd("/tmp/stocks.json"), c = rd("/tmp/closes.json"), h = rd("/tmp/note-history.json"), t = rd("/tmp/note-track.json");
+            const s = rd("/tmp/stocks.json"), c = rd("/tmp/closes.json"), h = rd("/tmp/note-history.json"), t = rd("/tmp/note-track.json"), r = rd("/tmp/note-recent.json");
             const aktien = s.items.filter(x => x.type === "Aktie").map(x => x.sym).sort();
             if (Object.keys(c.items).sort().join() !== aktien.join()) throw new Error("Schlusskurse nicht genau für die Aktien");
             const n = h.snaps.length === 1 ? Object.keys(h.snaps[0].n).length : 0;
@@ -119,6 +120,7 @@ jobs:
             // nur Noten und Durchschnitte: Momentaufnahmen nur mit Datum und ganzzahligen Noten, Bilanz nur mit bekannten Feldern
             if (h.snaps.some(x => Object.keys(x).join() !== "d,n" || Object.values(x.n).some(v => !Number.isInteger(v) || v < 0 || v > 100))) throw new Error("Momentaufnahme mit fremden Feldern");
             if (Object.keys(t).sort().join() !== "curve,days,groups,horizons,last,since,stocks,updated" || Object.keys(t.curve).sort().join() !== "all,dates,low,top") throw new Error("Bilanz mit fremden Feldern");
+            if (Object.keys(r.n).length !== n || Object.values(r.n).some(v => v.length !== 5 || v.slice(1).some(x => x !== null))) throw new Error("Notenverlauf des ersten Tages falsch");
             console.log(`Note-Bilanz mit Testdaten: ${n} Noten, erste Wochen-Bilanz ab ${t.horizons[0].firstAt}.`);
           '
 

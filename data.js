@@ -12,6 +12,7 @@
     fund: t => get(`${RAW}fund-data/fund.json?t=${t}`).then(d => (d && d.items ? d : null)),
     swing: t => get(`${RAW}stock-data/swing.json?t=${t}`).then(d => (d && Array.isArray(d.setups) ? d : null)),
     firms: t => get(`data/firms.json?t=${t}`).then(d => (d && d.firms ? d : null)),
+    recent: t => get(`${RAW}stock-data/note-recent.json?t=${t}`).then(d => (d && d.n && d.dates ? d : null)),   // Notenverlauf (scripts/note-track.mjs)
   };
   const cache = {}, pending = {}, fetched = {};
   function load(name, force = false) {

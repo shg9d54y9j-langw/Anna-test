@@ -58,9 +58,10 @@ prev_notes=""
 if [ "$fetched" = true ] && git show FETCH_HEAD:note-history.json > prev-notes.json 2> /dev/null; then prev_notes=prev-notes.json; else rm -f prev-notes.json; fi
 keep_notes() {
   if [ "$fetched" = true ] && git show FETCH_HEAD:note-history.json > note-history.json 2> /dev/null && git show FETCH_HEAD:note-track.json > note-track.json 2> /dev/null; then
+    git show FETCH_HEAD:note-recent.json > note-recent.json 2> /dev/null || rm -f note-recent.json
     echo "Note-Bilanz: bisheriger Stand bleibt."
   else
-    rm -f note-history.json note-track.json
+    rm -f note-history.json note-track.json note-recent.json
   fi
 }
 if [ -n "${NOTES_DIR:-}" ] && [ -f "$NOTES_DIR/note-history.json" ] && [ -f "$NOTES_DIR/note-track.json" ]; then
@@ -75,6 +76,7 @@ if [ -n "${NOTES_DIR:-}" ] && [ -f "$NOTES_DIR/note-history.json" ] && [ -f "$NO
     console.log(`Note-Bilanz: ${H.snaps.length} Messtage`);
   ' "$NOTES_DIR/note-history.json" "$NOTES_DIR/note-track.json" "$prev_notes"; then
     cp "$NOTES_DIR/note-history.json" "$NOTES_DIR/note-track.json" .
+    if [ -f "$NOTES_DIR/note-recent.json" ]; then cp "$NOTES_DIR/note-recent.json" .; fi
   else
     keep_notes
   fi
@@ -86,6 +88,7 @@ rm -f prev-notes.json
 git add stocks.json
 if [ -f swing.json ]; then git add swing.json; fi
 if [ -f note-history.json ] && [ -f note-track.json ]; then git add note-history.json note-track.json; fi
+if [ -f note-recent.json ]; then git add note-recent.json; fi
 git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Aktien-Daten $(date -u +%FT%TZ)"
 # GitHub lehnt Pushes selten vorübergehend ab („fatal error in commit_refs“) – dann bis zu fünfmal versuchen
 for i in 1 2 3 4 5; do
