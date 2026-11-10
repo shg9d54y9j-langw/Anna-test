@@ -77,7 +77,8 @@
   ];
   function card() {
     const syms = list();
-    if (!syms.length) return "";
+    if (!syms.length) return `<article class="card" data-section="Vergleich" id="vergleich"><div class="card-head"><h2 class="card-title">Aktien vergleichen</h2></div>
+      <p class="small">Bis zu vier Aktien nebeneinander: Gesamtnote, Bewertung, Wachstum, Marge, Trend, Risiko und Analysten – die bessere Zahl je Zeile ist hervorgehoben. Hinzufügen im Aktien-Check oder bei den Konkurrenten mit „⇄ Vergleichen“, im Screener mit „+ vergleichen“.</p></article>`;
     const cols = syms.map(sym => ({ sym, x: S.item(sym), f: S.fund(sym) || {}, s: window.DTD.score ? window.DTD.score(sym) : null }));
     const ok = cols.filter(c => c.x);
     const T = (k, l, sym) => (k && window.DTD.term ? window.DTD.term(k, l, sym) : l);

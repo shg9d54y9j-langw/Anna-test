@@ -219,7 +219,7 @@
     const avgW = get => { let s = 0, n = 0; for (const r of withData) { const v = get(r); if (Number.isFinite(v)) { s += v * share(r); n += share(r); } } return n ? s / n : null; };
     const note = avgW(r => { const sc = window.DTD.score && window.DTD.score(r.h.sym); return sc ? sc.note : null; }), beta = avgW(r => r.x.beta);
     const row = ([k, v]) => `<div class="mix-row"><span class="mix-k">${esc(k)}</span><span class="mix-bar"><i style="width:${Math.max(2, v).toFixed(1)}%"></i></span><b class="num">${fmt(v, 0)} %</b></div>`;
-    return `<article class="card" data-section="Aufteilung">
+    return `<article class="card" id="pfMix" data-section="Aufteilung">
       <div class="card-head"><h2 class="card-title">Depot-Analyse</h2><span class="muted small">${byValue ? "nach aktuellem Wert" : cur.size > 1 ? "nach Anzahl – Währungen gemischt" : "nach Anzahl – Stückzahlen fehlen"}</span></div>
       <div class="stats">${kpi("Depot-Note", Number.isFinite(note) ? `<span class="${window.DTD.scoreTone(note)}">${fmt(note, 0)}</span>` : "–")}${kpi("Ø Beta", Number.isFinite(beta) ? fmt(beta, 2) : "–")}${kpi("Branchen", dims[0][1].length)}${kpi("Größte Position", `${fmt(share(big), 0)} %`)}</div>
       ${warn.length ? `<ul class="checklist mix-warn">${warn.map(t => `<li>${t}</li>`).join("")}</ul>` : `<p class="small up" style="margin-top:10px">Gut gestreut: keine Aktie über 25 %, keine Branche über 40 %.</p>`}

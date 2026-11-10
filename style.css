@@ -1098,3 +1098,12 @@ details.more > summary:hover { color: var(--text); }
 .nt-sub { display: block; color: var(--muted); font-size: 11.5px; font-weight: 400; margin-top: 2px; white-space: nowrap; }
 .nt-all td { border-top: 1px solid var(--line-2); }
 @media (max-width: 520px) { .nt-table .nt-sub { font-size: 10.5px; } .nt-table .nt-hit { display: none; } .nt-table td, .nt-table th { padding-left: 5px; padding-right: 5px; } .nt-table td:first-child .nt-sub { white-space: normal; } }
+
+/* Neu in RojkoMoney */
+.wn-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 0; }
+.wn-list li { padding: 9px 0; border-top: 1px solid var(--line); display: grid; gap: 2px; }
+.wn-list li:first-child { border-top: 0; }
+.wn-list a, .wn-list .link-btn { color: var(--text); text-decoration: none; font-weight: 700; justify-self: start; }
+.wn-list a:hover b, .wn-list .link-btn:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.wn-d { color: var(--text-2); font-size: 13.5px; line-height: 1.45; }
+.whatsnew details.more { margin-top: 6px; }
