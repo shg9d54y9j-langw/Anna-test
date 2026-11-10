@@ -57,7 +57,7 @@
   // ---------- Live-Warnungen: Hinweis und Zähler am Reiter ----------
   function notifyAlerts() {
     const alerts = live ? (live.alerts || []).filter(a => a && typeof a.text === "string") : [];
-    const tab = $("tab-daily");
+    const tab = $("tab-bots");   // Bereich „Bots“ (Trend-Bot und Copy-Trading)
     tab.querySelector(".count")?.remove();
     if (alerts.length) {
       const c = document.createElement("span");

@@ -1,52 +1,22 @@
-// ---------- Navigation: Unter-Navigation je Bereich, auf dem Handy Knopfleiste unten und Raster aller Themen ----------
+// ---------- Navigation: Unter-Navigation je Bereich, auf dem Handy die Leiste unten mit allen sieben Bereichen ----------
 (() => {
   const tabs = [...document.querySelectorAll(".tabs .tab")];
-  const DESC = {
-    home: "Tag auf einen Blick", portfolio: "Aktien, Journal, Steuer", markt: "Ampeln, Heatmap, News", aktie: "Symbol prüfen", tools: "Screener, Note-Bilanz, Alarme", ideen: "Belegte Muster",
-    hot: "Experten-Favoriten", swing: "Theorie, Kauf, Stop", bot: "Handelt selbst, Tagebuch",
-    setup: "Stop, Ziel, Stück", daily: "Wen kopieren? Vergleich", theorie: "Forschung",
-  };
-  const MAIN = ["home", "portfolio", "markt", "aktie", "hot", "bot"];
+  // Sieben Bereiche – am Handy alle direkt in der Leiste unten
+  const MAIN = tabs.map(t => t.dataset.tab);
+  const SHORT = { home: "Start", portfolio: "Depot", aktie: "Aktie", markt: "Markt", tools: "Tools", ideas: "Ideen", bots: "Bots" };
   const icon = id => { const t = $(`tab-${id}`); const svg = t && t.querySelector("svg"); return svg ? svg.outerHTML : ""; };
-  const label = id => { const t = $(`tab-${id}`); return t ? t.querySelector("span").textContent : id; };
-  const go = id => { location.hash = id; };
+  const go = g => window.DTD.openGroup(g);
 
   // Knopfleiste unten (Handy)
   const bar = document.createElement("nav");
   bar.className = "bottomnav";
   bar.setAttribute("aria-label", "Hauptbereiche");
-  bar.innerHTML = MAIN.map(id => `<button type="button" data-go="${id}">${icon(id)}<span>${({ home: "Start", portfolio: "Depot", markt: "Markt", aktie: "Aktie", hot: "Hot", bot: "Bot" })[id]}</span></button>`).join("")
-    + `<button type="button" data-more><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Alle</span></button>`;
+  bar.innerHTML = MAIN.map(id => `<button type="button" data-go="${id}">${icon(id)}<span>${SHORT[id] || id}</span></button>`).join("");
   document.body.append(bar);
-
-  // Raster aller Themen (Handy)
-  const sheet = document.createElement("div");
-  sheet.className = "navsheet";
-  sheet.hidden = true;
-  sheet.setAttribute("role", "dialog");
-  sheet.setAttribute("aria-label", "Alle Themen");
-  sheet.innerHTML = `<div class="navsheet-head"><b>Alle Themen</b><button type="button" class="icon-btn" data-close aria-label="Schließen">✕</button></div>
-    <div class="navgrid">${tabs.map(t => { const id = t.dataset.tab; return `<button type="button" data-go="${id}">${icon(id)}<span>${label(id)}<small>${DESC[id] || ""}</small></span></button>`; }).join("")}
-      <button type="button" data-layout-open><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Seite anpassen<small>Bereiche und Karten ausblenden</small></span></button></div>`;
-  document.body.append(sheet);
-
-  const openSheet = () => { sheet.hidden = false; document.body.style.overflow = "hidden"; sheet.querySelector(".navgrid button.on, .navgrid button").focus(); };
-  const closeSheet = () => { sheet.hidden = true; document.body.style.overflow = ""; };
   bar.addEventListener("click", e => {
-    const b = e.target.closest("button");
-    if (!b) return;
-    if (b.hasAttribute("data-more")) return sheet.hidden ? openSheet() : closeSheet();
-    closeSheet(); go(b.dataset.go);
+    const b = e.target.closest("button[data-go]");
+    if (b) go(b.dataset.go);
   });
-  sheet.addEventListener("click", e => {
-    const b = e.target.closest("button");
-    if (!b) return;
-    if (b.hasAttribute("data-close")) return closeSheet();
-    if (b.hasAttribute("data-layout-open")) return closeSheet();   // das Fenster öffnet layout.js
-    if (b.dataset.go) { closeSheet(); go(b.dataset.go); }
-  });
-  document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheet.hidden) closeSheet(); });
-  window.addEventListener("hashchange", () => { if (!sheet.hidden) closeSheet(); });   // z. B. Zurück-Taste: Menü nicht offen stehen lassen
 
   // Unter-Navigation: Knöpfe für alle Abschnitte mit data-section im sichtbaren Bereich
   function buildSubnav(view) {
@@ -86,12 +56,9 @@
     sections.forEach(s => io.observe(s));
   }
   function sync() {
-    const id = (tabs.find(t => t.getAttribute("aria-selected") === "true") || {}).dataset?.tab || "home";
-    bar.querySelectorAll("[data-go]").forEach(b => b.classList.toggle("on", b.dataset.go === id));
-    const moreOn = !MAIN.includes(id);
-    bar.querySelector("[data-more]").classList.toggle("on", moreOn);
-    sheet.querySelectorAll("[data-go]").forEach(b => b.classList.toggle("on", b.dataset.go === id));
-    requestAnimationFrame(() => buildSubnav($(id)));
+    const g = (tabs.find(t => t.getAttribute("aria-selected") === "true") || {}).dataset?.tab || "home";
+    bar.querySelectorAll("[data-go]").forEach(b => { const on = b.dataset.go === g; b.classList.toggle("on", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+    requestAnimationFrame(() => buildSubnav(document.querySelector("#views > .view:not([hidden])")));
   }
   window.addEventListener("hashchange", () => setTimeout(sync, 0));
   window.addEventListener("dtd:data", () => setTimeout(sync, 50));

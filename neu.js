@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-10-groups", t: "Sieben statt zwölf Bereiche", d: "Ähnliches ist zusammengelegt: „Ideen“ (HotStuff, Swing-Planer, Trade-Ideen, Theorie), „Bots“ (Trend-Bot, Copy-Trading) und „Trade planen“ im Aktien-Check – oben im Bereich umschalten. Am Handy stehen jetzt alle Bereiche direkt in der Leiste unten.", href: "#ideas" },
     { id: "2026-11-10-design", t: "Neues Design", d: "Ruhiger und übersichtlicher: am Computer links alle Bereiche in Gruppen, klare Zahlen, farbige Ampeln, aufgeräumte Karten – am Handy die Leiste unten mit hervorgehobenem Bereich." },
     { id: "2026-11-10-push", t: "Meldungen aufs Handy", d: "Mit der kostenlosen App ntfy: Stop oder Kursalarm erreicht, Trendbruch, Kurssprung, Zahlen, Notenwechsel und wichtige Nachrichten – auch wenn die Seite zu ist, dazu freitags ein Wochenbericht. Einrichtung im Portfolio.", href: "#pfPush" },
     { id: "2026-11-10-layout", t: "Seite anpassen", d: "Bereiche und Karten der Startseite ausblenden oder umsortieren – unten auf der Startseite oder unter „Alle Themen“.", act: "layout" },

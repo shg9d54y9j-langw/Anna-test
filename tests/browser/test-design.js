@@ -1,11 +1,12 @@
 // Browser-Test (Playwright) – läuft in der Rechenkontrolle über tests/browser/run.sh
-// Design „Präzision“: Computer mit Seitenleiste in Gruppen (Reihenfolge, Pfeiltasten, Hervorhebung), Tablet mit Reitern oben,
-// Handy mit Leiste unten und gekürzter Einleitung, die sich antippen lässt; nirgends zu breit. node test-design.js <port> <ausgabe>
+// Design „Präzision“ mit sieben Bereichen: Computer mit Seitenleiste (Reihenfolge, Pfeiltasten, Hervorhebung), Umschaltleiste in
+// zusammengelegten Bereichen (merkt sich den Teil), Tablet mit Reitern oben, Handy mit allen sieben Bereichen in der Leiste unten
+// und gekürzter Einleitung, die sich antippen lässt; nirgends zu breit. node test-design.js <port> <ausgabe>
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const stocks = fs.readFileSync(path.join(__dirname, 'fixtures', 'stocks.json'), 'utf8');
-const ORDER = 'home,portfolio,aktie,markt,tools,setup,hot,swing,ideen,theorie,bot,daily';
+const ORDER = 'home,portfolio,aktie,markt,tools,ideas,bots';
 
 (async () => {
   const [port, out] = process.argv.slice(2);
@@ -30,7 +31,7 @@ const ORDER = 'home,portfolio,aktie,markt,tools,setup,hot,swing,ideen,theorie,bo
       order: [...nav.querySelectorAll('.tab')].map(t => t.dataset.tab).join(), main: Math.round(document.querySelector('main').getBoundingClientRect().left) };
   });
   check(side.dir === 'column' && side.left === 0 && side.w > 200 && side.main >= side.w, `Seitenleiste links (${side.w} px), Inhalt daneben ab ${side.main} px`);
-  check(side.groups.join() === 'Analyse,Ideen,Automatik' && side.order === ORDER, `Gruppen ${side.groups.join(', ')} und Reihenfolge der Bereiche`);
+  check(side.order === ORDER, `sieben Bereiche in der Seitenleiste: ${side.order}`);
   const sel = await d.evaluate(() => { const t = document.querySelector('.tab[aria-selected="true"]'); return { id: t.dataset.tab, bg: getComputedStyle(t).backgroundColor }; });
   check(sel.id === 'home' && sel.bg !== 'rgba(0, 0, 0, 0)', `gewählter Bereich hervorgehoben (${sel.bg})`);
   await d.focus('#tab-home'); await d.keyboard.press('ArrowDown'); await d.waitForTimeout(300);
@@ -61,9 +62,19 @@ const ORDER = 'home,portfolio,aktie,markt,tools,setup,hot,swing,ideen,theorie,bo
   await m.click(lead); await m.waitForTimeout(200);
   const h1 = await m.$eval(lead, e => e.getBoundingClientRect().height);
   check(h0 < 90 && h1 > h0 * 1.5, `Einleitung erst drei Zeilen (${Math.round(h0)} px), angetippt ganz (${Math.round(h1)} px)`);
-  await m.click('.bottomnav [data-more]'); await m.waitForTimeout(300);
-  await m.evaluate(() => { location.hash = 'markt'; }); await m.waitForTimeout(400);
-  check(await m.$eval('.navsheet', e => e.hidden), '„Alle Themen“ schließt beim Wechsel des Bereichs');
+  const btns = await m.$$eval('.bottomnav button', l => l.map(b => b.dataset.go || 'mehr').join());
+  check(btns === ORDER, `Leiste unten mit allen sieben Bereichen (${btns})`);
+  // Ideen: Umschaltleiste, der zuletzt benutzte Teil bleibt gemerkt
+  await m.click('.bottomnav [data-go="ideas"]'); await m.waitForTimeout(500);
+  const vs = await m.evaluate(() => { const v = document.querySelector('#views > .view:not([hidden])'); return { id: v.id, n: v.querySelectorAll(':scope > .viewswitch [data-view]').length, sel: (v.querySelector(':scope > .viewswitch [aria-selected="true"]') || {}).dataset?.view }; });
+  check(vs.id === 'hot' && vs.n === 4 && vs.sel === 'hot', `Ideen öffnet HotStuff mit Umschaltleiste (${JSON.stringify(vs)})`);
+  await m.click('#hot > .viewswitch [data-view="swing"]'); await m.waitForTimeout(500);
+  await m.click('.bottomnav [data-go="home"]'); await m.waitForTimeout(300);
+  await m.click('.bottomnav [data-go="ideas"]'); await m.waitForTimeout(500);
+  const back = await m.evaluate(() => [location.hash, (document.querySelector('.bottomnav button.on') || {}).dataset?.go, document.querySelector('#swing > .viewswitch [aria-selected="true"]').textContent]);
+  check(back[0] === '#swing' && back[1] === 'ideas' && /Swing/.test(back[2]), `zuletzt benutzter Teil bleibt gemerkt (${back.join(' · ')})`);
+  const oldUrl = await m.evaluate(async () => { location.hash = 'daily'; await new Promise(r => setTimeout(r, 400)); return [(document.querySelector('.bottomnav button.on') || {}).dataset?.go, !document.getElementById('daily').hidden]; });
+  check(oldUrl[0] === 'bots' && oldUrl[1], `alte Adresse #daily landet bei Bots → Copy-Trading (${oldUrl})`);
   check(await wide(m), 'Handy: nichts zu breit');
 
   check(!errs.length, `Keine Skriptfehler${errs.length ? ': ' + errs.join(' | ') : ''}`);

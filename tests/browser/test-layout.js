@@ -24,12 +24,12 @@ const fx = n => (FX[n] ? path.join(__dirname, 'fixtures', FX[n]) : path.join(pro
   console.log('  Start:', JSON.stringify(await topOrder()));
   await p.click('[data-layout-open]');
   await p.waitForSelector('#layBody');
-  check(await p.$$eval('#layBody input[data-lay="view"]', l => l.length) === 11, 'alle 11 Bereiche außer der Übersicht wählbar');
+  check(await p.$$eval('#layBody input[data-lay="view"]', l => l.length) === 6, 'alle 6 Bereiche außer der Übersicht wählbar');
   try { await (await p.$('.drawer, #layBody')).screenshot({ path: `${out}/layout-drawer.png` }).catch(() => null); } catch { /* Bildschirmfoto nur zur Ansicht */ }
-  // Bereich „Trend-Bot“ ausblenden
-  await p.click('#layBody input[data-lay="view"][data-id="bot"]');
-  const vis = await p.evaluate(() => ({ tab: document.getElementById('tab-bot').hidden, bar: document.querySelector('.bottomnav [data-go="bot"]').hidden, sheet: document.querySelector('.navsheet [data-go="bot"]').hidden }));
-  check(vis.tab && vis.bar && vis.sheet, `Trend-Bot aus Reitern, Leiste und „Alle Themen“ (${JSON.stringify(vis)})`);
+  // Bereich „Bots“ ausblenden
+  await p.click('#layBody input[data-lay="view"][data-id="bots"]');
+  const vis = await p.evaluate(() => ({ tab: document.getElementById('tab-bots').hidden, bar: document.querySelector('.bottomnav [data-go="bots"]').hidden }));
+  check(vis.tab && vis.bar, `Bots aus Reitern und Leiste unten (${JSON.stringify(vis)})`);
   // Karten: Live-Wächter und „Neu heute“ aus, „Seit Ihrem letzten Besuch“ nach oben, Tagesregeln nach oben
   await p.click('#layBody input[data-lay="dash"][data-id="live"]');
   await p.click('#layBody input[data-lay="top"][data-id="today"]');
@@ -44,7 +44,7 @@ const fx = n => (FX[n] ? path.join(__dirname, 'fixtures', FX[n]) : path.join(pro
   check(Number(st.rulesOrder) < Number(st.journalOrder), 'Tagesregeln vor „Mein Handelstag“');
   // bleibt nach dem Neuladen
   await p.reload(); await p.waitForSelector('#ovSmart [data-home="depot"]', { timeout: 15000 });
-  const after = await p.evaluate(() => ({ tab: document.getElementById('tab-bot').hidden, bar: document.querySelector('.bottomnav [data-go="bot"]').hidden, live: getComputedStyle(document.querySelector('#home [data-home="live"]')).display }));
+  const after = await p.evaluate(() => ({ tab: document.getElementById('tab-bots').hidden, bar: document.querySelector('.bottomnav [data-go="bots"]').hidden, live: getComputedStyle(document.querySelector('#home [data-home="live"]')).display }));
   check(after.tab && after.bar && after.live === 'none' && JSON.stringify(await topOrder()) === JSON.stringify(t1), 'Einstellungen bleiben nach dem Neuladen');
   // ausgeblendeter Bereich über Link erreichbar
   await p.evaluate(() => { location.hash = 'bot'; }); await p.waitForTimeout(500);
@@ -53,12 +53,12 @@ const fx = n => (FX[n] ? path.join(__dirname, 'fixtures', FX[n]) : path.join(pro
   await p.evaluate(() => { location.hash = 'home'; }); await p.waitForTimeout(300);
   await p.click('[data-layout-open]'); await p.waitForSelector('#layBody');
   await p.click('#layBody [data-lay-reset]'); await p.waitForTimeout(300);
-  const reset = await p.evaluate(() => ({ tab: document.getElementById('tab-bot').hidden, live: getComputedStyle(document.querySelector('#home [data-home="live"]')).display }));
+  const reset = await p.evaluate(() => ({ tab: document.getElementById('tab-bots').hidden, live: getComputedStyle(document.querySelector('#home [data-home="live"]')).display }));
   check(!reset.tab && reset.live !== 'none' && (await topOrder()).includes('today'), 'Zurücksetzen zeigt alles wieder');
-  // Eintrag in „Alle Themen“ öffnet das Fenster
+  // Knopf unten auf der Startseite öffnet das Fenster wieder
   await p.click('#drawerClose'); await p.waitForTimeout(300);
-  await p.click('.bottomnav [data-more]'); await p.click('.navsheet [data-layout-open]'); await p.waitForTimeout(300);
-  check(await p.evaluate(() => !!document.getElementById('layBody') && document.querySelector('.navsheet').hidden), '„Alle Themen“ → Seite anpassen öffnet das Fenster');
+  await p.click('#home .home-custom [data-layout-open]'); await p.waitForTimeout(300);
+  check(await p.evaluate(() => !!document.getElementById('layBody')), 'Knopf „Seite anpassen“ auf der Startseite öffnet das Fenster');
   const ov = await p.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
   check(ov[0] <= ov[1], 'kein seitliches Scrollen');
   check(!errs.length, `Keine Skriptfehler${errs.length ? ': ' + errs.join(' | ') : ''}`);

@@ -313,7 +313,38 @@ symIn.addEventListener("keydown", e => { if (e.key === "Enter") loadSymbol(symIn
 // ---------- Reiter-Navigation ----------
 // Zusammengelegt: News → Markt, Journal (mit Steuer) → Portfolio, Copy-Trading und Trader-Vergleich → „daily“ (Reiter Copy-Trading).
 // Alte Adressen wie #news, #journal, #copy, #compare springen zum Abschnitt im neuen Bereich.
-const VIEWS = ["home", "portfolio", "aktie", "markt", "tools", "setup", "hot", "swing", "ideen", "theorie", "bot", "daily"];   // Reihenfolge wie in der Seitenleiste
+const VIEWS = ["home", "portfolio", "aktie", "setup", "markt", "tools", "hot", "swing", "ideen", "theorie", "bot", "daily"];
+// Sieben Bereiche: Ähnliches ist zusammengelegt und wird oben im Bereich umgeschaltet (alte Adressen wie #swing gelten weiter)
+const GROUPS = { home: ["home"], portfolio: ["portfolio"], aktie: ["aktie", "setup"], markt: ["markt"], tools: ["tools"], ideas: ["hot", "swing", "ideen", "theorie"], bots: ["bot", "daily"] };
+const GROUP_ORDER = Object.keys(GROUPS);
+const GROUP_OF = Object.fromEntries(Object.entries(GROUPS).flatMap(([g, l]) => l.map(v => [v, g])));
+const GROUP_LABEL = { aktie: "Aktien-Check", ideas: "Ideen", bots: "Bots" };
+const SUB_LABEL = { aktie: ["Aktie prüfen", "Prüfen"], setup: ["Trade planen", "Planen"], hot: ["HotStuff", "HotStuff"], swing: ["Swing-Planer", "Swing"], ideen: ["Trade-Ideen", "Muster"], theorie: ["Theorie", "Theorie"], bot: ["Trend-Bot", "Trend-Bot"], daily: ["Copy-Trading", "Copy-Trading"] };
+const lastOf = g => { const l = store.get("dtd-group-last", {}) || {}; return GROUPS[g].includes(l[g]) ? l[g] : GROUPS[g][0]; };
+// Umschaltleiste oben in jedem Teil eines zusammengelegten Bereichs
+for (const [g, members] of Object.entries(GROUPS)) {
+  if (members.length < 2) continue;
+  for (const m of members) {
+    const bar = document.createElement("div");
+    bar.className = "viewswitch";
+    bar.setAttribute("role", "tablist");
+    bar.setAttribute("aria-label", GROUP_LABEL[g]);
+    bar.innerHTML = members.map(x => `<button type="button" role="tab"${x === m ? ` id="vs-${x}"` : ""} data-view="${x}" aria-selected="${x === m}" aria-controls="${x}" tabindex="${x === m ? 0 : -1}"><span class="vs-long">${SUB_LABEL[x][0]}</span><span class="vs-short" aria-hidden="true">${SUB_LABEL[x][1]}</span></button>`).join("");
+    $(m).prepend(bar);
+  }
+}
+document.addEventListener("click", e => { const b = e.target.closest(".viewswitch [data-view]"); if (b) location.hash = b.dataset.view; });
+document.addEventListener("keydown", e => {
+  const b = e.target.closest && e.target.closest(".viewswitch [data-view]");
+  if (!b) return;
+  const l = [...b.parentElement.querySelectorAll("[data-view]")], i = l.indexOf(b);
+  const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: l.length - 1 }[e.key];
+  if (n === undefined) return;
+  e.preventDefault();
+  const id = l[(n + l.length) % l.length].dataset.view;
+  location.hash = id;
+  setTimeout(() => { const f = document.querySelector(`#${id} > .viewswitch [data-view="${id}"]`); if (f) f.focus(); }, 0);
+});
 const TITLES = { home: "Übersicht", portfolio: "Portfolio", markt: "Markt", aktie: "Aktien-Check", tools: "Werkzeuge", ideen: "Trade-Ideen", hot: "HotStuff", swing: "Swing-Planer", bot: "Trend-Bot", setup: "Trade-Setup", daily: "Copy-Trading", theorie: "Theorie" };
 // Erst laden, wenn der Abschnitt in die Nähe kommt (TradingView-Fenster sind schwer)
 function whenNear(el, fn) {
@@ -337,20 +368,22 @@ const VIEW_INIT = {
 const initialized = new Set();
 function showView(id, { scrollTo = null } = {}) {
   if (!VIEWS.includes(id)) id = "home";
-  for (const name of VIEWS) {
-    const on = name === id;
-    $(name).hidden = !on;
-    const tab = $(`tab-${name}`);
+  const group = GROUP_OF[id];
+  for (const name of VIEWS) $(name).hidden = name !== id;
+  for (const g of GROUP_ORDER) {
+    const tab = $(`tab-${g}`), on = g === group;
     tab.setAttribute("aria-selected", String(on));
     tab.tabIndex = on ? 0 : -1;
+    if (on) tab.setAttribute("aria-controls", id);
   }
   store.set("dtd-tab", id);
+  if (GROUPS[group].length > 1) store.set("dtd-group-last", { ...(store.get("dtd-group-last", {}) || {}), [group]: id });
   document.title = `${TITLES[id]} · RojkoMoney`;
   window.dispatchEvent(new CustomEvent("dtd:view", { detail: id }));
   if (!initialized.has(id)) { initialized.add(id); if (VIEW_INIT[id]) VIEW_INIT[id](); }
   // Diagramme kennen ihre Breite erst, wenn der Bereich sichtbar ist
   requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
-  $(`tab-${id}`).scrollIntoView({ block: "nearest", inline: "nearest" });
+  $(`tab-${group}`).scrollIntoView({ block: "nearest", inline: "nearest" });
   if (scrollTo && $(scrollTo)) jumpTo($(scrollTo));
   else if (scrollTo) waitAndJump(scrollTo);
   else window.scrollTo({ top: 0 });
@@ -387,6 +420,7 @@ window.addEventListener("load", () => { const h = decodeURIComponent(location.ha
 function route() {
   const h = decodeURIComponent(location.hash.slice(1));
   if (VIEWS.includes(h)) return showView(h);
+  if (GROUPS[h]) return showView(lastOf(h));
   const el = h && document.getElementById(h);
   const view = el && el.closest(".view");
   if (view) return showView(view.id, { scrollTo: h });
@@ -395,21 +429,26 @@ function route() {
   const saved = store.get("dtd-tab", "home"), home = !VIEWS.includes(saved) && document.getElementById(saved);
   showView(home && home.closest(".view") ? home.closest(".view").id : saved);
 }
+// Bereich öffnen: bei zusammengelegten Bereichen der zuletzt benutzte Teil
+function openGroup(g) {
+  const id = lastOf(g);
+  if (location.hash === `#${id}`) showView(id); else location.hash = id;
+}
+window.DTD.openGroup = openGroup;
+window.DTD.groupOf = id => GROUP_OF[id];
 document.querySelector(".tabs").addEventListener("click", e => {
   const tab = e.target.closest(".tab");
-  if (!tab) return;
-  if (location.hash === `#${tab.dataset.tab}`) showView(tab.dataset.tab);
-  else location.hash = tab.dataset.tab;
+  if (tab) openGroup(tab.dataset.tab);
 });
 document.querySelector(".tabs").addEventListener("keydown", e => {
-  const i = VIEWS.indexOf(document.activeElement.dataset.tab);
+  const i = GROUP_ORDER.indexOf(document.activeElement.dataset.tab);
   if (i < 0) return;
-  const next = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: VIEWS.length - 1 }[e.key];
+  const next = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: GROUP_ORDER.length - 1 }[e.key];
   if (next === undefined) return;
   e.preventDefault();
-  const id = VIEWS[(next + VIEWS.length) % VIEWS.length];
-  location.hash = id;
-  $(`tab-${id}`).focus();
+  const g = GROUP_ORDER[(next + GROUP_ORDER.length) % GROUP_ORDER.length];
+  openGroup(g);
+  $(`tab-${g}`).focus();
 });
 window.addEventListener("hashchange", route);
 
