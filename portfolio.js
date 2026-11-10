@@ -290,16 +290,59 @@
       <p class="hint">Depot-Note = Gesamtnote der Aktien, gewichtet. Ø Beta: 1 = schwankt wie der S&P 500, 1,5 = anderthalbmal so stark. Faustregeln für Privatanleger: keine Einzelaktie über 20–25 %, mindestens 5 Branchen.</p>
     </article>`;
   }
+  // ---------- Meldungen aufs Handy über ntfy ----------
+  // Kanalname (wirkt wie ein Passwort) und Push-Liste entstehen hier im Browser; der Besitzer trägt beides als GitHub-Secret ein
+  // (NTFY_TOPIC, PUSH_WATCH). Die Seite schickt selbst nichts – die Meldungen kommen aus den GitHub-Abläufen (scripts/notify.mjs).
+  const PUSH_SYM = /^[A-Z0-9][A-Z0-9.\-_]{0,19}$/, NTFY_KEY = "dtd-ntfy-topic", PUSH_COPIED = "dtd-push-copied";
+  const REPO_URL = "https://github.com/shg9d54y9j-langw/Anna-test";
+  function pushList() {
+    const uniq = l => [...new Set((Array.isArray(l) ? l : []).filter(v => typeof v === "string" && PUSH_SYM.test(v)))];
+    const d = uniq(list.map(h => h.sym)), w = uniq(store.get("dtd-watch", [])).filter(v => !d.includes(v));
+    const al = store.get("dtd-alarms", []);
+    const a = (Array.isArray(al) ? al : []).filter(x => x && PUSH_SYM.test(x.sym) && Number.isFinite(x.price) && x.price > 0 && (x.dir === "up" || x.dir === "down")).map(x => [x.sym, x.dir === "up" ? ">" : "<", x.price]);
+    const st = {};
+    for (const h of list) if (PUSH_SYM.test(h.sym) && Number.isFinite(h.stop) && h.stop > 0) st[h.sym] = h.stop;
+    return JSON.stringify({ v: 1, d, w, a, s: st });
+  }
+  // 22 Zeichen aus 64 möglichen (gleich verteilt) – rund 132 Bit Zufall, nicht zu erraten
+  const newTopic = () => { const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"; return `rojko-${[...crypto.getRandomValues(new Uint8Array(22))].map(b => abc[b % 64]).join("")}`; };
+  let pushOpen = false;
+  document.addEventListener("toggle", e => { if (e.target && e.target.id === "pfPushSetup") pushOpen = e.target.open; }, true);
   function notifyCard() {
     const can = "Notification" in window, perm = can ? Notification.permission : "unsupported";
-    return `<article class="card" data-section="Benachrichtigungen">
-      <h2 class="card-title">Benachrichtigungen bei wichtigen Nachrichten</h2>
+    const topic = String(store.get(NTFY_KEY, "") || ""), cur = pushList(), copied = String(store.get(PUSH_COPIED, "") || "");
+    const changed = Boolean(copied) && copied !== cur, c = JSON.parse(cur);
+    const counts = `${c.d.length} im Depot, ${c.w.length} auf der Merkliste, ${c.a.length} ${c.a.length === 1 ? "Kursalarm" : "Kursalarme"}, ${Object.keys(c.s).length} ${Object.keys(c.s).length === 1 ? "Stop" : "Stops"}`;
+    const ext = (url, text) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    return `<article class="card" id="pfPush" data-section="Benachrichtigungen">
+      <h2 class="card-title">Benachrichtigungen</h2>
       <ul class="checklist">
         <li><b>Hier auf der Seite:</b> Jede Aktie zeigt Hinweise – Kurssturz, Trendbruch, Ihr Stop, Quartalszahlen, Abstufungen. Die Zahl der wichtigen Hinweise steht am Reiter „Portfolio“ (am Handy an „Depot“ in der Leiste unten).</li>
         <li><b>Im Browser:</b> ${perm === "granted" ? "eingeschaltet – neue Hinweise kommen als Meldung, solange die Seite offen ist." : perm === "denied" ? "im Browser blockiert – in den Website-Einstellungen erlauben." : can ? `<button type="button" class="btn ghost" data-act="notify">Hinweise als Meldung erlauben</button> – kommt, solange die Seite offen ist.` : "von diesem Browser nicht unterstützt (auf dem iPhone nur, wenn die Seite zum Home-Bildschirm hinzugefügt ist)."}</li>
-        <li><b>Aufs Handy über die Claude-App – auch wenn die Seite zu ist:</b> Tippen Sie auf <button type="button" class="btn ghost" data-act="claude">Liste für Claude kopieren</button> und schicken Sie mir den Text im Chat. Dann prüft Claude an jedem Börsentag die Nachrichten zu Ihren Aktien und meldet sich in der Claude-App, wenn etwas Wichtiges passiert – mit Einschätzung und, wenn nötig, Ausstiegs-Plan. Die Liste liegt dann nur in Ihrem Claude-Konto, nicht im öffentlichen Repository.</li>
+        <li><b>Aufs Handy mit der App ntfy – auch wenn die Seite zu ist:</b> Stop oder Kursalarm erreicht, Trendbruch am 200-Tage-Schnitt, Kurssprung ab 5 %, Analysten-Umschwung, Zahlen am nächsten Börsentag, Gesamtnote unter 40 oder über 80, wichtige Nachrichten zu Ihren US-Aktien – und freitags ein Wochenbericht.${changed ? ` <span class="pill-due">Liste geändert – neu kopieren und PUSH_WATCH ersetzen</span>` : ""}</li>
       </ul>
+      <details class="more push-setup" id="pfPushSetup"${pushOpen || changed ? " open" : ""}>
+        <summary>${copied ? "Einrichtung und Push-Liste" : "So richten Sie es ein – einmalig, etwa 5 Minuten"}</summary>
+        <ol class="steps">
+          <li>App <b>ntfy</b> installieren – kostenlos für ${ext("https://apps.apple.com/app/ntfy/id1625396347", "iPhone")} und ${ext("https://play.google.com/store/apps/details?id=io.heckel.ntfy", "Android")}.</li>
+          <li><button type="button" class="btn ghost" data-act="ntfy-topic">${topic ? "Neuen Kanalnamen erzeugen" : "Kanalnamen erzeugen"}</button>
+            ${topic ? `<span class="push-row"><input id="pfTopic" class="push-val" readonly value="${esc(topic)}" aria-label="Ihr Kanalname"><button type="button" class="btn ghost" data-act="ntfy-copy">Kopieren</button></span>` : ""}
+            In der App auf „+“ tippen, den Namen eintragen (Server ntfy.sh) und abonnieren. Der Name wirkt wie ein Passwort – nicht weitergeben.</li>
+          <li><button type="button" class="btn ghost" data-act="ntfy-list">Push-Liste kopieren</button> <span class="muted small">${counts}</span>
+            <textarea id="pfPushText" class="push-val" rows="3" readonly hidden aria-label="Ihre Push-Liste"></textarea></li>
+          <li>Auf GitHub zwei Secrets anlegen (im Browser, angemeldet): ${ext(`${REPO_URL}/settings/secrets/actions/new`, "Neues Secret")} → Name <code>NTFY_TOPIC</code>, Wert: der Kanalname. Noch einmal → Name <code>PUSH_WATCH</code>, Wert: die Push-Liste.</li>
+          <li>Probe: ${ext(`${REPO_URL}/actions/workflows/weekly-push.yml`, "Ablauf „Wochenbericht aufs Handy“")} → „Run workflow“ (Probe-Meldung). Nach etwa einer Minute meldet sich das Handy.</li>
+        </ol>
+        <p class="hint">Wann: an Börsentagen nach den Aktien-Daten (gegen 10 und 15 Uhr), nach den Nachrichten (viermal am Tag) und freitags gegen 18 Uhr – nur wenn es etwas zu melden gibt. Ändern Sie Depot, Merkliste, Stops oder Kursalarme, kopieren Sie die Push-Liste neu und ersetzen Sie das Secret <code>PUSH_WATCH</code> („Update secret“). Die Meldungen nennen Kürzel und Kurse, nie Beträge oder Stückzahlen; die Liste liegt nur als geheimes Secret auf GitHub, nicht im öffentlichen Repository. Der kostenlose Dienst ntfy.sh leitet die Meldungen weiter.</p>
+      </details>
+      <p class="small" style="margin-top:10px">Lieber mit Einschätzung durch Claude? <button type="button" class="btn ghost" data-act="claude">Liste für Claude kopieren</button> und im Claude-Chat senden.</p>
     </article>`;
+  }
+  // in die Zwischenablage; ohne Zugriff das Feld zum Markieren zeigen
+  function copyOut(text, done, field) {
+    const manual = () => { if (field) { field.hidden = false; field.value = text; field.focus(); field.select(); } note("Bitte den markierten Text kopieren."); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, manual);
+    else manual();
   }
   // ---------- Komplette Sicherung als Datei ----------
   // Alles, was die Seite in diesem Browser speichert (Schlüssel dtd-… und daytrade-…): Depot, Merkliste, Journal, Kursalarme,
@@ -610,6 +653,19 @@
     if (act === "tradecancel") { trade = null; return render(); }
     if (act === "del" && h) { if (confirm(`${h.sym} aus dem Portfolio entfernen?`)) { list = list.filter(x => x.id !== id); open.exit.delete(id); open.news.delete(id); open.chart.delete(id); save(); render(); } return; }
     if (act === "notify") { Notification.requestPermission().then(() => render()); return; }
+    if (act === "ntfy-topic") {
+      if (store.get(NTFY_KEY, "") && !confirm("Neuen Kanalnamen erzeugen? Dann müssen Sie ihn in der App neu abonnieren und das Secret NTFY_TOPIC ersetzen.")) return;
+      store.set(NTFY_KEY, newTopic()); pushOpen = true; render();
+      const f = $("pfTopic"); if (f) { f.focus(); f.select(); }
+      return;
+    }
+    if (act === "ntfy-copy") { const t = String(store.get(NTFY_KEY, "") || ""); if (t) copyOut(t, () => note("Kanalname kopiert – in der App ntfy abonnieren und auf GitHub als Secret NTFY_TOPIC eintragen."), $("pfTopic")); return; }
+    if (act === "ntfy-list") {
+      const text = pushList();
+      store.set(PUSH_COPIED, text);   // ohne Zwischenablage nicht neu zeichnen – sonst verschwände das Feld zum Markieren
+      copyOut(text, () => { pushOpen = true; render(); note("Push-Liste kopiert – auf GitHub als Secret PUSH_WATCH eintragen (oder ersetzen)."); }, $("pfPushText"));
+      return;
+    }
     if (act === "backup") return downloadBackup();
     if (act === "restore") return pickBackup();
     if (act === "undo-restore") return undoRestore();

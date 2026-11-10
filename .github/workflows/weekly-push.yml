@@ -1,0 +1,42 @@
+name: Wochenbericht aufs Handy
+
+# Freitags nach dem letzten Lauf der Aktien-Daten: Wochenbericht zu Depot und Merkliste über ntfy – nur wenn die Secrets
+# NTFY_TOPIC und PUSH_WATCH eingerichtet sind (Portfolio → Benachrichtigungen). Von Hand gestartet auch als Probe-Meldung.
+on:
+  schedule:
+    - cron: "47 16 * * 5"   # Freitag 16:47 UTC (17:47 Uhr Winterzeit / 18:47 Uhr Sommerzeit in Wien)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "weekly = Wochenbericht, test = Probe-Meldung"
+        type: choice
+        options: [test, weekly]
+        default: test
+
+permissions: {}
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Aktien-Daten und Notenverlauf holen
+        run: |
+          git fetch -q --depth=1 origin stock-data
+          git show FETCH_HEAD:stocks.json > "$RUNNER_TEMP/stocks.json"
+          git show FETCH_HEAD:note-recent.json > "$RUNNER_TEMP/note-recent.json" 2> /dev/null || rm -f "$RUNNER_TEMP/note-recent.json"
+
+      - name: Meldung aufs Handy (ntfy), falls eingerichtet
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          PUSH_WATCH: ${{ secrets.PUSH_WATCH }}
+          NOTIFY_MODE: ${{ inputs.mode || 'weekly' }}
+          STOCKS_NEW: ${{ runner.temp }}/stocks.json
+          NOTE_RECENT: ${{ runner.temp }}/note-recent.json
+        run: node scripts/notify.mjs

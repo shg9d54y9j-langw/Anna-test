@@ -53,10 +53,48 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  # Veröffentlicht die Nachrichten auf dem Zweig news-data – ohne Schlüssel.
-  save:
+  # Meldungen aufs Handy über ntfy – nur wenn die Secrets NTFY_TOPIC und PUSH_WATCH eingerichtet sind. Läuft vor dem
+  # Veröffentlichen, damit der bisherige Stand noch auf dem Zweig liegt (neue Meldungen = Kennungen, die dort fehlen).
+  # Kennt nur diese beiden Secrets, darf im Repository nichts ändern; Fehler stoppen das Veröffentlichen nicht.
+  notify:
     needs: fetch
     if: needs.fetch.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: news
+          path: incoming
+
+      - name: Bisherigen Stand holen
+        run: |
+          mkdir -p "$RUNNER_TEMP/news-prev"
+          if git fetch -q --depth=1 origin news-data; then
+            git archive FETCH_HEAD co | tar -x -C "$RUNNER_TEMP/news-prev" || echo "Bisheriger Stand ohne Firmennachrichten."
+          else
+            echo "Noch kein bisheriger Stand."
+          fi
+
+      - name: Meldungen aufs Handy (ntfy), falls eingerichtet
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          PUSH_WATCH: ${{ secrets.PUSH_WATCH }}
+          NOTIFY_MODE: news
+          NEWS_DIR: incoming
+          NEWS_PREV_DIR: ${{ runner.temp }}/news-prev
+        run: node scripts/notify.mjs
+
+  # Veröffentlicht die Nachrichten auf dem Zweig news-data – ohne Schlüssel.
+  save:
+    needs: [fetch, notify]
+    if: ${{ !cancelled() && needs.fetch.outputs.ready == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

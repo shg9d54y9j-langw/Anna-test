@@ -128,7 +128,7 @@ for x in d["items"]:
     mx, my = mean(xs), mean(ys)
     beta = sum((a - mx) * (b - my) for a, b in zip(xs, ys)) / sum((a - mx) ** 2 for a in xs)
     want = {
-        "last": (last, 1e-3), "chg1d": (pct(last, at(1)), 0.011), "ret12m": (pct(last, at(252)), 0.011),
+        "last": (last, 1e-3), "chg1d": (pct(last, at(1)), 0.011), "ret1w": (pct(last, at(5)), 0.011), "ret12m": (pct(last, at(252)), 0.011),
         "mom": (pct(at(21), at(252)) if n > 252 else None, 0.011), "d200": ((last / mean(cl[-200:]) - 1) * 100, 0.011),
         "atr": (mean(tr), 1e-3), "vol20": (sd(lr[-20:]) * math.sqrt(252) * 100, 0.011), "dHi52": ((last / hi - 1) * 100, 0.011),
         "mdd": (mdd * 100, 0.011), "beta": (beta, 0.011),

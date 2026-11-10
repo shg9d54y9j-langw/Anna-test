@@ -28,6 +28,17 @@ jobs:
         with:
           persist-credentials: false
 
+      # Für die Handy-Meldungen: bisherigen Stand merken (die Läufe kommen nacheinander, siehe concurrency)
+      - name: Bisherigen Stand merken
+        run: |
+          mkdir -p data
+          if git fetch -q --depth=1 origin stock-data && git show FETCH_HEAD:stocks.json > data/prev-stocks.json; then
+            echo "Bisheriger Stand gemerkt."
+          else
+            rm -f data/prev-stocks.json
+            echo "Noch kein bisheriger Stand."
+          fi
+
       - name: Kennzahlen der beliebtesten Aktien und ETFs berechnen
         id: calc
         env:
@@ -60,6 +71,7 @@ jobs:
           name: stocks
           path: |
             data/stocks.json
+            data/prev-stocks.json
             data/note-history.json
             data/note-track.json
             data/note-recent.json
@@ -93,3 +105,32 @@ jobs:
         run: |
           STOCKS_FILE="$PWD/incoming/stocks.json" NOTES_DIR="$PWD/incoming" REMOTE="https://github.com/${REPO}.git" \
             PUSH_URL="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" REPO_DIR="$PWD" bash scripts/publish-stock-data.sh
+
+  # Meldungen aufs Handy über ntfy – nur wenn die Secrets NTFY_TOPIC und PUSH_WATCH eingerichtet sind (siehe Portfolio →
+  # Benachrichtigungen). Kennt nur diese beiden Secrets, darf im Repository nichts ändern; Fehler stoppen den Lauf nicht.
+  notify:
+    needs: [fetch, save]
+    if: needs.fetch.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: stocks
+          path: incoming
+
+      - name: Meldungen aufs Handy (ntfy), falls eingerichtet
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          PUSH_WATCH: ${{ secrets.PUSH_WATCH }}
+          NOTIFY_MODE: events
+          STOCKS_PREV: incoming/prev-stocks.json
+          STOCKS_NEW: incoming/stocks.json
+          NOTE_RECENT: incoming/note-recent.json
+        run: node scripts/notify.mjs

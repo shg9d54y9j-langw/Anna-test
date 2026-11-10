@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-10-push", t: "Meldungen aufs Handy", d: "Mit der kostenlosen App ntfy: Stop oder Kursalarm erreicht, Trendbruch, Kurssprung, Zahlen, Notenwechsel und wichtige Nachrichten – auch wenn die Seite zu ist, dazu freitags ein Wochenbericht. Einrichtung im Portfolio.", href: "#pfPush" },
     { id: "2026-11-10-layout", t: "Seite anpassen", d: "Bereiche und Karten der Startseite ausblenden oder umsortieren – unten auf der Startseite oder unter „Alle Themen“.", act: "layout" },
     { id: "2026-11-10-history", t: "Depot-Verlauf", d: "Im Portfolio: Ihr Depot Tag für Tag im Vergleich mit S&P 500 und MSCI World – zeitgewichtet, nur in Ihrem Browser gespeichert. Der Verlauf baut sich ab heute auf.", href: "#pfHist" },
     { id: "2026-11-10-lots", t: "Nachkäufe und Teilverkäufe", d: "Bei jeder Aktie im Portfolio: Nachkauf zum Durchschnittspreis (wie die österreichische KESt rechnet) und Teilverkauf – der Gewinn landet automatisch im Journal und im Steuer-Schätzer.", href: "#portfolio" },

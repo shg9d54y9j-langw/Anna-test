@@ -1155,3 +1155,10 @@ details.more > summary:hover { color: var(--text); }
 .lay-list label { flex: 1; display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .lay-list input[type=checkbox] { width: 18px; height: 18px; accent-color: #fff; }
 .lay-list .icon-btn { width: 34px; height: 34px; }
+/* Meldungen aufs Handy (ntfy): Kanalname und Push-Liste zum Kopieren */
+.push-setup .steps { font-size: 14px; }
+.push-row { display: flex; gap: 8px; align-items: center; margin: 8px 0 4px; flex-wrap: wrap; }
+.push-val { flex: 1 1 220px; min-width: 0; font: 13px var(--mono); color: var(--text); background: var(--bg); border: 1px solid var(--line-2, var(--line)); border-radius: var(--r); padding: 8px 10px; }
+textarea.push-val { display: block; width: 100%; margin-top: 8px; resize: vertical; }
+.push-val[hidden] { display: none; }
+.push-setup code, #pfPush code { font: 12px var(--mono); color: var(--text); background: rgba(255, 255, 255, .06); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }

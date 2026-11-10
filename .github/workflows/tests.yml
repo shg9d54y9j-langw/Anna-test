@@ -137,6 +137,12 @@ jobs:
           node scripts/news-data.mjs
           python3 tests/verify_news.py /tmp/stocks.json /tmp/news http://localhost:8795
 
+      - name: Handy-Meldungen (ntfy) mit nachgebautem Server, auch mit den Aktien-Daten und Nachrichten der Testläufe
+        env:
+          NOTIFY_REAL_STOCKS: /tmp/stocks.json   # aus dem Aktien-Daten-Schritt
+          NOTIFY_REAL_NEWS: /tmp/news            # aus dem Nachrichten-Schritt
+        run: node tests/notify.mjs
+
       - name: Copy-Bot gegen den Test-Server (Start, Wechsel, Stop Loss, eigene Kopien, Echtgeld-Obergrenze)
         run: node tests/bot-scenarios.mjs
 
