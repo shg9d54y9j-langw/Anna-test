@@ -46,6 +46,7 @@
     if (b.dataset.go) { closeSheet(); go(b.dataset.go); }
   });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheet.hidden) closeSheet(); });
+  window.addEventListener("hashchange", () => { if (!sheet.hidden) closeSheet(); });   // z. B. Zurück-Taste: Menü nicht offen stehen lassen
 
   // Unter-Navigation: Knöpfe für alle Abschnitte mit data-section im sichtbaren Bereich
   function buildSubnav(view) {
@@ -63,6 +64,10 @@
     }
     nav.innerHTML = `<span class="label">Springen zu</span>` + sections.map((s, i) => `<button type="button" data-i="${i}">${s.dataset.section}</button>`).join("");
     nav.querySelectorAll("button").forEach(b => b.addEventListener("click", () => sections[+b.dataset.i].scrollIntoView({ behavior: "smooth", block: "start" })));
+    // läuft die Leiste nach rechts weiter, blendet sie dort weich aus
+    const edge = () => nav.classList.toggle("more-right", nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 4);
+    if (!nav.dataset.edge) { nav.dataset.edge = "1"; nav.addEventListener("scroll", edge, { passive: true }); window.addEventListener("resize", edge); }
+    edge();
     observe(view, sections, nav);
   }
   let io = null;
@@ -74,6 +79,9 @@
       if (!vis) return;
       const i = sections.indexOf(vis.target);
       nav.querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.i === i));
+      // aktiven Abschnitt in der Leiste sichtbar halten (nur waagrecht, die Seite springt nicht)
+      const on = nav.querySelector("button.on");
+      if (on && (on.offsetLeft < nav.scrollLeft || on.offsetLeft + on.offsetWidth > nav.scrollLeft + nav.clientWidth)) nav.scrollTo({ left: on.offsetLeft - 24, behavior: "smooth" });
     }, { rootMargin: "-120px 0px -60% 0px" });
     sections.forEach(s => io.observe(s));
   }
@@ -91,4 +99,6 @@
   window.addEventListener("dtd:market", () => setTimeout(sync, 50));
   document.addEventListener("DOMContentLoaded", () => setTimeout(sync, 0));
   window.DTD.syncNav = sync;
+  // Handy: lange Einleitungen sind auf drei Zeilen gekürzt – Antippen zeigt alles
+  document.addEventListener("click", e => { const l = e.target.closest(".view-head .lead"); if (l && !e.target.closest("a, button")) l.classList.toggle("open"); });
 })();

@@ -7,7 +7,7 @@
 const $ = id => document.getElementById(id);
 // Farben für Diagramme und Widgets (gleiche Werte wie in style.css; Reihenfarben gegen die schwarze Fläche geprüft)
 // Grün und Rot nur für Gewinn und Verlust; Linien sonst in Weiß und Grau (unterschieden durch Strichart und Beschriftung)
-const PAL = { up: "#1ed760", down: "#ff4545", surface: "#070707", series1: "#f2f2f2", series2: "#9a9a9a", gray: "#6a6a6a", ink: "#f2f2f2" };
+const PAL = { up: "#3fd98a", down: "#ff6b72", surface: "#0f0f14", series1: "#8f95ff", series2: "#d4d4de", gray: "#70707f", ink: "#f3f3f6" };
 // Zahlen deutsch formatiert; je Nachkommastellen ein Formatierer (toLocaleString mit Optionen baut sonst bei jedem Aufruf einen
 // neuen – in großen Tabellen war das der teuerste Teil beim Zeichnen)
 const NUMF = new Map();
@@ -123,7 +123,7 @@ const COMMON = { colorTheme: "dark", isTransparent: true, locale: "de_DE" };
 // Großes Kursdiagramm einer Aktie: Tageskerzen der letzten 12 Monate (für Aktien-Check, Portfolio und Swing-Planer)
 function bigChart(containerId, symbol) {
   tvWidget(containerId, "advanced-chart", {
-    ...COMMON, isTransparent: false, backgroundColor: "#000000", gridColor: "rgba(255,255,255,0.06)", autosize: true, symbol,
+    ...COMMON, isTransparent: false, backgroundColor: "#0f0f14", gridColor: "rgba(255,255,255,0.06)", autosize: true, symbol,
     interval: "D", range: "12M", timezone: "Europe/Berlin", style: "1", allow_symbol_change: false, hide_side_toolbar: true, save_image: false,
   });
 }
@@ -181,7 +181,7 @@ function tvChart(containerId, symbol, { style = "1", studies = [], hideVolume = 
     if (!el || el.dataset.tv !== token) return;   // inzwischen neu gezeichnet: sonst entstünden zwei Diagramme übereinander
     new TV.widget({
       container_id: inner, autosize: true, symbol, interval: "D", range: "12M", timezone: "Europe/Vienna", theme: "dark", style, locale: "de_DE",
-      toolbar_bg: "#000000", backgroundColor: "#000000", gridColor: "rgba(255,255,255,0.06)", enable_publishing: false, allow_symbol_change: false,
+      toolbar_bg: "#0f0f14", backgroundColor: "#0f0f14", gridColor: "rgba(255,255,255,0.06)", enable_publishing: false, allow_symbol_change: false,
       withdateranges: false, hide_side_toolbar: compact, hide_top_toolbar: false, hide_legend: false, save_image: false, details: false,
       hide_volume: hideVolume, studies,
     });
@@ -302,7 +302,7 @@ const loadCalendar = () => tvWidget("calendarWidget", "events", { ...COMMON, imp
 const symIn = $("symbolInput");
 function loadSymbol(sym) {
   tvWidget("chartWidget", "advanced-chart", {
-    ...COMMON, isTransparent: false, backgroundColor: "#000000", gridColor: "rgba(255,255,255,0.06)", autosize: true, symbol: sym, interval: "15",
+    ...COMMON, isTransparent: false, backgroundColor: "#0f0f14", gridColor: "rgba(255,255,255,0.06)", autosize: true, symbol: sym, interval: "15",
     timezone: "Europe/Berlin", style: "1", studies: ["STD;VWAP", "STD;Average_True_Range"], allow_symbol_change: true, hide_side_toolbar: false,
   });
   tvWidget("taWidget", "technical-analysis", { ...COMMON, interval: "15m", symbol: sym, showIntervalTabs: true, displayMode: "single", width: "100%", height: "100%" });
@@ -313,7 +313,7 @@ symIn.addEventListener("keydown", e => { if (e.key === "Enter") loadSymbol(symIn
 // ---------- Reiter-Navigation ----------
 // Zusammengelegt: News → Markt, Journal (mit Steuer) → Portfolio, Copy-Trading und Trader-Vergleich → „daily“ (Reiter Copy-Trading).
 // Alte Adressen wie #news, #journal, #copy, #compare springen zum Abschnitt im neuen Bereich.
-const VIEWS = ["home", "portfolio", "markt", "aktie", "tools", "ideen", "hot", "swing", "bot", "setup", "daily", "theorie"];
+const VIEWS = ["home", "portfolio", "aktie", "markt", "tools", "setup", "hot", "swing", "ideen", "theorie", "bot", "daily"];   // Reihenfolge wie in der Seitenleiste
 const TITLES = { home: "Übersicht", portfolio: "Portfolio", markt: "Markt", aktie: "Aktien-Check", tools: "Werkzeuge", ideen: "Trade-Ideen", hot: "HotStuff", swing: "Swing-Planer", bot: "Trend-Bot", setup: "Trade-Setup", daily: "Copy-Trading", theorie: "Theorie" };
 // Erst laden, wenn der Abschnitt in die Nähe kommt (TradingView-Fenster sind schwer)
 function whenNear(el, fn) {
@@ -404,7 +404,7 @@ document.querySelector(".tabs").addEventListener("click", e => {
 document.querySelector(".tabs").addEventListener("keydown", e => {
   const i = VIEWS.indexOf(document.activeElement.dataset.tab);
   if (i < 0) return;
-  const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: VIEWS.length - 1 }[e.key];
+  const next = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: VIEWS.length - 1 }[e.key];
   if (next === undefined) return;
   e.preventDefault();
   const id = VIEWS[(next + VIEWS.length) % VIEWS.length];

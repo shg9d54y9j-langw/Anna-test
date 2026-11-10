@@ -225,7 +225,7 @@
 
   // ---------- Kursalarme ----------
   const alarms = () => { const l = store.get("dtd-alarms", []); return Array.isArray(l) ? l.filter(a => a && SYM.test(a.sym) && Number.isFinite(a.price) && (a.dir === "up" || a.dir === "down")) : []; };
-  const saveAlarms = l => store.set("dtd-alarms", l);
+  const saveAlarms = l => { store.set("dtd-alarms", l); window.dispatchEvent(new Event("dtd:alarms")); };
   const lastOf = sym => { const x = stocks ? stocks.items.find(y => y.sym === sym) : null; return x ? x : null; };
   const hit = a => { const x = lastOf(a.sym); if (!x) return null; return a.dir === "up" ? (x.hi1d ?? x.last) >= a.price : (x.lo1d ?? x.last) <= a.price; };
   window.DTD.addAlarm = (sym, dir, priceV, note = "") => {

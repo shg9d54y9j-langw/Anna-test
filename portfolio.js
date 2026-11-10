@@ -718,6 +718,11 @@
   window.DTD.portfolioCount = () => list.length;
   // neuer oder gelöschter Trade im Journal: nur den Steuer-Schätzer neu rechnen
   window.addEventListener("dtd:journal", () => { const el = $("pfTax"); if (el && !$("portfolio").hidden) el.outerHTML = taxCard(); });
+  // Karte „Benachrichtigungen“ aktuell halten (Hinweis „Liste geändert“), wenn Merkliste oder Kursalarme sich ändern oder der Bereich öffnet
+  const refreshPush = () => { const el = $("pfPush"); if (el && !$("portfolio").hidden) el.outerHTML = notifyCard(); };
+  window.addEventListener("dtd:watch", refreshPush);
+  window.addEventListener("dtd:alarms", refreshPush);
+  window.addEventListener("dtd:view", e => { if (e.detail === "portfolio") refreshPush(); });
   // Mit Bestand gleich beim Öffnen der Seite die Hinweise rechnen (Zahl am Reiter, Browser-Meldungen)
   if (list.length) setTimeout(() => load(false), 1500);
 })();
