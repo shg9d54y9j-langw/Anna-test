@@ -160,6 +160,46 @@
         <div><h3 class="swing-h3 down">Dagegen spricht</h3>${R.con.length ? `<ul class="checklist">${R.con.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : `<p class="muted small">Keine auffällige Schwäche in den Daten.</p>`}</div>
       </div>`;
   }
+  // ---------- Finanzkraft nach dem Piotroski-Prinzip (Piotroski 2000) – eigene Ampel, die Gesamtnote bleibt unverändert ----------
+  // Bis zu acht Prüfungen aus den letzten zwei Geschäftsjahren (fund.json → fs, nächtlich von Finnhub, nur US-Aktien).
+  // Ampel: grün ab 70 % der prüfbaren Punkte, gelb ab 40 %, sonst rot; mindestens fünf prüfbare Punkte.
+  const p1 = v => `${fmt(v * 100, 1)} %`, n2 = v => fmt(v, 2);
+  const FS_TESTS = [
+    { k: "roa", t: "Verdient Geld", has: f => !!f.roa, ok: f => f.roa[0] > 0, txt: f => `Gesamtkapitalrendite ${p1(f.roa[0])}` },
+    { k: "cash", t: "Geld fließt zu", has: f => fin(f.cfps) || !!f.fcfm, ok: f => (fin(f.cfps) ? f.cfps > 0 : f.fcfm[0] > 0), txt: f => (fin(f.cfps) ? `Operativer Mittelzufluss je Aktie (12 Monate) ${n2(f.cfps)}` : `Free-Cashflow-Marge ${p1(f.fcfm[0])}`) },
+    { k: "droa", t: "Rendite steigt", has: f => !!f.roa, ok: f => f.roa[0] > f.roa[1], txt: f => `${p1(f.roa[0])} nach ${p1(f.roa[1])} im Vorjahr` },
+    { k: "accr", t: "Gewinn durch Geld gedeckt", has: f => fin(f.cfps) && fin(f.eps), ok: f => f.cfps > f.eps, txt: f => `Mittelzufluss je Aktie ${n2(f.cfps)} gegen Gewinn je Aktie ${n2(f.eps)}` },
+    { k: "lev", t: "Weniger Schulden", has: f => !!f.lev, ok: f => f.lev[0] < f.lev[1] || (f.lev[0] === 0 && f.lev[1] === 0), txt: f => `Schulden ${p1(f.lev[0])} der Bilanzsumme nach ${p1(f.lev[1])}` },
+    { k: "cr", t: "Mehr Liquidität", has: f => !!f.cr, ok: f => f.cr[0] > f.cr[1], txt: f => `Liquidität (kurzfristiges Vermögen zu Schulden) ${n2(f.cr[0])} nach ${n2(f.cr[1])}` },
+    { k: "gm", t: "Bruttomarge steigt", has: f => !!f.gm, ok: f => f.gm[0] > f.gm[1], txt: f => `${p1(f.gm[0])} nach ${p1(f.gm[1])}` },
+    { k: "at", t: "Kapital effizienter genutzt", has: f => !!f.at, ok: f => f.at[0] > f.at[1], txt: f => `Umsatz je Euro Vermögen ${n2(f.at[0])} nach ${n2(f.at[1])}` },
+  ];
+  const FS_LABEL = { green: "stark", yellow: "mittel", red: "schwach" };
+  function finStrength(sym) {
+    const f = (S.fund(sym) || {}).fs;
+    if (!f) return null;
+    const tests = FS_TESTS.filter(t => t.has(f)).map(t => ({ k: t.k, t: t.t, txt: t.txt(f), pass: !!t.ok(f) }));
+    if (tests.length < 5) return null;
+    const p = tests.filter(t => t.pass).length, n = tests.length, r = p / n;
+    const light = r >= 0.7 ? "green" : r >= 0.4 ? "yellow" : "red";
+    // Warnung: knappe Liquidität und kein Geldzufluss oder Verlust
+    const warn = !!(f.cr && f.cr[0] < 1 && ((f.roa && f.roa[0] < 0) || (f.fcfm && f.fcfm[0] < 0) || (fin(f.cfps) && f.cfps < 0)));
+    return { p, n, light, label: FS_LABEL[light], tests, year: f.y || null, warn };
+  }
+  function finCard(sym) {
+    const x = S.item(sym), fsd = finStrength(sym), fu = S.get("fund");
+    if (!x || x.type !== "Aktie") return "";
+    const T = (k, l) => (window.DTD.term ? window.DTD.term(k, l, sym) : l);
+    if (!fsd) {
+      const why = !fu ? "Die Kennzahlen laden noch." : !(S.fund(sym) || {}).fs ? (Object.values(fu.items || {}).some(v => v.fs) ? "Für diese Aktie liefert Finnhub keine Jahreswerte – meist bei Firmen außerhalb der USA." : "Die Jahreswerte dafür kommen mit dem nächsten nächtlichen Kennzahlen-Lauf.") : "Zu wenige prüfbare Punkte.";
+      return `<p class="muted small">${T("finanzkraft", "Finanzkraft")}: ${why}</p>`;
+    }
+    return `<div class="fs-head"><span class="light ${fsd.light === "green" ? "green" : fsd.light === "yellow" ? "yellow" : "red"} big">Finanzkraft ${fsd.label}</span><b class="num">${fsd.p} von ${fsd.n}</b><span class="muted small">Punkten${fsd.year ? ` · Geschäftsjahr ${fsd.year}` : ""} · ${T("finanzkraft", "Wie wird gerechnet?")}</span></div>
+      ${fsd.warn ? `<p class="small down"><b>Achtung:</b> knappe Liquidität (weniger kurzfristiges Vermögen als kurzfristige Schulden) und kein Geldzufluss oder Verlust.</p>` : ""}
+      <ul class="fs-list">${fsd.tests.map(t => `<li class="${t.pass ? "ok" : "no"}"><span aria-hidden="true">${t.pass ? "✓" : "✗"}</span><b>${t.t}</b><span class="muted small">${esc(t.txt)}</span></li>`).join("")}</ul>`;
+  }
+  window.DTD.finStrength = finStrength;
+  window.DTD.finCard = finCard;
   window.DTD.score = sym => { const t = ensure(); return t ? t.get(sym) || null : null; };
   window.DTD.scoreAll = () => ensure();
   window.DTD.scoreReady = () => Promise.all([S.load("stocks"), S.load("fund")]).then(ensure);

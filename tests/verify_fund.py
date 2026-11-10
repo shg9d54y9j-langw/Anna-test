@@ -39,6 +39,32 @@ for sym in us:
     for k, v in want.items():
         if r2(v) != it.get(k):
             errors.append(f"{sym} {k}: Lauf {it.get(k)}, Gegenrechnung {r2(v)}")
+    # Finanzkraft: je Kennzahl die zwei jüngsten Geschäftsjahre (neueste zuerst), Schulden aus der ersten vorhandenen Reihe
+    full = get(f"/stock/metric?symbol={sym}&metric=all")
+    ann = (full.get("series") or {}).get("annual") or {}
+    def pair(*keys):
+        for key in keys:
+            l = sorted([x for x in ann.get(key, []) if isinstance(x.get("v"), (int, float))], key=lambda x: x["period"], reverse=True)
+            if len(l) >= 2:
+                return [round(l[0]["v"], 4), round(l[1]["v"], 4)]
+        return None
+    fs_want = {"roa": pair("roa"), "cr": pair("currentRatio"), "gm": pair("grossMargin"), "lev": pair("longtermDebtTotalAsset", "totalDebtToTotalAsset"),
+               "at": pair("assetTurnover"), "fcfm": pair("fcfMargin")}
+    mm = full.get("metric") or {}
+    if isinstance(mm.get("cashFlowPerShareTTM"), (int, float)):
+        fs_want["cfps"] = round(mm["cashFlowPerShareTTM"], 4)
+    if isinstance(mm.get("epsTTM"), (int, float)):
+        fs_want["eps"] = round(mm["epsTTM"], 4)
+    fs_want = {k: v for k, v in fs_want.items() if v is not None}
+    got = dict(it.get("fs") or {})
+    got.pop("y", None)
+    if sum(1 for v in fs_want.values() if isinstance(v, list)) < 3:
+        if it.get("fs"):
+            errors.append(f"{sym}: Finanzkraft trotz zu weniger Jahreswerte")
+    elif got != fs_want:
+        errors.append(f"{sym} Finanzkraft: Lauf {got}, Gegenrechnung {fs_want}")
+    elif it["fs"].get("y") != "2025":
+        errors.append(f"{sym} Finanzkraft: Geschäftsjahr {it['fs'].get('y')} statt 2025")
     if forbidden:
         if "ins" in it:
             errors.append(f"{sym}: Insider-Daten trotz gesperrtem Tarif")

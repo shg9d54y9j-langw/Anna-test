@@ -47,6 +47,26 @@ export function pickMetric(m) {
     mcap: r2(g("marketCapitalization")),
   };
 }
+// Finanzkraft nach dem Piotroski-Prinzip (Piotroski 2000): die letzten zwei Geschäftsjahre aus den Jahreswerten (series.annual),
+// die /stock/metric ohnehin mitliefert – kein zusätzlicher Abruf. Je Kennzahl [aktuelles Jahr, Vorjahr]; dazu Mittelzufluss und
+// Gewinn je Aktie der letzten 12 Monate. Die Punkte rechnet die Seite (score.js), damit sich die Regel ohne neuen Lauf ändern lässt.
+const r4 = x => (Number.isFinite(x) ? Math.round(x * 10000) / 10000 : null);
+export function pickSeries(series, metric) {
+  const A = (series && series.annual) || {};
+  const years = k => (Array.isArray(A[k]) ? A[k] : []).filter(x => x && Number.isFinite(x.v) && /^\d{4}-\d{2}-\d{2}/.test(String(x.period || "")))
+    .sort((a, b) => (a.period < b.period ? 1 : a.period > b.period ? -1 : 0));
+  const pair = (...keys) => { for (const k of keys) { const l = years(k); if (l.length >= 2) return [r4(l[0].v), r4(l[1].v)]; } return null; };
+  const g = (...keys) => { for (const k of keys) if (Number.isFinite(metric && metric[k])) return r4(metric[k]); return null; };
+  const out = {
+    roa: pair("roa"), cr: pair("currentRatio"), gm: pair("grossMargin"), lev: pair("longtermDebtTotalAsset", "totalDebtToTotalAsset"),
+    at: pair("assetTurnover"), fcfm: pair("fcfMargin"), cfps: g("cashFlowPerShareTTM", "cashFlowPerShareAnnual"), eps: g("epsTTM", "epsAnnual", "epsBasicExclExtraItemsTTM"),
+  };
+  const latest = years("roa")[0] || years("currentRatio")[0] || years("grossMargin")[0];
+  for (const k of Object.keys(out)) if (out[k] === null) delete out[k];
+  if (Object.keys(out).filter(k => Array.isArray(out[k])).length < 3) return null;   // zu wenig für eine Aussage
+  if (latest) out.y = String(latest.period).slice(0, 4);
+  return out;
+}
 // Insider-Geschäfte der letzten 90 Tage zusammenfassen: nur echte Käufe und Verkäufe am Markt (Code P und S)
 export function summarizeInsider(rows, today) {
   const from = new Date(Date.parse(`${today}T00:00:00Z`) - 90 * 864e5).toISOString().slice(0, 10);
@@ -83,7 +103,13 @@ async function main() {
     const old = prev && prev.items && prev.items[sym];
     const it = {};
     if (avail.metric !== false) {
-      try { const d = await finnhub("/stock/metric", { symbol: sym, metric: "all" }); Object.assign(it, pickMetric(d && d.metric)); avail.metric = true; }
+      try {
+        const d = await finnhub("/stock/metric", { symbol: sym, metric: "all" });
+        Object.assign(it, pickMetric(d && d.metric));
+        const fsd = pickSeries(d && d.series, d && d.metric);
+        if (fsd) it.fs = fsd;
+        avail.metric = true;
+      }
       catch (e) { if (e.status === 401 || e.status === 403) { avail.metric = false; log(`Kennzahlen: im Finnhub-Tarif nicht enthalten (HTTP ${e.status})`); } else errors.push(`${sym} Kennzahlen: ${e.message}`); }
     }
     if (avail.insider !== false) {
@@ -123,7 +149,7 @@ async function main() {
   };
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(out));
-  log(`Kennzahlen: ${n(x => Number.isFinite(x.pe) || Number.isFinite(x.mcap))} Aktien mit Bewertung, ${n(x => x.ins)} mit Insider-Daten (${n(x => x.ins && x.ins.buyers >= 2)} mit Käufen mehrerer Insider), ${n(x => x.ind)} mit Branche; ${errors.length} Fehler`);
+  log(`Kennzahlen: ${n(x => Number.isFinite(x.pe) || Number.isFinite(x.mcap))} Aktien mit Bewertung, ${n(x => x.ins)} mit Insider-Daten (${n(x => x.ins && x.ins.buyers >= 2)} mit Käufen mehrerer Insider), ${n(x => x.ind)} mit Branche, ${n(x => x.fs)} mit Jahreswerten für die Finanzkraft; ${errors.length} Fehler`);
   log(`Quartalszahlen-Historie: ${n(x => x.earn)} Aktien, Konkurrenten: ${n(x => x.peers)} Aktien`);
   log(`Im Tarif: Kennzahlen ${out.available.metric ? "ja" : "nein"}, Insider ${out.available.insider ? "ja" : "nein"}, Profil ${out.available.profile ? "ja" : "nein"}, Quartalszahlen ${out.available.earnings ? "ja" : "nein"}, Konkurrenten ${out.available.peers ? "ja" : "nein"}`);
 }

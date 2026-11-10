@@ -59,11 +59,12 @@
     insider: { label: "Insider kaufen", note: "Mindestens zwei Insider haben in den letzten 90 Tagen am Markt gekauft (nur Firmen mit Sitz in den USA – sie melden nach SEC-Formular 4).", f: { minBuyers: 2 } },
     value: { label: "Wachstum zum fairen Preis", note: "KGV zwischen 0 und 25, Umsatz wächst um mehr als 10 %.", f: { maxPe: 25, minRevG: 10 } },
     earnings: { label: "Nach starken Zahlen", note: "Gewinn je Aktie mindestens 5 % über der Erwartung, gemeldet in den letzten 45 Tagen, Kurs über dem 50-Tage-Schnitt. Nach positiven Überraschungen driftet der Kurs oft noch Wochen nach (Bernard &amp; Thomas 1989) – bei großen, viel beachteten Aktien heute deutlich schwächer (Martineau 2022). Haltedauer etwa bis 3 Monate nach der Meldung; Kauf, Stop und Ziel im Aktien-Check.", f: { minSurprise: 5, d50min: 0 }, sort: "surprise", phoneHide: ["momRank"] },
+    finance: { label: "Finanzstark im Aufwärtstrend", note: "Finanzkraft-Ampel grün (mindestens 70 % der Punkte nach dem Piotroski-Prinzip: Gewinn, Geldzufluss, sinkende Schulden, steigende Liquidität, Marge und Effizienz) und Aufwärtstrend. Firmen mit hohen Punkten schlugen schwache in Studien deutlich (Piotroski 2000) – Jahreswerte von Finnhub, nur US-Aktien.", f: { fsGreen: true, trend: "up", type: "Aktie" }, sort: "fs" },
     dividend: { label: "Dividende", note: "Dividendenrendite ab 3 %, kein Abwärtstrend.", f: { minDiv: 3, trend: "notdown" } },
     theory: { label: "Theorie-Firmen", note: "Alle Firmen der Theorie-Seite.", f: { theory: "all" } },
     all: { label: "Alle", note: "Keine Vorauswahl – filtern Sie selbst.", f: {} },
   };
-  const filter = () => Object.assign({ type: "Aktie", region: "all", theory: "", ind: "", trend: "", minMom: null, maxBelowHigh: null, d50min: null, d50max: null, minBuy: null, minBuyers: null, maxPe: null, minRevG: null, minDiv: null, minSurprise: null, minNote: null, parts: null, q: "" }, (PRESETS[ui.preset] || PRESETS.all).f, ui.custom || {});
+  const filter = () => Object.assign({ type: "Aktie", region: "all", theory: "", ind: "", trend: "", minMom: null, maxBelowHigh: null, d50min: null, d50max: null, minBuy: null, minBuyers: null, maxPe: null, minRevG: null, minDiv: null, minSurprise: null, minNote: null, parts: null, fsGreen: false, q: "" }, (PRESETS[ui.preset] || PRESETS.all).f, ui.custom || {});
   // Quartalszahlen-Überraschung der letzten 45 Tage (in %), sonst null
   const surprise = x => (x.lastEarn && Number.isFinite(x.lastEarn.surprisePct) && (Date.now() - Date.parse(`${x.lastEarn.date}T12:00:00Z`)) / 864e5 <= 45 ? x.lastEarn.surprisePct : null);
   function screen(f) {
@@ -89,6 +90,7 @@
       if (f.minRevG !== null && !(fx.revG >= f.minRevG)) return false;
       if (f.minDiv !== null && !(fx.div >= f.minDiv)) return false;
       if (f.minSurprise !== null && !(surprise(x) >= f.minSurprise)) return false;
+      if (f.fsGreen) { const fsd = window.DTD.finStrength && window.DTD.finStrength(x.sym); if (!fsd || fsd.light !== "green") return false; }
       if (f.minNote !== null) { const s = window.DTD.score && window.DTD.score(x.sym); if (!(s && s.note >= f.minNote && s.coverage >= 0.6)) return false; }
       if (f.parts) { const s = window.DTD.score && window.DTD.score(x.sym); if (!s || Object.entries(f.parts).some(([k, v]) => !(s.parts[k] >= v))) return false; }
       if (q && !x.sym.includes(q) && !String(x.name || "").toUpperCase().includes(q)) return false;
@@ -100,6 +102,7 @@
     { key: "last", label: "Kurs", num: true, opt: true, get: x => x.last, cell: x => price(x.last) },
     { key: "ret12m", label: "12 Mon.", num: true, get: x => x.ret12m, cell: x => pc(x.ret12m, 0) },
     { key: "note", label: "Note", num: true, get: x => { const s = window.DTD.score && window.DTD.score(x.sym); return s && Number.isFinite(s.note) ? s.note : null; }, cell: x => { const s = window.DTD.score && window.DTD.score(x.sym); return s && Number.isFinite(s.note) ? `<b class="${window.DTD.scoreTone(s.note)}">${s.note}</b>` : `<span class="muted">–</span>`; } },
+    { key: "fs", label: "Finanz", num: true, opt: true, get: x => { const fsd = window.DTD.finStrength && window.DTD.finStrength(x.sym); return fsd ? fsd.p / fsd.n : null; }, cell: x => { const fsd = window.DTD.finStrength && window.DTD.finStrength(x.sym); return fsd ? `<span class="fs-dot ${fsd.light}" title="Finanzkraft ${fsd.label}: ${fsd.p} von ${fsd.n} Punkten" aria-label="Finanzkraft ${fsd.label}, ${fsd.p} von ${fsd.n}"></span>${fsd.p}/${fsd.n}` : `<span class="muted">–</span>`; } },
     { key: "momRank", label: "Mom.", num: true, opt: true, get: x => x.momRank, cell: x => (Number.isFinite(x.momRank) ? x.momRank : "–") },
     { key: "trend", label: "Trend", get: x => ({ up: 2, flat: 1, down: 0, nodata: -1 })[trendOf(x)], cell: x => { const [l, c] = TREND[trendOf(x)]; return `<span class="light ${c}">${l}</span>`; } },
     { key: "dHi52", label: "zum Hoch", num: true, opt: true, get: x => x.dHi52, cell: x => pc(x.dHi52, 0) },

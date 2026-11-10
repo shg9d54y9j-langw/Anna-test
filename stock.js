@@ -245,7 +245,11 @@
       ${x ? `<section class="block" data-section="Note">
         <h2 class="card-title">${window.DTD.term ? window.DTD.term("note", "Gesamtnote", x.sym) : "Gesamtnote"}</h2>
         <div id="skNote"><p class="muted small">Rechne die Note …</p></div>
-      </section>` : ""}
+      </section>
+      ${x && x.type === "Aktie" ? `<section class="block" data-section="Finanzkraft">
+        <h2 class="card-title">Finanzkraft</h2>
+        <div id="skFin"><p class="muted small">Prüfe die Bilanz …</p></div>
+      </section>` : ""}` : ""}
 
       ${x && x.type === "Aktie" ? `<section class="block" data-section="Kennzahlen">
         <h2 class="card-title">Kennzahlen und Insider</h2>
@@ -354,7 +358,7 @@
     drawChart();
     drawInfo();
     if (x && x.type === "Aktie") fillFund(x);
-    if (x && window.DTD.scoreReady) window.DTD.scoreReady().then(() => { const el = $("skNote"); if (el && current && current.query === x.sym) el.innerHTML = window.DTD.scoreCard(x.sym) || `<p class="muted small">Für diesen Wert reichen die Daten nicht für eine Note.</p>`; const pe = $("skPeers"); if (pe && window.DTD.peersHtml && current && current.query === x.sym) pe.innerHTML = window.DTD.peersHtml(x.sym); const si = $("skSimilar"); if (si && window.DTD.similarHtml && current && current.query === x.sym) si.innerHTML = window.DTD.similarHtml(x.sym); });
+    if (x && window.DTD.scoreReady) window.DTD.scoreReady().then(() => { const el = $("skNote"); if (el && current && current.query === x.sym) el.innerHTML = window.DTD.scoreCard(x.sym) || `<p class="muted small">Für diesen Wert reichen die Daten nicht für eine Note.</p>`; const pe = $("skPeers"); if (pe && window.DTD.peersHtml && current && current.query === x.sym) pe.innerHTML = window.DTD.peersHtml(x.sym); const si = $("skSimilar"); if (si && window.DTD.similarHtml && current && current.query === x.sym) si.innerHTML = window.DTD.similarHtml(x.sym); const fi = $("skFin"); if (fi && window.DTD.finCard && current && current.query === x.sym) fi.innerHTML = window.DTD.finCard(x.sym); });
     host.querySelectorAll("[data-cstyle]").forEach(b => b.addEventListener("click", () => {
       chartSet.style = b.dataset.cstyle; saveChart();
       host.querySelectorAll("[data-cstyle]").forEach(o => o.setAttribute("aria-pressed", String(o.dataset.cstyle === chartSet.style)));

@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-10-finance", t: "Finanzkraft-Ampel", d: "Im Aktien-Check: bis zu acht Bilanz-Prüfungen nach dem Piotroski-Prinzip (Gewinn, Geldzufluss, Schulden, Liquidität, Marge, Effizienz) mit Ampel; dazu die Screener-Vorlage „Finanzstark im Aufwärtstrend“. Die Jahreswerte kommen mit dem Kennzahlen-Lauf heute Nacht.", href: "#aktie" },
     { id: "2026-11-10-stress", t: "Stresstest fürs Depot", d: "In der Depot-Analyse: wie viel Ihr Depot ungefähr verliert, wenn der Markt um 10, 20 oder 30 % fällt – und welche Aktien es am stärksten trifft.", href: "#pfMix" },
     { id: "2026-11-10-similar", t: "Ähnliche Aktien", d: "Im Aktien-Check: die fünf Aktien mit dem ähnlichsten Profil aus Trend, Qualität, Bewertung, Wachstum, Experten und Sicherheit – auch aus anderen Branchen.", href: "#aktie" },
     { id: "2026-11-10-since", t: "Seit Ihrem letzten Besuch", d: "Beim Öffnen: wie sich Ihre Depot- und Merklisten-Aktien seitdem bewegt haben und wo sich die Gesamtnote deutlich geändert hat.", href: "#home" },

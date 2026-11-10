@@ -215,6 +215,8 @@
     if (dims[0][1][0] && dims[0][1][0][1] > 40 && withData.length >= 3) warn.push(`${fmt(dims[0][1][0][1], 0)} % in einer Branche (${esc(dims[0][1][0][0])}) – ein Rückschlag dort trifft das ganze Depot.`);
     const risky = (dims[3][1].find(([k]) => k === "Riskant") || [0, 0])[1];
     if (risky > 50) warn.push(`${fmt(risky, 0)} % riskante Aktien – mehr als die Hälfte schwankt stark.`);
+    const weak = withData.filter(r => { const fsd = window.DTD.finStrength && window.DTD.finStrength(r.h.sym); return fsd && fsd.light === "red"; }).map(r => r.h.sym);
+    if (weak.length) warn.push(`Schwache Finanzkraft (rote Ampel): <b>${weak.map(esc).join(", ")}</b> – Bilanz im Aktien-Check prüfen.`);
     if ((dims[1][1][0] || [])[1] === 100 && dims[1][1][0][0] === "USA") warn.push("Alles in US-Aktien: Fällt der Dollar gegen den Euro, sinkt der Wert in Euro – auch wenn die Kurse gleich bleiben.");
     const avgW = get => { let s = 0, n = 0; for (const r of withData) { const v = get(r); if (Number.isFinite(v)) { s += v * share(r); n += share(r); } } return n ? s / n : null; };
     const note = avgW(r => { const sc = window.DTD.score && window.DTD.score(r.h.sym); return sc ? sc.note : null; }), beta = avgW(r => r.x.beta);

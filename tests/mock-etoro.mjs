@@ -331,8 +331,14 @@ http.createServer(async (req, res) => {
       if (!fu) return send(200, { metric: {} });
       const k = fu.instrumentId;
       if (k % 10 === 4) return send(200, { metric: { marketCapitalization: 1000 + k } });   // lückenhafte Kennzahlen
+      // Jahreswerte für die Finanzkraft: unsortiert, bei jeder 7. Firma nur ein Jahr (dann keine Vergleiche), Schulden über totalDebtToTotalAsset bei jeder 5.
+      const yr = (a, b, c) => (k % 7 === 3 ? [{ period: "2025-12-31", v: a }] : [{ period: "2024-12-31", v: b }, { period: "2025-12-31", v: a }, { period: "2023-12-31", v: c }]);
+      const annual = { roa: yr(((k % 20) - 4) / 100, ((k % 17) - 4) / 100, 0.01), currentRatio: yr(0.8 + (k % 9) / 4, 0.8 + (k % 7) / 4, 1), grossMargin: yr(0.2 + (k % 50) / 100, 0.2 + (k % 45) / 100, 0.3),
+        assetTurnover: yr(0.4 + (k % 8) / 10, 0.4 + (k % 9) / 10, 0.5), fcfMargin: yr(((k % 30) - 8) / 100, ((k % 28) - 8) / 100, 0.02) };
+      annual[k % 5 === 0 ? "totalDebtToTotalAsset" : "longtermDebtTotalAsset"] = yr((k % 11) / 20, (k % 13) / 20, 0.3);
       return send(200, { metric: { peTTM: 8 + k % 40, psTTM: 1 + (k % 9) / 2, pbQuarterly: 1 + (k % 7), revenueGrowthTTMYoy: (k % 30) - 5, epsGrowthTTMYoy: (k % 50) - 10,
-        netProfitMarginTTM: (k % 25) - 3, grossMarginTTM: 20 + k % 50, roeTTM: (k % 35) - 5, "totalDebt/totalEquityQuarterly": (k % 20) / 10, currentDividendYieldTTM: (k % 6) / 2, marketCapitalization: 500 + k * 37 } });
+        netProfitMarginTTM: (k % 25) - 3, grossMarginTTM: 20 + k % 50, roeTTM: (k % 35) - 5, "totalDebt/totalEquityQuarterly": (k % 20) / 10, currentDividendYieldTTM: (k % 6) / 2, marketCapitalization: 500 + k * 37,
+        cashFlowPerShareTTM: (k % 12) - 2, epsTTM: (k % 10) - 3 }, series: { annual } });
     }
     if (url.pathname === "/finnhub/stock/insider-transactions") {
       if (finnhubFlags.insiderForbidden) return send(403, { error: "You don't have access to this resource." });

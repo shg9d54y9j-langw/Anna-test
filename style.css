@@ -1124,3 +1124,18 @@ details.more > summary:hover { color: var(--text); }
 .sim-main .name-link { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; text-align: left; }
 .sim-row > b { font-size: 16px; min-width: 2.2em; text-align: right; }
 @media (max-width: 420px) { .sim-row { grid-template-columns: auto 1fr auto; } .sim-row .cmp-btn { display: none; } }
+
+/* Finanzkraft-Ampel */
+.fs-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.fs-head > b { font-size: 20px; }
+.fs-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 0; }
+.fs-list li { display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); }
+.fs-list li:first-child { border-top: 0; }
+.fs-list li > span:first-child { grid-row: span 2; font-weight: 800; }
+.fs-list li.ok > span:first-child { color: var(--up); }
+.fs-list li.no > span:first-child { color: var(--down); }
+.fs-list li > .muted { grid-column: 2; }
+.fs-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; border: 1px solid var(--text); }
+.fs-dot.green { background: var(--up); border-color: var(--up); }
+.fs-dot.yellow { background: transparent; border-color: var(--text); }
+.fs-dot.red { background: var(--down); border-color: var(--down); }
