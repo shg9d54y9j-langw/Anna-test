@@ -170,13 +170,15 @@ function loadTvLib() {
   }
   return tvLib;
 }
+let tvSeq = 0;
 function tvChart(containerId, symbol, { style = "1", studies = [], hideVolume = false, compact = false } = {}) {
   const host = $(containerId);
   if (!host) return;
-  const inner = `${containerId}-tv`;
-  host.innerHTML = `<div id="${inner}" style="height:100%"></div>`;
+  const inner = `${containerId}-tv`, token = String(++tvSeq);
+  host.innerHTML = `<div id="${inner}" data-tv="${token}" style="height:100%"></div>`;
   loadTvLib().then(TV => {
-    if (!document.getElementById(inner)) return;   // inzwischen neu gezeichnet
+    const el = document.getElementById(inner);
+    if (!el || el.dataset.tv !== token) return;   // inzwischen neu gezeichnet: sonst entstünden zwei Diagramme übereinander
     new TV.widget({
       container_id: inner, autosize: true, symbol, interval: "D", range: "12M", timezone: "Europe/Vienna", theme: "dark", style, locale: "de_DE",
       toolbar_bg: "#000000", backgroundColor: "#000000", gridColor: "rgba(255,255,255,0.06)", enable_publishing: false, allow_symbol_change: false,

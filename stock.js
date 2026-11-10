@@ -38,16 +38,21 @@
   const SUFFIX = { DE: "XETR", L: "LSE", PA: "EURONEXT", AS: "EURONEXT", NV: "EURONEXT", BR: "EURONEXT", LSB: "EURONEXT", MI: "MIL", MC: "BME", ZU: "SIX", SW: "SIX", HK: "HKEX", OL: "OSL", ST: "OMXSTO", CO: "OMXCOP", HE: "OMXHEX", VI: "VIE", LS: "EURONEXT" };
   const tvGuess = q => { const t = q.trim().toUpperCase(); if (t.includes(":")) return t; const m = /^([A-Z0-9-]+)\.([A-Z]+)$/.exec(t); return m && SUFFIX[m[2]] ? `${SUFFIX[m[2]]}:${m[1].replace(/-/g, "_")}` : t; };
 
-  // Daten über den gemeinsamen Lader (data.js): eine Aktien-Datei für alle Bereiche. Gezeichnet wird je Datenstand einmal –
-  // renderQuick zeigt dabei auch den gewählten Wert (sonst lud das Diagramm doppelt).
+  // Daten über den gemeinsamen Lader (data.js): eine Aktien-Datei für alle Bereiche. Der gewählte Wert wird je Datenstand
+  // einmal gezeichnet (vorher lud das Diagramm doppelt) – auch wenn die Daten erst nach dem Öffnen ankommen.
   let shown = null;
   function adopt(d) {
-    if (d && d === shown) return;
-    data = d || data;
-    shown = data;
+    if (!d || d === shown) return;
+    data = d;
+    shown = d;
     renderQuick();
+    if (current && !$("aktie").hidden) show(current.query, false);
   }
-  async function load() { adopt(await window.DTD.shared.load("stocks")); }
+  async function load() {
+    const d = await window.DTD.shared.load("stocks");
+    if (d) adopt(d);
+    else if (current && !$("aktie").hidden) show(current.query, false);   // ohne Daten wenigstens das Diagramm
+  }
   window.addEventListener("dtd:shared", e => { if (e.detail === "stocks" && !$("aktie").hidden && shown) adopt(window.DTD.shared.get("stocks")); });
   const find = q => {
     if (!data) return null;
@@ -401,14 +406,16 @@
     emptyTitle: "Zuletzt angesehen",
   });
   window.DTD.startStock = () => {
-    load();
     const last = store.get("dtd-stock", "");
     if (last && !current) { $("stockInput").value = last; current = { query: last }; }
-    if (current) show(current.query, false);
+    const d = window.DTD.shared.get("stocks");
+    if (d && d !== shown) adopt(d);                              // zeichnet den gewählten Wert
+    else if (data) { if (current) show(current.query, false); }
+    else load();                                                 // erst nach dem Laden zeichnen
   };
   // Marktlage beeinflusst nur die Positionsgröße: neu zeichnen, wenn sich der Faktor geändert hat (sonst lädt das Diagramm doppelt)
   const sizeNow = () => { const m = window.DTD.market; return m && m.overall && Number.isFinite(m.overall.sizeFactor) ? m.overall.sizeFactor : 1; };
-  window.addEventListener("dtd:market", () => { if (current && !$("aktie").hidden && sizeNow() !== lastSize) show(current.query, false); });
+  window.addEventListener("dtd:market", () => { if (current && lastSize !== null && !$("aktie").hidden && sizeNow() !== lastSize) show(current.query, false); });
   // Von anderen Bereichen (HotStuff) direkt einen Wert öffnen
   window.DTD.openStock = sym => { store.set("dtd-stock", sym); $("stockInput").value = sym; current = { query: sym }; location.hash = "aktie"; if (data) show(sym); };
   window.DTD.stockData = () => data || window.DTD.shared.get("stocks");
