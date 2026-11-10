@@ -59,6 +59,51 @@
       ${lines.length ? `<div class="nh-list">${lines.map(([l, c, href]) => `<div class="nh-row"><a class="nh-l" href="${href}">${l}</a><div class="nh-c">${c}</div></div>`).join("")}</div>` : `<p class="muted small">Heute nichts Auffälliges in den Daten.</p>`}
       <p class="hint">Aus den Aktien-Daten (2× pro Börsentag), dem Swing-Planer und den nächtlichen Insider-Daten. Kürzel antippen öffnet den Aktien-Check.</p></article>`;
   }
+  // ---------- Seit Ihrem letzten Besuch: Kurse und Noten von Depot und Merkliste gegenüber dem letzten Besuch ----------
+  // Momentaufnahme (Kurse, Noten, Datenstand) nur in diesem Browser (dtd-visit). Sie wird beim Verlassen der Seite gespeichert –
+  // aber nur, wenn der bisherige Stand mindestens 3 Stunden alt ist; so wandert der Vergleich bei häufigen Besuchen nicht mit.
+  const VISIT = "dtd-visit", GAP = 3 * 3600e3;
+  const prevVisit = (() => { const v = store.get(VISIT, null); return v && v.px && Number.isFinite(Date.parse(v.at)) ? v : null; })();
+  const mineSyms = () => [...new Set([...depot().map(h => h.sym), ...(window.DTD.watch ? window.DTD.watch.list() : [])])];
+  function saveVisit() {
+    const st = S.get("stocks");
+    if (!st || !Array.isArray(st.items)) return;
+    if (prevVisit && Date.now() - Date.parse(prevVisit.at) < GAP) return;   // Vergleichsstand bleibt, bis er alt genug ist
+    const px = {}, notes = {};
+    for (const sym of mineSyms()) {
+      const x = S.item(sym);
+      if (x && fin(x.last)) px[sym] = x.last;
+      const s = window.DTD.score ? window.DTD.score(sym) : null;
+      if (s && fin(s.note)) notes[sym] = s.note;
+    }
+    store.set(VISIT, { at: new Date().toISOString(), data: st.updated, px, notes });
+  }
+  document.addEventListener("visibilitychange", () => { if (document.hidden) saveVisit(); });
+  window.addEventListener("pagehide", saveVisit);
+  function sinceCard() {
+    const st = S.get("stocks"), v = prevVisit;
+    if (!st || !v || Date.now() - Date.parse(v.at) < GAP || v.data === st.updated) return "";   // nichts Neues seit damals
+    const depotSet = new Set(depot().map(h => h.sym));
+    const rows = mineSyms().map(sym => {
+      const x = S.item(sym), s = window.DTD.score ? window.DTD.score(sym) : null;
+      const mv = x && fin(x.last) && fin(v.px[sym]) && v.px[sym] > 0 ? (x.last / v.px[sym] - 1) * 100 : null;
+      const dn = s && fin(s.note) && fin(v.notes && v.notes[sym]) ? s.note - v.notes[sym] : null;
+      return { sym, x, mv, dn, note: s && s.note, was: v.notes && v.notes[sym], mine: depotSet.has(sym) };
+    }).filter(r => r.x && (fin(r.mv) || fin(r.dn)));
+    if (!rows.length) return "";
+    const show = rows.filter(r => (fin(r.mv) && Math.abs(r.mv) >= 1) || (fin(r.dn) && Math.abs(r.dn) >= 5))
+      .sort((a, b) => Math.abs(b.mv || 0) + Math.abs(b.dn || 0) / 3 - (Math.abs(a.mv || 0) + Math.abs(a.dn || 0) / 3)).slice(0, 6);
+    const dep = rows.filter(r => r.mine && fin(r.mv)).map(r => r.mv);
+    const avgDep = dep.length ? dep.reduce((a, b) => a + b, 0) / dep.length : null;
+    const when = new Date(v.at), days = Math.round((Date.now() - when) / 864e5);
+    const label = `${days >= 2 ? `vor ${days} Tagen` : when.toDateString() === new Date().toDateString() ? "heute" : "gestern"}, ${when.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`;
+    return `<article class="card" data-section="Seit dem letzten Besuch"><div class="card-head"><h2 class="card-title">Seit Ihrem letzten Besuch</h2><span class="muted small">${label}</span></div>
+      ${fin(avgDep) ? `<p class="small">Ihr Depot im Schnitt <b>${pc(avgDep)}</b> (${dep.length} ${dep.length === 1 ? "Aktie" : "Aktien"}, gleich gewichtet).</p>` : ""}
+      ${show.length ? `<div class="al-list">${show.map(r => `<div class="al-row">${chip(r.x)}<div class="al-text">${fin(r.mv) && Math.abs(r.mv) >= 0.1 ? `Kurs ${pc(r.mv)}` : ""}${fin(r.mv) && Math.abs(r.mv) >= 0.1 && fin(r.dn) && Math.abs(r.dn) >= 5 ? " · " : ""}${fin(r.dn) && Math.abs(r.dn) >= 5 ? `Gesamtnote <b>${r.was} → ${r.note}</b> <span class="${r.dn > 0 ? "up" : "down"}">${r.dn > 0 ? "▲" : "▼"}</span>` : ""}<div class="muted small">${esc(r.x.name || "")}</div></div>${r.mine ? `<span class="light green">Depot</span>` : `<span class="light">Merkliste</span>`}</div>`).join("")}</div>`
+        : `<p class="muted small">Keine großen Bewegungen: alle Ihre Aktien unter ±1 % und Noten fast unverändert.</p>`}
+    </article>`;
+  }
+  window.DTD.saveVisit = saveVisit;
   // Termine der nächsten 7 Tage für Depot, Merkliste und Swing-Ideen
   function dateCard() {
     const st = S.get("stocks"), sw = S.get("swing");
@@ -87,7 +132,7 @@
       if (busy) host.innerHTML = `<article class="card"><p class="muted small">Lade Ihre Übersicht …</p></article>`;
       return;
     }
-    host.innerHTML = (window.DTD.whatsNewCard ? window.DTD.whatsNewCard() : "") + (window.DTD.smartAlertsCard ? window.DTD.smartAlertsCard() : "")
+    host.innerHTML = (window.DTD.whatsNewCard ? window.DTD.whatsNewCard() : "") + sinceCard() + (window.DTD.smartAlertsCard ? window.DTD.smartAlertsCard() : "")
       + `<div class="grid-2">${depotCard()}${watchCard()}</div><div class="grid-2">${newCard()}${dateCard()}</div>`;
     if (window.DTD.smartBadge) window.DTD.smartBadge();
     if (window.DTD.fillWhy) window.DTD.fillWhy(host);

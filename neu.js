@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-10-since", t: "Seit Ihrem letzten Besuch", d: "Beim Öffnen: wie sich Ihre Depot- und Merklisten-Aktien seitdem bewegt haben und wo sich die Gesamtnote deutlich geändert hat.", href: "#home" },
     { id: "2026-11-10-notebilanz", t: "Note-Bilanz", d: "Prüft ab heute jeden Börsentag, ob Aktien mit hoher Gesamtnote danach wirklich besser laufen – mit Urteil, Tabelle und Verlauf.", href: "#notebilanz" },
     { id: "2026-11-10-backup", t: "Sicherung als Datei", d: "Depot, Merkliste, Journal, Alarme und Einstellungen als Datei sichern und auf einem neuen Handy laden – mit Rückgängig.", href: "#pfBackup" },
     { id: "2026-11-10-speed", t: "Schneller am Handy", d: "Jede Datei kommt nur noch einmal übers Netz (rund 40 % weniger Daten pro Start), Tabellen zeichnen schneller." },
