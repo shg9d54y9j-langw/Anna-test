@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-10-euro", t: "Depot in Euro", d: "Im Portfolio: Depotwert und Ergebnis in Euro mit EZB-Kursen – aufgeteilt in Kursgewinn und Währungseffekt, je Aktie und im Steuer-Schätzer (Kurs am Verkaufstag).", href: "#portfolio" },
     { id: "2026-11-10-briefing", t: "Heute wichtig", d: "Ganz oben auf der Startseite die fünf wichtigsten Punkte des Tages: Stops, Kursalarme, Zahlen, Zinsentscheid, Marktlage, Chancen auf der Merkliste. Auf Wunsch morgens als Handy-Meldung (Portfolio → Benachrichtigungen).", href: "#briefing" },
     { id: "2026-11-10-theme", t: "Hell oder dunkel", d: "Oben neben der Uhr: das Farbschema wie das Gerät, hell für Tageslicht oder dunkel – auch unter „Seite anpassen“." },
     { id: "2026-11-10-groups", t: "Sieben statt zwölf Bereiche", d: "Ähnliches ist zusammengelegt: „Ideen“ (HotStuff, Swing-Planer, Trade-Ideen, Theorie), „Bots“ (Trend-Bot, Copy-Trading) und „Trade planen“ im Aktien-Check – oben im Bereich umschalten. Am Handy stehen jetzt alle Bereiche direkt in der Leiste unten.", href: "#hot" },

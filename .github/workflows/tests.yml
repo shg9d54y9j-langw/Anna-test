@@ -137,6 +137,9 @@ jobs:
           node scripts/news-data.mjs
           python3 tests/verify_news.py /tmp/stocks.json /tmp/news http://localhost:8795
 
+      - name: Wechselkurse (EZB) – Auswahl, Lücken, Wochenenden, Prüfungen
+        run: node tests/fx-data.mjs
+
       - name: Handy-Meldungen (ntfy) mit nachgebautem Server, auch mit den Aktien-Daten und Nachrichten der Testläufe
         env:
           NOTIFY_REAL_STOCKS: /tmp/stocks.json   # aus dem Aktien-Daten-Schritt

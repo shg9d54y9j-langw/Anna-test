@@ -13,7 +13,9 @@
     swing: t => get(`${RAW}stock-data/swing.json?t=${t}`).then(d => (d && Array.isArray(d.setups) ? d : null)),
     firms: t => get(`data/firms.json?t=${t}`).then(d => (d && d.firms ? d : null)),
     recent: t => get(`${RAW}stock-data/note-recent.json?t=${t}`).then(d => (d && d.n && d.dates ? d : null)),   // Notenverlauf (scripts/note-track.mjs)
+    fx: t => get(`${RAW}fx-data/fx.json?t=${t}`).then(d => (d && d.base === "EUR" && Array.isArray(d.dates) && d.rates ? d : null)),   // EZB-Kurse (scripts/fx-data.mjs)
   };
+  const ON_DEMAND = new Set(["fx"]);   // nur laden, wenn ein Bereich sie braucht (Depot mit Aktien in Fremdwährung)
   const cache = {}, pending = {}, fetched = {};
   function load(name, force = false) {
     if (!SRC[name]) return Promise.resolve(null);
@@ -42,7 +44,7 @@
   window.DTD.shared = {
     load, refresh,
     get: name => (name in cache ? cache[name] : null),
-    all: () => Promise.all(Object.keys(SRC).map(n => load(n))),
+    all: () => Promise.all(Object.keys(SRC).filter(n => !ON_DEMAND.has(n)).map(n => load(n))),
     item: sym => index("stocks", "items").get(sym) || null,
     fund: sym => { const f = cache.fund; return f && f.items ? f.items[sym] || null : null; },
     setup: sym => index("swing", "setups").get(sym) || null,

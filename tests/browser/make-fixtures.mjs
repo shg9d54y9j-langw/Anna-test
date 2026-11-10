@@ -1,5 +1,5 @@
 // Abgeleitete Testdaten für die Browser-Tests (nicht im Repository): Noten wie auf der Website, eine Note-Bilanz aus erfundenen
-// Kursen, ein früher Stand der Bilanz und Kennzahlen mit Jahreswerten für die Finanzkraft. Aufruf: node tests/browser/make-fixtures.mjs <ordner>
+// Kursen, ein früher Stand der Bilanz, Kennzahlen mit Jahreswerten für die Finanzkraft und erfundene EZB-Kurse. Aufruf: node tests/browser/make-fixtures.mjs <ordner>
 import { computeNotes, addSnapshot, evaluate, addWeekdays } from "../../scripts/note-track.mjs";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -39,4 +39,10 @@ f.items.AMD.fs = { roa: [-0.02, 0.01], cr: [0.9, 1.2], gm: [0.45, 0.5], lev: [0.
 f.items.MSFT.fs = { roa: [0.2, 0.19], cr: [1.3, 1.2], y: "2025" };
 f.items.AAPL.fs = { roa: [0.3, 0.28], cr: [1.0, 0.9], gm: [0.47, 0.46], lev: [0.25, 0.28], at: [1.1, 1.05], fcfm: [0.26, 0.25], cfps: 7.5, eps: 6.9, y: "2025" };
 writeFileSync(join(out, "fund-fs.json"), JSON.stringify(f));
+// EZB-Kurse (Einheiten je 1 Euro) für das Depot in Euro: US-Dollar steigt gleichmäßig von 1,03 auf 1,16, andere fest
+const fxDates = [];
+for (let t = Date.parse("2025-01-01T12:00:00Z"); t <= Date.parse("2026-11-09T12:00:00Z"); t += 864e5) { const dd = new Date(t); if (dd.getUTCDay() % 6) fxDates.push(dd.toISOString().slice(0, 10)); }
+const fxN = fxDates.length - 1;
+writeFileSync(join(out, "fx.json"), JSON.stringify({ updated: "2026-11-09T15:30:00Z", base: "EUR", start: fxDates[0], last: fxDates[fxN], dates: fxDates,
+  rates: { USD: fxDates.map((_, k) => +(1.03 + 0.13 * k / fxN).toFixed(4)), CHF: fxDates.map(() => 0.94), GBP: fxDates.map(() => 0.84), DKK: fxDates.map(() => 7.46), SEK: fxDates.map(() => 11.2) } }));
 console.log(`Testdaten in ${out}: ${Object.keys(notes).length} Noten, Note-Bilanz mit ${hist.snaps.length} Messtagen, Kennzahlen mit Jahreswerten.`);

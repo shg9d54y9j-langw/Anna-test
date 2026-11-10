@@ -1,0 +1,78 @@
+name: Wechselkurse
+
+# EZB-Referenzkurse (Einheiten je 1 Euro) für das Depot in Euro: an jedem Werktag nach der Veröffentlichung der EZB
+# (gegen 16 Uhr Frankfurter Zeit). Kein Schlüssel nötig; veröffentlicht wird nur eine aufbereitete Datei auf dem Zweig fx-data.
+on:
+  schedule:
+    - cron: "23 15 * * 1-5"   # Mo–Fr 15:23 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: fx-data
+  cancel-in-progress: false
+
+jobs:
+  # Holt die Verlaufsdatei der EZB und rechnet sie um – darf im Repository nichts ändern.
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: EZB-Verlaufsdatei holen und aufbereiten
+        run: |
+          for i in 1 2 3; do
+            curl -fsS --max-time 60 -o "$RUNNER_TEMP/hist.zip" https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip && break
+            if [ "$i" = 3 ]; then echo "::error::EZB nicht erreichbar"; exit 1; fi
+            sleep $((i * 10))
+          done
+          unzip -o -q "$RUNNER_TEMP/hist.zip" -d "$RUNNER_TEMP"
+          FX_CSV="$RUNNER_TEMP/eurofxref-hist.csv" FX_OUT="$RUNNER_TEMP/fx.json" node scripts/fx-data.mjs
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fx
+          path: ${{ runner.temp }}/fx.json
+          retention-days: 1
+          if-no-files-found: error
+
+  # Veröffentlicht die Kurse auf dem Zweig fx-data.
+  save:
+    needs: fetch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: fx
+          path: incoming
+
+      - name: Wechselkurse veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir out && cd out
+          cp ../incoming/fx.json .
+          # shellcheck disable=SC2016
+          node -e '
+            const d = JSON.parse(require("fs").readFileSync("fx.json", "utf8"));
+            if (d.base !== "EUR" || !Array.isArray(d.dates) || d.dates.length < 1000 || !d.rates || !Array.isArray(d.rates.USD)) { console.log("::error::Wechselkurse unvollständig – nichts veröffentlicht"); process.exit(1); }
+            console.log(`${d.dates.length} Tage bis ${d.last}`);
+          '
+          git init -q -b fx-data
+          git add fx.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Wechselkurse $(date -u +%FT%TZ)"
+          for i in 1 2 3 4 5; do
+            git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:fx-data && break
+            [ "$i" = 5 ] && exit 1
+            sleep $((i * 4))
+          done

@@ -38,6 +38,41 @@
     const a = avgAt(h);
     return { ...h, buy: px(a.avg) || h.buy, qty: a.held > 0 ? a.held : null, date: h.lots.map(l => l.d).filter(Boolean).sort()[0] || h.date };
   }
+  // ---------- Depot in Euro: EZB-Referenzkurse (fx-data/fx.json, Einheiten je 1 Euro) ----------
+  // Kaufkosten zum Kurs am Kauftag (je Kauf, gleitender Durchschnitt wie bei der KESt), Wert zum letzten Kurs. Ohne Kaufdatum
+  // gilt der letzte Kurs – dann bleibt der Währungseffekt unbekannt. London-Werte (Pence oder Dollar) bleiben außen vor.
+  const fxData = () => (window.DTD.shared ? window.DTD.shared.get("fx") : null);
+  function rateOn(cur, iso) {
+    if (cur === "EUR") return 1;
+    const fx = fxData(), r = fx && fx.rates && fx.rates[cur];
+    if (!r || !fx.dates.length) return null;
+    const day = iso && DAY_RE.test(iso) ? iso : fx.dates[fx.dates.length - 1];
+    if (day < fx.dates[0]) return null;
+    let lo = 0, hi = fx.dates.length - 1;
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (fx.dates[mid] <= day) lo = mid; else hi = mid - 1; }
+    for (let i = lo; i >= 0; i--) if (r[i] > 0) return r[i];
+    return null;
+  }
+  // Euro-Werte einer Position: Wert, Kosten, Ergebnis, Kurs- und Währungseffekt (null, wenn Stück, Kurs oder Wechselkurs fehlen)
+  function euro(h, x) {
+    const cur = currency(h.sym);
+    if (!cur || !x || !Number.isFinite(x.last) || !(h.qty > 0)) return null;
+    const now = rateOn(cur, null);
+    if (!now) return null;
+    let costEur = 0, held = 0, dated = true;
+    const lots = h.lots && h.lots.length ? h.lots : [{ q: h.qty, p: h.buy, d: h.date }];
+    const ev = [...lots.map((l, i) => ({ ...l, k: "b", i })), ...(h.sells || []).map((v, i) => ({ ...v, k: "s", i: 1e4 + i }))]
+      .sort((a, b) => ((a.d || "") < (b.d || "") ? -1 : (a.d || "") > (b.d || "") ? 1 : (a.t || 0) - (b.t || 0) || a.i - b.i));
+    for (const e of ev) {
+      if (e.k === "b") { const r = rateOn(cur, e.d) || now; if (!e.d && cur !== "EUR") dated = false; costEur += e.q * e.p / r; held += e.q; }
+      else if (held > 0) { const q = Math.min(e.q, held); costEur *= (held - q) / held; held -= q; }
+    }
+    if (!(held > 0) || !(costEur > 0)) return null;
+    const value = h.qty * x.last / now, costLocal = h.qty * h.buy, buyRate = costLocal / costEur;
+    const gain = value - costEur, fxEffect = cur === "EUR" || !dated ? 0 : h.qty * x.last * (1 / now - 1 / buyRate);
+    return { cur, value, cost: costEur, gain, stock: gain - fxEffect, fx: fxEffect, dated, pct: (value / costEur - 1) * 100 };
+  }
+  const eur = (v, sign = false) => (Number.isFinite(v) ? `${sign ? (v < 0 ? "−" : v > 0 ? "+" : "±") : v < 0 ? "−" : ""}${fmt(Math.abs(v), Math.abs(v) >= 1000 ? 0 : 2)} €` : "–");
   let list = read(), stocks = null, swing = null, firms = null, loading = false, editId = null;
   const open = { exit: new Set(), news: new Set(), chart: new Set() };
   function read() {
@@ -167,6 +202,7 @@
         <span>Jetzt <b class="num">${x ? price(x.last) : "–"}</b>${x ? ` <span class="muted">(${dDate(x.asOf)})</span>` : ""}</span>
         <span>Ergebnis <b class="num">${x ? pc(pl) : "–"}</b>${amt !== null ? ` <span class="num">${money(amt, h.sym)}</span>` : ""}</span>
         ${r ? `<span>Risiko <span class="light ${r.cls}">${r.label}</span></span>` : ""}
+        ${(() => { const e = euro(h, x); return e ? `<span class="pf-eur">In Euro: Wert <b class="num">${eur(e.value)}</b> · Ergebnis <b class="num ${e.gain < 0 ? "down" : "up"}">${eur(e.gain, true)}</b>${e.cur !== "EUR" && e.dated ? ` <span class="muted">(Kurs ${eur(e.stock, true)}, Währung ${eur(e.fx, true)})</span>` : ""}</span>` : ""; })()}
       </div>
       ${A.length ? `<ul class="pf-alerts">${A.map(a => `<li class="${a.level}">${a.text}</li>`).join("")}</ul>` : ""}
       ${v ? `<p class="small"><b>Einschätzung:</b> ${v.text} ${v.key === "sell" ? "Wer trotzdem hält: Stop" : "Stop-Vorschlag:"} <b class="num">${price(v.stop)}</b> (${pc((v.stop / x.last - 1) * 100)})${v.stop > h.buy ? " – sichert schon Gewinn" : ""}, bei eToro mit „Trailing Stop Loss“.</p>` : `<p class="small muted">Für ${esc(h.sym)} gibt es keine Kennzahlen – der Wert ist nicht unter den rund 850 beliebtesten bei eToro. Nachrichten und Kurs gibt es trotzdem.</p>`}
@@ -233,9 +269,17 @@
     const high = rows.flatMap(r => alerts(r.h, r.x)).filter(a => a.level === "high").length;
     const kpi = (lbl, val) => `<div class="kpi"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`;
     const t = stocks ? new Date(stocks.updated).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }) : null;
+    // in Euro: nur Positionen mit Stückzahl und bekannter Währung
+    const E = withData.map(r => euro(r.h, r.x)).filter(Boolean);
+    const needFx = withData.some(r => currency(r.h.sym) && currency(r.h.sym) !== "EUR");
+    const sum = k => E.reduce((a, e) => a + e[k], 0);
+    const eurKpis = E.length ? `${kpi("Depotwert in Euro", `<span class="num">${eur(sum("value"))}</span>`)}${kpi("Ergebnis in Euro", `<span class="${sum("gain") < 0 ? "down" : "up"}">${eur(sum("gain"), true)}</span>`)}` : "";
+    const missing = withData.length - E.length;
+    const fxLine = E.length ? `<p class="small" style="margin-top:10px">In Euro: Ergebnis ${eur(sum("gain"), true)} = Kurs ${eur(sum("stock"), true)} + Währung ${eur(sum("fx"), true)}${missing ? ` · ${missing} ${missing === 1 ? "Position" : "Positionen"} ohne Stückzahl oder Währung nicht enthalten` : ""}${E.some(e => !e.dated) ? " · ohne Kaufdatum kein Währungseffekt" : ""}. <span class="muted">EZB-Referenzkurse${fxData() ? ` vom ${dDate(fxData().last)}` : ""}.</span></p>` : needFx && !fxData() ? `<p class="muted small" style="margin-top:10px">Euro-Werte erscheinen, sobald die EZB-Kurse geladen sind.</p>` : "";
     return `<article class="card" data-section="Überblick">
       <div class="card-head"><h2 class="card-title">Ihr Portfolio</h2><span class="muted small">${t ? `Kurse vom ${t} Uhr` : "Kurse werden geladen …"}</span></div>
-      <div class="stats">${kpi("Aktien", rows.length)}${kpi("Ø Ergebnis je Aktie", pc(avg))}${kpi("Verkauf prüfen", sells)}${kpi("Wichtige Hinweise", high)}</div>
+      <div class="stats">${eurKpis}${kpi("Aktien", rows.length)}${kpi("Ø Ergebnis je Aktie", pc(avg))}${kpi("Verkauf prüfen", sells)}${kpi("Wichtige Hinweise", high)}</div>
+      ${fxLine}
       <p class="small" style="margin-top:12px">Risiko-Mischung: <b>${count("Solide")}</b> solide, <b>${count("Mittel")}</b> mittel, <b>${count("Riskant")}</b> riskant${withData.length < rows.length ? ` · ${rows.length - withData.length} ohne Kennzahlen` : ""}. ${count("Riskant") > withData.length / 2 && withData.length >= 2 ? "Mehr als die Hälfte ist riskant – ein Rückschlag trifft dann das ganze Depot." : ""}</p>
     </article>`;
   }
@@ -485,11 +529,14 @@
   function taxCard() {
     const j = store.get("daytrade-journal-v1", []);
     const trades = (Array.isArray(j) ? j : []).filter(t => t && Number.isFinite(t.in) && Number.isFinite(t.out) && Number.isFinite(t.qty));
-    const cur = ($("cCur") && $("cCur").value) || "$";
+    // in Euro zum EZB-Kurs am Verkaufstag, wenn für alle Trades Währung und Kurs bekannt sind – sonst wie bisher in Kontowährung
+    const inEur = trades.length > 0 && trades.every(t => currency(t.sym) && rateOn(currency(t.sym), String(t.ts || "").slice(0, 10)));
+    const cur = inEur ? "€" : ($("cCur") && $("cCur").value) || "$";
     const amount = v => `${v < 0 ? "−" : ""}${fmt(Math.abs(v), 2)} ${cur}`;
     const years = new Map();
     for (const t of trades) {
-      const y = String(t.ts || "").slice(0, 4) || "unbekannt", pl = (t.out - t.in) * t.qty * (t.dir === "Short" ? -1 : 1);
+      const raw = (t.out - t.in) * t.qty * (t.dir === "Short" ? -1 : 1);
+      const y = String(t.ts || "").slice(0, 4) || "unbekannt", pl = inEur ? raw / rateOn(currency(t.sym), String(t.ts || "").slice(0, 10)) : raw;
       if (!years.has(y)) years.set(y, { gain: 0, loss: 0, n: 0 });
       const Y = years.get(y); Y.n++; if (pl >= 0) Y.gain += pl; else Y.loss += pl;
     }
@@ -502,10 +549,11 @@
     const losers = stocks ? list.map(h => ({ h, x: item(h.sym) })).filter(r => r.x && r.h.qty && r.x.last < r.h.buy).map(r => ({ sym: r.h.sym, loss: (r.x.last - r.h.buy) * r.h.qty })) : [];
     return `<article class="card" id="pfTax" data-section="Steuer">
       <h2 class="card-title">Steuer-Schätzer (Österreich, 27,5 % KESt)</h2>
+      ${inEur ? `<p class="small" style="margin:-6px 0 10px"><span class="light green">in Euro</span> umgerechnet zum EZB-Referenzkurs am Verkaufstag.</p>` : ""}
       <p class="muted small" style="margin:-6px 0 12px">Aus den abgeschlossenen Trades im Journal oben: Gewinne und Verluste je Kalenderjahr und die geschätzte Kapitalertragsteuer, die bei einem nicht steuereinfachen Broker wie eToro über die Beilage E1kv fällig wird.</p>
       ${rows ? `<div class="table-wrap"><table class="scr"><thead><tr><th>Jahr</th><th class="num opt">Gewinne</th><th class="num opt">Verluste</th><th class="num">Saldo</th><th class="num">KESt ca.</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="muted">Noch keine abgeschlossenen Trades im <a href="#journal">Journal</a>.</p>`}
       ${netNow > 0 && losers.length ? `<p class="small" style="margin-top:12px"><b>Vor dem 31.12. prüfen:</b> Ihr Portfolio hat Positionen im Minus (${losers.map(l => `${esc(l.sym)} ${fmt(l.loss, 0)}`).join(", ")} in Kurswährung). Ein Verkauf noch in diesem Jahr würde den Gewinn des Jahres mindern – Verluste lassen sich nur im selben Kalenderjahr verrechnen. Nur verkaufen, wenn die Aktie ohnehin nicht mehr überzeugt.</p>` : ""}
-      <p class="hint">Grobe Schätzung: Dividenden, ausländische Quellensteuer, Währungsgewinne, Ausschüttungen von ETFs (auch ausschüttungsgleiche Erträge) und Nicht-Meldefonds sind nicht enthalten. Bankzinsen werden mit 25 % besteuert. eToro stellt einen Jahres-Steuerbericht mit Hinweisen für Österreich bereit (<a href="https://etoro.com/about/tax-report-faq-for-austrian-residents" target="_blank" rel="noopener noreferrer">eToro: Steuerbericht für Österreich</a>). Keine Steuerberatung.</p>
+      <p class="hint">Grobe Schätzung: Dividenden, ausländische Quellensteuer, Währungsgewinne zwischen Kauf und Verkauf, Ausschüttungen von ETFs (auch ausschüttungsgleiche Erträge) und Nicht-Meldefonds sind nicht enthalten. Bankzinsen werden mit 25 % besteuert. eToro stellt einen Jahres-Steuerbericht mit Hinweisen für Österreich bereit (<a href="https://etoro.com/about/tax-report-faq-for-austrian-residents" target="_blank" rel="noopener noreferrer">eToro: Steuerbericht für Österreich</a>). Keine Steuerberatung.</p>
     </article>`;
   }
   function methodCard() {
@@ -713,6 +761,7 @@
     const S = window.DTD.shared;
     const [next, w, f] = await Promise.all([S.load("stocks", force), S.load("swing", force), firms ? Promise.resolve(firms) : S.load("firms")]);
     if (next && Array.isArray(next.items)) stocks = next;
+    if (list.some(h => currency(h.sym) && currency(h.sym) !== "EUR") && !S.get("fx")) S.load("fx").then(d => { if (d) render(); });
     swing = w || swing;
     if (f && f.firms) firms = f;
     loading = false;
