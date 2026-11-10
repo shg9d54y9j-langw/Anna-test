@@ -112,7 +112,7 @@
     const labels = W < 520 ? "" : S.map(s => { const g = res[s.key].growth; return { s, y: Y(g[g.length - 1]), v: g[g.length - 1] }; })
       .sort((a, b) => a.y - b.y).map((o, k, arr) => { if (k && o.y - arr[k - 1].y < 15) o.y = arr[k - 1].y + 15; return o; })
       .map(o => `<text class="dlabel" x="${m.l + pw + 8}" y="${o.y + 4}">${fmt(o.v, 0)} $ · ${o.s.short}</text>`).join("");
-    host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Wachstum von 100 $: Methode ${fmt(res.method.end, 0)} $, Durchschnitt ${fmt(res.avg.end, 0)} $, naive Wahl ${fmt(res.naive.end, 0)} $">
+    host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Wachstum von 100 $: Methode ${fmt(res.method.end, 0)} $, Durchschnitt ${fmt(res.avg.end, 0)} $, naive Wahl ${fmt(res.naive.end, 0)} $">
       ${ticks.map(t => `<line class="${t === 100 ? "base" : "grid"}" x1="${m.l}" x2="${m.l + pw}" y1="${Y(t)}" y2="${Y(t)}"/><text class="tick" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${fmt(t, 0)} $</text>`).join("")}
       ${S.slice().reverse().map(s => `<path d="${path(res[s.key].growth)}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-dasharray="${s.dash}" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
       ${S.map(s => { const g = res[s.key].growth; return `<circle cx="${X(N)}" cy="${Y(g[N])}" r="4" fill="${s.color}" stroke="${PAL.surface}" stroke-width="2"/>`; }).join("")}
@@ -120,7 +120,7 @@
       <text class="tick" x="${m.l}" y="${H - 6}">${monthLabel(res.months[0])}</text>
       <text class="tick" x="${m.l + pw}" y="${H - 6}" text-anchor="end">${monthLabel(res.months[N - 1])}</text>
       <line class="cross" x1="0" x2="0" y1="${m.t}" y2="${m.t + ph}" visibility="hidden"/>
-      <rect class="hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent" tabindex="0" aria-label="Werte je Monat anzeigen"/>
+      <rect class="hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="${N}" aria-valuenow="${N}" aria-label="Werte je Monat anzeigen (Pfeiltasten)"/>
     </svg>`;
     const svg = host.querySelector("svg"), cross = svg.querySelector(".cross"), hit = svg.querySelector(".hit");
     let tip = host.querySelector(".viz-tip");
@@ -134,6 +134,7 @@
       tip.innerHTML = `<div class="tip-head">${monthLabel(r.month)} · Wahl: ${r.pick ? esc(r.pick) : "keine (Kasse)"}</div>` + S.map(s =>
         `<div class="tip-row"><span class="lkey" style="background:${s.color}"></span>${s.name}: <strong>${fmt(res[s.key].growth[idx], 0)} $</strong> <span class="${r[s.key] < 0 ? "down" : "up"}">${sign(r[s.key])} %</span></div>`).join("");
       tip.hidden = false;
+      hit.setAttribute("aria-valuenow", String(idx)); hit.setAttribute("aria-valuetext", tip.textContent.replace(/\s+/g, " ").trim());
       const wTip = tip.offsetWidth;
       tip.style.left = `${x + 12 + wTip > host.clientWidth ? Math.max(8, x - wTip - 12) : x + 12}px`;
       tip.style.top = "8px";
@@ -163,7 +164,7 @@
       <p class="muted small">Jeden Monat von ${monthLabel(r.months[0])} bis ${monthLabel(r.months[r.months.length - 1])} wurde nur mit den Daten bis zum Vormonat gewählt – mit denselben Regeln wie die Tageswahl. Kosten von ${fmt(COST, 1)} % je Wechsel sind abgezogen. Im Schnitt standen ${r.pool} Trader zur Auswahl.</p>
       <p style="margin:12px 0 0">${plain}</p>
       <div class="table-wrap" style="margin-top:12px"><table>
-        <thead><tr><th></th><th class="num">Tageswahl-Methode</th><th class="num">Ø aller Trader</th><th class="num">Naive Wahl</th></tr></thead>
+        <thead><tr><th><span class="sr-only">Kennzahl</span></th><th class="num">Tageswahl-Methode</th><th class="num">Ø aller Trader</th><th class="num">Naive Wahl</th></tr></thead>
         <tbody>
           ${row("Rendite pro Jahr", x => `${sign(x.cagr)} %`, x => (x.cagr < 0 ? "down" : "up"))}
           ${row("Schwankung pro Jahr", x => `${fmt(x.vol, 1)} %`)}

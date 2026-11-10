@@ -109,7 +109,7 @@
     const labels = W < 520 ? "" : S.map(s => ({ s, y: Y(end(s)), v: end(s) })).sort((a, b) => a.y - b.y)
       .map((o, k, arr) => { if (k && o.y - arr[k - 1].y < 15) o.y = arr[k - 1].y + 15; return o; })
       .map(o => `<text class="dlabel" x="${m.l + pw + 8}" y="${o.y + 4}">${pct(o.v)} · ${o.s.short}</text>`).join("");
-    host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Körbe je Notenstufe seit ${dDate(c.dates[0])}: Note 80–100 ${pct(end(S[0]))}, alle Aktien ${pct(end(S[1]))}, Note 0–19 ${pct(end(S[2]))}">
+    host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Körbe je Notenstufe seit ${dDate(c.dates[0])}: Note 80–100 ${pct(end(S[0]))}, alle Aktien ${pct(end(S[1]))}, Note 0–19 ${pct(end(S[2]))}">
       ${ticks.map(t => `<line class="${t === 0 ? "base" : "grid"}" x1="${m.l}" x2="${m.l + pw}" y1="${Y(t)}" y2="${Y(t)}"/><text class="tick" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${t > 0 ? "+" : ""}${fmt(t, Math.abs(y1 - y0) < 4 ? 1 : 0)} %</text>`).join("")}
       ${S.slice().reverse().map(s => `<path d="${path(c[s.key])}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-dasharray="${s.dash}" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
       ${S.map(s => `<circle cx="${X(N)}" cy="${Y(end(s))}" r="4" fill="${s.color}" stroke="${PAL.surface}" stroke-width="2"/>`).join("")}
@@ -117,7 +117,7 @@
       <text class="tick" x="${m.l}" y="${H - 6}">${dShort(c.dates[0])}</text>
       <text class="tick" x="${m.l + pw}" y="${H - 6}" text-anchor="end">${dShort(c.dates[N])}</text>
       <line class="cross" x1="0" x2="0" y1="${m.t}" y2="${m.t + ph}" visibility="hidden"/>
-      <rect class="hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent" tabindex="0" aria-label="Werte je Messtag anzeigen"/>
+      <rect class="hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="${N}" aria-valuenow="${N}" aria-label="Werte je Messtag anzeigen (Pfeiltasten)"/>
     </svg>`;
     const svg = host.querySelector("svg"), cross = svg.querySelector(".cross"), hit = svg.querySelector(".hit");
     let tip = host.querySelector(".viz-tip");
@@ -129,6 +129,7 @@
       cross.setAttribute("x1", x); cross.setAttribute("x2", x); cross.setAttribute("visibility", "visible");
       tip.innerHTML = `<div class="tip-head">${dDate(c.dates[idx])}</div>` + S.map(s => `<div class="tip-row"><span class="lkey${s.key === "all" ? " dash" : s.key === "low" ? " dot" : ""}" style="${s.key === "top" ? `background:${s.color}` : `color:${s.color}`}"></span>${s.name}: <strong>${pct(c[s.key][idx])}</strong></div>`).join("");
       tip.hidden = false;
+      hit.setAttribute("aria-valuenow", String(idx)); hit.setAttribute("aria-valuetext", tip.textContent.replace(/\s+/g, " ").trim());
       const wTip = tip.offsetWidth;
       tip.style.left = `${x + 12 + wTip > host.clientWidth ? Math.max(8, x - wTip - 12) : x + 12}px`;
       tip.style.top = "8px";

@@ -97,7 +97,7 @@
     return `<article class="card" data-section="Vergleich" id="vergleich">
       <div class="card-head"><h2 class="card-title">Vergleich: ${syms.map(esc).join(" · ")}</h2><button type="button" class="btn ghost small-btn" data-cmp-clear>Alle entfernen</button></div>
       ${syms.length < 2 ? `<p class="small">Noch eine Aktie hinzufügen: im Aktien-Check oder bei den Konkurrenten auf „Vergleichen“ tippen.</p>` : ""}
-      <div class="table-wrap cmp-wrap"><table class="cmp" style="min-width:${100 + cols.length * 105}px"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table></div>
+      <div class="table-wrap cmp-wrap"><table class="cmp" style="min-width:${100 + cols.length * 105}px"><thead><tr><th><span class="sr-only">Kennzahl</span></th>${head}</tr></thead><tbody>${body}</tbody></table></div>
       <p class="hint">Hervorgehoben: der beste Wert je Zeile. Teilnoten und Bilanz-Kennzahlen gibt es nur für US-Aktien. Unterstrichene Begriffe antippen für die Erklärung.</p>
       <div class="cmp-charts">${ok.map(c => `<div class="cmp-chart"><p class="small"><b>${esc(c.sym)}</b> · 12 Monate</p><div class="widget" id="cmpChart-${esc(c.sym.replace(/[^A-Za-z0-9]/g, "_"))}" data-tv="${esc(c.x.tv || c.sym)}" style="height:220px"></div></div>`).join("")}</div>
     </article>`;

@@ -277,9 +277,9 @@
           ${kpi("Betrag", amount !== null ? `${fmt(amount, 0)} $` : `${fmt(p.amountPct * 100, 0)} %`)}
           ${kpi("Copy Stop Loss", `${p.csl} %`, "down")}
         </div>
-        <h3>So tragen Sie es in eToro ein</h3>
+        <h2 class="reco-h">So tragen Sie es in eToro ein</h2>
         <ol class="steps">${steps.map(x => `<li>${x}</li>`).join("")}</ol>
-        <h3>Wie lange kopieren? Chancen nach Kosten</h3>
+        <h2 class="reco-h">Wie lange kopieren? Chancen nach Kosten</h2>
         ${horizonTable(p, cost)}
         <p class="muted small">„Gewinntag-Chance des Traders“: wie wahrscheinlich der Trader einen Börsentag im Plus abschließt. „Ihre Chance im Plus“: wie wahrscheinlich Ihre Kopie nach Abzug der Kosten im Plus liegt – bei kurzer Dauer viel kleiner, weil die Kosten sofort anfallen.
           Gerechnet mit der erwarteten Monatsrendite nach Schrumpfung (${sign(p.postMean)} %), der Schwankung des Traders (${fmt(p.sdMonthly, 2)} % pro Monat) und geschätzten Kosten von ${fmt(cost, 1)} % (Spread beim Öffnen und Schließen laut eToro-Gebührenseite). Näherung – keine Garantie.</p>

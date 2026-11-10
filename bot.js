@@ -134,14 +134,14 @@
     const labels = W < 520 ? "" : S.map(s => ({ s, y: Y(val(c[N], s.i)), v: val(c[N], s.i) })).sort((a, b) => a.y - b.y)
       .map((o, k, arr) => { if (k && o.y - arr[k - 1].y < 15) o.y = arr[k - 1].y + 15; return o; })
       .map(o => `<text class="dlabel" x="${m.l + pw + 8}" y="${o.y + 4}">${fmt(o.v, 0)} · ${o.s.short}</text>`).join("");
-    host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Wachstum von 100: Bot ${fmt(val(c[N], 1), 0)}, sechs ETFs ${fmt(val(c[N], 2), 0)}, S&P 500 ${fmt(val(c[N], 3), 0)}">
+    host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Wachstum von 100: Bot ${fmt(val(c[N], 1), 0)}, sechs ETFs ${fmt(val(c[N], 2), 0)}, S&P 500 ${fmt(val(c[N], 3), 0)}">
       ${ticks.map(t => `<line class="${t === 100 ? "base" : "grid"}" x1="${m.l}" x2="${m.l + pw}" y1="${Y(t)}" y2="${Y(t)}"/><text class="tick" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${fmt(t, 0)}</text>`).join("")}
       ${S.slice().reverse().map(s => `<path d="${path(s)}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-dasharray="${s.dash}" stroke-linejoin="round" stroke-linecap="round"/>`).join("")}
       ${S.map(s => `<circle cx="${X(N)}" cy="${Y(val(c[N], s.i))}" r="4" fill="${s.color}" stroke="${PAL.surface}" stroke-width="2"/>`).join("")}
       ${labels}
       <text class="tick" x="${m.l}" y="${H - 6}">${dateDe(c[0][0]).slice(5)}</text><text class="tick" x="${m.l + pw}" y="${H - 6}" text-anchor="end">${dateDe(c[N][0]).slice(5)}</text>
       <line class="cross" x1="0" x2="0" y1="${m.t}" y2="${m.t + ph}" visibility="hidden"/>
-      <rect class="hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent" tabindex="0" aria-label="Werte je Zeitpunkt anzeigen"/>
+      <rect class="hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="${N}" aria-valuenow="${N}" aria-label="Werte je Zeitpunkt anzeigen (Pfeiltasten)"/>
     </svg>`;
     const svg = host.querySelector("svg"), cross = svg.querySelector(".cross"), hit = svg.querySelector(".hit");
     let tip = host.querySelector(".viz-tip");
@@ -153,6 +153,7 @@
       cross.setAttribute("x1", x); cross.setAttribute("x2", x); cross.setAttribute("visibility", "visible");
       tip.innerHTML = `<div class="tip-head">${dateDe(c[idx][0])} · Bot investiert ${fmt(c[idx][4] * 100, 0)} %</div>` + S.map(s => `<div class="tip-row"><span class="lkey${s.dash ? " dash" : ""}" style="${s.dash ? `color:${s.color}` : `background:${s.color}`}"></span>${s.name}: <strong>${fmt(val(c[idx], s.i), 1)}</strong></div>`).join("");
       tip.hidden = false;
+      hit.setAttribute("aria-valuenow", String(idx)); hit.setAttribute("aria-valuetext", tip.textContent.replace(/\s+/g, " ").trim());
       const w = tip.offsetWidth;
       tip.style.left = `${x + 12 + w > host.clientWidth ? Math.max(8, x - w - 12) : x + 12}px`; tip.style.top = "8px";
     };
@@ -183,7 +184,7 @@
       <p class="muted small">${dateDe(bt.start)} bis ${dateDe(bt.end)}, mit genau den Regeln des Bots und eToro-Kursen, Dividenden und Zinsen geschätzt dazugerechnet, freies Geld verzinst wie T-Bills. Gehandelt wird immer erst am Tag nach dem Signal; ${fmt(0.15, 2)} % Kosten je umgeschichtetem Anteil sind abgezogen. ${range === "weekly" ? "Wochenkurse: längerer Zeitraum, dafür wöchentlich statt täglich geprüft." : ""}${B.trendOnly && B.trendOnly[range] ? ` Der Trend-Teil allein hätte ${sign(B.trendOnly[range].cagr)} % pro Jahr gebracht (größter Rückgang −${fmt(B.trendOnly[range].maxDD, 1)} %).` : ""}</p>
       <p style="margin:12px 0 0">In <b>${fmt(bt.bot.pos12, 0)} %</b> aller 12-Monats-Zeiträume lag der Bot im Plus; der schlechteste brachte <b class="down">${sign(bt.bot.worst12)} %</b>, der größte Rückgang war <b class="down">−${fmt(bt.bot.maxDD, 1)} %</b>${fullYears ? `, ${negYears} von ${fullYears} vollen Kalenderjahren endeten im Minus` : ""}. Zum Vergleich S&amp;P 500: größter Rückgang −${fmt(bt.spy.maxDD, 1)} %.</p>
       <div class="table-wrap" style="margin-top:12px"><table>
-        <thead><tr><th></th><th class="num">Trend-Bot</th><th class="num">${benchLabel(bt)}</th><th class="num">S&amp;P 500</th></tr></thead>
+        <thead><tr><th><span class="sr-only">Kennzahl</span></th><th class="num">Trend-Bot</th><th class="num">${benchLabel(bt)}</th><th class="num">S&amp;P 500</th></tr></thead>
         <tbody>
           ${row("Rendite pro Jahr", x => `${sign(x.cagr)} %`, x => cls(x.cagr))}
           ${row("Schwankung pro Jahr", x => `${fmt(x.vol, 1)} %`)}

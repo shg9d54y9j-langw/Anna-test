@@ -123,7 +123,7 @@ strong, b { font-weight: 700; }
 .subnav button:last-child { border-right: none; }
 .subnav button:hover { background: var(--panel-2); color: #fff; }
 .subnav button.on { background: var(--text); color: #000; }
-.subnav .label { display: flex; align-items: center; padding: 0 14px; color: var(--faint); font: 700 10px var(--font); letter-spacing: .14em; text-transform: uppercase; border-right: 1px solid var(--line); white-space: nowrap; }
+.subnav .label { display: flex; align-items: center; padding: 0 14px; color: var(--muted); font: 700 10px var(--font); letter-spacing: .14em; text-transform: uppercase; border-right: 1px solid var(--line); white-space: nowrap; }
 
 /* ---------- Ansichten ---------- */
 main { max-width: 1480px; margin: 0 auto; padding: 32px max(16px, env(safe-area-inset-left)) 56px; }
@@ -463,7 +463,7 @@ details.info .calc { margin-top: 12px; }
 .toast { background: #000; border: 1px solid #fff; border-left: 3px solid var(--down); padding: 12px 14px; animation: slidein .25s var(--ease); }
 .toast b { display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: .06em; font-size: 12px; }
 
-.disclaimer { max-width: 1480px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-left)) calc(30px + env(safe-area-inset-bottom)); font-size: 12px; color: var(--faint); border-top: 1px solid var(--line); }
+.disclaimer { max-width: 1480px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-left)) calc(30px + env(safe-area-inset-bottom)); font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
 
 /* ---------- Handy: Knopfleiste unten und Raster aller Themen ---------- */
 .bottomnav, .navsheet { display: none; }
@@ -1110,3 +1110,8 @@ details.more > summary:hover { color: var(--text); }
 
 /* „Alle zeigen“ unter gekürzten Listen */
 .more-btn { margin-top: 12px; width: 100%; justify-content: center; }
+
+/* Barrierefreiheit: nur für Screenreader; Überschrift in der Tagesempfehlung wie h3 */
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.reco-h { font-size: 13px; margin: 20px 0 8px; font-weight: 750; text-transform: uppercase; letter-spacing: .1em; color: var(--text-2); }
+.table-wrap:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }

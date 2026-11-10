@@ -590,7 +590,7 @@ const J_COLS = [
   { key: "qty", label: "Stück", num: true, get: t => t.qty },
   { key: "pl", label: "Gewinn/Verlust", num: true, get: t => pl(t) },
   { key: "note", label: "Notiz", get: t => t.note || "" },
-  { key: "del", label: "", sortable: false },
+  { key: "del", label: `<span class="sr-only">Löschen</span>`, sortable: false },
 ];
 const account = () => { const x = parseFloat($("cAccount").value); return Number.isFinite(x) && x > 0 ? x : null; };
 
@@ -733,6 +733,28 @@ renderJ();
 document.addEventListener("DOMContentLoaded", route);
 
 // ---------- App-Modus: Service Worker (schneller Start, Offline-Ansicht) und Hinweis ohne Netz ----------
+// Tabellen, die seitlich scrollen, per Tastatur erreichbar machen (Tab, dann Pfeiltasten) und für Screenreader benennen.
+// Geprüft wird nur, wenn neue Tabellen erscheinen oder sich die Breite ändert.
+(() => {
+  let queued = false;
+  const fix = () => {
+    queued = false;
+    document.querySelectorAll(".table-wrap:not([tabindex])").forEach(w => {
+      if (w.offsetParent === null || w.scrollWidth <= w.clientWidth + 2) return;
+      w.tabIndex = 0;
+      w.setAttribute("role", "region");
+      const box = w.closest(".card, details, section"), t = box && box.querySelector(".card-title, h2, h3, summary");
+      w.setAttribute("aria-label", `Tabelle${t ? `: ${t.textContent.trim().slice(0, 60)}` : ""} – seitlich scrollbar`);
+    });
+  };
+  const later = () => { if (!queued) { queued = true; requestAnimationFrame(fix); } };
+  new MutationObserver(muts => {
+    for (const m of muts) for (const n of m.addedNodes) if (n.nodeType === 1 && (n.classList.contains("table-wrap") || n.querySelector(".table-wrap"))) return later();
+  }).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener("resize", later);
+  window.addEventListener("dtd:view", later);
+})();
+
 if ("serviceWorker" in navigator && (location.protocol === "https:" || /[?&]sw=1/.test(location.search))) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => { /* ohne Service Worker geht alles weiter */ }));
 }
