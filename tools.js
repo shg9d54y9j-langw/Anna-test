@@ -48,6 +48,10 @@
   // ---------- Screener ----------
   const PRESETS = {
     best: { label: "Beste Gesamtnote", note: "Gesamtnote ab 85 (besser als 85 % aller Werte) aus Trend, Qualität, Bewertung, Wachstum, Experten und Sicherheit – nur Aktien mit Bilanzdaten (USA). Erklärt im Aktien-Check und im Lexikon.", f: { minNote: 85, type: "Aktie" }, sort: "note" },
+    quality: { label: "Qualität zum fairen Preis", note: "Teilnote Qualität ab 70 (profitabel, solide finanziert) und Bewertung ab 50 (nicht teurer als der Durchschnitt der Branche) – der Ansatz „Quality at a reasonable price“ (Asness, Frazzini & Pedersen 2019).", f: { parts: { quality: 70, value: 50 }, type: "Aktie" }, sort: "note" },
+    growthTrend: { label: "Wachstum mit Rückenwind", note: "Teilnote Wachstum ab 75 und Trend ab 60: stark wachsende Firmen, deren Kurs das schon bestätigt.", f: { parts: { growth: 75, trend: 60 }, type: "Aktie" }, sort: "note" },
+    calm: { label: "Ruhige Dividendenwerte", note: "Dividendenrendite ab 2,5 % und Teilnote Sicherheit ab 65 (wenig Schwankung, kleine Rückgänge) – für den ruhigeren Teil des Depots.", f: { minDiv: 2.5, parts: { risk: 65 }, type: "Aktie" }, sort: "note" },
+    experts: { label: "Experten und Insider", note: "Teilnote Experten ab 85: Analysten überwiegend positiv, zuletzt optimistischer oder Insider kaufen – nur mit Aufwärtstrend.", f: { parts: { experts: 85 }, trend: "up", type: "Aktie" }, sort: "note" },
     momentum: { label: "Momentum-Führer", note: "Momentum unter den besten 15 %, Aufwärtstrend, höchstens 7 % unter dem Jahreshoch – die Regel des Swing-Planers.", f: { trend: "up", minMom: 85, maxBelowHigh: 7 } },
     pullback: { label: "Rücksetzer im Aufwärtstrend", note: "Aufwärtstrend, aber zurück am 50-Tage-Schnitt (−3 % bis +2 %): klassische Kaufzone.", f: { trend: "up", d50min: -3, d50max: 2 } },
     highs: { label: "Neue Jahreshochs", note: "Höchstens 1 % unter dem 52-Wochen-Hoch.", f: { maxBelowHigh: 1 } },
@@ -59,7 +63,7 @@
     theory: { label: "Theorie-Firmen", note: "Alle Firmen der Theorie-Seite.", f: { theory: "all" } },
     all: { label: "Alle", note: "Keine Vorauswahl – filtern Sie selbst.", f: {} },
   };
-  const filter = () => Object.assign({ type: "Aktie", region: "all", theory: "", ind: "", trend: "", minMom: null, maxBelowHigh: null, d50min: null, d50max: null, minBuy: null, minBuyers: null, maxPe: null, minRevG: null, minDiv: null, minSurprise: null, minNote: null, q: "" }, (PRESETS[ui.preset] || PRESETS.all).f, ui.custom || {});
+  const filter = () => Object.assign({ type: "Aktie", region: "all", theory: "", ind: "", trend: "", minMom: null, maxBelowHigh: null, d50min: null, d50max: null, minBuy: null, minBuyers: null, maxPe: null, minRevG: null, minDiv: null, minSurprise: null, minNote: null, parts: null, q: "" }, (PRESETS[ui.preset] || PRESETS.all).f, ui.custom || {});
   // Quartalszahlen-Überraschung der letzten 45 Tage (in %), sonst null
   const surprise = x => (x.lastEarn && Number.isFinite(x.lastEarn.surprisePct) && (Date.now() - Date.parse(`${x.lastEarn.date}T12:00:00Z`)) / 864e5 <= 45 ? x.lastEarn.surprisePct : null);
   function screen(f) {
@@ -86,6 +90,7 @@
       if (f.minDiv !== null && !(fx.div >= f.minDiv)) return false;
       if (f.minSurprise !== null && !(surprise(x) >= f.minSurprise)) return false;
       if (f.minNote !== null) { const s = window.DTD.score && window.DTD.score(x.sym); if (!(s && s.note >= f.minNote && s.coverage >= 0.6)) return false; }
+      if (f.parts) { const s = window.DTD.score && window.DTD.score(x.sym); if (!s || Object.entries(f.parts).some(([k, v]) => !(s.parts[k] >= v))) return false; }
       if (q && !x.sym.includes(q) && !String(x.name || "").toUpperCase().includes(q)) return false;
       return true;
     });
