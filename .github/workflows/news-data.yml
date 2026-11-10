@@ -1,0 +1,91 @@
+name: Nachrichten
+
+# Markt- und Firmennachrichten der US-Aktien mit Einordnung nach Nachrichtentyp – für die klickbaren News der Website
+# (Markt, Aktien-Check, Portfolio). Quelle Finnhub (kostenloser Tarif: 60 Abfragen pro Minute).
+on:
+  schedule:
+    - cron: "5 6,11,16,20 * * 1-5"   # Mo–Fr 06:05, 11:05, 16:05, 20:05 UTC – nicht zeitgleich mit den Aktien-Daten (gleiche Finnhub-Grenze)
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: news-data
+  cancel-in-progress: false
+
+jobs:
+  # Kennt den Finnhub-Schlüssel, darf im Repository nichts ändern.
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      ready: ${{ steps.calc.outputs.ready }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Aktien-Daten holen
+        run: |
+          git fetch -q --depth=1 origin stock-data
+          git show FETCH_HEAD:stocks.json > "$RUNNER_TEMP/stocks.json"
+
+      - name: Nachrichten von Finnhub holen und einordnen
+        id: calc
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          STOCKS_IN: ${{ runner.temp }}/stocks.json
+          NEWS_OUT: data/news
+        run: |
+          node scripts/news-data.mjs
+          if [ -f data/news/news.json ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Nachrichten an den Veröffentlichungs-Schritt übergeben
+        if: steps.calc.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: news
+          path: data/news
+          retention-days: 1
+          if-no-files-found: error
+
+  # Veröffentlicht die Nachrichten auf dem Zweig news-data – ohne Schlüssel.
+  save:
+    needs: fetch
+    if: needs.fetch.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: news
+          path: incoming
+
+      - name: Nachrichten veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir out && cd out
+          cp -r ../incoming/. .
+          # ${…} gehört zum JavaScript, nicht zur Shell:
+          # shellcheck disable=SC2016
+          node -e '
+            const d = JSON.parse(require("fs").readFileSync("news.json", "utf8"));
+            if (!Array.isArray(d.market) || d.count < 10) { console.log("::error::Zu wenige Nachrichten – nichts veröffentlicht"); process.exit(1); }
+            console.log(`${d.market.length} Marktnachrichten, ${d.count} Aktien mit Firmennachrichten`);
+          '
+          git init -q -b news-data
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Nachrichten $(date -u +%FT%TZ)"
+          for i in 1 2 3 4 5; do
+            git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:news-data && break
+            [ "$i" = 5 ] && exit 1
+            sleep $((i * 4))
+          done

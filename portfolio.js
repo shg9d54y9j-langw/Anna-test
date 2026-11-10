@@ -158,7 +158,7 @@
       </div>
       ${open.chart.has(h.id) ? chartBlock(h, x, v, tv) : ""}
       ${x && open.exit.has(h.id) ? exitPlan(h, x, v) : ""}
-      ${open.news.has(h.id) ? `<div class="pf-news" id="pfNews-${esc(h.id)}" data-tv="${esc(tv)}"></div>
+      ${open.news.has(h.id) ? `<div class="pf-news-list" data-news-fill="${esc(h.sym)}"></div><div class="pf-news" id="pfNews-${esc(h.id)}" data-tv="${esc(tv)}"></div>
         <p class="small muted">Mehr: <a href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/news/" target="_blank" rel="noopener noreferrer">alle Nachrichten bei TradingView ↗</a> · <a href="https://news.google.com/search?q=${encodeURIComponent(`${name || h.sym} Aktie`)}&hl=de&gl=AT&ceid=AT:de" target="_blank" rel="noopener noreferrer">deutsche Nachrichten bei Google News ↗</a></p>` : ""}
     </article>`;
   }
@@ -283,6 +283,7 @@
       const el = document.getElementById(`pfNews-${id}`);
       if (el && typeof tvWidget === "function") tvWidget(el.id, "timeline", { ...COMMON, feedMode: "symbol", symbol: el.dataset.tv, displayMode: "regular", width: "100%", height: 420 });
     }
+    document.querySelectorAll("#portfolioBody [data-news-fill]").forEach(el => { if (window.DTD.fillNews) window.DTD.fillNews(el, el.dataset.newsFill); });
     restoreForm(kept);
     // Vorschläge beim Tippen: Name oder Kürzel → Kürzel eintragen, weiter zum Kaufpreis
     if ($("pfSym") && window.DTD.attachSuggest) window.DTD.attachSuggest($("pfSym"), { source: text => (stocks && text ? window.DTD.matchStocks(stocks.items, text, 8) : []), onPick: () => { if ($("pfBuy")) $("pfBuy").focus(); } });

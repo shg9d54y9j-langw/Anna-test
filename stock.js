@@ -256,7 +256,7 @@
             ${x && Number.isFinite(x.crowd) ? `<h3>eToro-Anleger</h3><p><b>${fmt(x.crowd, 0)} %</b> der eToro-Positionen in diesem Wert sind Käufe.</p>
               <p class="small muted">Vorsicht: Was viele Kleinanleger gleichzeitig kaufen, lief danach im Schnitt eher schlechter (${DOI("10.1111/jofi.13183", "Barber u. a., JF 2022")}).</p>` : ""}
           </div>
-          <div><h3 style="margin-top:0">Nachrichten zu ${esc(x ? x.sym : q.toUpperCase())}</h3><div class="widget" id="skNews" style="height:420px"></div></div>
+          <div><h3 style="margin-top:0">Nachrichten zu ${esc(x ? x.sym : q.toUpperCase())}</h3><div id="skNewsList" class="sk-news-list"></div><div class="widget" id="skNews" style="height:420px"></div></div>
         </div>
       </section>
 
@@ -343,6 +343,7 @@
       drawInfo();
     }));
     tvWidget("skNews", "timeline", { ...COMMON, feedMode: "symbol", symbol: tv, displayMode: "regular", width: "100%", height: "100%" });
+    if (window.DTD.fillNews) window.DTD.fillNews($("skNewsList"), x ? x.sym : q.trim().toUpperCase());
     tvWidget("skProfile", "symbol-profile", { ...COMMON, symbol: tv, width: "100%", height: "100%" });
     host.querySelectorAll("[data-style]").forEach(b => b.addEventListener("click", () => { style = b.dataset.style; store.set("dtd-stock-style", style); render(x, q); }));
     const r = $("skRisk"); if (r) r.addEventListener("change", () => render(x, q));

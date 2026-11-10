@@ -94,6 +94,19 @@ jobs:
           FUND_PREV=/tmp/fund.json FUND_OUT=/tmp/fund2.json node scripts/fund-data.mjs
           python3 tests/verify_fund.py /tmp/stocks.json /tmp/fund2.json http://localhost:8794 --forbidden /tmp/fund.json
 
+      - name: Nachrichten gegen den Test-Server, Einordnung nach Typ, unabhängige Gegenrechnung
+        env:
+          FINNHUB_BASE: http://localhost:8795/finnhub
+          FINNHUB_API_KEY: test-finnhub-0000
+          FINNHUB_THROTTLE_MS: "0"
+          STOCKS_IN: /tmp/stocks.json      # aus dem Aktien-Daten-Schritt
+          NEWS_OUT: /tmp/news
+        run: |
+          node tests/news-classify.mjs
+          node tests/mock-etoro.mjs 8795 & sleep 1
+          node scripts/news-data.mjs
+          python3 tests/verify_news.py /tmp/stocks.json /tmp/news http://localhost:8795
+
       - name: Copy-Bot gegen den Test-Server (Start, Wechsel, Stop Loss, eigene Kopien, Echtgeld-Obergrenze)
         run: node tests/bot-scenarios.mjs
 

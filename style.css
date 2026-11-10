@@ -1001,3 +1001,18 @@ table.cmp tr.cmp-sub th[scope="row"] { color: var(--muted); padding-left: 16px; 
   .appbar .brand { gap: 9px; }
   .appbar .livechip { padding: 4px 8px; gap: 6px; }
 }
+
+/* ---------- Klickbare Nachrichten ---------- */
+.nw-list { display: grid; border: 1px solid var(--line); }
+.nw-item { display: grid; gap: 4px; text-align: left; background: #000; border: none; border-top: 1px solid var(--line); padding: 10px 12px; color: var(--text); cursor: pointer; font: inherit; }
+.nw-item:first-child { border-top: none; }
+.nw-item:hover, .nw-item:focus-visible { background: var(--panel-3); }
+.nw-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.nw-meta .light { font-size: 9.5px; padding: 1px 7px; }
+.nw-t { font-size: 14px; line-height: 1.4; }
+.nw-d-meta { margin: 0 0 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.nw-d-t { font: 700 17px/1.35 var(--font); text-transform: none; letter-spacing: 0; color: var(--text); margin: 4px 0 10px; }
+.nw-stock { border: 1px solid var(--line-2); background: #000; padding: 10px 12px; margin: 8px 0; }
+.nw-stock p { margin: 6px 0 0; }
+.nw-stock-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sk-news-list, .pf-news-list { margin-bottom: 12px; }

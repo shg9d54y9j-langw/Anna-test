@@ -186,6 +186,7 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-open]");
   if (!b || !b.dataset.open) return;
   e.preventDefault();
+  closeDrawer();   // aus einer Erklärung heraus: Fenster schließen, dann zur Aktie
   if (window.DTD.openStock) window.DTD.openStock(b.dataset.open);
 });
 
@@ -312,7 +313,7 @@ function whenNear(el, fn) {
 }
 const VIEW_INIT = {
   portfolio: () => { window.DTD.startPortfolio(); window.DTD.renderWatch(); },
-  markt: () => { loadHeatmap(heatSel.value); loadHotlist(); window.DTD.loadMarketLive(); whenNear($("news"), () => { loadNews(); loadCalendar(); }); },
+  markt: () => { loadHeatmap(heatSel.value); loadHotlist(); window.DTD.loadMarketLive(); whenNear($("news"), () => { loadNews(); loadCalendar(); if (window.DTD.startNews) window.DTD.startNews(); }); },
   aktie: () => window.DTD.startStock(),
   tools: () => window.DTD.startTools(),
   ideen: () => window.DTD.renderIdeas(),

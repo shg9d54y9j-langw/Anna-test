@@ -44,6 +44,23 @@ let nextPosition = 70000, nextOrder = 50000;
 // echten Lauf IBTM.L, CMOD.L, IUSP.L …; Aufträge nach Betrag lehnt eToro danach mit 2021 ab); cfdOnly – für dieses Konto nur als CFD
 // (wie IB01.L); eligDown – die Abfrage der Regeln schlägt fehl; conv – Kurs in einer anderen Währung (Dollar je Kurseinheit)
 const finnhubFlags = { insiderForbidden: false, profileCalls: 0 };
+// Nachrichten-Vorlagen mit dem Typ, den die Einordnung erkennen muss (Gegenrechnung in tests/verify_news.py mit eigener Liste)
+const NEWS_T = [
+  ["{n} beats third-quarter estimates as revenue jumps 18%", "earnings_beat"], ["{n} misses profit estimates, shares slide", "earnings_miss"],
+  ["{n} raises full-year guidance after strong demand", "guidance_up"], ["{n} cuts outlook on weaker orders", "guidance_down"],
+  ["Analyst upgrades {n} to Buy, sees 25% upside", "upgrade"], ["{n} downgraded to Underperform at major bank", "downgrade"],
+  ["{n} to acquire rival in $2 billion deal", "merger"], ["{n} announces $5 billion share buyback", "buyback"],
+  ["{n} faces SEC probe over accounting", "legal"], ["FDA approves {n} drug for rare disease", "approval"],
+  ["{n} announces layoffs of 1,200 jobs in restructuring", "layoffs"], ["{n} CEO steps down effective immediately", "management"],
+  ["{n} launches new product line", "product"], ["{n} prices $500 million stock offering", "offering"],
+  ["{n} raises quarterly dividend by 8%", "dividend"], ["{n} signs multi-year contract with government agency", "contract"],
+  ["{n} shares are trading higher today", "general"],
+];
+const MARKET_T = [
+  ["Fed signals pause as officials weigh rate cuts", "macro_rates"], ["US inflation cools more than expected in October CPI report", "macro_inflation"],
+  ["Payrolls beat forecasts as unemployment holds at 4.1%", "macro_jobs"], ["New tariffs on chip imports rattle markets", "tariffs"],
+  ["Oil jumps as OPEC+ extends output cuts", "oil"], ["Wall Street ends mixed in quiet trading", "general"], ["Acme Corp to buy Beta Inc for $3 billion", "merger"],
+];
 const trendFlags = { failNextOpen: false, pendingNextOpen: false, slowConfirm: false, foreignOrderIds: false, cfdBlocked: true, rejectIds: [], unitsOnly: [], cfdOnly: [], eligDown: false, conv: {} };
 const conv = id => Number(trendFlags.conv[id]) || 1;
 const usdPrice = id => trendPrice(id) * conv(id);
@@ -336,6 +353,27 @@ http.createServer(async (req, res) => {
       const k = fu.instrumentId;
       return send(200, { name: fu.displayname, finnhubIndustry: ["Technology", "Banking", "Pharmaceuticals", "Retail"][k % 4], weburl: k % 9 === 0 ? "http://unsicher.example" : `https://example.com/${fsym.toLowerCase()}`,
         ...(k % 11 === 0 ? { country: "TW" } : k % 13 === 0 ? {} : { country: "US" }) });   // Sitz außerhalb der USA bzw. ohne Angabe
+    }
+    // Nachrichten: je Aktie feste Vorlagen (mit Doppeltem, ungültigem Link, HTML und einer zu alten Meldung), dazu Marktnachrichten
+    if (url.pathname === "/finnhub/company-news") {
+      if (!fu || fu.instrumentId % 7 === 0) return send(200, []);
+      const k = fu.instrumentId, t0 = Math.floor(Date.now() / 1000), name = fu.displayname;
+      const rows = [];
+      for (let j = 0; j < 10; j++) {
+        const tpl = NEWS_T[(k + j * 5) % NEWS_T.length][0];
+        rows.push({ category: "company", datetime: Math.round(t0 - (j === 9 ? 9 : j * 0.8 + (k % 3) * 0.1) * 86400), headline: tpl.replace("{n}", name), id: k * 100 + j, image: "",
+          related: j === 4 ? `OTHER,${fsym}` : fsym, source: ["Reuters", "Bloomberg", "MarketWatch"][j % 3], summary: j === 0 ? "<p>Strong <b>quarter</b> &amp; more</p>" : `Summary ${j} for ${name}.`,
+          url: j === 3 ? "javascript:alert(1)" : `https://news.example.com/${fsym.toLowerCase()}/${j}` });
+      }
+      rows[2].headline = rows[1].headline;   // Doppelte Meldung
+      return send(200, rows.reverse());
+    }
+    if (url.pathname === "/finnhub/news") {
+      const t0 = Math.floor(Date.now() / 1000), cat = url.searchParams.get("category");
+      if (cat === "merger") return send(200, [{ category: "merger", datetime: t0 - 7200, headline: MARKET_T[6][0], id: 9006, related: "", source: "Reuters", summary: "Deal.", url: "https://news.example.com/m/6" },
+        { category: "merger", datetime: t0 - 3600, headline: MARKET_T[0][0], id: 9100, related: "", source: "Reuters", summary: "Dup.", url: "https://news.example.com/m/dup" }]);
+      return send(200, MARKET_T.slice(0, 6).map(([h], i) => ({ category: "general", datetime: t0 - i * 3 * 3600, headline: h, id: 9000 + i, related: "", source: "CNBC", summary: `Market ${i}.`, url: i === 5 ? "ftp://bad" : `https://news.example.com/g/${i}` }))
+        .concat([{ category: "general", datetime: t0 - 5 * 86400, headline: "Old market story", id: 9050, related: "", source: "CNBC", summary: "", url: "https://news.example.com/g/old" }]));
     }
     return send(404, { error: "unknown finnhub endpoint" });
   }
