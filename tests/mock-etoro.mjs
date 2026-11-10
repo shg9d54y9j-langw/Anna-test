@@ -379,6 +379,7 @@ http.createServer(async (req, res) => {
           url: j === 3 ? "javascript:alert(1)" : `https://news.example.com/${fsym.toLowerCase()}/${j}` });
       }
       rows[2].headline = rows[1].headline;   // Doppelte Meldung
+      rows[5].headline = "Markets rally as tech leads broad gains";   // Sammelartikel ohne die Firma: kommt nach den Meldungen über die Firma
       return send(200, rows.reverse());
     }
     if (url.pathname === "/finnhub/news") {

@@ -35,6 +35,7 @@
     tariffs: ["Zölle und Handelsstreit", "Neue Zölle, Exportverbote oder Sanktionen.", "Belastet Firmen mit Lieferketten oder Umsatz im betroffenen Land (Halbleiter, Autos, Industrie); kann heimische Hersteller stützen.", "Prüfen, wie viel Umsatz Ihre Firmen im betroffenen Land machen."],
     oil: ["Ölpreis", "Der Ölpreis bewegt sich, oft wegen OPEC-Entscheidungen oder Konflikten.", "Steigender Ölpreis hilft Energiefirmen und belastet Fluglinien, Chemie und Konsum; er schürt Inflationssorgen.", "Energie-Aktien schwanken mit dem Ölpreis – Positionsgröße anpassen."],
     crypto: ["Krypto", "Bitcoin und andere Kryptowerte bewegen sich.", "Krypto-nahe Aktien (Börsen, Miner, Firmen mit Bitcoin in der Bilanz) schwanken oft doppelt so stark wie Bitcoin selbst.", "Nur mit Geld, dessen Verlust Sie verkraften."],
+    bankruptcy: ["Insolvenz", "Die Firma hat Insolvenz oder Gläubigerschutz (in den USA „Chapter 11“) beantragt.", "Für Aktionäre oft ein Totalverlust oder fast: Bei einer Sanierung werden meist zuerst Gläubiger bedient, die alten Aktien verlieren den größten Teil ihres Werts.", "Nicht auf eine Wende spekulieren – Insolvenz-Aktien sind reine Lotterie."],
     general: ["Meldung", "Eine allgemeine Meldung ohne klar erkannten Typ.", "Ohne Einordnung lässt sich wenig zur typischen Kursreaktion sagen.", "Im Artikel nachlesen, worum es geht."],
   };
   const TONE = { pos: ["positiv", "green"], neg: ["negativ", "red"], neu: ["neutral", ""] };
@@ -54,7 +55,7 @@
   function item(n, sym = "") {
     const id = `${sym || "m"}:${n.id}`;
     byId.set(id, { n, sym });
-    return `<button type="button" class="nw-item" data-news="${esc(id)}"><span class="nw-meta">${tag(n)} <span class="muted small">${esc(n.s || "")} · ${ago(n.d)}${n.rel && n.rel.length ? ` · ${n.rel.slice(0, 3).map(esc).join(", ")}` : ""}</span></span><span class="nw-t">${esc(n.t)}</span></button>`;
+    return `<button type="button" class="nw-item${n.m === 0 ? " nw-mention" : ""}" data-news="${esc(id)}"><span class="nw-meta">${tag(n)}${n.m === 0 ? ` <span class="muted small" title="Die Schlagzeile nennt die Firma nicht – Sammel- oder Marktartikel">Erwähnung</span>` : ""} <span class="muted small">${esc(n.s || "")} · ${ago(n.d)}${n.rel && n.rel.length ? ` · ${n.rel.slice(0, 3).map(esc).join(", ")}` : ""}</span></span><span class="nw-t">${esc(n.t)}</span></button>`;
   }
   const list = (items, sym = "", empty = "Keine Meldungen.") => (items.length ? `<div class="nw-list">${items.map(n => item(n, sym || (n.rel && n.rel[0]) || "")).join("")}</div>` : `<p class="muted small">${empty}</p>`);
   const total = r => (r ? r.sb + r.b + r.h + r.s + r.ss : 0);
@@ -143,7 +144,7 @@
     for (const el of els) {
       el.dataset.whyDone = "1";
       const sym = el.dataset.why;
-      const l = (await loadCo(sym)).filter(n => Date.now() / 1000 - n.d <= 3 * 86400);
+      const l = (await loadCo(sym)).filter(n => Date.now() / 1000 - n.d <= 3 * 86400 && n.m !== 0);
       const n = l.find(m => m.type !== "general") || l[0];
       if (!n || !el.isConnected) continue;
       const id = `${sym}:${n.id}`;

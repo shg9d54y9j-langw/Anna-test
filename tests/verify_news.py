@@ -38,7 +38,29 @@ def get(path):
         return json.loads(r.read().decode("utf-8"))
 
 
-def expected(rows, lo, hi, n):
+def mentions(h, sym, name):
+    if not sym:
+        return True
+    base = sym.split(".")[0]
+    if len(base) >= 2 and re.search(r"(^|[^A-Za-z0-9])" + re.escape(base) + r"([^A-Za-z0-9]|$)", h):
+        return True
+    words = re.sub(r"[^A-Za-z0-9 &-]", " ", name or "").split()
+    if not words:
+        return False
+    generic = {"bank", "the", "first", "general", "american", "united", "national", "global", "international", "advanced", "applied", "digital", "royal", "new",
+               "great", "north", "south", "west", "east", "southern", "northern", "western", "eastern", "public", "energy", "real", "pacific", "atlantic", "china",
+               "us", "u", "british", "canadian", "deutsche", "banco", "grupo", "sea", "super"}
+    if words[0].lower() in generic and len(words) > 1:
+        phrase = " ".join(words[:3 if words[1].lower() == "of" or words[1] == "&" else 2])
+    else:
+        phrase = words[0]
+    if len(re.sub(r"[^A-Za-z0-9]", "", phrase)) < 3:
+        return False
+    pat = r"\b" + r"\s+".join(re.escape(re.sub(r"[^A-Za-z0-9&]", "", w)) for w in phrase.split())
+    return re.search(pat, h, re.I) is not None
+
+
+def expected(rows, lo, hi, n, sym=None, name=""):
     ok = [r for r in rows if lo <= r["datetime"] <= hi and re.match(r"^https?://[^\s\"<>]+$", r.get("url", ""))]
     ok.sort(key=lambda r: -r["datetime"])
     seen, out = set(), []
@@ -48,9 +70,9 @@ def expected(rows, lo, hi, n):
             continue
         seen.add(k)
         out.append(r)
-        if len(out) >= n:
-            break
-    return out
+    # Meldungen über die Firma zuerst, dann Erwähnungen – je neueste zuerst
+    out = [r for r in out if mentions(r["headline"], sym, name)] + [r for r in out if not mentions(r["headline"], sym, name)]
+    return out[:n]
 
 
 now = int(time.time())
@@ -60,7 +82,7 @@ with_news = 0
 for x in us:
     sym = x["sym"]
     rows = get(f"/company-news?symbol={sym}&from={day(now - 7 * 86400)}&to={day(now)}")
-    want = expected(rows, now - 7 * 86400 - 120, now + 3600, 6)
+    want = expected(rows, now - 7 * 86400 - 120, now + 3600, 6, sym, x.get("name", ""))
     path = os.path.join(folder, "co", f"{sym}.json")
     if not want:
         if os.path.exists(path):
@@ -82,6 +104,8 @@ for x in us:
             errors.append(f"{sym}: Link oder Kurzfassung nicht bereinigt")
         if not n["rel"] or n["rel"][0] != sym:
             errors.append(f"{sym}: Bezug {n['rel']}")
+        if n.get("m") != (1 if mentions(r["headline"], sym, x.get("name", "")) else 0):
+            errors.append(f"{sym}: Kennzeichen „nennt die Firma“ falsch bei „{r['headline'][:30]}“")
 if set(news["syms"]) != {x["sym"] for x in us if os.path.exists(os.path.join(folder, "co", f"{x['sym']}.json"))}:
     errors.append("Liste der Aktien mit Nachrichten passt nicht zu den Dateien")
 # Marktnachrichten: allgemein und Übernahmen, 3 Tage, ohne Doppelte
@@ -92,7 +116,7 @@ if [n["t"] for n in news["market"]] != [r["headline"] for r in mwant]:
 for n in news["market"]:
     if n["t"] in MARKET and n["type"] != MARKET[n["t"]]:
         errors.append(f"Marktnachricht „{n['t'][:40]}“ als {n['type']} statt {MARKET[n['t']]}")
-if len(news["hot"]) > 40 or any(h["rel"][0] not in news["syms"] for h in news["hot"]):
+if len(news["hot"]) > 40 or any(h["rel"][0] not in news["syms"] or not h.get("m") or h["type"] == "general" for h in news["hot"]):
     errors.append("Liste „bewegte Aktien“ fehlerhaft")
 if errors:
     print(f"::error::Gegenrechnung Nachrichten fehlgeschlagen – {len(errors)} Abweichung(en):")

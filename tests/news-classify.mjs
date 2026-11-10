@@ -1,6 +1,6 @@
 // Einordnung der Nachrichten nach Typ: typische echte Schlagzeilen (nur für die automatischen Tests)
 // Aufruf: node tests/news-classify.mjs
-import { classify, prepare } from "../scripts/news-data.mjs";
+import { classify, prepare, mentions } from "../scripts/news-data.mjs";
 
 const CASES = [
   ["Nvidia beats estimates on data center demand, shares rise after hours", "earnings_beat"],
@@ -36,6 +36,16 @@ const CASES = [
   ["Oil prices slide as OPEC+ boosts output", "oil"],
   ["Bitcoin tops $120,000 as ETF inflows surge", "crypto"],
   ["Stocks to watch this week", "general"],
+  // aus dem ersten echten Lauf: frühere Fehlgriffe
+  ["Block To Rally Over 19%? Here Are 10 Top Analyst Forecasts For Monday", "general"],
+  ["2 AgriTech and Food Innovation Stocks to Buy for a Stable Portfolio", "general"],
+  ["Aurora Cannabis Inc. (ACB) Q2 Earnings and Revenues Top Estimates", "earnings_beat"],
+  ["Boeing to cut 5% of commercial airplane workforce as production increases", "layoffs"],
+  ["Children's Place files for bankruptcy protection, seeks buyer", "bankruptcy"],
+  ["Samsung Fire & Marine Insurance to Acquire Outstanding Stake in Canopius", "merger"],
+  ["Will AeroVironment (AVAV) Beat Estimates Again in Its Next Earnings Report?", "earnings"],
+  ["Buy, Sell, or Hold? Monday's Top Upgrades and Downgrades: Advanced Micro Devices, Airbnb", "general"],
+  ["October inflation expected to reinforce Fed rate hike outlook, Bank of America says", "macro_rates"],
 ];
 let fail = 0;
 for (const [h, want] of CASES) {
@@ -56,5 +66,13 @@ const rows = [
 ];
 const p = prepare(rows, { from: t - 86400, to: t, sym: "AAA" });
 if (p.length !== 6 || p[0].t !== "A beats estimates" || p[0].sum !== "x & y" || p.some(n => !/^https:/.test(n.u)) || p.filter(n => n.t === "A beats estimates").length !== 1 || p[0].rel[0] !== "AAA") { fail++; console.log("✗ Aufbereitung", JSON.stringify(p.map(n => n.t))); }
+// Bezug zur Firma: Kürzel als eigenes Wort oder erstes Wort des Namens; Meldungen über die Firma zuerst
+if (!mentions("Bank of America beats estimates", "BAC", "Bank of America Corporation") || mentions("Banks rally on rate hopes", "BAC", "Bank of America Corporation") || !mentions("Advanced Micro Devices unveils chip", "AMD", "Advanced Micro Devices Inc") || mentions("Advanced AI chips in demand", "MU", "Micron Technology")) { fail++; console.log("✗ Bezug bei allgemeinen Namen"); }
+if (!mentions("Nvidia beats estimates", "NVDA", "NVIDIA Corporation") || !mentions("AMD jumps on upgrade", "AMD", "Advanced Micro Devices Inc") || mentions("Tech stocks rally on Fed hopes", "NVDA", "NVIDIA Corporation") || mentions("Ladies and gentlemen", "AMD", "Advanced Micro Devices Inc")) { fail++; console.log("✗ Bezug zur Firma"); }
+const q = prepare([
+  { datetime: t - 1, headline: "Market wrap: stocks rise", summary: "", url: "https://a.example/w", source: "R" },
+  { datetime: t - 50, headline: "Nvidia downgraded to hold", summary: "", url: "https://a.example/n", source: "R" },
+], { from: t - 86400, to: t, sym: "NVDA", name: "NVIDIA Corporation" });
+if (q[0].t !== "Nvidia downgraded to hold" || q[0].m !== 1 || q[1].m !== 0) { fail++; console.log("✗ Reihenfolge nach Bezug", JSON.stringify(q.map(n => [n.t, n.m]))); }
 if (fail) { console.log(`::error::Einordnung der Nachrichten: ${fail} Fehler`); process.exit(1); }
 console.log(`Einordnung der Nachrichten: ${CASES.length} Schlagzeilen richtig erkannt, Aufbereitung stimmt.`);

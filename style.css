@@ -1075,3 +1075,4 @@ table.earn-t td { vertical-align: middle; }
 /* Hinweis ohne Netz */
 .offline-bar { position: fixed; left: 0; right: 0; top: 0; z-index: 70; background: #ffd23f; color: #000; font: 700 12.5px var(--font); padding: calc(6px + env(safe-area-inset-top)) 14px 6px; text-align: center; }
 .offline-bar[hidden] { display: none; }
+.nw-mention .nw-t { color: var(--text-2); }
