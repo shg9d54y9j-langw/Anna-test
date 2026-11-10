@@ -708,3 +708,18 @@ renderJ();
 // Erst ganz am Ende: den passenden Reiter anzeigen
 // Erst starten, wenn alle Skripte geladen sind (Cockpit, Wissen, Rückblick-Test, Psychologie-Check)
 document.addEventListener("DOMContentLoaded", route);
+
+// ---------- App-Modus: Service Worker (schneller Start, Offline-Ansicht) und Hinweis ohne Netz ----------
+if ("serviceWorker" in navigator && (location.protocol === "https:" || /[?&]sw=1/.test(location.search))) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => { /* ohne Service Worker geht alles weiter */ }));
+}
+(() => {
+  const bar = document.createElement("div");
+  bar.className = "offline-bar";
+  bar.setAttribute("role", "status");
+  bar.textContent = "Offline – Sie sehen den zuletzt geladenen Stand. Kurse und Diagramme kommen zurück, sobald wieder Netz da ist.";
+  bar.hidden = navigator.onLine !== false;
+  document.body.append(bar);
+  window.addEventListener("offline", () => { bar.hidden = false; });
+  window.addEventListener("online", () => { bar.hidden = true; });
+})();

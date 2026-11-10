@@ -67,11 +67,19 @@
         : `<p class="muted small">Keine Quartalszahlen Ihrer Aktien, der Merkliste oder der Swing-Ideen in den nächsten 7 Tagen.</p>`}
     </article>`;
   }
-  let busy = false;
+  let busy = false, tried = 0;
   function render() {
     const host = $("ovSmart");
     if (!host || $("home").hidden) return;
-    if (!S.get("stocks")) { if (!busy) { busy = true; S.all().then(() => window.DTD.scoreReady && window.DTD.scoreReady()).then(() => { busy = false; render(); }); } host.innerHTML = `<article class="card"><p class="muted small">Lade Ihre Übersicht …</p></article>`; return; }
+    if (!S.get("stocks")) {
+      // höchstens alle 30 Sekunden neu laden – ohne Netz sonst eine Endlosschleife, die die Seite einfriert
+      if (!busy && Date.now() - tried > 30000) {
+        busy = true; tried = Date.now();
+        S.all().then(() => window.DTD.scoreReady && window.DTD.scoreReady()).catch(() => null).then(() => { busy = false; if (S.get("stocks")) render(); else if ($("ovSmart")) $("ovSmart").innerHTML = `<article class="card"><p class="muted small">Die Aktien-Daten sind gerade nicht erreichbar – ohne Netz oder bei Störungen. Die Seite versucht es beim nächsten Öffnen erneut.</p></article>`; });
+      }
+      if (busy) host.innerHTML = `<article class="card"><p class="muted small">Lade Ihre Übersicht …</p></article>`;
+      return;
+    }
     host.innerHTML = (window.DTD.smartAlertsCard ? window.DTD.smartAlertsCard() : "")
       + `<div class="grid-2">${depotCard()}${watchCard()}</div><div class="grid-2">${newCard()}${dateCard()}</div>`;
     if (window.DTD.smartBadge) window.DTD.smartBadge();

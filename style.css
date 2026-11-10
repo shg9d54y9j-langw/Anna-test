@@ -1071,3 +1071,7 @@ table.earn-t td { vertical-align: middle; }
 .mix-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--text); border-radius: 4px; }
 .mix-row b { text-align: right; font-size: 12.5px; }
 .mix-warn { margin-top: 10px; }
+
+/* Hinweis ohne Netz */
+.offline-bar { position: fixed; left: 0; right: 0; top: 0; z-index: 70; background: #ffd23f; color: #000; font: 700 12.5px var(--font); padding: calc(6px + env(safe-area-inset-top)) 14px 6px; text-align: center; }
+.offline-bar[hidden] { display: none; }
