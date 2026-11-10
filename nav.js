@@ -26,7 +26,8 @@
   sheet.setAttribute("role", "dialog");
   sheet.setAttribute("aria-label", "Alle Themen");
   sheet.innerHTML = `<div class="navsheet-head"><b>Alle Themen</b><button type="button" class="icon-btn" data-close aria-label="Schließen">✕</button></div>
-    <div class="navgrid">${tabs.map(t => { const id = t.dataset.tab; return `<button type="button" data-go="${id}">${icon(id)}<span>${label(id)}<small>${DESC[id] || ""}</small></span></button>`; }).join("")}</div>`;
+    <div class="navgrid">${tabs.map(t => { const id = t.dataset.tab; return `<button type="button" data-go="${id}">${icon(id)}<span>${label(id)}<small>${DESC[id] || ""}</small></span></button>`; }).join("")}
+      <button type="button" data-layout-open><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Seite anpassen<small>Bereiche und Karten ausblenden</small></span></button></div>`;
   document.body.append(sheet);
 
   const openSheet = () => { sheet.hidden = false; document.body.style.overflow = "hidden"; sheet.querySelector(".navgrid button.on, .navgrid button").focus(); };
@@ -41,6 +42,7 @@
     const b = e.target.closest("button");
     if (!b) return;
     if (b.hasAttribute("data-close")) return closeSheet();
+    if (b.hasAttribute("data-layout-open")) return closeSheet();   // das Fenster öffnet layout.js
     if (b.dataset.go) { closeSheet(); go(b.dataset.go); }
   });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheet.hidden) closeSheet(); });

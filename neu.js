@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-10-layout", t: "Seite anpassen", d: "Bereiche und Karten der Startseite ausblenden oder umsortieren – unten auf der Startseite oder unter „Alle Themen“.", act: "layout" },
     { id: "2026-11-10-history", t: "Depot-Verlauf", d: "Im Portfolio: Ihr Depot Tag für Tag im Vergleich mit S&P 500 und MSCI World – zeitgewichtet, nur in Ihrem Browser gespeichert. Der Verlauf baut sich ab heute auf.", href: "#pfHist" },
     { id: "2026-11-10-lots", t: "Nachkäufe und Teilverkäufe", d: "Bei jeder Aktie im Portfolio: Nachkauf zum Durchschnittspreis (wie die österreichische KESt rechnet) und Teilverkauf – der Gewinn landet automatisch im Journal und im Steuer-Schätzer.", href: "#portfolio" },
     { id: "2026-11-10-risers", t: "Notenverlauf, Aufsteiger und Notenalarm", d: "Im Aktien-Check steht, wie sich die Gesamtnote entwickelt hat; im Screener gibt es die Vorlage „Aufsteiger“, und ein smarter Alarm meldet, wenn eine Ihrer Aktien unter Note 40 fällt oder über 80 steigt. Erste Vergleiche nach einer Woche.", href: "#screener" },
@@ -53,6 +54,7 @@
       return;
     }
     const a = e.target.closest("[data-wn-act]");
+    if (a && a.dataset.wnAct === "layout" && window.DTD.layout) return window.DTD.layout.open();
     if (a && a.dataset.wnAct === "search") {
       const box = document.querySelector(".qs"), input = document.getElementById("qsInput");
       if (box) box.classList.add("open");

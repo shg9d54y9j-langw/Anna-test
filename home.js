@@ -132,14 +132,23 @@
       if (busy) host.innerHTML = `<article class="card"><p class="muted small">Lade Ihre Übersicht …</p></article>`;
       return;
     }
-    host.innerHTML = (window.DTD.whatsNewCard ? window.DTD.whatsNewCard() : "") + sinceCard() + (window.DTD.smartAlertsCard ? window.DTD.smartAlertsCard() : "")
-      + `<div class="grid-2">${depotCard()}${watchCard()}</div><div class="grid-2">${newCard()}${dateCard()}</div>`;
+    // eigene Karten in der Reihenfolge aus „Seite anpassen“ (layout.js); ausgeblendete fehlen
+    const parts = {
+      neu: () => (window.DTD.whatsNewCard ? window.DTD.whatsNewCard() : ""),
+      since: sinceCard,
+      alerts: () => (window.DTD.smartAlertsCard ? window.DTD.smartAlertsCard() : ""),
+      depot: () => `<div class="grid-2">${depotCard()}${watchCard()}</div>`,
+      today: () => `<div class="grid-2">${newCard()}${dateCard()}</div>`,
+    };
+    const L = window.DTD.layout ? window.DTD.layout.get() : null;
+    const order = L ? L.top : Object.keys(parts), hidden = new Set(L ? L.homeHide : []);
+    host.innerHTML = order.filter(k => parts[k] && !hidden.has(k)).map(k => { const h = parts[k](); return h ? `<div data-home="${k}">${h}</div>` : ""; }).join("");
     if (window.DTD.smartBadge) window.DTD.smartBadge();
     if (window.DTD.fillWhy) window.DTD.fillWhy(host);
     window.dispatchEvent(new Event("dtd:sections"));
   }
   window.DTD.renderHome = render;
-  for (const ev of ["dtd:shared", "dtd:watch", "dtd:smart", "dtd:backup"]) window.addEventListener(ev, () => render());
+  for (const ev of ["dtd:shared", "dtd:watch", "dtd:smart", "dtd:backup", "dtd:layout"]) window.addEventListener(ev, () => render());
   window.addEventListener("dtd:view", e => { if (e.detail === "home") render(); });
   document.addEventListener("DOMContentLoaded", render);
   setTimeout(render, 0);

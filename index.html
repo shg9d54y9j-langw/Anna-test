@@ -70,26 +70,26 @@
         <p class="lead">Hinweise zu Ihren Aktien, Depot, Merkliste, neue Signale, Termine und die Marktlage – darunter Copy-Trading und Ihr Handelstag.</p>
       </div>
       <div id="ovSmart" class="stack"></div>
-      <div id="ovMarket"></div>
-      <div class="dash">
-        <article class="card">
+      <div class="dash" id="ovDash">
+        <div id="ovMarket" class="span-all" data-home="market"></div>
+        <article class="card" data-home="sessions">
           <h2 class="card-title">Börsen</h2>
           <div id="ovSessions" class="session-list"></div>
           <p class="hint">Feiertage sind nicht berücksichtigt.</p>
         </article>
-        <article class="card">
+        <article class="card" data-home="reco">
           <h2 class="card-title">Tagesempfehlung</h2>
           <div id="ovReco"><p class="muted">Lade …</p></div>
         </article>
-        <article class="card">
+        <article class="card" data-home="live">
           <h2 class="card-title">Live-Wächter</h2>
           <div id="ovLive"><p class="muted">Lade …</p></div>
         </article>
-        <article class="card">
+        <article class="card" data-home="journal">
           <h2 class="card-title">Mein Handelstag</h2>
           <div id="ovJournal"></div>
         </article>
-        <article class="card span-2">
+        <article class="card span-2" data-home="rules">
           <h2 class="card-title">Tagesregeln</h2>
           <ul class="checklist">
             <li>Erste 15 Minuten nach Börseneröffnung (Xetra 09:00, USA 15:30 Uhr) nur beobachten.</li>
@@ -99,7 +99,7 @@
             <li>Tageslimit: nach 3 Verlusttrades oder −3 % des Kontos ist Schluss für heute.</li>
           </ul>
         </article>
-        <article class="card span-2">
+        <article class="card span-2" data-home="quick">
           <h2 class="card-title">Schnellzugriff</h2>
           <div class="quick">
             <a class="quick-btn" href="#setup"><span>Trade planen</span><small>Stop, Ziel und Stückzahl</small></a>
@@ -111,6 +111,7 @@
           </div>
         </article>
       </div>
+      <p class="home-custom"><button type="button" class="btn ghost" data-layout-open>Seite anpassen</button> <span class="muted small">Bereiche und Karten ausblenden oder umsortieren</span></p>
     </section>
 
     <!-- PORTFOLIO · mit Journal, Tageslimit und Steuer-Schätzer -->
@@ -533,6 +534,7 @@
   <script src="sectors.js"></script>
   <script src="alerts.js"></script>
   <script src="neu.js"></script>
+  <script src="layout.js"></script>
   <script src="home.js"></script>
   <script src="news.js"></script>
   <script src="econ.js"></script>
