@@ -219,11 +219,24 @@
     const avgW = get => { let s = 0, n = 0; for (const r of withData) { const v = get(r); if (Number.isFinite(v)) { s += v * share(r); n += share(r); } } return n ? s / n : null; };
     const note = avgW(r => { const sc = window.DTD.score && window.DTD.score(r.h.sym); return sc ? sc.note : null; }), beta = avgW(r => r.x.beta);
     const row = ([k, v]) => `<div class="mix-row"><span class="mix-k">${esc(k)}</span><span class="mix-bar"><i style="width:${Math.max(2, v).toFixed(1)}%"></i></span><b class="num">${fmt(v, 0)} %</b></div>`;
+    // Stresstest: Wie viel verliert das Depot ungefähr, wenn der Markt (S&P 500) fällt? Je Aktie Beta × Marktbewegung;
+    // ohne Beta zählt 1, Beta auf 0 bis 3 begrenzt. Dazu der größte Rückgang jeder Aktie im letzten Jahr als zweiter Anhalt.
+    const betaOf = r => (Number.isFinite(r.x.beta) ? Math.max(0, Math.min(3, r.x.beta)) : 1);
+    const depBeta = withData.reduce((s, r) => s + share(r) / 100 * betaOf(r), 0);
+    const curName = byValue ? currency(withData[0].h.sym) : "";
+    const stressRow = m => { const d = depBeta * m; return `<tr><td>Markt ${m} %</td><td class="num"><b class="down">${fmt(d, 1)} %</b></td>${byValue ? `<td class="num">≈ −${fmt(Math.abs(tot * d / 100), 0)}${curName ? ` ${curName}` : ""}</td>` : ""}</tr>`; };
+    const hit = [...withData].map(r => ({ r, c: share(r) / 100 * betaOf(r) * 20 })).filter(o => o.c >= 0.05).sort((a, b) => b.c - a.c).slice(0, 3);
+    const mddW = avgW(r => r.x.mdd);
+    const stress = `<h3 class="swing-h3" style="margin-top:18px">Stresstest: Wenn der Markt fällt</h3>
+      <div class="table-wrap"><table class="scr stress"><thead><tr><th>S&amp;P 500</th><th class="num">Ihr Depot etwa</th>${byValue ? `<th class="num">in ${curName || "Währung"}</th>` : ""}</tr></thead><tbody>${[-10, -20, -30].map(stressRow).join("")}</tbody></table></div>
+      <p class="small" style="margin-top:8px">${hit.length ? `Am stärksten trifft es bei −20 %: ${hit.map(o => `${esc(o.r.h.sym)} <span class="down">−${fmt(o.c, 1)} Punkte</span> <span class="muted">(Beta ${Number.isFinite(o.r.x.beta) ? fmt(o.r.x.beta, 2) : "unbekannt, 1 angenommen"}, ${fmt(share(o.r), 0)} % Anteil)</span>`).join(" · ")}.` : ""}${Number.isFinite(mddW) ? ` Im letzten Jahr fielen Ihre Aktien zeitweise um durchschnittlich ${fmt(mddW, 0)} % (gewichtet).` : ""}</p>
+      <p class="hint">Grobe Schätzung aus dem Beta der letzten 12 Monate. In echten Krisen laufen Aktien stärker im Gleichschritt – rechnen Sie mit mehr. Währungen bleiben außen vor.</p>`;
     return `<article class="card" id="pfMix" data-section="Aufteilung">
       <div class="card-head"><h2 class="card-title">Depot-Analyse</h2><span class="muted small">${byValue ? "nach aktuellem Wert" : cur.size > 1 ? "nach Anzahl – Währungen gemischt" : "nach Anzahl – Stückzahlen fehlen"}</span></div>
       <div class="stats">${kpi("Depot-Note", Number.isFinite(note) ? `<span class="${window.DTD.scoreTone(note)}">${fmt(note, 0)}</span>` : "–")}${kpi("Ø Beta", Number.isFinite(beta) ? fmt(beta, 2) : "–")}${kpi("Branchen", dims[0][1].length)}${kpi("Größte Position", `${fmt(share(big), 0)} %`)}</div>
       ${warn.length ? `<ul class="checklist mix-warn">${warn.map(t => `<li>${t}</li>`).join("")}</ul>` : `<p class="small up" style="margin-top:10px">Gut gestreut: keine Aktie über 25 %, keine Branche über 40 %.</p>`}
       <div class="mix-grid">${dims.map(([t, l]) => `<div><h3 class="swing-h3">${t}</h3>${l.slice(0, 6).map(row).join("")}${l.length > 6 ? `<p class="muted small">+ ${l.length - 6} weitere</p>` : ""}</div>`).join("")}</div>
+      ${stress}
       <p class="hint">Depot-Note = Gesamtnote der Aktien, gewichtet. Ø Beta: 1 = schwankt wie der S&P 500, 1,5 = anderthalbmal so stark. Faustregeln für Privatanleger: keine Einzelaktie über 20–25 %, mindestens 5 Branchen.</p>
     </article>`;
   }
