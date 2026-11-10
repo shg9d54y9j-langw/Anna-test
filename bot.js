@@ -275,6 +275,7 @@
     return `<article class="card" data-section="Echtgeld">
       <h2 class="card-title">Echtes Geld in Österreich: Welcher Broker, welche Steuern, was taugt für den Bot?</h2>
       <p><b>Kurz gesagt:</b> Der Steuersatz ist überall gleich – <b>27,5 % KESt</b> auf Kursgewinne, Dividenden und Fondserträge, egal bei welchem Broker. „Steuerlich besser“ heißt deshalb vor allem: ein <b>steuereinfacher</b> Broker, der die KESt selbst abführt, Verluste im Depot verrechnet und die ETF-Erträge meldet – und ein Bot, der teure Steuerfallen meidet. Bei 2.000 € kosten Gebühren übrigens mehr als die Steuer.</p>
+      <details class="more"><summary>Alle ${BROKERS_AT.length} Broker im Vergleich – Steuer, Bot, Kosten</summary>
       <div class="broker-grid">${BROKERS_AT.map(b => `
         <div class="broker">
           <h3>${esc(b.name)}</h3>
@@ -283,15 +284,15 @@
           <p class="small"><b>Bot:</b> ${esc(b.bot[1])}</p>
           <p class="small"><b>Kosten:</b> ${esc(b.cost)}</p>
           <p class="small muted">${esc(b.note)} · ${b.src.map(([u, t]) => SRC(u, esc(t))).join(" · ")}</p>
-        </div>`).join("")}</div>
-      <h3 style="margin:18px 0 6px">Die Steuer-Regeln, die für einen Bot zählen</h3>
+        </div>`).join("")}</div></details>
+      <details class="more"><summary>Die Steuer-Regeln, die für einen Bot zählen</summary>
       <ul class="checklist">
         <li><b>Bankzinsen 25 %, alles andere 27,5 %:</b> Zinsen auf Guthaben beim Broker werden wie Sparbuchzinsen mit 25 % besteuert, ein Geldmarkt-ETF mit 27,5 % (${SRC("https://www.bmf.gv.at/themen/steuern/sparen-veranlagen/information-zu-einkuenften-aus-kapitalvermoegen.html", "BMF")}). Für das freie Geld ist verzinstes Guthaben also besser als ein Geldmarkt-ETF – und spart Ordergebühren.</li>
         <li><b>Nicht-Meldefonds meiden:</b> Fonds ohne Steuermeldung an die Kontrollbank (OeKB) werden jedes Jahr pauschal besteuert – 27,5 % auf 90 % des Jahresgewinns, mindestens auf 10 % des Werts, auch ohne Gewinn (${SRC("https://www.broker-test.at/news/nichtmeldefonds-pauschale-besteuerung/", "broker-test.at")}). Betroffen sind viele US-ETFs (etwa VOO, QQQ) – und laut OeKB auch das iShares-Gold-ETC IGLN, das der Bot im Demokonto nutzt (${SRC("https://www.broker-test.at/news/gold-und-silber-etc-als-aif-und-somit-nichtmeldefonds-isin-ie00b4nd3602-und-ie00b4ncwg09/", "broker-test.at")}).</li>
         <li><b>Verluste nur im selben Jahr:</b> Verluste lassen sich nur mit Gewinnen desselben Kalenderjahres verrechnen, ein Vortrag ist nicht möglich; automatisch nur innerhalb eines Depots, über mehrere Broker nur per Steuererklärung (${SRC("https://www.broker-test.at/steuern/verlustausgleich/", "broker-test.at")}).</li>
         <li><b>Ohne steuereinfachen Broker:</b> Alles kommt in die Beilage E1kv, bei ETFs auch die „ausschüttungsgleichen Erträge“ aus der OeKB-Datenbank – bei einem Bot mit vielen Käufen und Verkäufen viel Arbeit (${SRC("https://www.broker-test.at/steuern/ausschuettungsgleiche-ertraege/", "broker-test.at")}).</li>
         <li><b>Vorsicht CFDs:</b> Nicht verbriefte Derivate wie CFDs bei ausländischen Brokern fallen laut Fachportalen nicht unter die 27,5 %, sondern unter den normalen Einkommensteuer-Tarif – das betrifft auch Copy-Trading mit Tradern, die CFDs nutzen (${SRC("https://www.broker-test.at/steuern/verlustausgleich/", "broker-test.at")}). Im Zweifel einen Steuerberater fragen.</li>
-      </ul>
+      </ul></details>
       <h3 style="margin:18px 0 6px">Unsere Empfehlung für Sie (Österreich, bis 2.000 €)</h3>
       <ul class="checklist">
         <li><b>Erst weiter üben:</b> 6–12 Monate im eToro-Demokonto, wie geplant.</li>
@@ -310,13 +311,16 @@
         <li><b>Kern + Trend – warum so:</b> Ein Forschungs-Lauf auf echten eToro-Kursen 2011–2026 (getrennt nach zwei Hälften, damit nichts auf Zufall getrimmt ist) zeigte: Reine Trendfolge schützt vor Abstürzen, verpasst aber in langen Aufwärtsjahren viel Rendite. Deshalb ist die Hälfte des Spielgelds ein fester Kern, der immer investiert bleibt – 60 % S&amp;P 500, 40 % US-Staatsanleihen –, die andere Hälfte steuert der selbstlernende Trend-Teil. Diese Aufteilung empfehlen Faber &amp; Richardson in „The Ivy Portfolio“ (2009). Im Rückblick brachte sie deutlich mehr Rendite als der Trend-Teil allein, bei weiterhin kleineren Rückgängen als Aktien allein – die Zahlen stehen unten im Rückblick-Test.</li>
         <li><b>Freies Geld arbeitet mit:</b> Was der Trend-Teil gerade nicht investiert, liegt in einem Geldmarkt-ETF (kurzlaufende US-Staatsanleihen bis 1 Jahr) und bekommt den T-Bill-Zins, statt zinslos im Konto zu liegen. Dividenden und Zinsen der Märkte rechnet der Bot in seine Trends ein – eToros Kurse enthalten sie nicht, Anleihen sahen dadurch früher schlechter aus, als sie waren.</li>
         <li><b>Sechs breite Märkte statt Einzelaktien:</b> US-Aktien (SPY), Aktien anderer Industrieländer (EFA), US-Staatsanleihen (IEF), Gold (GLD), Rohstoffe (DBC), Immobilien (VNQ). Breite Streuung ist der einzige „kostenlose“ Risikoschutz; die Märkte laufen oft gegeneinander.</li>
+      </ul>
+      <details class="more"><summary>Alle Regeln im Detail</summary>
+      <ul class="checklist">
         <li><b>Gekauft werden europäische Gegenstücke:</b> US-ETFs haben kein Basisinformationsblatt nach der ${SRC("https://eur-lex.europa.eu/eli/reg/2014/1286/oj", "PRIIPs-Verordnung")} und sind für Kunden in der EU bei eToro nur als CFD zu haben – CFDs sind in Ihrem Konto gesperrt. Der Bot sucht deshalb selbst in der eToro-Liste gleichwertige UCITS-ETFs (z. B. einen S&amp;P-500-ETF aus London statt SPY), prüft Name, aktuelle Kurse und Gleichlauf mit dem US-ETF und kauft sie als echte Anteile. Lehnt eToro eines ab, sperrt er es und nimmt sofort das nächste.</li>
         <li><b>Fünf Regeln statt einer:</b> Trend 3–6–12 Monate, schneller Trend 1–3–12, die 10-Monats-Linie, Dual Momentum (nur die drei stärksten Märkte) und Trend plus Finanzlage. Kombinieren ist robuster als jede Einzelregel (${DOI("10.1093/rfs/hhp063", "Rapach, Strauss &amp; Zhou 2010")}); die Gewichte lernt der Bot nur vorsichtig, weil geschätzte Gewichte sonst mehr schaden als nützen (${DOI("10.1093/rfs/hhm075", "DeMiguel, Garlappi &amp; Uppal 2009")}) und Regeln mit gutem Lauf eher weiterlaufen (${DOI("10.1111/jofi.13131", "Ehsani &amp; Linnainmaa 2022")}).</li>
         <li><b>Trend je Markt aus vier Prüfungen (Grundregel):</b> Rendite über 3, 6 und 12 Monate positiv, Kurs über dem 200-Tage-Schnitt. Je mehr erfüllt, desto größer der Anteil; bei 0 von 4 wird sofort verkauft. Zeitreihen-Momentum ist über mehr als 100 Jahre und viele Märkte belegt (${DOI("10.1016/j.jfineco.2011.11.003", "Moskowitz, Ooi &amp; Pedersen 2012")}, ${DOI("10.3905/jpm.2017.44.1.015", "Hurst, Ooi &amp; Pedersen 2017")}, ${DOI("10.3905/jwm.2007.674809", "Faber 2007")}).</li>
         <li><b>Passt sich dem Markt an – automatisch:</b> Ruhige Märkte bekommen mehr Gewicht, unruhige weniger; steigt die Schwankung des ganzen Depots über 10 % pro Jahr, wird alles kleiner (${DOI("10.1111/jofi.12513", "Moreira &amp; Muir 2017")}, ${DOI("10.3905/jpm.2018.45.1.014", "Harvey u. a. 2018")}). Fällt das Modell-Depot mehr als 5 % unter sein Hoch, sinkt der Einsatz schrittweise bis auf die Hälfte (${DOI("10.1111/j.1467-9965.1993.tb00044.x", "Grossman &amp; Zhou 1993")}). In Abwärtsphasen ist der Bot so großteils in Geld.</li>
         <li><b>Täglich prüfen, selten handeln:</b> Voll umgeschichtet wird einmal pro Woche und erst ab 3 Prozentpunkten Abweichung; Ausstiege bei gebrochenem Trend sofort. Wer viel handelt, verliert vor allem an Kosten (${DOI("10.1111/0022-1082.00226", "Barber &amp; Odean 2000")}).</li>
         <li><b>Warum nicht „mit möglichst vielen Informationen füttern“?</b> Jede zusätzliche Regel lässt sich auf die Vergangenheit passend machen – und versagt dann in der Zukunft. Von hunderten veröffentlichten „Erfolgsfaktoren“ halten die meisten strengen Tests nicht stand (${DOI("10.1093/rfs/hhv059", "Harvey, Liu &amp; Zhu 2016")}, ${DOI("10.1090/noti1105", "Bailey u. a. 2014")}). Deshalb nutzt der Bot nur die robustesten Größen: Trend, Schwankung, Zusammenhang der Märkte und den eigenen Verlust. Die Regeln wurden vor dem Test festgelegt und nicht auf gute Rückblick-Zahlen getrimmt.</li>
-      </ul>
+      </ul></details>
     </article>`;
   }
 

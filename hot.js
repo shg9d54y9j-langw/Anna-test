@@ -60,11 +60,26 @@
       <button type="button" class="btn ghost idea-open" data-open="${esc(x.sym)}">Im Aktien-Check öffnen →</button>
     </article>`;
   }
-  const section = (title, sub, items, render, empty, name) => `<article class="card" data-section="${name}">
+  // je Liste zuerst nur die stärksten Karten (am Handy 4, sonst 6) – die Listen waren am Handy je fast 7 Bildschirme lang
+  const openSec = new Set();
+  const limit = () => (window.matchMedia && window.matchMedia("(max-width: 700px)").matches ? 4 : 6);
+  const section = (title, sub, items, render, empty, name) => {
+    const all = openSec.has(name), shown = all ? items : items.slice(0, limit());
+    return `<article class="card" data-section="${name}">
       <div class="card-head"><h2 class="card-title">${title}</h2><span class="muted small">${items.length} Werte</span></div>
       <p class="muted small" style="margin:-6px 0 12px">${sub}</p>
-      ${items.length ? `<div class="ideas">${items.map(render).join("")}</div>` : `<p class="muted">${empty}</p>`}
+      ${items.length ? `<div class="ideas">${shown.map(render).join("")}</div>${items.length > limit() ? `<button type="button" class="btn ghost more-btn" data-hot-more="${name}" aria-expanded="${all}">${all ? "Weniger zeigen" : `Alle ${items.length} zeigen`}</button>` : ""}` : `<p class="muted">${empty}</p>`}
     </article>`;
+  };
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-hot-more]");
+    if (!b) return;
+    const n = b.dataset.hotMore, opening = !openSec.has(n);
+    if (opening) openSec.add(n); else openSec.delete(n);
+    render();
+    const sec = document.querySelector(`#hotBody [data-section="${n}"]`);
+    if (sec && !opening) sec.scrollIntoView({ block: "start" });
+  });
 
   function keyCard() {
     return `<details class="info card" open data-section="Experten freischalten">

@@ -149,6 +149,20 @@
   }
 
   // ---------- Quartalszahlen-Kalender ----------
+  // Kalender zuerst kurz: die ersten 30 Termine (je Tag die stärksten zuerst), der Rest per Knopf – sonst 11 Handy-Bildschirme
+  const CAL_LIMIT = 30;
+  let calAll = false;
+  function calDays(days, row) {
+    let shown = 0;
+    const out = [];
+    for (const [d, xs] of [...days.entries()].slice(0, 20)) {
+      if (!calAll && shown >= CAL_LIMIT) break;
+      const take = calAll ? xs : xs.slice(0, CAL_LIMIT - shown);
+      shown += take.length;
+      out.push(`<div class="cal-day"><p class="cal-date">${dDate(d)}${take.length < xs.length ? ` <span class="muted small">· ${take.length} von ${xs.length}</span>` : ""}</p>${take.map(row).join("")}</div>`);
+    }
+    return out.join("");
+  }
   function calendarCard() {
     if (!stocks) return "";
     const today = new Date().toISOString().slice(0, 10), until = new Date(Date.now() + 28 * 864e5).toISOString().slice(0, 10);
@@ -167,13 +181,15 @@
     return `<article class="card" data-section="Kalender" id="kalender">
       <div class="card-head"><h2 class="card-title">Quartalszahlen: die nächsten 4 Wochen</h2><span class="muted small">${up.length} Termine</span></div>
       <div class="seg" role="group" aria-label="Auswahl">${[["alle", "Alle"], ["meine", `Meine Aktien (${mine.size})`], ["ideen", "Swing-Ideen"], ["theorie", "Theorie-Firmen"]].map(([k, l]) => `<button type="button" data-cal="${k}" aria-pressed="${ui.cal === k}">${l}</button>`).join("")}</div>
-      ${days.size ? `<div class="cal">${[...days.entries()].slice(0, 20).map(([d, xs]) => `<div class="cal-day"><p class="cal-date">${dDate(d)}</p>${xs.map(row).join("")}</div>`).join("")}</div>` : `<p class="muted" style="margin-top:12px">In den nächsten 4 Wochen keine Termine in dieser Auswahl.</p>`}
+      ${days.size ? `<div class="cal">${calDays(days, row)}</div>${up.length > CAL_LIMIT ? `<button type="button" class="btn ghost more-btn" data-act="${calAll ? "calLess" : "calAll"}" aria-expanded="${calAll}">${calAll ? "Weniger zeigen" : `Alle ${up.length} Termine zeigen`}</button>` : ""}` : `<p class="muted" style="margin-top:12px">In den nächsten 4 Wochen keine Termine in dieser Auswahl.</p>`}
       ${recent.length ? `<h3 class="swing-h3">Zuletzt gemeldet (14 Tage): größte Überraschungen</h3><div class="chips">${recent.map(x => `<button type="button" class="chip-btn" data-open="${esc(x.sym)}">${esc(x.sym)} ${pc(x.lastEarn.surprisePct, 0)}</button>`).join(" ")}</div>` : ""}
       <p class="hint">Gewinn je Aktie über der Erwartung lässt den Kurs oft noch Wochen nachdriften – bei großen Aktien heute aber schwächer. An Zahlentagen springt der Kurs oft über den Stop hinweg; der Swing-Planer kauft deshalb 10 Tage vorher nicht neu. Die Telefonkonferenzen dazu gibt es live und zum Nachlesen in der Quartr-App.</p>
     </article>`;
   }
 
   // ---------- Insider-Käufe ----------
+  const INS_LIMIT = 10;
+  let insAll = false;
   function insiderCard() {
     const has = fund && fund.available && fund.available.insider;
     if (!has) {
@@ -187,14 +203,15 @@
     const all = Object.entries(fund.items).filter(([, v]) => v.ins && v.ins.buys > 0).map(([sym, v]) => ({ sym, x: map.get(sym), ins: v.ins, cty: foreign(v) ? v.cty : "" }));
     const by = (a, b) => b.ins.buyers - a.ins.buyers || b.ins.buyVal - a.ins.buyVal;
     const list = [...all.filter(r => !r.cty).sort(by).slice(0, 25), ...all.filter(r => r.cty && r.ins.buyers >= 2).sort(by).slice(0, 5)];
-    const rows = list.map(r => `<tr><td><button type="button" class="chip-btn" data-open="${esc(r.sym)}">${esc(r.sym)}</button><div class="muted small scr-name"><button type="button" class="name-link" data-open="${esc(r.sym)}">${esc(r.x ? r.x.name : "")}</button>${r.cty ? ` · <span title="Sitz außerhalb der USA – meist keine Meldung nach SEC-Formular 4">Sitz ${esc(r.cty)}</span>` : ""}</div></td>
+    const shownList = insAll ? list : list.slice(0, INS_LIMIT);   // zuerst die zehn stärksten, der Rest per Knopf
+    const rows = shownList.map(r => `<tr><td><button type="button" class="chip-btn" data-open="${esc(r.sym)}">${esc(r.sym)}</button><div class="muted small scr-name"><button type="button" class="name-link" data-open="${esc(r.sym)}">${esc(r.x ? r.x.name : "")}</button>${r.cty ? ` · <span title="Sitz außerhalb der USA – meist keine Meldung nach SEC-Formular 4">Sitz ${esc(r.cty)}</span>` : ""}</div></td>
         <td class="num">${r.ins.buyers}</td><td class="num">${big(r.ins.buyVal)}</td><td class="num opt">${dDate(r.ins.lastBuy)}</td><td class="num opt">${r.ins.sellers}</td>
         <td>${r.x ? (() => { const [l, c] = TREND[trendOf(r.x)]; return `<span class="light ${c}">${l}</span>`; })() : "–"}</td>
         <td class="opt">${A(`http://openinsider.com/screener?s=${encodeURIComponent(r.sym)}`, "Details ↗")}</td></tr>`).join("");
     return `<article class="card" data-section="Insider">
       <div class="card-head"><h2 class="card-title">Insider-Käufe der letzten 90 Tage</h2><span class="muted small">US-Aktien · Stand ${new Date(fund.updated).toLocaleDateString("de-DE")}</span></div>
       <p class="muted small" style="margin:-6px 0 12px">Vorstände und Aufsichtsräte, die mit eigenem Geld am Markt kaufen (SEC-Formular 4, Code P). Laut Forschung haben vor allem gezielte Käufe Aussagekraft, Verkäufe kaum – sie haben oft private Gründe (${A("https://doi.org/10.1111/j.1540-6261.2012.01740.x", "Cohen, Malloy &amp; Pomorski 2012")}).</p>
-      ${rows ? `<div class="table-wrap"><table class="scr"><thead><tr><th>Aktie</th><th class="num">Käufer</th><th class="num">gekauft für</th><th class="num opt">letzter Kauf</th><th class="num opt">Verkäufer</th><th>Trend</th><th class="opt">Quelle</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="muted">In den letzten 90 Tagen keine Insider-Käufe in den Aktien dieser Seite.</p>`}
+      ${rows ? `<div class="table-wrap"><table class="scr"><thead><tr><th>Aktie</th><th class="num">Käufer</th><th class="num">gekauft für</th><th class="num opt">letzter Kauf</th><th class="num opt">Verkäufer</th><th>Trend</th><th class="opt">Quelle</th></tr></thead><tbody>${rows}</tbody></table></div>${list.length > INS_LIMIT ? `<button type="button" class="btn ghost more-btn" data-act="${insAll ? "insLess" : "insAll"}" aria-expanded="${insAll}">${insAll ? "Weniger zeigen" : `Alle ${list.length} zeigen`}</button>` : ""}` : `<p class="muted">In den letzten 90 Tagen keine Insider-Käufe in den Aktien dieser Seite.</p>`}
       <p class="hint">Am stärksten gilt ein Kauf mehrerer Insider in einem Aufwärtstrend. Gegen den Trend lieber abwarten. Firmen mit Sitz außerhalb der USA (Kennzeichen „Sitz …“, unten in der Liste) melden meist nicht nach SEC-Formular 4 – ihre Zahlen stammen aus anderen Quellen und sind nur eingeschränkt vergleichbar.</p>
     </article>`;
   }
@@ -280,7 +297,9 @@
     if (!b || !host || !host.contains(b)) return;
     if (b.dataset.preset) { const p = PRESETS[b.dataset.preset]; ui.preset = b.dataset.preset; ui.custom = null; if (p && p.sort) { ui.sort = p.sort; ui.dir = -1; } else if (COLS.some(c => c.key === ui.sort && c.only && c.only !== ui.preset)) { ui.sort = "momRank"; ui.dir = -1; } saveUi(); return render(); }
     if (b.dataset.sort) { ui.dir = ui.sort === b.dataset.sort ? -ui.dir : (b.dataset.sort === "sym" ? 1 : -1); ui.sort = b.dataset.sort; saveUi(); return render(); }
-    if (b.dataset.cal) { ui.cal = b.dataset.cal; saveUi(); return render(); }
+    if (b.dataset.cal) { ui.cal = b.dataset.cal; calAll = false; saveUi(); return render(); }
+    if (b.dataset.act === "insAll" || b.dataset.act === "insLess") { insAll = b.dataset.act === "insAll"; render(); const sec = document.querySelector('#toolsBody [data-section="Insider"]'); if (!insAll && sec) sec.scrollIntoView({ block: "start" }); return; }
+    if (b.dataset.act === "calAll" || b.dataset.act === "calLess") { calAll = b.dataset.act === "calAll"; render(); if (!calAll && $("kalender")) $("kalender").scrollIntoView({ block: "start" }); return; }
     if (b.dataset.act === "scApply") { ui.custom = readFilters(); ui.preset = "all"; return render(); }
     if (b.dataset.act === "scReset") { ui.custom = null; ui.preset = "momentum"; saveUi(); return render(); }
     if (b.dataset.act === "alDel") { const id = b.closest("[data-id]").dataset.id; saveAlarms(alarms().filter(a => a.id !== id)); return render(); }

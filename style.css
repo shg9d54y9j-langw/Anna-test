@@ -1107,3 +1107,6 @@ details.more > summary:hover { color: var(--text); }
 .wn-list a:hover b, .wn-list .link-btn:hover b { text-decoration: underline; text-underline-offset: 3px; }
 .wn-d { color: var(--text-2); font-size: 13.5px; line-height: 1.45; }
 .whatsnew details.more { margin-top: 6px; }
+
+/* „Alle zeigen“ unter gekürzten Listen */
+.more-btn { margin-top: 12px; width: 100%; justify-content: center; }
