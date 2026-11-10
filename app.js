@@ -705,6 +705,11 @@ $("jForm").addEventListener("submit", e => {
   const s = journalSummary();
   if (s.stop) toast("Tageslimit erreicht", " Für heute nicht mehr handeln – so steht es in Ihren Tagesregeln.");
 });
+// Einträge aus anderen Bereichen (Teilverkauf im Portfolio) – über das Journal hier, damit nichts überschrieben wird
+window.DTD.addJournal = t => {
+  journal.push({ id: `j${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, ...t });
+  saveJ(); renderJ();
+};
 $("jTable").querySelector("tbody").addEventListener("click", e => {
   const b = e.target.closest("button[data-del]");
   if (!b) return;

@@ -18,14 +18,42 @@
   const currency = sym => { const m = /\.([A-Z]+)$/.exec(sym); return m ? CUR[m[1]] || "" : "USD"; };
   const money = (v, sym) => (Number.isFinite(v) ? `${v < 0 ? "−" : v > 0 ? "+" : ""}${fmt(Math.abs(v), 2)}${currency(sym) ? ` ${currency(sym)}` : ""}` : "–");
 
+  // Nachkäufe und Teilverkäufe: lots = Käufe {q Stück, p Preis, d Datum}, sells = Verkäufe. Kaufpreis und Stück der Position
+  // ergeben sich daraus nach dem gleitenden Durchschnittspreis (so rechnet die österreichische KESt je Depot): ein Kauf mischt den
+  // Durchschnitt neu, ein Verkauf ändert ihn nicht.
+  const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const okTrade = l => l && Number.isFinite(l.q) && l.q > 0 && Number.isFinite(l.p) && l.p > 0;
+  // t = Zeitpunkt der Eingabe: ordnet Käufe und Verkäufe am selben Tag in der Reihenfolge, in der sie eingetragen wurden
+  const cleanTrades = a => (Array.isArray(a) ? a.filter(okTrade).map(l => ({ q: l.q, p: l.p, d: DAY_RE.test(l.d || "") ? l.d : null, t: Number.isFinite(l.t) ? l.t : 0 })) : []);
+  function avgAt(h, until = null) {
+    const ev = [...h.lots.map((l, i) => ({ ...l, k: "b", i })), ...(h.sells || []).map((s, i) => ({ ...s, k: "s", i: 1e4 + i }))]
+      .filter(e => !until || !e.d || e.d <= until)
+      .sort((a, b) => ((a.d || "") < (b.d || "") ? -1 : (a.d || "") > (b.d || "") ? 1 : (a.t || 0) - (b.t || 0) || a.i - b.i));
+    let held = 0, avg = 0;
+    for (const e of ev) { if (e.k === "b") { avg = (held * avg + e.q * e.p) / (held + e.q); held += e.q; } else held = Math.max(0, held - e.q); }
+    return { held: Math.round(held * 1e6) / 1e6, avg };
+  }
+  function derive(h) {
+    if (!h.lots || !h.lots.length) return h;
+    const a = avgAt(h);
+    return { ...h, buy: px(a.avg) || h.buy, qty: a.held > 0 ? a.held : null, date: h.lots.map(l => l.d).filter(Boolean).sort()[0] || h.date };
+  }
   let list = read(), stocks = null, swing = null, firms = null, loading = false, editId = null;
   const open = { exit: new Set(), news: new Set(), chart: new Set() };
   function read() {
     const raw = store.get(KEY, []);
     return (Array.isArray(raw) ? raw : []).filter(h => h && typeof h.sym === "string" && SYM.test(h.sym) && Number.isFinite(h.buy) && h.buy > 0)
-      .map((h, i) => ({ id: String(h.id || `p${Date.now().toString(36)}${i}`), sym: h.sym, buy: h.buy, qty: Number.isFinite(h.qty) && h.qty > 0 ? h.qty : null,
-        date: /^\d{4}-\d{2}-\d{2}$/.test(h.date || "") ? h.date : null, stop: Number.isFinite(h.stop) && h.stop > 0 ? h.stop : null, note: String(h.note || "").slice(0, 200) }));
+      .map((h, i) => {
+        const o = { id: String(h.id || `p${Date.now().toString(36)}${i}`), sym: h.sym, buy: h.buy, qty: Number.isFinite(h.qty) && h.qty > 0 ? h.qty : null,
+          date: DAY_RE.test(h.date || "") ? h.date : null, stop: Number.isFinite(h.stop) && h.stop > 0 ? h.stop : null, note: String(h.note || "").slice(0, 200) };
+        const lots = cleanTrades(h.lots), sells = cleanTrades(h.sells);
+        if (lots.length) { o.lots = lots; if (sells.length) o.sells = sells; return derive(o); }
+        return o;
+      });
   }
+  // erste Aktion an einer Position ohne Kaufliste: bisherigen Kauf als ersten Eintrag übernehmen
+  const withLots = h => (h.lots && h.lots.length ? h : { ...h, lots: [{ q: h.qty, p: h.buy, d: h.date, t: 0 }], sells: [] });
+  let trade = null;   // offenes Formular { id, kind: "buy" | "sell" }
   const save = () => store.set(KEY, list);
   const item = sym => (stocks ? stocks.items.find(x => x.sym === sym) : null);
   const profile = sym => (firms && firms.firms ? firms.firms[sym] : null);
@@ -135,7 +163,7 @@
       <div class="idea-head"><button type="button" class="idea-sym" data-open="${esc(h.sym)}">${esc(h.sym)}</button><button type="button" class="name-link muted small idea-name" data-open="${esc(h.sym)}">${esc(name || "Aktienübersicht")}</button>
         ${v ? `<span class="light ${v.cls}">${v.label}</span>` : `<span class="light">Keine Daten</span>`}</div>
       <div class="pf-nums">
-        <span>Kauf <b class="num">${price(h.buy)}</b>${h.qty ? ` · ${fmt(h.qty, h.qty % 1 ? 2 : 0)} Stück` : ""}</span>
+        <span>${h.lots && h.lots.length > 1 ? "Ø Kauf" : "Kauf"} <b class="num">${price(h.buy)}</b>${h.qty ? ` · ${fmt(h.qty, h.qty % 1 ? 2 : 0)} Stück` : ""}${h.lots && h.lots.length > 1 ? ` <span class="muted">(${h.lots.length} Käufe)</span>` : ""}</span>
         <span>Jetzt <b class="num">${x ? price(x.last) : "–"}</b>${x ? ` <span class="muted">(${dDate(x.asOf)})</span>` : ""}</span>
         <span>Ergebnis <b class="num">${x ? pc(pl) : "–"}</b>${amt !== null ? ` <span class="num">${money(amt, h.sym)}</span>` : ""}</span>
         ${r ? `<span>Risiko <span class="light ${r.cls}">${r.label}</span></span>` : ""}
@@ -150,14 +178,33 @@
         <button type="button" class="btn ghost" data-act="chart" aria-expanded="${open.chart.has(h.id)}">Diagramm</button>
         <button type="button" class="btn ghost" data-act="news" aria-expanded="${open.news.has(h.id)}">Nachrichten</button>
         <a class="btn ghost" href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/" target="_blank" rel="noopener noreferrer">Kurs live ↗</a>
+        <button type="button" class="btn ghost" data-act="lotbuy" aria-expanded="${!!(trade && trade.id === h.id && trade.kind === "buy")}">Nachkauf</button>
+        <button type="button" class="btn ghost" data-act="lotsell" aria-expanded="${!!(trade && trade.id === h.id && trade.kind === "sell")}">Teilverkauf</button>
         <button type="button" class="btn ghost" data-act="edit">Bearbeiten</button>
         <button type="button" class="btn ghost" data-act="del">Entfernen</button>
       </div>
+      ${trade && trade.id === h.id ? tradeForm(h, x) : ""}
+      ${h.lots && (h.lots.length > 1 || (h.sells && h.sells.length)) ? tradeLog(h) : ""}
       ${open.chart.has(h.id) ? chartBlock(h, x, v, tv) : ""}
       ${x && open.exit.has(h.id) ? exitPlan(h, x, v) : ""}
       ${open.news.has(h.id) ? `<div class="pf-news-list" data-news-fill="${esc(h.sym)}"></div><div class="pf-news" id="pfNews-${esc(h.id)}" data-tv="${esc(tv)}"></div>
         <p class="small muted">Mehr: <a href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/news/" target="_blank" rel="noopener noreferrer">alle Nachrichten bei TradingView ↗</a> · <a href="https://news.google.com/search?q=${encodeURIComponent(`${name || h.sym} Aktie`)}&hl=de&gl=AT&ceid=AT:de" target="_blank" rel="noopener noreferrer">deutsche Nachrichten bei Google News ↗</a></p>` : ""}
     </article>`;
+  }
+  function tradeForm(h, x) {
+    const sell = trade.kind === "sell", today = new Date().toISOString().slice(0, 10);
+    if (!(h.qty > 0)) return `<p class="small pf-trade-note">Für ${sell ? "einen Teilverkauf" : "einen Nachkauf"} braucht die Position eine Stückzahl – bitte zuerst über „Bearbeiten“ eintragen.</p>`;
+    return `<form class="pf-trade calc" data-id="${esc(h.id)}" data-kind="${trade.kind}" autocomplete="off">
+      <label>${sell ? "Verkaufte Stück" : "Gekaufte Stück"}<input name="q" inputmode="decimal" required placeholder="${sell ? `höchstens ${fmt(h.qty, h.qty % 1 ? 2 : 0)}` : "z. B. 5"}"></label>
+      <label>${sell ? "Verkaufspreis" : "Kaufpreis"} je Stück<input name="p" inputmode="decimal" required value="${x && Number.isFinite(x.last) ? String(px(x.last)).replace(".", ",") : ""}"></label>
+      <label>Datum<input name="d" type="date" value="${today}" max="${today}"></label>
+      <div class="btn-row wide"><button type="submit">${sell ? "Verkauf speichern" : "Nachkauf speichern"}</button><button type="button" class="btn ghost" data-act="tradecancel">Abbrechen</button></div>
+      <p class="hint">${sell ? "Der Gewinn oder Verlust zum Durchschnittspreis kommt ins Trade-Journal und damit in den Steuer-Schätzer. Verkaufen Sie alle Stück, verschwindet die Position aus der Liste." : "Der Kaufpreis der Position wird zum gleitenden Durchschnitt – so rechnet auch die österreichische Kapitalertragsteuer."}</p>
+    </form>`;
+  }
+  function tradeLog(h) {
+    const ev = [...h.lots.map(l => ({ ...l, k: "Kauf" })), ...(h.sells || []).map(s => ({ ...s, k: "Verkauf" }))].sort((a, b) => ((a.d || "") < (b.d || "") ? -1 : (a.d || "") > (b.d || "") ? 1 : (a.t || 0) - (b.t || 0)));
+    return `<details class="more pf-log"><summary>Käufe und Verkäufe (${ev.length})</summary><ul class="checklist small">${ev.map(e => `<li>${e.d ? dDate(e.d) : "ohne Datum"}: <b>${e.k}</b> ${fmt(e.q, e.q % 1 ? 2 : 0)} Stück zu ${price(e.p)}</li>`).join("")}</ul></details>`;
   }
   function formCard() {
     const h = editId ? list.find(x => x.id === editId) : null;
@@ -166,8 +213,9 @@
       <h2 class="card-title">${h ? `${esc(h.sym)} bearbeiten` : "Aktie eintragen"}</h2>
       <form id="pfForm" class="calc" autocomplete="off" data-key="${h ? esc(h.id) : "neu"}">
         <label>Kürzel wie bei eToro<input id="pfSym" required placeholder="Name oder Kürzel, z. B. Nvidia" value="${h ? esc(h.sym) : ""}" style="text-transform:uppercase"></label>
-        <label>Kaufpreis je Stück<input id="pfBuy" inputmode="decimal" required placeholder="in der Währung bei eToro" value="${v("buy")}"></label>
-        <label>Stück (freiwillig)<input id="pfQty" inputmode="decimal" placeholder="für Gewinn in Geld" value="${v("qty")}"></label>
+        <label>Kaufpreis je Stück<input id="pfBuy" inputmode="decimal" required placeholder="in der Währung bei eToro" value="${v("buy")}"${h && h.lots && h.lots.length > 1 ? " readonly" : ""}></label>
+        <label>Stück (freiwillig)<input id="pfQty" inputmode="decimal" placeholder="für Gewinn in Geld" value="${v("qty")}"${h && h.lots && h.lots.length > 1 ? " readonly" : ""}></label>
+        ${h && h.lots && h.lots.length > 1 ? `<p class="small muted wide">Kaufpreis und Stück ergeben sich aus ${h.lots.length} Käufen – ändern über „Nachkauf“ und „Teilverkauf“.</p>` : ""}
         <label>Kaufdatum (freiwillig)<input id="pfDate" type="date" value="${h && h.date ? h.date : ""}"></label>
         <label>Ihr Stop Loss bei eToro (freiwillig)<input id="pfStop" inputmode="decimal" placeholder="dann warnt die Seite" value="${v("stop")}"></label>
         <label>Notiz (freiwillig)<input id="pfNote" maxlength="200" placeholder="z. B. warum gekauft" value="${h ? esc(h.note) : ""}"></label>
@@ -437,6 +485,8 @@
     const host = $("portfolioBody");
     if (!host || $("portfolio").hidden) { badge(); return; }
     const kept = keepForm();
+    const tf = document.querySelector("form.pf-trade");
+    const tKeep = tf ? { id: tf.dataset.id, kind: tf.dataset.kind, v: ["q", "p", "d"].map(n => tf.elements[n].value), focus: tf.contains(document.activeElement) ? document.activeElement.name : null } : null;
     const rows = list.map(h => ({ h, x: item(h.sym) }));
     const order = r => (!r.x ? 3 : { sell: 0, holdstop: 1, secure: 2, hold: 2 }[(verdict(r.h, r.x) || {}).key] ?? 3);
     rows.sort((a, b) => order(a) - order(b) || alerts(b.h, b.x).length - alerts(a.h, a.x).length || a.h.sym.localeCompare(b.h.sym));
@@ -460,6 +510,10 @@
     }
     document.querySelectorAll("#portfolioBody [data-news-fill]").forEach(el => { if (window.DTD.fillNews) window.DTD.fillNews(el, el.dataset.newsFill); });
     restoreForm(kept);
+    if (tKeep) {
+      const nf = [...document.querySelectorAll("form.pf-trade")].find(f => f.dataset.id === tKeep.id && f.dataset.kind === tKeep.kind);
+      if (nf) { ["q", "p", "d"].forEach((n, i) => { nf.elements[n].value = tKeep.v[i]; }); if (tKeep.focus && nf.elements[tKeep.focus]) nf.elements[tKeep.focus].focus(); }
+    }
     // Vorschläge beim Tippen: Name oder Kürzel → Kürzel eintragen, weiter zum Kaufpreis
     if ($("pfSym") && window.DTD.attachSuggest) window.DTD.attachSuggest($("pfSym"), { source: text => (stocks && text ? window.DTD.matchStocks(stocks.items, text, 8) : []), onPick: () => { if ($("pfBuy")) $("pfBuy").focus(); } });
     badge();
@@ -495,13 +549,50 @@
     const rec = { sym, buy, qty: num($("pfQty").value), date: $("pfDate").value || null, stop: num($("pfStop").value), note: $("pfNote").value.trim().slice(0, 200) };
     if (!(rec.qty > 0)) rec.qty = null;
     if (!(rec.stop > 0)) rec.stop = null;
-    if (editId) list = list.map(h => (h.id === editId ? { ...h, ...rec } : h));
-    else list.push({ id: `p${Date.now().toString(36)}`, ...rec });
+    const same = !editId ? list.find(h => h.sym === sym) : null;
+    if (editId) {
+      list = list.map(h => {
+        if (h.id !== editId) return h;
+        if (h.lots && h.lots.length > 1) return derive({ ...h, sym, stop: rec.stop, note: rec.note });   // Kaufpreis und Stück aus den Käufen
+        if (h.lots && h.lots.length === 1) return rec.qty ? derive({ ...h, ...rec, lots: [{ q: rec.qty, p: rec.buy, d: rec.date, t: h.lots[0].t || 0 }] }) : (({ lots, sells, ...rest }) => ({ ...rest, ...rec }))(h);
+        return { ...h, ...rec };
+      });
+    } else if (same && rec.qty > 0 && same.qty > 0 && confirm(`${sym} ist schon im Depot. Als Nachkauf zur bestehenden Position zählen (Durchschnittspreis)?\n\nAbbrechen = als eigene Zeile anlegen.`)) {
+      const m = withLots(same);
+      const merged = derive({ ...m, lots: [...m.lots, { q: rec.qty, p: rec.buy, d: rec.date, t: Date.now() }] });
+      list = list.map(h => (h.id === same.id ? merged : h));
+    } else list.push({ id: `p${Date.now().toString(36)}`, ...rec });
     editId = null;
     clearForm = true;
     save();
     render();
     note(`${sym} gespeichert.`);
+  });
+  document.addEventListener("submit", e => {
+    const f = e.target.closest && e.target.closest("form.pf-trade");
+    if (!f) return;
+    e.preventDefault();
+    const h0 = list.find(x => x.id === f.dataset.id);
+    if (!h0) return;
+    const q = num(f.elements.q.value), p = num(f.elements.p.value), today = new Date().toISOString().slice(0, 10);
+    const d = DAY_RE.test(f.elements.d.value) && f.elements.d.value <= today ? f.elements.d.value : today;
+    if (!(q > 0) || !(p > 0)) return note("Bitte Stück und Preis eintragen.");
+    let h = withLots(h0);
+    if (f.dataset.kind === "buy") {
+      h = derive({ ...h, lots: [...h.lots, { q, p, d, t: Date.now() }] });
+      list = list.map(x => (x.id === h.id ? h : x));
+      trade = null; save(); render();
+      return note(`${h.sym}: Nachkauf von ${fmt(q, q % 1 ? 2 : 0)} Stück gespeichert – Durchschnittspreis jetzt ${price(h.buy)}.`);
+    }
+    const at = avgAt(h, d);
+    if (q > at.held + 1e-9) return note(`Am ${dDate(d)} hatten Sie nur ${fmt(at.held, at.held % 1 ? 2 : 0)} Stück ${h.sym}.`);
+    const avg = px(at.avg), gain = (p - at.avg) * q;
+    h = derive({ ...h, sells: [...(h.sells || []), { q, p, d, t: Date.now() }] });
+    if (window.DTD.addJournal) window.DTD.addJournal({ ts: `${d}T12:00:00.000Z`, date: new Date(`${d}T12:00:00Z`).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }), sym: h.sym, dir: "Long", in: avg, out: p, qty: q, note: `Teilverkauf aus dem Portfolio (Durchschnittspreis ${price(avg)})` });
+    if (!(h.qty > 0)) { list = list.filter(x => x.id !== h.id); open.exit.delete(h.id); open.news.delete(h.id); open.chart.delete(h.id); }
+    else list = list.map(x => (x.id === h.id ? h : x));
+    trade = null; save(); render();
+    note(`${h.sym}: ${fmt(q, q % 1 ? 2 : 0)} Stück verkauft – ${gain >= 0 ? "Gewinn" : "Verlust"} ${money(gain, h.sym)} zum Durchschnittspreis, im Trade-Journal eingetragen${h.qty > 0 ? "" : "; die Position ist damit geschlossen"}.`);
   });
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-act]");
@@ -514,6 +605,8 @@
     if (act === "chart" && h) { open.chart.has(id) ? open.chart.delete(id) : open.chart.add(id); return render(); }
     if (act === "edit" && h) { editId = id; render(); const f = $("pfForm"); if (f) f.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
     if (act === "cancel") { editId = null; return render(); }
+    if ((act === "lotbuy" || act === "lotsell") && h) { const kind = act === "lotbuy" ? "buy" : "sell"; trade = trade && trade.id === id && trade.kind === kind ? null : { id, kind }; render(); const f = document.querySelector("form.pf-trade input[name=q]"); if (f) f.focus(); return; }
+    if (act === "tradecancel") { trade = null; return render(); }
     if (act === "del" && h) { if (confirm(`${h.sym} aus dem Portfolio entfernen?`)) { list = list.filter(x => x.id !== id); open.exit.delete(id); open.news.delete(id); open.chart.delete(id); save(); render(); } return; }
     if (act === "notify") { Notification.requestPermission().then(() => render()); return; }
     if (act === "backup") return downloadBackup();
