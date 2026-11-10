@@ -38,6 +38,8 @@
     general: ["Meldung", "Eine allgemeine Meldung ohne klar erkannten Typ.", "Ohne Einordnung lässt sich wenig zur typischen Kursreaktion sagen.", "Im Artikel nachlesen, worum es geht."],
   };
   const TONE = { pos: ["positiv", "green"], neg: ["negativ", "red"], neu: ["neutral", ""] };
+  // passende Wirtschaftstermine (econ.js) zu Zins-, Inflations- und Arbeitsmarktnachrichten
+  const ECON = { macro_rates: [["fomc", "Fed-Zinsentscheid"], ["ecb", "EZB-Zinsentscheid"]], macro_inflation: [["cpi", "Verbraucherpreise"], ["pce", "Kern-PCE"]], macro_jobs: [["nfp", "Arbeitsmarktbericht"], ["claims", "Erstanträge"]], oil: [["oilinv", "US-Ölbestände"]] };
   let main = null, mainAt = 0;
   const co = new Map();   // Kürzel → Promise der Firmennachrichten
   const byId = new Map();
@@ -87,6 +89,7 @@
       <h3 class="swing-h3">Was bedeutet das?</h3><p>${t[1]}</p>
       <h3 class="swing-h3">Wie reagiert der Kurs meist?</h3><p>${t[2]}</p>
       <h3 class="swing-h3">Was Sie tun können</h3><p>${t[3]}</p>
+      ${ECON[n.type] ? `<p>${ECON[n.type].map(([k, l]) => `<button type="button" class="btn ghost small-btn" data-econ="${k}">Termin erklärt: ${l}</button>`).join(" ")}</p>` : ""}
       ${syms.length ? `<h3 class="swing-h3">Betroffene Aktie${syms.length > 1 ? "n" : ""} – Daten und Expertenmeinung</h3>${syms.map(stockBox).join("")}` : ""}
       ${more.length ? `<h3 class="swing-h3">Weitere Meldungen zu ${esc(e.sym)}</h3>${list(more, e.sym)}` : ""}
       <p class="muted small" style="margin-top:14px">Einordnung automatisch nach Schlagwörtern der Schlagzeile – sie kann danebenliegen. Keine Anlageberatung.</p>`);

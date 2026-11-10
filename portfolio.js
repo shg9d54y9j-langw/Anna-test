@@ -194,6 +194,42 @@
       <p class="small" style="margin-top:12px">Risiko-Mischung: <b>${count("Solide")}</b> solide, <b>${count("Mittel")}</b> mittel, <b>${count("Riskant")}</b> riskant${withData.length < rows.length ? ` · ${rows.length - withData.length} ohne Kennzahlen` : ""}. ${count("Riskant") > withData.length / 2 && withData.length >= 2 ? "Mehr als die Hälfte ist riskant – ein Rückschlag trifft dann das ganze Depot." : ""}</p>
     </article>`;
   }
+  // Depot-Analyse: Aufteilung nach Branche, Region, Währung und Risiko, Klumpenrisiko, Depot-Note und Beta
+  const REGION = sym => { const m = /\.([A-Z]+)$/.exec(sym); if (!m) return "USA"; return ["HK", "T", "KS", "KQ", "SS", "SZ", "TW", "SI", "AX"].includes(m[1]) ? "Asien-Pazifik" : m[1] === "L" ? "Großbritannien" : "Europa"; };
+  function mixCard(rows) {
+    const withData = rows.filter(r => r.x);
+    if (withData.length < 2) return "";
+    const cur = new Set(withData.map(r => currency(r.h.sym) || "?"));
+    const byValue = cur.size === 1 && withData.every(r => r.h.qty > 0);
+    const w = r => (byValue ? r.h.qty * r.x.last : 1);
+    const tot = withData.reduce((s, r) => s + w(r), 0);
+    const share = r => w(r) / tot * 100;
+    const F = sym => (window.DTD.shared && window.DTD.shared.fund(sym)) || {};
+    const groupBy = key => { const m = new Map(); for (const r of withData) { const k = key(r); m.set(k, (m.get(k) || 0) + share(r)); } return [...m.entries()].sort((a, b) => b[1] - a[1]); };
+    const dims = [
+      ["Branche", groupBy(r => F(r.h.sym).ind || (r.h.sym.includes(".") ? "außerhalb USA (keine Branchendaten)" : "unbekannt"))],
+      ["Region", groupBy(r => REGION(r.h.sym))],
+      ["Währung", groupBy(r => currency(r.h.sym) || "Pence/Dollar (London)")],
+      ["Risiko", groupBy(r => risk(r.x, profile(r.h.sym)).label)],
+    ];
+    const big = [...withData].sort((a, b) => share(b) - share(a))[0];
+    const warn = [];
+    if (share(big) > 25) warn.push(`Größte Position: <b>${esc(big.h.sym)}</b> mit ${fmt(share(big), 0)} % – über 25 % in einer Aktie ist ein Klumpenrisiko.`);
+    if (dims[0][1][0] && dims[0][1][0][1] > 40 && withData.length >= 3) warn.push(`${fmt(dims[0][1][0][1], 0)} % in einer Branche (${esc(dims[0][1][0][0])}) – ein Rückschlag dort trifft das ganze Depot.`);
+    const risky = (dims[3][1].find(([k]) => k === "Riskant") || [0, 0])[1];
+    if (risky > 50) warn.push(`${fmt(risky, 0)} % riskante Aktien – mehr als die Hälfte schwankt stark.`);
+    if ((dims[1][1][0] || [])[1] === 100 && dims[1][1][0][0] === "USA") warn.push("Alles in US-Aktien: Fällt der Dollar gegen den Euro, sinkt der Wert in Euro – auch wenn die Kurse gleich bleiben.");
+    const avgW = get => { let s = 0, n = 0; for (const r of withData) { const v = get(r); if (Number.isFinite(v)) { s += v * share(r); n += share(r); } } return n ? s / n : null; };
+    const note = avgW(r => { const sc = window.DTD.score && window.DTD.score(r.h.sym); return sc ? sc.note : null; }), beta = avgW(r => r.x.beta);
+    const row = ([k, v]) => `<div class="mix-row"><span class="mix-k">${esc(k)}</span><span class="mix-bar"><i style="width:${Math.max(2, v).toFixed(1)}%"></i></span><b class="num">${fmt(v, 0)} %</b></div>`;
+    return `<article class="card" data-section="Aufteilung">
+      <div class="card-head"><h2 class="card-title">Depot-Analyse</h2><span class="muted small">${byValue ? "nach aktuellem Wert" : cur.size > 1 ? "nach Anzahl – Währungen gemischt" : "nach Anzahl – Stückzahlen fehlen"}</span></div>
+      <div class="stats">${kpi("Depot-Note", Number.isFinite(note) ? `<span class="${window.DTD.scoreTone(note)}">${fmt(note, 0)}</span>` : "–")}${kpi("Ø Beta", Number.isFinite(beta) ? fmt(beta, 2) : "–")}${kpi("Branchen", dims[0][1].length)}${kpi("Größte Position", `${fmt(share(big), 0)} %`)}</div>
+      ${warn.length ? `<ul class="checklist mix-warn">${warn.map(t => `<li>${t}</li>`).join("")}</ul>` : `<p class="small up" style="margin-top:10px">Gut gestreut: keine Aktie über 25 %, keine Branche über 40 %.</p>`}
+      <div class="mix-grid">${dims.map(([t, l]) => `<div><h3 class="swing-h3">${t}</h3>${l.slice(0, 6).map(row).join("")}${l.length > 6 ? `<p class="muted small">+ ${l.length - 6} weitere</p>` : ""}</div>`).join("")}</div>
+      <p class="hint">Depot-Note = Gesamtnote der Aktien, gewichtet. Ø Beta: 1 = schwankt wie der S&P 500, 1,5 = anderthalbmal so stark. Faustregeln für Privatanleger: keine Einzelaktie über 20–25 %, mindestens 5 Branchen.</p>
+    </article>`;
+  }
   function notifyCard() {
     const can = "Notification" in window, perm = can ? Notification.permission : "unsupported";
     return `<article class="card" data-section="Benachrichtigungen">
@@ -270,7 +306,7 @@
     const rows = list.map(h => ({ h, x: item(h.sym) }));
     const order = r => (!r.x ? 3 : { sell: 0, holdstop: 1, secure: 2, hold: 2 }[(verdict(r.h, r.x) || {}).key] ?? 3);
     rows.sort((a, b) => order(a) - order(b) || alerts(b.h, b.x).length - alerts(a.h, a.x).length || a.h.sym.localeCompare(b.h.sym));
-    host.innerHTML = (list.length ? summaryCard(rows) : `<article class="card"><h2 class="card-title">Noch keine Aktien eingetragen</h2><p class="small">Tragen Sie unten Ihre erste Aktie mit Kaufpreis ein – die Seite zeigt dann Ergebnis, Risiko, ob Halten oder Raus und Nachrichten.</p></article>`)
+    host.innerHTML = (list.length ? summaryCard(rows) + mixCard(rows) : `<article class="card"><h2 class="card-title">Noch keine Aktien eingetragen</h2><p class="small">Tragen Sie unten Ihre erste Aktie mit Kaufpreis ein – die Seite zeigt dann Ergebnis, Risiko, ob Halten oder Raus und Nachrichten.</p></article>`)
       + (list.length ? `<article class="card" data-section="Aktien"><div class="card-head"><h2 class="card-title">Ihre Aktien</h2><span class="muted small">${loading && !stocks ? "Lade Kennzahlen …" : "„Verkauf prüfen“ zuerst"}</span></div><div class="pf-list">${rows.map(r => card(r.h)).join("")}</div></article>` : "")
       + formCard() + notifyCard();
     const extra = $("portfolioExtra");
@@ -386,6 +422,8 @@
     if (f && f.firms) firms = f;
     loading = false;
     render();
+    // Branchen und Gesamtnote für die Depot-Analyse
+    if (window.DTD.scoreReady && !(window.DTD.scoreAll && window.DTD.scoreAll() && window.DTD.shared.get("fund"))) window.DTD.scoreReady().then(() => render());
   }
   window.DTD.startPortfolio = () => load(false);
   window.DTD.reloadPortfolio = () => load(true);
