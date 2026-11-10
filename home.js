@@ -12,6 +12,12 @@
   const total = r => (r ? r.sb + r.b + r.h + r.s + r.ss : 0);
   const buy = r => (total(r) >= 5 ? (r.sb + r.b) / total(r) : null);
 
+  // Erinnerung: Depot und Journal liegen nur in diesem Browser – Sicherung nie oder vor über 30 Tagen gemacht
+  function nudge() {
+    if (!window.DTD.backupDue || !window.DTD.backupDue()) return "";
+    const age = window.DTD.backupAge();
+    return `<p class="small backup-nudge"><b>Ihre Daten liegen nur in diesem Browser</b> – ${age === null ? "noch keine Sicherung gemacht" : `letzte Sicherung vor ${fmt(age, 0)} Tagen`}. <a href="#pfBackup">Jetzt als Datei sichern →</a></p>`;
+  }
   function depotCard() {
     const l = depot();
     if (!l.length) return `<article class="card"><h2 class="card-title">Ihr Depot</h2><p class="small">Noch keine Aktien eingetragen. Im <a href="#portfolio">Portfolio</a> mit Kaufpreis eintragen – dann sehen Sie hier Ergebnis, Tagesbewegung und Hinweise.</p></article>`;
@@ -23,6 +29,7 @@
     return `<article class="card"><div class="card-head"><h2 class="card-title">Ihr Depot</h2><a class="small" href="#portfolio">Öffnen →</a></div>
       <div class="stats">${kpi("Aktien", l.length)}${kpi("Ø seit Kauf", pc(avg(since)))}${kpi("Ø heute", pc(avg(today)))}${kpi("Unter Ø 200", `<span class="${sells ? "down" : ""}">${sells}</span>`)}</div>
       ${byDay.length >= 2 ? `<p class="small" style="margin-top:10px">Heute vorne ${chip(byDay[0].x, ` ${pc(byDay[0].x.chg1d)}`)} · hinten ${chip(byDay[byDay.length - 1].x, ` ${pc(byDay[byDay.length - 1].x.chg1d)}`)}</p>` : ""}
+      ${nudge()}
     </article>`;
   }
   function watchCard() {
@@ -87,7 +94,7 @@
     window.dispatchEvent(new Event("dtd:sections"));
   }
   window.DTD.renderHome = render;
-  for (const ev of ["dtd:shared", "dtd:watch", "dtd:smart"]) window.addEventListener(ev, () => render());
+  for (const ev of ["dtd:shared", "dtd:watch", "dtd:smart", "dtd:backup"]) window.addEventListener(ev, () => render());
   window.addEventListener("dtd:view", e => { if (e.detail === "home") render(); });
   document.addEventListener("DOMContentLoaded", render);
   setTimeout(render, 0);

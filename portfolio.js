@@ -241,14 +241,136 @@
       </ul>
     </article>`;
   }
+  // ---------- Komplette Sicherung als Datei ----------
+  // Alles, was die Seite in diesem Browser speichert (Schlüssel dtd-… und daytrade-…): Depot, Merkliste, Journal, Kursalarme,
+  // smarte Alarme, Vergleich, Trader, Einstellungen. Die Datei bleibt beim Nutzer – nichts wird hochgeladen. Beim Laden wird der
+  // bisherige Stand 7 Tage aufgehoben und lässt sich zurückholen.
+  const BK = /^(dtd|daytrade)-[a-z0-9-]{1,40}$/, BK_AT = "dtd-backup-at", BK_UNDO = "dtd-restore-undo", BK_SKIP = new Set([BK_AT, BK_UNDO]);
+  const BK_APP = "RojkoMoney", WEEK = 7 * 864e5;
+  let persisted = null;
+  if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(v => { persisted = v; }).catch(() => {});
+  function localKeys() {
+    const out = [];
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && BK.test(k) && !BK_SKIP.has(k)) out.push(k); } } catch { /* Speicher gesperrt */ }
+    return out.sort();
+  }
+  function snapshot() {
+    const data = {};
+    for (const k of localKeys()) { try { data[k] = JSON.parse(localStorage.getItem(k)); } catch { /* kein JSON: auslassen */ } }
+    return data;
+  }
+  // „3 Aktien im Depot, 12 auf der Merkliste …“ – was in einer Sicherung (oder im Browser) steckt
+  function contents(data) {
+    const n = k => (Array.isArray(data[k]) ? data[k].length : 0);   // die Beispiel-Trader des Copy-Vergleichs zählen nicht mit
+    return [
+      [n("dtd-portfolio"), "Aktie im Depot", "Aktien im Depot"],
+      [n("dtd-watch"), "Aktie auf der Merkliste", "Aktien auf der Merkliste"],
+      [n("daytrade-journal-v1"), "Trade im Journal", "Trades im Journal"],
+      [n("dtd-alarms"), "Kursalarm", "Kursalarme"],
+      [n("dtd-cmp"), "Aktie im Vergleich", "Aktien im Vergleich"],
+    ].filter(([c]) => c > 0).map(([c, one, many]) => `${fmt(c, 0)} ${c === 1 ? one : many}`);
+  }
+  const backupAge = () => { const at = store.get(BK_AT, null), t = at ? new Date(at).getTime() : NaN; return Number.isFinite(t) ? Math.max(0, Math.floor((Date.now() - t) / 864e5)) : null; };
+  // Sicherung empfohlen: Depot oder Journal vorhanden und noch nie bzw. vor über 30 Tagen gesichert
+  function backupDue() {
+    const j = store.get("daytrade-journal-v1", []), age = backupAge();
+    return (list.length > 0 || (Array.isArray(j) && j.length > 0)) && (age === null || age > 30);
+  }
+  function undoInfo() {
+    const u = store.get(BK_UNDO, null), t = u && u.at ? new Date(u.at).getTime() : NaN;
+    if (!u || !u.data || !Number.isFinite(t)) return null;
+    if (Date.now() - t > WEEK) { try { localStorage.removeItem(BK_UNDO); } catch { /* egal */ } return null; }
+    return { ...u, t };
+  }
+  function downloadBackup() {
+    const data = snapshot(), now = new Date(), what = contents(data);
+    const file = { app: BK_APP, kind: "Sicherung", version: 1, created: now.toISOString(), contents: what, data };
+    const name = `rojkomoney-sicherung-${now.toISOString().slice(0, 10)}.json`;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(file, null, 1)], { type: "application/json" }));
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    store.set(BK_AT, now.toISOString());
+    // Browser bitten, die Daten nicht von selbst zu löschen (Chrome entscheidet still, Safari bei Home-Bildschirm-Apps)
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(v => { persisted = v; render(); }).catch(() => {});
+    note(`Sicherung „${name}“ gespeichert${what.length ? ` – ${what.join(", ")}` : ""}. Am Handy liegt sie unter Dateien → Downloads.`);
+    render();
+    window.dispatchEvent(new Event("dtd:backup"));
+  }
+  let picker = null;
+  function pickBackup() {
+    // eigenes Feld außerhalb des Bereichs, der neu gezeichnet wird – sonst ginge die Auswahl beim Neuzeichnen verloren
+    if (!picker) {
+      picker = document.createElement("input");
+      picker.type = "file";
+      picker.id = "pfRestoreFile";
+      picker.accept = "application/json,.json,text/plain";
+      picker.hidden = true;
+      picker.addEventListener("change", () => { const f = picker.files && picker.files[0]; if (f) restoreBackup(f).finally(() => { picker.value = ""; }); });
+      document.body.append(picker);
+    }
+    picker.click();
+  }
+  async function restoreBackup(f) {
+    if (f.size > 5e6) return note("Die Datei ist zu groß für eine Sicherung dieser Seite.");
+    let file = null;
+    try { file = JSON.parse(await f.text()); } catch { /* unten gemeldet */ }
+    const data = file && file.app === BK_APP && file.data && typeof file.data === "object" && !Array.isArray(file.data) ? file.data : null;
+    if (!data) return note("Das ist keine Sicherung dieser Seite – bitte die Datei „rojkomoney-sicherung-….json“ wählen.");
+    const keys = Object.keys(data).filter(k => BK.test(k) && !BK_SKIP.has(k) && data[k] !== undefined);
+    if (!keys.length) return note("In dieser Sicherung stehen keine Daten.");
+    const t = new Date(file.created), when = Number.isFinite(t.getTime()) ? t.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "unbekanntem Datum";
+    const what = contents(data), now = contents(snapshot());
+    const msg = `Sicherung vom ${when} laden?\n\nIn der Datei: ${what.length ? what.join(", ") : "nur Einstellungen"}.\nJetzt in diesem Browser: ${now.length ? now.join(", ") : "nichts Gespeichertes"}.\n\nDie Daten aus der Datei ersetzen die gleichen Daten in diesem Browser. Der jetzige Stand wird 7 Tage aufgehoben und lässt sich unter „Sichern und übertragen“ zurückholen.`;
+    if (!confirm(msg)) return;
+    const before = {};
+    for (const k of keys) { try { before[k] = localStorage.getItem(k); } catch { before[k] = null; } }
+    try { localStorage.setItem(BK_UNDO, JSON.stringify({ at: new Date().toISOString(), from: when, data: before })); } catch { /* zu wenig Platz: ohne Rückweg */ }
+    let ok = 0;
+    for (const k of keys) { try { localStorage.setItem(k, JSON.stringify(data[k])); ok++; } catch { /* Speicher voll */ } }
+    try { sessionStorage.setItem("dtd-restored", JSON.stringify({ ok, of: keys.length, what })); } catch { /* ohne Meldung nach dem Neuladen */ }
+    location.reload();
+  }
+  function undoRestore() {
+    const u = undoInfo();
+    if (!u || !confirm(`Den Stand von vor dem Laden der Sicherung (geladen am ${new Date(u.t).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}) zurückholen?`)) return;
+    for (const [k, v] of Object.entries(u.data)) {
+      if (!BK.test(k) || BK_SKIP.has(k)) continue;
+      try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, String(v)); } catch { /* Speicher voll */ }
+    }
+    try { localStorage.removeItem(BK_UNDO); sessionStorage.setItem("dtd-restored", JSON.stringify({ undo: true })); } catch { /* egal */ }
+    location.reload();
+  }
+  // nach dem Neuladen melden, was geladen wurde
+  try {
+    const r = JSON.parse(sessionStorage.getItem("dtd-restored") || "null");
+    if (r) {
+      sessionStorage.removeItem("dtd-restored");
+      setTimeout(() => toast("Sicherung", r.undo ? "Der Stand von vor dem Laden ist zurück." : `Sicherung geladen${r.what && r.what.length ? `: ${r.what.join(", ")}` : ""}.${r.ok < r.of ? ` ${r.of - r.ok} Teil(e) passten nicht in den Speicher.` : ""}`, 7000), 300);
+    }
+  } catch { /* egal */ }
+
   function backupCard() {
-    return `<details class="info card" data-section="Sichern">
-      <summary>Sichern und übertragen</summary>
+    const age = backupAge(), due = backupDue(), u = undoInfo(), mine = contents(snapshot());
+    const last = age === null ? "Noch keine Sicherung gemacht." : `Letzte Sicherung: ${age === 0 ? "heute" : age === 1 ? "gestern" : `vor ${fmt(age, 0)} Tagen`}.`;
+    const keep = persisted === true ? "Dieser Browser hält die Daten dauerhaft." : persisted === false ? "Der Browser darf die Daten von selbst löschen – Safari z. B. nach 7 Tagen ohne Besuch der Seite, außer sie ist zum Home-Bildschirm hinzugefügt. Eine Sicherung schützt davor." : "";
+    return `<details class="info card" id="pfBackup" data-section="Sichern">
+      <summary>Sichern und übertragen${due ? ` <span class="pill-due">Sicherung empfohlen</span>` : ""}</summary>
+      <h3 class="swing-h3">Alles als Datei</h3>
+      <p class="small">Depot, Merkliste, Journal, Kursalarme, smarte Alarme, Vergleich und Einstellungen in einer Datei – für ein neues Handy, einen anderen Browser oder falls der Browser-Speicher gelöscht wird. Die Datei bleibt bei Ihnen; nichts wird hochgeladen.</p>
+      <p class="small"><b>${last}</b> ${mine.length ? `Gespeichert sind ${mine.join(", ")}.` : "In diesem Browser ist noch nichts gespeichert."} ${keep}</p>
+      <div class="btn-row"><button type="button" class="btn" data-act="backup">Sicherung herunterladen</button><button type="button" class="btn ghost" data-act="restore">Sicherung laden</button>${u ? `<button type="button" class="btn ghost" data-act="undo-restore">Stand vor dem Laden zurückholen</button>` : ""}</div>
+      <h3 class="swing-h3" style="margin-top:18px">Nur die Aktien als Text</h3>
       <p class="small">Eine Zeile je Aktie: <code>Kürzel; Kaufpreis; Stück; Kaufdatum; Stop; Notiz</code>. „Kopieren“ legt Ihre Liste in die Zwischenablage, „Hinzufügen“ übernimmt Zeilen aus dem Feld (gleiche Aktie mit gleichem Kaufpreis wird nicht doppelt angelegt).</p>
       <textarea id="pfText" rows="5" placeholder="NVDA; 120,50; 10; 2026-03-02; 105; KI-Chips"></textarea>
       <div class="btn-row" style="margin-top:8px"><button type="button" class="btn ghost" data-act="export">Liste kopieren</button><button type="button" class="btn ghost" data-act="import">Zeilen hinzufügen</button></div>
     </details>`;
   }
+  window.DTD.backupDue = backupDue;
+  window.DTD.backupAge = backupAge;
   // Steuer-Schätzer (Österreich): abgeschlossene Trades aus dem Journal je Kalenderjahr, Verluste im Depot vor dem 31.12.
   function taxCard() {
     const j = store.get("daytrade-journal-v1", []);
@@ -310,7 +432,12 @@
       + (list.length ? `<article class="card" data-section="Aktien"><div class="card-head"><h2 class="card-title">Ihre Aktien</h2><span class="muted small">${loading && !stocks ? "Lade Kennzahlen …" : "„Verkauf prüfen“ zuerst"}</span></div><div class="pf-list">${rows.map(r => card(r.h)).join("")}</div></article>` : "")
       + formCard() + notifyCard();
     const extra = $("portfolioExtra");
-    if (extra) extra.innerHTML = taxCard() + backupCard() + methodCard();
+    if (extra) {
+      // aufgeklappte Abschnitte bleiben beim Neuzeichnen offen
+      const opened = new Set([...extra.querySelectorAll("details[open][data-section]")].map(d => d.dataset.section));
+      extra.innerHTML = taxCard() + backupCard() + methodCard();
+      extra.querySelectorAll("details[data-section]").forEach(d => { if (opened.has(d.dataset.section)) d.open = true; });
+    }
     for (const id of open.chart) {
       const el = document.getElementById(`pfChart-${id}`);
       if (el && window.DTD.bigChart) window.DTD.bigChart(el.id, el.dataset.tv);
@@ -377,6 +504,9 @@
     if (act === "cancel") { editId = null; return render(); }
     if (act === "del" && h) { if (confirm(`${h.sym} aus dem Portfolio entfernen?`)) { list = list.filter(x => x.id !== id); open.exit.delete(id); open.news.delete(id); open.chart.delete(id); save(); render(); } return; }
     if (act === "notify") { Notification.requestPermission().then(() => render()); return; }
+    if (act === "backup") return downloadBackup();
+    if (act === "restore") return pickBackup();
+    if (act === "undo-restore") return undoRestore();
     if (act === "export" || act === "claude") {
       const lines = list.map(x => [x.sym, String(x.buy).replace(".", ","), x.qty ? String(x.qty).replace(".", ",") : "", x.date || "", x.stop ? String(x.stop).replace(".", ",") : "", x.note.replace(/;/g, ",")].join("; ").replace(/(; )+$/, ""));
       const text = act === "claude"

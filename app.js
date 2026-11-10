@@ -346,7 +346,7 @@ function showView(id, { scrollTo = null } = {}) {
   else window.scrollTo({ top: 0 });
 }
 // Abschnitte, die erst beim ersten Öffnen ihres Bereichs entstehen (Werkzeuge, Portfolio): kurz warten, dann springen
-const LAZY = { vergleich: "tools", screener: "tools", branchen: "tools", lexikon: "tools", kalender: "tools", pfTax: "portfolio", hinweise: "home" };
+const LAZY = { vergleich: "tools", screener: "tools", branchen: "tools", lexikon: "tools", kalender: "tools", pfTax: "portfolio", pfBackup: "portfolio", hinweise: "home" };
 function waitAndJump(id, tries = 50) {
   if ($(id)) return jumpTo($(id));
   if (tries > 0) setTimeout(() => waitAndJump(id, tries - 1), 100);
@@ -356,6 +356,7 @@ function waitAndJump(id, tries = 50) {
 function jumpTo(el) {
   const evs = ["wheel", "touchstart", "keydown", "pointerdown"];
   let ro = null, done = false;
+  if (el.tagName === "DETAILS") el.open = true;   // zugeklappter Abschnitt: beim Sprung dorthin aufklappen
   const go = () => { if (!done) el.scrollIntoView({ block: "start" }); };
   const stop = () => { done = true; if (ro) ro.disconnect(); evs.forEach(t => window.removeEventListener(t, stop, true)); };
   evs.forEach(t => window.addEventListener(t, stop, { capture: true, passive: true }));

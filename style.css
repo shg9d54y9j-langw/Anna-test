@@ -1084,3 +1084,7 @@ details.more > summary::-webkit-details-marker { display: none; }
 details.more > summary::before { content: "+ "; color: var(--muted); }
 details.more[open] > summary::before { content: "− "; }
 details.more > summary:hover { color: var(--text); }
+
+/* Sicherung: Hinweis im zugeklappten Abschnitt und auf der Startseite */
+.pill-due { display: inline-block; margin-left: 8px; padding: 1px 7px; border: 1px solid var(--text); border-radius: var(--r); font: 800 10px var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--text); vertical-align: middle; }
+.backup-nudge { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line-2); }
