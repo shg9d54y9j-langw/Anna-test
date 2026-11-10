@@ -75,6 +75,7 @@
     host.innerHTML = (window.DTD.smartAlertsCard ? window.DTD.smartAlertsCard() : "")
       + `<div class="grid-2">${depotCard()}${watchCard()}</div><div class="grid-2">${newCard()}${dateCard()}</div>`;
     if (window.DTD.smartBadge) window.DTD.smartBadge();
+    if (window.DTD.fillWhy) window.DTD.fillWhy(host);
     window.dispatchEvent(new Event("dtd:sections"));
   }
   window.DTD.renderHome = render;

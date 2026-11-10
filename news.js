@@ -133,6 +133,22 @@
     if (!el.isConnected) return;
     el.innerHTML = l.length ? `<p class="muted small" style="margin:0 0 8px">Antippen für die Erklärung – was die Meldung bedeutet und wie Kurse meist reagieren.</p>${list(l, sym)}` : `<p class="muted small">Keine eingeordneten Meldungen der letzten 7 Tage – unten die Live-Nachrichten von TradingView.</p>`;
   }
+  // ---------- „Warum bewegt sie sich?“: neueste eingeordnete Meldung der letzten 3 Tage neben großen Bewegungen ----------
+  // Platzhalter <span data-why="KÜRZEL"></span> füllen (Aktien-Check, Merkliste, Startseite, Hinweise, HotStuff)
+  async function fillWhy(root = document) {
+    const els = [...root.querySelectorAll("[data-why]:not([data-why-done])")];
+    for (const el of els) {
+      el.dataset.whyDone = "1";
+      const sym = el.dataset.why;
+      const l = (await loadCo(sym)).filter(n => Date.now() / 1000 - n.d <= 3 * 86400);
+      const n = l.find(m => m.type !== "general") || l[0];
+      if (!n || !el.isConnected) continue;
+      const id = `${sym}:${n.id}`;
+      byId.set(id, { n, sym });
+      el.innerHTML = `<button type="button" class="why-btn" data-news="${esc(id)}"><b>Warum?</b> ${tag(n)} <span class="why-t">${esc(n.t)}</span></button>`;
+    }
+  }
+  window.DTD.fillWhy = fillWhy;
   window.DTD.startNews = renderMarket;
   window.DTD.fillNews = fillNews;
   window.DTD.newsFor = loadCo;

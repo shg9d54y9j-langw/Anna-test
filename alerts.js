@@ -74,7 +74,7 @@
   function card() {
     const A = list(), c = cfg(), has = depot().length + watched().length;
     const row = a => `<div class="al-row"><button type="button" class="chip-btn" data-open="${esc(a.sym)}">${esc(a.sym)}</button>
-        <div class="al-text"><span class="sa-icon ${ICON[a.level][1]}" aria-hidden="true">${ICON[a.level][0]}</span> ${esc(a.text)}<div class="muted small">${esc(a.name || "")} · ${a.where}</div></div></div>`;
+        <div class="al-text"><span class="sa-icon ${ICON[a.level][1]}" aria-hidden="true">${ICON[a.level][0]}</span> ${esc(a.text)}${a.type === "move" ? `<div class="why" data-why="${esc(a.sym)}"></div>` : ""}<div class="muted small">${esc(a.name || "")} · ${a.where}</div></div></div>`;
     const settings = `<details class="sa-set"${setOpen ? " open" : ""}><summary>Welche Hinweise? (${Object.keys(TYPES).length - c.off.length} von ${Object.keys(TYPES).length})</summary>
         <div class="tchips">${Object.entries(TYPES).map(([k, l]) => `<button type="button" class="tchip" data-smart="${k}" aria-pressed="${!c.off.includes(k)}">${l}</button>`).join("")}</div>
         <p class="muted small">${"Notification" in window ? (Notification.permission === "granted" ? "Browser-Meldungen sind eingeschaltet – neue Hinweise melden sich, solange die Seite offen ist." : Notification.permission === "denied" ? "Browser-Meldungen sind blockiert – in den Website-Einstellungen erlauben." : `<button type="button" class="btn ghost small-btn" data-smart-notify>Als Browser-Meldung erlauben</button>`) : "Dieser Browser kann keine Meldungen anzeigen."}</p></details>`;

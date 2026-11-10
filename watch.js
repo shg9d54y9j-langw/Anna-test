@@ -40,7 +40,7 @@
     return `<div class="w-row">
       <button type="button" class="chip-btn" data-open="${esc(sym)}">${esc(sym)}</button>
       <div class="w-main"><button type="button" class="name-link w-name" data-open="${esc(sym)}">${esc(x ? x.name : "noch ohne Kennzahlen")}</button>
-        <div class="muted small">${x ? `${price(x.last)} · heute ${pc(x.chg1d)}${compact ? "" : ` · 12 Mon. ${pc(x.ret12m, 0)}`}` : "erscheint nach dem nächsten Datenlauf, sofern bei eToro"}${days !== null && days >= 0 && days <= 14 ? ` · <b>Zahlen ${days === 0 ? "heute" : `am ${dDate(x.earn.date)}`}</b>` : ""}</div></div>
+        ${x && Math.abs(x.chg1d) >= 4 ? `<div class="why" data-why="${esc(sym)}"></div>` : ""}<div class="muted small">${x ? `${price(x.last)} · heute ${pc(x.chg1d)}${compact ? "" : ` · 12 Mon. ${pc(x.ret12m, 0)}`}` : "erscheint nach dem nächsten Datenlauf, sofern bei eToro"}${days !== null && days >= 0 && days <= 14 ? ` · <b>Zahlen ${days === 0 ? "heute" : `am ${dDate(x.earn.date)}`}</b>` : ""}</div></div>
       <div class="w-tags">${s && Number.isFinite(s.note) ? `<span class="w-note ${window.DTD.scoreTone(s.note)}" title="Gesamtnote">${s.note}</span>` : ""}${!compact && trend ? `<span class="light ${trend[1]}">${trend[0]}</span>` : ""}${p ? `<span class="light ${p[1]}" title="Swing-Planer">${p[0]}</span>` : ""}</div>
       ${star(sym)}
     </div>`;
@@ -52,6 +52,7 @@
     host.innerHTML = l.length
       ? `<div class="w-list">${l.map(s => row(s)).join("")}</div><p class="hint">Note = Gesamtnote 0–100 (im Aktien-Check erklärt). Tippen Sie auf den Stern, um eine Aktie zu entfernen.</p>`
       : `<article class="card"><p class="small">Noch nichts gemerkt. Tippen Sie bei einer Aktie auf den Stern ☆ – im Aktien-Check, im Screener, bei HotStuff oder im Swing-Planer. Die Merkliste bleibt nur in diesem Browser.</p></article>`;
+    if (window.DTD.fillWhy) window.DTD.fillWhy(host);
   }
   window.DTD.watch = { list, has, toggle, star, row };
   window.DTD.renderWatch = () => S.all().then(() => (window.DTD.scoreReady ? window.DTD.scoreReady() : null)).then(render);

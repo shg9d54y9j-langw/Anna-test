@@ -1016,3 +1016,42 @@ table.cmp tr.cmp-sub th[scope="row"] { color: var(--muted); padding-left: 16px; 
 .nw-stock p { margin: 6px 0 0; }
 .nw-stock-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .sk-news-list, .pf-news-list { margin-bottom: 12px; }
+
+/* „Warum bewegt sie sich?“ */
+.why:empty { display: none; }
+.why { margin: 6px 0 2px; }
+.why-btn { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; text-align: left; background: #000; border: 1px solid var(--line-2); color: var(--text); padding: 6px 10px; font: 500 13px/1.4 var(--font); cursor: pointer; width: 100%; }
+.why-btn:hover { border-color: var(--text-2); background: var(--panel-3); }
+.why-btn > b { font: 800 10.5px var(--font); letter-spacing: .1em; text-transform: uppercase; }
+.why-btn .light { font-size: 9px; padding: 1px 6px; }
+.why-t { flex: 1 1 200px; min-width: 0; }
+
+/* ---------- Schnellsuche in der Kopfzeile ---------- */
+.qs { position: relative; margin-left: auto; display: flex; align-items: center; }
+.qs-open { display: none; width: 36px; height: 36px; }
+.qs-open svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+.qs-form { position: relative; display: flex; align-items: center; margin: 0; }
+.qs-form .suggest-wrap { width: 250px; }
+.qs-form input { width: 100%; background: #000; border: 1px solid var(--line-2); color: var(--text); padding: 7px 64px 7px 12px; font: 500 13px var(--font); border-radius: var(--r); }
+.qs-form input:focus { border-color: var(--text); outline: none; }
+.qs-kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font: 700 10px var(--mono); color: var(--muted); border: 1px solid var(--line-2); padding: 1px 5px; pointer-events: none; }
+.qs-form input:focus ~ .qs-kbd, .qs-form .suggest-wrap:focus-within + .qs-kbd { display: none; }
+.qs-close { display: none; }
+.qs .suggest { min-width: 320px; right: 0; left: auto; }
+.appbar .sessions { margin-left: 12px; }
+@media (max-width: 1100px) { .qs-form .suggest-wrap { width: 190px; } .qs-kbd { display: none; } .qs-form input { padding-right: 12px; } }
+@media (max-width: 720px) {
+  .appbar .qs { order: 1; margin-left: auto; }
+  .appbar .livechip { margin-left: 8px; }
+  .appbar .livechip > b { display: none; }
+  .appbar .sessions { margin-left: 0; }
+  .qs-open { display: inline-grid; place-items: center; }
+  .qs-form { display: none; }
+  .qs.open .qs-form { display: flex; position: fixed; left: 0; right: 0; top: 0; z-index: 60; background: var(--bg); padding: calc(10px + env(safe-area-inset-top)) 12px 10px; border-bottom: 1px solid var(--line); gap: 8px; }
+  .qs.open .qs-form .suggest-wrap { flex: 1; width: auto; }
+  .qs.open .qs-form input { font-size: 16px; padding: 10px 12px; }
+  .qs.open .qs-close { display: inline-grid; place-items: center; width: 40px; height: 40px; }
+  .qs .suggest { min-width: 0; left: -1px; right: -1px; }
+}
+/* Kopfzeile am Computer einzeilig halten: Countdown steht auch in der Karte „Börsen“ */
+@media (max-width: 1400px) { .appbar .pill-x, .appbar .livechip .lc-age { display: none; } }

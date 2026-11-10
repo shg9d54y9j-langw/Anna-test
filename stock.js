@@ -199,7 +199,7 @@
             <p class="eyebrow">${x ? `${esc(x.type)} · ${esc(x.sym)}` : esc(q.toUpperCase())}</p>
             <h2 class="stock-name">${x ? esc(x.name) : esc(q.toUpperCase())}</h2>
             ${x ? `<p class="stock-price">${price(x.last)} <span class="${x.chg1d < 0 ? "down" : "up"}">${sign(x.chg1d, 2)} %</span></p>
-              <p class="muted small">Schlusskurs ${esc(x.asOf)} laut eToro · Live-Kurs in der Grafik</p>` : `<p class="muted">Nicht unter den ${data ? data.count : "beliebtesten"} Werten mit täglichen Kennzahlen – unten nur Live-Daten von TradingView.</p>`}
+              <p class="muted small">Schlusskurs ${esc(x.asOf)} laut eToro · Live-Kurs in der Grafik</p>${Math.abs(x.chg1d) >= 3 ? `<p class="why" data-why="${esc(x.sym)}"></p>` : ""}` : `<p class="muted">Nicht unter den ${data ? data.count : "beliebtesten"} Werten mit täglichen Kennzahlen – unten nur Live-Daten von TradingView.</p>`}
           </div>
           <div class="btn-row">${x && window.DTD.watch ? window.DTD.watch.star(x.sym, "big") : ""}${x && window.DTD.compare ? window.DTD.compare.button(x.sym) : ""}${x ? `<a class="btn ghost" href="${etoroUrl}" target="_blank" rel="noopener noreferrer">In eToro öffnen ↗</a>` : `<a class="btn ghost" href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/" target="_blank" rel="noopener noreferrer">Bei TradingView öffnen ↗</a>`}</div>
         </div>
@@ -344,6 +344,7 @@
     }));
     tvWidget("skNews", "timeline", { ...COMMON, feedMode: "symbol", symbol: tv, displayMode: "regular", width: "100%", height: "100%" });
     if (window.DTD.fillNews) window.DTD.fillNews($("skNewsList"), x ? x.sym : q.trim().toUpperCase());
+    if (window.DTD.fillWhy) window.DTD.fillWhy(host);
     tvWidget("skProfile", "symbol-profile", { ...COMMON, symbol: tv, width: "100%", height: "100%" });
     host.querySelectorAll("[data-style]").forEach(b => b.addEventListener("click", () => { style = b.dataset.style; store.set("dtd-stock-style", style); render(x, q); }));
     const r = $("skRisk"); if (r) r.addEventListener("change", () => render(x, q));
