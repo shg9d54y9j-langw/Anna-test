@@ -1,5 +1,5 @@
 {
- "asOf": "2026-11-08",
+ "asOf": "2026-11-10",
  "note": "Firmen-Steckbriefe für die Theorie-Seite: Fakten aus Firmenangaben und Presse, Stand siehe asOf. Rollen: leader = Marktführer, supplier = Zulieferer (verdient, egal wer gewinnt), challenger = Herausforderer, spec = spekulativ. Auch Firmen von Börsen außerhalb von eToro (listing = Börse, tv = TradingView-Symbol für den Kurs-Link). Keine Kaufempfehlung. Alle Kürzel kommen automatisch in die Aktien-Daten (scripts/stock-universe.mjs).",
  "firms": {
   "NVDA": {
@@ -287,9 +287,13 @@
    "name": "Novo Nordisk",
    "role": "challenger",
    "what": "Dänischer Pionier der Abnehmmittel (Ozempic und Wegovy, Wirkstoff Semaglutid).",
-   "why": "Hat seit Januar 2026 als Erster eine Abnehm-Pille in den USA auf dem Markt (Wegovy-Pille) und viel Erfahrung mit Massenproduktion; nach dem Kurssturz deutlich günstiger bewertet als Lilly.",
-   "watch": "Hat Marktanteile an Lilly verloren; Preissenkungen in den USA und erste Nachahmer, weil der Patentschutz für Semaglutid in mehreren Ländern ab 2026 ausläuft.",
+   "why": "Hat seit Januar 2026 als Erster eine Abnehm-Pille in den USA auf dem Markt: Die Wegovy-Pille brachte im 3. Quartal 2026 schon 5,4 Mrd. Kronen Umsatz (53 % mehr als im Vorquartal), der bereinigte Betriebsgewinn stieg um 27 % (konstante Währungen), und am 4. November 2026 hob Novo die Jahresprognose erneut an. Nach dem Kurssturz deutlich günstiger bewertet als Lilly.",
+   "watch": "Die Verordnungen der Pille wachsen zuletzt langsamer; die US-Umsätze mit der Wegovy-Spritze fielen im 3. Quartal um 13 %; Listenpreissenkungen für Wegovy und Ozempic in den USA ab 1. Januar belasten 2027; erste Nachahmer, weil der Patentschutz für Semaglutid in mehreren Ländern ab 2026 ausläuft.",
    "src": [
+    [
+     "https://finimize.com/content/novo-nordisk-raised-its-2026-outlook-again-on-strong-wegovy-pill-sales",
+     "Finimize: Novo im 3. Quartal (Nov. 2026)"
+    ],
     [
      "https://www.biospace.com/fda/novos-wegovy-pill-wins-obesity-approval-securing-lead-in-oral-glp-1-race",
      "BioSpace: Zulassung der Wegovy-Pille (Dez. 2025)"
@@ -456,12 +460,16 @@
    "name": "Rocket Lab",
    "role": "challenger",
    "what": "Startet kleine Satelliten mit der Electron-Rakete und baut Satelliten und Bauteile; die größere Neutron-Rakete ist in Entwicklung.",
-   "why": "Nach SpaceX einer der aktivsten Raketenstarter des Westens und zugleich Satellitenhersteller – das meiste Geld kommt schon aus dem Satellitengeschäft. Gelingt Neutron, kann Rocket Lab auch große Konstellationen ins All bringen.",
-   "watch": "Neutron hat sich mehrfach verzögert (Erstflug frühestens Ende 2026); Verluste und neue Aktien zur Finanzierung.",
+   "why": "Nach SpaceX einer der aktivsten Raketenstarter des Westens und zugleich Satellitenhersteller – das meiste Geld kommt schon aus dem Satellitengeschäft. Gelingt Neutron, kann Rocket Lab auch große Konstellationen ins All bringen. Mit der im Juni 2026 vereinbarten Übernahme von Iridium (Abschluss Mitte 2027 erwartet) käme ein eigenes Satellitennetz mit Funkfrequenzen dazu.",
+   "watch": "Der Erstflug der Neutron-Rakete ist auf 2027 verschoben (Mitte Oktober 2026 bekannt gegeben: Fehler an einer Tankkuppel der ersten Stufe; einen neuen Termin nennt Rocket Lab erst nach den Tests im 1. Quartal 2027); dazu Verluste sowie neue Aktien und Schulden für die Iridium-Übernahme.",
    "src": [
     [
-     "https://spaceflightnow.com/2026/08/10/window-for-2026-launch-debut-of-rocket-labs-neutron-rocket-is-narrowing-as-development-continues/",
-     "Spaceflight Now: Neutron-Zeitplan (Aug. 2026)"
+     "https://www.space.com/space-exploration/launches-spacecraft/rocket-lab-pushes-1st-launch-of-next-gen-neutron-rocket-to-2027",
+     "Space.com: Neutron erst 2027 (Okt. 2026)"
+    ],
+    [
+     "https://www.lightreading.com/satellite/rocket-lab-aims-to-become-space-super-power-via-iridium-deal",
+     "Light Reading: Iridium-Übernahme (Juni 2026)"
     ]
    ]
   },
@@ -495,9 +503,13 @@
    "name": "Iridium",
    "role": "supplier",
    "what": "Betreibt ein weltweites Satellitennetz für Telefonie und Datenfunk, das auch Pole und Ozeane abdeckt.",
-   "why": "Profitabel und mit stabilen Einnahmen; der neue Dienst NTN Direct soll gewöhnliche Geräte nach 5G-Standard direkt mit den Satelliten verbinden – Partner sind unter anderem die Deutsche Telekom und Vodafone IoT, der Start ist für 2026 geplant.",
-   "watch": "Viel weniger Bandbreite als Starlink oder AST SpaceMobile; harter Wettbewerb im Markt „Satellit direkt aufs Gerät“.",
+   "why": "Profitabel mit stabilen Einnahmen (2025: 871,7 Mio. $ Umsatz); der Dienst NTN Direct soll gewöhnliche Geräte nach 5G-Standard direkt mit den Satelliten verbinden. Am 29. Juni 2026 haben Rocket Lab und Iridium die Übernahme vereinbart: 54 $ je Aktie (27 $ bar plus Rocket-Lab-Aktien innerhalb eines Kursbands), rund 8 Mrd. $ Unternehmenswert, Abschluss Mitte 2027 erwartet.",
+   "watch": "Bis zum Abschluss folgt der Kurs vor allem dem Angebot – zur Hälfte also der Rocket-Lab-Aktie; nötig sind die Zustimmung der Aktionäre und der Behörden. Viel weniger Bandbreite als Starlink oder AST SpaceMobile.",
    "src": [
+    [
+     "https://satnews.com/2026/06/29/rocket-lab-to-acquire-iridium-communications-in-8-billion-mergers-and-acquisitions-transaction/",
+     "SatNews: Rocket Lab übernimmt Iridium (Juni 2026)"
+    ],
     [
      "https://www.satellitetoday.com/finance/2026/04/23/iridium-continues-iot-subscriber-growth-in-q1-desch-talks-ntn-direct-launch-and-spectrum/",
      "Via Satellite: NTN Direct (April 2026)"
@@ -880,6 +892,67 @@
      "OHB Investor Relations"
     ]
    ]
+  },
+  "BAYN.DE": {
+   "name": "Bayer",
+   "role": "challenger",
+   "theme": "Pharma und Agrar: Glyphosat-Urteil und neue Mittel",
+   "added": "2026-11-10",
+   "what": "Deutscher Konzern mit Pharma (unter anderem das Prostatakrebs-Mittel Nubeqa und das Nierenmittel Kerendia), Pflanzenschutz und Saatgut (Monsanto, Glyphosat) sowie rezeptfreien Mitteln.",
+   "why": "Der US Supreme Court hat am 25. Juni 2026 im Fall Monsanto gegen Durnell mit 7:2 entschieden, dass das Bundesrecht für Pflanzenschutzmittel Klagen wegen einer fehlenden Krebswarnung auf dem Roundup-Etikett ausschließt – das größte Rechtsrisiko des Konzerns ist damit deutlich kleiner. Im 3. Quartal 2026 wuchsen Nubeqa um 58 % und Kerendia um 65 % (währungs- und portfoliobereinigt); am 3. November 2026 hob Bayer die Prognose für das Konzernergebnis, den Mittelzufluss und die Pharma-Marge an.",
+   "watch": "Hohe Schulden (31,1 Mrd. € Nettofinanzverschuldung Ende September 2026); das Urteil klärt weder die Wissenschaft noch jede Klage, und Vergleichszahlungen belasten den Mittelzufluss; Preisdruck und künftige Nachahmer bei Nubeqa.",
+   "src": [
+    [
+     "https://www.bayer.com/en/about-us/events/faq-financial-results/bayer-q3-2026-results-pharmaceuticals-division-drives-third-quarter-2026-sales-and-ebitda-growth-as-bayer-improves-full-year-outlook-",
+     "Bayer: Zahlen zum 3. Quartal (Nov. 2026)"
+    ],
+    [
+     "https://www.faegredrinker.com/en/insights/publications/2026/6/supreme-court-decides-monsanto-v-durnell",
+     "Faegre Drinker: Monsanto v. Durnell (Juni 2026)"
+    ],
+    [
+     "https://www.thenewlede.org/2026/06/monsanto-scotus-pesticides-cancer-case/",
+     "The New Lede: Folgen für die Klagen (Juni 2026)"
+    ]
+   ]
+  },
+  "MRK": {
+   "name": "Merck & Co.",
+   "role": "leader",
+   "theme": "Pharma: Krebsmittel Keytruda",
+   "added": "2026-11-10",
+   "what": "US-Pharmakonzern: Keytruda ist das umsatzstärkste Krebsmittel der Welt, dazu kommen Impfstoffe wie Gardasil und das Lungenhochdruck-Mittel Winrevair.",
+   "why": "Im 3. Quartal 2026 (gemeldet am 29. Oktober) wuchs die Keytruda-Familie um 6 % auf 8,6 Mrd. $; die neue Form unter die Haut, Keytruda Qlex, brachte bereits 830 Mio. $, Winrevair legte um 93 % zu. Merck hob die Gewinnprognose für 2026 an. Qlex gilt als wichtigste Antwort auf den Patentablauf von Keytruda ab 2028.",
+   "watch": "Etwa 550 Mio. $ des Quartalsumsatzes kamen aus vorgezogenen US-Bestellungen und fallen im 4. Quartal wieder weg; ab 2028 Nachahmer für Keytruda; das Management erwartet für 2027 Gegenwind durch Generika, schwächere Impfstoffmärkte und höhere Forschungskosten.",
+   "src": [
+    [
+     "https://finviz.com/news/411712/merck-reports-q3-revenue-of-181-billion-raises-2026-earnings-guidance",
+     "Finviz: Merck-Zahlen zum 3. Quartal (Okt. 2026)"
+    ],
+    [
+     "https://www.marketbeat.com/instant-alerts/transcript-merck-co-inc-q3-earnings-call-highlights-2026-10-30/",
+     "MarketBeat: Telefonkonferenz zum 3. Quartal (Okt. 2026)"
+    ]
+   ]
+  },
+  "REP.MC": {
+   "name": "Repsol",
+   "role": "leader",
+   "theme": "Öl und Raffinerie: hohe Margen, Rückkäufe",
+   "added": "2026-11-10",
+   "what": "Spanischer Energiekonzern: Öl- und Gasförderung, größter Raffineriebetreiber Spaniens, Tankstellen und Strom aus erneuerbaren Quellen.",
+   "why": "Im 3. Quartal 2026 stieg der bereinigte Nettogewinn auf 2,71 Mrd. € (Vorjahr 0,75 Mrd. €), weil die Raffineriemarge auf 36,2 $ je Barrel sprang (Vorquartal 14 $). Am 29. Oktober 2026 kündigte Repsol einen dritten Aktienrückkauf von bis zu 950 Mio. € an – 2026 zusammen rund 1,8 Mrd. € – und hob die Prognose für den operativen Mittelzufluss auf 9 bis 9,5 Mrd. € an.",
+   "watch": "Raffineriemargen schwanken stark und waren im 3. Quartal außergewöhnlich hoch; fallende Öl- und Gaspreise drücken das Fördergeschäft; politische Risiken in Förderländern.",
+   "src": [
+    [
+     "https://finimize.com/content/repsol-doubles-down-on-buybacks-after-a-strong-quarter",
+     "Finimize: Repsol im 3. Quartal (Okt. 2026)"
+    ],
+    [
+     "https://www.teleborsa.it/News/2026/10/29/repsol-l-utile-vola-a-5-miliardi-nei-nove-mesi-nuovo-buyback-da-950-milioni-45.html",
+     "Teleborsa: Repsol nach neun Monaten (Okt. 2026)"
+    ]
+   ]
   }
  },
  "sectors": {
@@ -994,7 +1067,7 @@
     "https://www.rcrwireless.com/20260415/network-infrastructure/amazon-globalstar-space-race",
     "RCR Wireless (April 2026)"
    ],
-   "safer": "Sicherer: Iridium (IRDM) – schon profitabel; Airbus (AIR.PA) baut Satelliten für viele Betreiber.",
+   "safer": "Sicherer: Airbus (AIR.PA) baut Satelliten für viele Betreiber; Iridium (IRDM) ist profitabel, wird aber von Rocket Lab übernommen (Abschluss Mitte 2027 erwartet) und folgt bis dahin dem Angebot.",
    "saferSyms": [
     "IRDM",
     "AIR.PA"
@@ -1038,5 +1111,10 @@
     "NOVO-B.CO"
    ]
   }
- }
+ },
+ "swing": [
+  "BAYN.DE",
+  "MRK",
+  "REP.MC"
+ ]
 }
