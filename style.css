@@ -1088,3 +1088,13 @@ details.more > summary:hover { color: var(--text); }
 /* Sicherung: Hinweis im zugeklappten Abschnitt und auf der Startseite */
 .pill-due { display: inline-block; margin-left: 8px; padding: 1px 7px; border: 1px solid var(--text); border-radius: var(--r); font: 800 10px var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--text); vertical-align: middle; }
 .backup-nudge { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line-2); }
+
+/* Note-Bilanz */
+.lkey.dot { background: repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 5px) !important; }
+.nt-verdict { font-size: 15px; line-height: 1.55; margin: 12px 0 6px; }
+.nt-table td, .nt-table th { vertical-align: top; }
+.nt-table td b { font-family: var(--mono); }
+.nt-table td:first-child b { font-family: var(--font); }
+.nt-sub { display: block; color: var(--muted); font-size: 11.5px; font-weight: 400; margin-top: 2px; white-space: nowrap; }
+.nt-all td { border-top: 1px solid var(--line-2); }
+@media (max-width: 520px) { .nt-table .nt-sub { font-size: 10.5px; } .nt-table .nt-hit { display: none; } .nt-table td, .nt-table th { padding-left: 5px; padding-right: 5px; } .nt-table td:first-child .nt-sub { white-space: normal; } }

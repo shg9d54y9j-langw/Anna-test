@@ -152,7 +152,7 @@
     const partial = s.coverage < 0.6;
     return `<div class="note-wrap">
         <div class="note-big"><span class="note-num num ${tone(s.note)}">${fin(s.note) ? s.note : "–"}</span><span class="note-of">von 100</span><span class="note-lbl">${label(s.note)}</span>
-          <p class="muted small">${T("note", "Wie entsteht die Note?")}${partial ? ` · Teilnote: ${x.type === "ETF" ? "bei ETFs nur Trend und Sicherheit" : "Bilanz-Kennzahlen fehlen (nur für US-Aktien)"}` : ""}</p></div>
+          <p class="muted small">${T("note", "Wie entsteht die Note?")}${partial ? ` · Teilnote: ${x.type === "ETF" ? "bei ETFs nur Trend und Sicherheit" : "Bilanz-Kennzahlen fehlen (nur für US-Aktien)"}` : ""} · <a href="#notebilanz">Trifft die Note? Bilanz →</a></p></div>
         ${bars(s, sym)}
       </div>
       <div class="grid-2 note-why">

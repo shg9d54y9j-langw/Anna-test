@@ -32,6 +32,27 @@ REPO_DIR="$tmp/fake" bash "$root/scripts/publish-stock-data.sh" > "$tmp/3.log" 2
 grep -q "bisherige Plan bleibt stehen" "$tmp/3.log" || fail "keine Warnung bei kaputtem Planer"
 [ "$(started)" = "2020-01-01" ] || fail "Plan bei kaputtem Planer verloren"
 
+# 3b. Note-Bilanz: neue Dateien werden veröffentlicht, ohne neue bleibt der alte Stand, weniger Messtage oder kaputte Dateien
+#     ersetzen ihn nicht
+notes() { git --git-dir="$tmp/remote.git" show "stock-data:$1" 2> /dev/null | node -e 'let s = ""; process.stdin.on("data", d => s += d).on("end", () => { try { const d = JSON.parse(s); console.log(d.snaps ? d.snaps.length : d.days); } catch { console.log("fehlt"); } })'; }
+mkdir -p "$tmp/n2" "$tmp/n1" "$tmp/nbad"
+echo '{"v":1,"snaps":[{"d":"2026-11-09","n":{"A":50}},{"d":"2026-11-10","n":{"A":60}}]}' > "$tmp/n2/note-history.json"
+echo '{"days":2,"horizons":[]}' > "$tmp/n2/note-track.json"
+echo '{"v":1,"snaps":[{"d":"2026-11-10","n":{"A":60}}]}' > "$tmp/n1/note-history.json"
+echo '{"days":1,"horizons":[]}' > "$tmp/n1/note-track.json"
+printf '{kaputt' > "$tmp/nbad/note-history.json"
+echo '{"days":9,"horizons":[]}' > "$tmp/nbad/note-track.json"
+NOTES_DIR="$tmp/n2" bash "$root/scripts/publish-stock-data.sh" > "$tmp/n.log" || { cat "$tmp/n.log"; fail "Lauf mit Note-Bilanz fehlgeschlagen"; }
+[ "$(notes note-history.json)" = 2 ] && [ "$(notes note-track.json)" = 2 ] || fail "Note-Bilanz nicht veröffentlicht ($(notes note-history.json))"
+bash "$root/scripts/publish-stock-data.sh" > "$tmp/n.log" || fail "Lauf ohne neue Note-Bilanz fehlgeschlagen"
+[ "$(notes note-history.json)" = 2 ] || fail "Note-Bilanz ohne neue Dateien verloren"
+NOTES_DIR="$tmp/n1" bash "$root/scripts/publish-stock-data.sh" > "$tmp/n.log" || fail "Lauf mit geschrumpfter Note-Bilanz fehlgeschlagen"
+[ "$(notes note-history.json)" = 2 ] && [ "$(notes note-track.json)" = 2 ] || fail "geschrumpfte Note-Bilanz hat die alte ersetzt"
+grep -q "statt bisher 2 Messtage" "$tmp/n.log" || fail "keine Warnung bei geschrumpfter Note-Bilanz"
+NOTES_DIR="$tmp/nbad" bash "$root/scripts/publish-stock-data.sh" > "$tmp/n.log" 2>&1 || fail "Lauf mit kaputter Note-Bilanz abgebrochen"
+[ "$(notes note-history.json)" = 2 ] && [ "$(notes note-track.json)" = 2 ] || fail "kaputte Note-Bilanz hat die alte ersetzt"
+[ "$(started)" = "2020-01-01" ] || fail "Swing-Bilanz bei den Note-Läufen verloren"
+
 # 4. Zweig nicht erreichbar: nichts veröffentlichen
 before=$(git --git-dir="$tmp/remote.git" rev-parse stock-data)
 if REMOTE="file://$tmp/fehlt.git" PUSH_URL="file://$tmp/fehlt.git" bash "$root/scripts/publish-stock-data.sh" > "$tmp/4.log" 2>&1; then fail "nicht erreichbarer Zweig trotzdem veröffentlicht"; fi
@@ -41,4 +62,4 @@ grep -q "nicht erreichbar" "$tmp/4.log" || { cat "$tmp/4.log"; fail "keine Meldu
 node -e 'const d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); d.items = d.items.slice(0, 10); process.stdout.write(JSON.stringify(d));' "$stocks" > "$tmp/small.json"
 if STOCKS_FILE="$tmp/small.json" bash "$root/scripts/publish-stock-data.sh" > "$tmp/5.log" 2>&1; then fail "zu wenige Werte trotzdem veröffentlicht"; fi
 [ "$(git --git-dir="$tmp/remote.git" rev-parse stock-data)" = "$before" ] || fail "Zweig trotz Abbruch verändert"
-echo "Veröffentlichen geprüft: erster Lauf, Bilanz übernommen, kaputter Planer lässt den Plan stehen, Abbruch ohne Zweig und bei zu wenigen Werten."
+echo "Veröffentlichen geprüft: erster Lauf, Bilanz übernommen, kaputter Planer lässt den Plan stehen, Note-Bilanz nur vollständig und nie kürzer, Abbruch ohne Zweig und bei zu wenigen Werten."

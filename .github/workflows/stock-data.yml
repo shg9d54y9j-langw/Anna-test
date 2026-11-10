@@ -35,11 +35,22 @@ jobs:
           ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           ETORO_THROTTLE_MS: "560"     # Marktdaten: 120 Abfragen pro Minute
+          CLOSES_OUT: ${{ runner.temp }}/closes.json   # Schlusskurse für die Note-Bilanz – bleiben auf diesem Rechner
         run: |
           node scripts/stock-universe.mjs
           if [ -f data/stocks.json ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # Note-Bilanz: Gesamtnote des Tages merken und messen, wie die Aktien je Notenstufe danach liefen. Ohne Schlüssel;
+      # schlägt sie fehl, bleibt beim Veröffentlichen der bisherige Stand.
+      - name: Note-Bilanz rechnen
+        if: steps.calc.outputs.ready == 'true'
+        env:
+          CLOSES_IN: ${{ runner.temp }}/closes.json
+        run: |
+          node scripts/note-track.mjs
+          rm -f "$CLOSES_IN"
 
       # Als Artefakt weitergeben: als Umgebungsvariable wären die Daten zu groß (Linux erlaubt höchstens 128 KB je Wert)
       - name: Kennzahlen an den Veröffentlichungs-Schritt übergeben
@@ -47,7 +58,10 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: stocks
-          path: data/stocks.json
+          path: |
+            data/stocks.json
+            data/note-history.json
+            data/note-track.json
           retention-days: 1
           if-no-files-found: error
 
@@ -76,5 +90,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          STOCKS_FILE="$PWD/incoming/stocks.json" REMOTE="https://github.com/${REPO}.git" \
+          STOCKS_FILE="$PWD/incoming/stocks.json" NOTES_DIR="$PWD/incoming" REMOTE="https://github.com/${REPO}.git" \
             PUSH_URL="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" REPO_DIR="$PWD" bash scripts/publish-stock-data.sh

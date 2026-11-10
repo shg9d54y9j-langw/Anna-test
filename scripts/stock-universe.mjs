@@ -12,6 +12,7 @@ import { call, field, findArray, num, log, warn, fail, hasKeys, sleep } from "./
 
 const here = p => fileURLToPath(new URL(p, import.meta.url));
 const OUT = process.env.STOCKS_OUT || here("../data/stocks.json");
+const CLOSES_OUT = process.env.CLOSES_OUT || "";   // Schlusskurse für die Note-Bilanz – nur lokal, nie hochgeladen
 export const CONFIG = { stocks: Number(process.env.STOCK_COUNT || 700), etfs: Number(process.env.ETF_COUNT || 150), candles: 300 };
 // Firmen der Theorie-Seite (Steckbriefe in data/firms.json): immer in den Aktien-Daten, auch wenn sie nicht unter den beliebtesten sind
 const FIRMS = process.env.FIRMS_IN || here("../data/firms.json");
@@ -264,12 +265,14 @@ async function main() {
     }
   } catch (e) { warn(`S&P 500 für Beta: ${e.message}`); }
 
-  const items = [], errors = [];
+  const items = [], errors = [], closes = {};
   for (const u of universe) {
     try {
-      const s = stockStats(await dailyCandles(u.id), spxByDay);
+      const candles = await dailyCandles(u.id);
+      const s = stockStats(candles, spxByDay);
       if (!s) { errors.push(`${u.sym}: zu wenige Kerzen`); continue; }
       items.push({ sym: u.sym, tv: tvSymbol(u.sym), name: u.name, type: u.type, crowd: r2(u.crowd), ...s });
+      if (CLOSES_OUT && u.type === "Aktie") closes[u.sym] = candles.map(x => [x.d, x.c]);
     } catch (e) { errors.push(`${u.sym}: ${e.message}`); }
   }
   rankPct(items, "mom"); rankPct(items, "vol60");
@@ -315,6 +318,8 @@ async function main() {
   const out = { updated: new Date().toISOString(), count: items.length, finnhub: finn, source: "eToro-Marktdaten (Tageskerzen); optional Finnhub", errors: errors.slice(0, 30), items };
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(out));
+  // Schlusskurse für die Note-Bilanz (scripts/note-track.mjs): nur auf dem Rechner des Laufs, wird nicht veröffentlicht
+  if (CLOSES_OUT) { await mkdir(dirname(CLOSES_OUT), { recursive: true }); await writeFile(CLOSES_OUT, JSON.stringify({ asOf: out.updated, items: closes })); }
   log(`Aktien-Daten: ${items.length} Werte, ${errors.length} ohne Daten; Finnhub ${finn}`);
 }
 

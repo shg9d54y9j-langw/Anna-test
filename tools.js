@@ -259,9 +259,10 @@
     if (!host || $("tools").hidden) { badge(); return; }
     const kept = ["scQ", "alSym", "alPrice", "alNote"].reduce((o, id) => { const el = $(id); if (el && el.value) o[id] = el.value; return o; }, {});
     host.innerHTML = (stocks ? "" : `<article class="card"><p class="muted">${loading ? "Lade die Aktien-Daten …" : "Noch keine Aktien-Daten vorhanden."}</p></article>`)
-      + (window.DTD.compare ? window.DTD.compare.card() : "") + screenerCard() + (stocks && window.DTD.sectorsCard ? window.DTD.sectorsCard() : "")
+      + (window.DTD.compare ? window.DTD.compare.card() : "") + screenerCard() + (window.DTD.noteTrackCard ? window.DTD.noteTrackCard() : "") + (stocks && window.DTD.sectorsCard ? window.DTD.sectorsCard() : "")
       + calendarCard() + insiderCard() + alarmCard() + moreCard() + (window.DTD.lexiconCard ? window.DTD.lexiconCard() : "");
     if (window.DTD.compare) window.DTD.compare.charts();
+    if (window.DTD.noteTrackDraw) window.DTD.noteTrackDraw();
     for (const [id, v] of Object.entries(kept)) if ($(id)) $(id).value = v;
     if ($("alSym") && window.DTD.attachSuggest) window.DTD.attachSuggest($("alSym"), { source: text => (stocks && text ? window.DTD.matchStocks(stocks.items, text, 8) : []), onPick: () => { if ($("alPrice")) $("alPrice").focus(); } });
     badge();
