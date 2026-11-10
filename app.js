@@ -311,7 +311,7 @@ function whenNear(el, fn) {
   io.observe(el);
 }
 const VIEW_INIT = {
-  portfolio: () => window.DTD.startPortfolio(),
+  portfolio: () => { window.DTD.startPortfolio(); window.DTD.renderWatch(); },
   markt: () => { loadHeatmap(heatSel.value); loadHotlist(); window.DTD.loadMarketLive(); whenNear($("news"), () => { loadNews(); loadCalendar(); }); },
   aktie: () => window.DTD.startStock(),
   tools: () => window.DTD.startTools(),
@@ -335,6 +335,7 @@ function showView(id, { scrollTo = null } = {}) {
   }
   store.set("dtd-tab", id);
   document.title = `${TITLES[id]} · RojkoMoney`;
+  window.dispatchEvent(new CustomEvent("dtd:view", { detail: id }));
   if (!initialized.has(id)) { initialized.add(id); if (VIEW_INIT[id]) VIEW_INIT[id](); }
   // Diagramme kennen ihre Breite erst, wenn der Bereich sichtbar ist
   requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));

@@ -103,7 +103,7 @@
     const [lab, cls] = label(s), z = size(s);
     const isNew = s.since && data && s.since === data.updated.slice(0, 10) && s.state === "buy";
     return `<article class="idea swing-card">
-      <div class="idea-head"><button type="button" class="idea-sym" data-open="${esc(s.sym)}">${esc(s.sym)}</button><button type="button" class="name-link muted small idea-name" data-open="${esc(s.sym)}">${esc(s.name || "")}</button><span class="light ${cls}">${lab}${isNew ? " · neu" : ""}</span></div>
+      <div class="idea-head"><button type="button" class="idea-sym" data-open="${esc(s.sym)}">${esc(s.sym)}</button><button type="button" class="name-link muted small idea-name" data-open="${esc(s.sym)}">${esc(s.name || "")}</button>${window.DTD.watch ? window.DTD.watch.star(s.sym, "sm") : ""}<span class="light ${cls}">${lab}${isNew ? " · neu" : ""}</span></div>
       ${themeChips(s, info)}
       ${thesis(s, false)}
       <div class="idea-levels"><span>Kauf <b class="num">${price(s.entry)}</b> <span class="muted">${s.entryType === "market" ? "Markt" : s.entryType === "limit" ? "Order" : "Alarm"}</span></span><span>Stop <b class="num">${price(s.stop)}</b> ${pc(s.stopPct)}</span><span>Ziel für die Hälfte <b class="num">${price(s.target)}</b> ${pc(s.targetPct)}</span><span>Betrag <b class="num">${z ? eur(z.amount) : "–"}</b></span></div>

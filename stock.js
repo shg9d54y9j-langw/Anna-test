@@ -144,13 +144,14 @@
     // Finnhub gibt den Börsenwert in Millionen an – bei Firmen mit Sitz im Ausland teils in der Heimatwährung (TSMC in
     // Taiwan-Dollar, Sony in Yen). Dort und bei unmöglichen Werten (über 10 Billionen) keine Dollar-Angabe.
     const abroad = it.cty && it.cty !== "US";
+    const T = (k, l) => (window.DTD.term ? window.DTD.term(k, l, x.sym) : l);
     const cap = Number.isFinite(it.mcap) && !abroad && it.mcap < 1e7 ? it.mcap : null;
     const ins = it.ins, mcap = cap === null ? (Number.isFinite(it.mcap) ? "siehe eToro" : "–") : cap >= 1e6 ? `${fmt(cap / 1e6, 2)} Bio. $` : cap >= 1000 ? `${fmt(cap / 1000, 1)} Mrd. $` : `${fmt(cap, 0)} Mio. $`;
     el.innerHTML = `<div class="stats-grid">
-        ${kpi("KGV", n(it.pe))}${kpi("KUV", n(it.ps))}${kpi("Kurs/Buchwert", n(it.pb))}${kpi("Umsatzwachstum", n(it.revG, 1, " %"), it.revG < 0 ? "down" : "up")}
-        ${kpi("Gewinnwachstum", n(it.epsG, 1, " %"), it.epsG < 0 ? "down" : "up")}${kpi("Nettomarge", n(it.netM, 1, " %"))}${kpi("Eigenkapitalrendite", n(it.roe, 1, " %"))}${kpi("Schulden/Eigenkapital", n(it.de, 2))}
-        ${kpi("Dividendenrendite", n(it.div, 2, " %"))}${kpi("Börsenwert", mcap)}${kpi("Branche", esc(it.ind || "–"))}
-        ${kpi("Insider (90 Tage)", ins ? `${ins.buyers} kaufen · ${ins.sellers} verkaufen` : "–")}
+        ${kpi(T("kgv", "KGV"), n(it.pe))}${kpi(T("kuv", "KUV"), n(it.ps))}${kpi(T("kbv", "Kurs/Buchwert"), n(it.pb))}${kpi(T("umsatz", "Umsatzwachstum"), n(it.revG, 1, " %"), it.revG < 0 ? "down" : "up")}
+        ${kpi(T("gewinn", "Gewinnwachstum"), n(it.epsG, 1, " %"), it.epsG < 0 ? "down" : "up")}${kpi(T("marge", "Nettomarge"), n(it.netM, 1, " %"))}${kpi(T("ekr", "Eigenkapitalrendite"), n(it.roe, 1, " %"))}${kpi(T("schulden", "Schulden/Eigenkapital"), n(it.de, 2))}
+        ${kpi(T("dividende", "Dividendenrendite"), n(it.div, 2, " %"))}${kpi(T("boersenwert", "Börsenwert"), mcap)}${kpi("Branche", esc(it.ind || "–"))}
+        ${kpi(T("insider", "Insider (90 Tage)"), ins ? `${ins.buyers} kaufen · ${ins.sellers} verkaufen` : "–")}
       </div>
       <p class="hint">KGV = Kurs geteilt durch den Gewinn je Aktie der letzten 12 Monate: unter 15 gilt meist als günstig, über 30 als teuer – je nach Branche sehr verschieden. Insider-Käufe am Markt haben mehr Aussagekraft als Verkäufe.${abroad ? ` <b>Sitz außerhalb der USA (${esc(it.cty)}):</b> Die Firma meldet meist nicht nach SEC-Formular 4, die Insider-Zahlen sind nur eingeschränkt vergleichbar; Finnhub rechnet hier teils in der Heimatwährung – Bewertungen mit Vorsicht lesen.` : ""} Stand ${new Date(f.updated).toLocaleDateString("de-DE")}, Quelle Finnhub.</p>
       <p class="small">${links}</p>`;
@@ -182,6 +183,7 @@
   function render(x, q) {
     const host = $("stockBody");
     const tv = x ? x.tv : tvGuess(q);
+    const T = (k, l) => (window.DTD.term && x ? window.DTD.term(k, l, x.sym) : l);   // Kennzahl antippen → Erklärung
     const etoroUrl = `https://www.etoro.com/markets/${encodeURIComponent((x ? x.sym : q).toLowerCase())}`;
     const dates = window.DTD.nextMarketDates ? window.DTD.nextMarketDates() : [];
     const f = x ? factors(x) : [];
@@ -197,17 +199,17 @@
             ${x ? `<p class="stock-price">${price(x.last)} <span class="${x.chg1d < 0 ? "down" : "up"}">${sign(x.chg1d, 2)} %</span></p>
               <p class="muted small">Schlusskurs ${esc(x.asOf)} laut eToro · Live-Kurs in der Grafik</p>` : `<p class="muted">Nicht unter den ${data ? data.count : "beliebtesten"} Werten mit täglichen Kennzahlen – unten nur Live-Daten von TradingView.</p>`}
           </div>
-          <div class="btn-row">${x ? `<a class="btn ghost" href="${etoroUrl}" target="_blank" rel="noopener noreferrer">In eToro öffnen ↗</a>` : `<a class="btn ghost" href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/" target="_blank" rel="noopener noreferrer">Bei TradingView öffnen ↗</a>`}</div>
+          <div class="btn-row">${x && window.DTD.watch ? window.DTD.watch.star(x.sym, "big") : ""}${x ? `<a class="btn ghost" href="${etoroUrl}" target="_blank" rel="noopener noreferrer">In eToro öffnen ↗</a>` : `<a class="btn ghost" href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/" target="_blank" rel="noopener noreferrer">Bei TradingView öffnen ↗</a>`}</div>
         </div>
         ${x ? `<div class="stats-grid">
-          ${kpi("1 Monat", sign(x.ret1m) + " %", x.ret1m < 0 ? "down" : "up")}
-          ${kpi("3 Monate", sign(x.ret3m) + " %", x.ret3m < 0 ? "down" : "up")}
-          ${kpi("12 Monate", sign(x.ret12m) + " %", x.ret12m < 0 ? "down" : "up")}
-          ${kpi("Zum 200-Tage-Schnitt", sign(x.d200) + " %", x.d200 < 0 ? "down" : "up")}
-          ${kpi("Schwankung 60 Tage", fmt(x.vol60, 1) + " %")}
-          ${kpi("Tagesspanne (ATR)", fmt(x.atrPct, 2) + " %")}
-          ${kpi("Größter Rückgang 1 J.", "−" + fmt(x.mdd, 1) + " %", "down")}
-          ${kpi("Beta", fmt(x.beta, 2))}
+          ${kpi(T("rendite", "1 Monat"), sign(x.ret1m) + " %", x.ret1m < 0 ? "down" : "up")}
+          ${kpi(T("rendite", "3 Monate"), sign(x.ret3m) + " %", x.ret3m < 0 ? "down" : "up")}
+          ${kpi(T("rendite", "12 Monate"), sign(x.ret12m) + " %", x.ret12m < 0 ? "down" : "up")}
+          ${kpi(T("d200", "Zum 200-Tage-Schnitt"), sign(x.d200) + " %", x.d200 < 0 ? "down" : "up")}
+          ${kpi(T("schwankung", "Schwankung 60 Tage"), fmt(x.vol60, 1) + " %")}
+          ${kpi(T("atr", "Tagesspanne (ATR)"), fmt(x.atrPct, 2) + " %")}
+          ${kpi(T("rueckgang", "Größter Rückgang 1 J."), "−" + fmt(x.mdd, 1) + " %", "down")}
+          ${kpi(T("beta", "Beta"), fmt(x.beta, 2))}
         </div>` : ""}
         <div class="chart-tools" id="skTools">
           <div class="seg chart-seg" role="group" aria-label="Diagramm-Art">
@@ -219,6 +221,11 @@
         <div class="widget big-chart" id="skChart"></div>
         <div id="skChartInfo" class="chart-info"></div>
       </section>
+
+      ${x ? `<section class="block" data-section="Note">
+        <h2 class="card-title">${window.DTD.term ? window.DTD.term("note", "Gesamtnote", x.sym) : "Gesamtnote"}</h2>
+        <div id="skNote"><p class="muted small">Rechne die Note …</p></div>
+      </section>` : ""}
 
       ${x && x.type === "Aktie" ? `<section class="block" data-section="Kennzahlen">
         <h2 class="card-title">Kennzahlen und Insider</h2>
@@ -315,6 +322,7 @@
     drawChart();
     drawInfo();
     if (x && x.type === "Aktie") fillFund(x);
+    if (x && window.DTD.scoreReady) window.DTD.scoreReady().then(() => { const el = $("skNote"); if (el && current && current.query === x.sym) el.innerHTML = window.DTD.scoreCard(x.sym) || `<p class="muted small">Für diesen Wert reichen die Daten nicht für eine Note.</p>`; });
     host.querySelectorAll("[data-cstyle]").forEach(b => b.addEventListener("click", () => {
       chartSet.style = b.dataset.cstyle; saveChart();
       host.querySelectorAll("[data-cstyle]").forEach(o => o.setAttribute("aria-pressed", String(o.dataset.cstyle === chartSet.style)));

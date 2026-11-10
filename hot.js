@@ -53,7 +53,7 @@
       ? `<div class="idea-levels"><span>Ausstieg prüfen bei <b class="num">${price(x.last)}</b></span><span>Trend: ${pc(x.d200)} zum 200-Tage-Schnitt</span><span>Momentum ${pc(x.mom)}</span></div>`
       : `<div class="idea-levels"><span>Kauf <b class="num">${price(s.entry)}</b></span><span>Stop <b class="num">${price(s.stop)}</b> ${pc(s.stopPct)}</span><span>Ziel <b class="num">${price(s.target)}</b> ${pc(s.tgtPct)}</span><span>Haltedauer 2–6 Monate</span></div>`;
     return `<article class="idea">
-      <div class="idea-head"><button type="button" class="idea-sym" data-open="${esc(x.sym)}">${esc(x.sym)}</button><button type="button" class="name-link muted small idea-name" data-open="${esc(x.sym)}">${esc(x.name)}</button><span class="light ${kind === "sell" ? "red" : kind === "buy" ? "green" : "yellow"}">${label}</span></div>
+      <div class="idea-head"><button type="button" class="idea-sym" data-open="${esc(x.sym)}">${esc(x.sym)}</button><button type="button" class="name-link muted small idea-name" data-open="${esc(x.sym)}">${esc(x.name)}</button>${window.DTD.watch ? window.DTD.watch.star(x.sym, "sm") : ""}<span class="light ${kind === "sell" ? "red" : kind === "buy" ? "green" : "yellow"}">${label}</span></div>
       <div class="idea-meta muted small">Kurs ${price(x.last)} · 12 Monate ${pc(x.ret12m)} · Momentum-Rang ${Number.isFinite(x.momRank) ? x.momRank : "–"} von 100 · zum Jahreshoch ${pc(x.dHi52)}</div>
       ${x.rec ? recBar(x.rec, x.recPrev) : ""}
       ${extra}

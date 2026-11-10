@@ -1,0 +1,91 @@
+// ---------- Erklärung per Antippen: jede Kennzahl mit Bedeutung, Lesart und dem Wert der gerade gezeigten Aktie ----------
+// Auslöser: <button class="term" data-term="kgv" data-sym="NVDA">KGV</button> (Hilfe: window.DTD.term(key, label, sym)).
+(() => {
+  const TERMS = {
+    note: { g: "Gesamtnote", t: "Gesamtnote (0–100)", what: "Fasst sechs Teilnoten zusammen: Trend 25 %, Qualität 20 %, Bewertung 15 %, Wachstum 15 %, Experten 15 %, Sicherheit 10 %. Jede Teilnote vergleicht die Aktie mit allen rund 860 Werten dieser Seite, die Gesamtnote ordnet das gewichtete Mittel ebenso ein – 80 heißt: besser als 80 % der Werte.", read: "Ab 60 stark, ab 80 sehr stark (die besten 20 %), unter 40 schwach. Fehlen Bilanzdaten (Aktien außerhalb der USA, ETFs), zählen nur die vorhandenen Teilnoten.", tip: "Die Faktoren sind in der Forschung belegt (Momentum, Qualität, günstige Bewertung, geringe Schwankung), wirken aber nur im Schnitt vieler Aktien und über Monate. Eine hohe Note ist keine Garantie und kein Kaufsignal für morgen.", ctx: "note" },
+    "n-trend": { g: "Gesamtnote", t: "Teilnote Trend", what: "Momentum über 12 Monate (ohne den letzten Monat), Abstand zum 200-Tage-Schnitt und Nähe zum 52-Wochen-Hoch.", read: "Hoch: Die Aktie läuft seit Monaten besser als die meisten. Aktien mit starkem Momentum liefen laut Forschung im Schnitt 3–12 Monate weiter (Jegadeesh & Titman 1993), besonders nahe am Jahreshoch (George & Hwang 2004).", tip: "Momentum kann abrupt drehen, vor allem nach Marktcrashs (Daniel & Moskowitz 2016) – deshalb immer mit Stop.", ctx: "part:trend" },
+    "n-quality": { g: "Gesamtnote", t: "Teilnote Qualität", what: "Eigenkapitalrendite, Netto- und Bruttomarge und Verschuldung im Vergleich zu allen Aktien.", read: "Hoch: profitabel und solide finanziert. Profitable, wenig verschuldete Firmen schnitten langfristig besser ab (Novy-Marx 2013; Asness, Frazzini & Pedersen 2019).", tip: "Nur für US-Aktien (Daten von Finnhub). Banken und Versicherer haben andere Bilanzen – dort sagen Margen weniger.", ctx: "part:quality" },
+    "n-value": { g: "Gesamtnote", t: "Teilnote Bewertung", what: "KGV, KUV und Kurs-Buchwert-Verhältnis – innerhalb der eigenen Branche, wenn es dort mindestens 8 Vergleichsfirmen gibt.", read: "Hoch: günstig im Vergleich. Günstige Aktien brachten über Jahrzehnte mehr Rendite (Fama & French 1992), in den letzten 15 Jahren aber deutlich weniger.", tip: "Billig kann berechtigt sein (schrumpfendes Geschäft). Firmen mit Verlust haben kein sinnvolles KGV – dann zählen KUV und Buchwert.", ctx: "part:value" },
+    "n-growth": { g: "Gesamtnote", t: "Teilnote Wachstum", what: "Wachstum von Umsatz und Gewinn je Aktie zum Vorjahr, verglichen mit allen Aktien.", read: "Hoch: wächst schneller als die meisten Firmen.", tip: "Hohes Wachstum ist oft schon im Preis – dann drückt die Teilnote Bewertung. Einmaleffekte verzerren das Gewinnwachstum.", ctx: "part:growth" },
+    "n-experts": { g: "Gesamtnote", t: "Teilnote Experten", what: "Anteil der Analysten mit Kaufempfehlung, Änderung zum Vormonat und Käufe mehrerer Insider in den letzten 90 Tagen.", read: "Hoch: Analysten mehrheitlich positiv, zuletzt optimistischer, Insider kaufen. Änderungen sagen mehr als der Stand (Jegadeesh u. a. 2004); gezielte Insider-Käufe haben Aussagekraft (Cohen, Malloy & Pomorski 2012).", tip: "Analysten sind im Schnitt zu optimistisch. Für Werte außerhalb der USA gibt es oft keine Analysten-Daten.", ctx: "part:experts" },
+    "n-risk": { g: "Gesamtnote", t: "Teilnote Sicherheit", what: "Schwankung der letzten 60 Tage, größter Rückgang im Jahr und Beta zum S&P 500 – je niedriger, desto höher die Teilnote.", read: "Hoch: ruhige Aktie. Schwankungsarme Aktien brachten im Verhältnis zum Risiko mehr (Ang u. a. 2006; Frazzini & Pedersen 2014).", tip: "Ruhig heißt nicht sicher: Auch solide Aktien können nach schlechten Nachrichten stark fallen.", ctx: "part:risk" },
+    kgv: { g: "Bewertung", t: "KGV – Kurs-Gewinn-Verhältnis", what: "Aktienkurs geteilt durch den Gewinn je Aktie der letzten 12 Monate: wie viele Jahresgewinne Anleger heute bezahlen.", read: "Unter 15 gilt meist als günstig, 15–25 als normal, über 30 als teuer – je nach Branche sehr verschieden (Software höher, Banken niedriger).", tip: "Ein niedriges KGV kann eine Falle sein, wenn der Gewinn bald einbricht. Bei Verlust gibt es kein sinnvolles KGV.", ctx: "pe" },
+    kuv: { g: "Bewertung", t: "KUV – Kurs-Umsatz-Verhältnis", what: "Börsenwert geteilt durch den Jahresumsatz.", read: "Nützlich für Firmen ohne Gewinn. Unter 2 eher günstig, über 10 nur bei sehr hohem Wachstum zu rechtfertigen.", tip: "Sagt nichts über die Marge: 1 € Umsatz bei einem Händler ist weniger wert als bei einem Softwarehaus.", ctx: "ps" },
+    kbv: { g: "Bewertung", t: "Kurs-Buchwert-Verhältnis", what: "Börsenwert geteilt durch das Eigenkapital laut Bilanz.", read: "Unter 1: Die Börse bewertet die Firma unter ihrem Buchwert. Wichtig bei Banken und Versicherern.", tip: "Bei Technologie-Firmen wenig aussagekräftig – ihr Wert steckt in Software, Marken und Patenten, die kaum in der Bilanz stehen." },
+    umsatz: { g: "Qualität & Wachstum", t: "Umsatzwachstum", what: "Veränderung des Umsatzes der letzten 12 Monate zum Vorjahr in Prozent.", read: "Über 10 % gilt als gutes, über 25 % als starkes Wachstum.", tip: "Zukäufe können das Wachstum aufblähen. Wichtig ist, ob es anhält – Quartalszahlen im Blick behalten.", ctx: "revG" },
+    gewinn: { g: "Qualität & Wachstum", t: "Gewinnwachstum", what: "Veränderung des Gewinns je Aktie zum Vorjahr in Prozent.", read: "Positiv und stabil ist gut. Sehr hohe Werte entstehen oft, weil der Vorjahresgewinn klein war.", tip: "Einmaleffekte (Verkauf einer Sparte, Abschreibungen) verzerren stark.", ctx: "epsG" },
+    marge: { g: "Qualität & Wachstum", t: "Nettomarge", what: "Wie viel vom Umsatz als Gewinn übrig bleibt.", read: "Über 20 % ist sehr hoch (Software, Chips), 5–10 % normal (Industrie), unter 3 % typisch für Handel. Negativ heißt Verlust.", tip: "Am besten mit Firmen derselben Branche vergleichen.", ctx: "netM" },
+    ekr: { g: "Qualität & Wachstum", t: "Eigenkapitalrendite", what: "Gewinn im Verhältnis zum Eigenkapital: wie gut die Firma das Geld der Aktionäre verzinst.", read: "Über 15 % gut, über 25 % sehr gut.", tip: "Hohe Schulden und Aktienrückkäufe treiben die Kennzahl künstlich hoch – zusammen mit der Verschuldung lesen.", ctx: "roe" },
+    schulden: { g: "Qualität & Wachstum", t: "Schulden zu Eigenkapital", what: "Finanzschulden geteilt durch das Eigenkapital.", read: "Unter 0,5 solide, über 2 hoch verschuldet. Steigende Zinsen treffen hoch verschuldete Firmen besonders.", tip: "Versorger und Immobilienfirmen arbeiten branchenüblich mit mehr Schulden.", ctx: "de" },
+    dividende: { g: "Qualität & Wachstum", t: "Dividendenrendite", what: "Jährliche Dividende geteilt durch den Aktienkurs.", read: "2–4 % ist für viele solide Firmen üblich. Sehr hohe Renditen (über 7 %) deuten oft auf ein Problem hin – der Kurs ist gefallen, die Dividende wackelt.", tip: "In Österreich fallen 27,5 % KESt an; bei US-Aktien zusätzlich 15 % US-Quellensteuer, die teilweise angerechnet wird." },
+    boersenwert: { g: "Qualität & Wachstum", t: "Börsenwert", what: "Aktienkurs mal Anzahl der Aktien – was die ganze Firma an der Börse kostet.", read: "Über 200 Mrd. $ gelten als Mega-, über 10 Mrd. als Large-, unter 2 Mrd. als Small Caps. Kleine Firmen schwanken stärker." },
+    rendite: { g: "Trend & Risiko", t: "Rendite 1, 3 und 12 Monate", what: "Kursveränderung über den Zeitraum in Prozent, ohne Dividenden.", read: "Zeigt, wie stark die Aktie zuletzt lief. Für Momentum zählen 12 Monate ohne den letzten Monat.", tip: "Starke kurzfristige Gewinne (1 Monat) kehren sich öfter wieder um – nicht hinterherlaufen." },
+    d200: { g: "Trend & Risiko", t: "Abstand zum 200-Tage-Schnitt", what: "Wie weit der Kurs über oder unter seinem Durchschnitt der letzten 200 Börsentage liegt.", read: "Darüber gilt der langfristige Trend als intakt, darunter als gebrochen. Der Swing-Planer kauft nur darüber.", tip: "Sehr weit darüber (+40 % und mehr) ist die Aktie heiß gelaufen – Rücksetzer sind dann wahrscheinlich.", ctx: "d200" },
+    ma: { g: "Trend & Risiko", t: "Gleitender Durchschnitt (Ø 20, 50, 200 Tage)", what: "Durchschnittskurs der letzten 20, 50 oder 200 Börsentage – glättet das Auf und Ab.", read: "Kurs über Ø 50 und Ø 200, und Ø 50 über Ø 200: Aufwärtstrend. Kreuzt der Ø 50 den Ø 200 nach oben, nennt man das „Golden Cross“, nach unten „Death Cross“.", tip: "Durchschnitte laufen dem Kurs hinterher – sie bestätigen Trends, sagen sie aber nicht voraus." },
+    hoch52: { g: "Trend & Risiko", t: "52-Wochen-Hoch und -Tief", what: "Höchster und tiefster Kurs der letzten 12 Monate.", read: "Aktien nahe am Jahreshoch liefen laut Forschung im Schnitt weiter (George & Hwang 2004) – Anleger verkaufen dort oft zu früh.", tip: "Ein Ausbruch über das Hoch mit viel Volumen ist aussagekräftiger als einer mit wenig." },
+    momentum: { g: "Trend & Risiko", t: "Momentum-Rang", what: "Rang der Rendite von vor 12 bis vor 1 Monat unter allen rund 860 Werten: 100 = stärkste, 0 = schwächste.", read: "Ab 80 gehört die Aktie zu den stärksten 20 %. Der Swing-Planer sucht neue Ideen ab Rang 90.", tip: "Der letzte Monat bleibt bewusst außen vor – kurzfristig kehren sich Bewegungen eher um.", ctx: "momRank" },
+    schwankung: { g: "Trend & Risiko", t: "Schwankung (Volatilität)", what: "Wie stark der Kurs von Tag zu Tag schwankt, auf ein Jahr hochgerechnet (60 Tage).", read: "Unter 20 % ruhig (große Konzerne), 30–50 % lebhaft, über 60 % sehr wild (junge Tech-, Krypto- und Biotech-Werte).", tip: "Bei hoher Schwankung kleinere Beträge einsetzen – sonst reißt ein normaler Ausschlag den Stop.", ctx: "vol60" },
+    atr: { g: "Trend & Risiko", t: "ATR – durchschnittliche Tagesspanne", what: "Durchschnittliche Spanne zwischen Tageshoch und -tief der letzten 14 Tage (Average True Range).", read: "Grundlage für Stop-Abstände: Der Swing-Planer setzt den Stop 3 ATR unter den Kauf, damit normale Schwankungen ihn nicht auslösen.", tip: "Steigt die ATR stark, wird die Aktie nervöser – Positionsgröße anpassen." },
+    rueckgang: { g: "Trend & Risiko", t: "Größter Rückgang (Max. Drawdown)", what: "Der tiefste Fall vom Höchststand innerhalb der letzten 12 Monate.", read: "Zeigt, was Sie mit dieser Aktie aushalten mussten: −20 % ist für Aktien normal, −50 % ein Absturz.", tip: "Fragen Sie sich ehrlich, ob Sie bei so einem Rückgang durchhalten würden.", ctx: "mdd" },
+    beta: { g: "Trend & Risiko", t: "Beta", what: "Wie stark die Aktie mit dem S&P 500 mitgeht: Beta 1 = wie der Markt, 2 = doppelt so stark, 0,5 = halb so stark.", read: "Hohes Beta bringt in Aufschwüngen mehr, in Abschwüngen mehr Verlust.", tip: "Gemessen über ein Jahr – bei Firmen im Umbruch ändert sich das Beta schnell.", ctx: "beta" },
+    rsi: { g: "Technik", t: "RSI – Relative-Stärke-Index", what: "Verhältnis der Aufwärts- zu den Abwärtsbewegungen der letzten 14 Tage, Skala 0–100.", read: "Über 70 gilt als überkauft, unter 30 als überverkauft.", tip: "In starken Trends bleibt der RSI lange über 70 – allein kein Verkaufssignal." },
+    macd: { g: "Technik", t: "MACD", what: "Differenz zweier exponentieller Durchschnitte (12 und 26 Tage) mit einer Signallinie (9 Tage).", read: "Kreuzt die MACD-Linie die Signallinie nach oben, nimmt der Aufwärtsschwung zu; nach unten der Abwärtsschwung.", tip: "Liefert in Seitwärtsphasen viele Fehlsignale." },
+    bollinger: { g: "Technik", t: "Bollinger-Bänder", what: "Ø 20 Tage plus und minus zwei Standardabweichungen.", read: "Am oberen Band läuft der Kurs ungewöhnlich stark, am unteren ungewöhnlich schwach. Enge Bänder kündigen oft eine größere Bewegung an.", tip: "Ein Kurs am oberen Band ist im Aufwärtstrend normal – kein Verkaufssignal für sich." },
+    volumen: { g: "Technik", t: "Volumen", what: "Wie viele Aktien an einem Tag gehandelt werden.", read: "Bewegungen mit hohem Volumen sind verlässlicher – dahinter stehen große Anleger.", tip: "An Feiertagen und kurz vor Weihnachten ist das Volumen ohnehin niedrig." },
+    analysten: { g: "Experten", t: "Analysten-Konsens", what: "Wie viele Bank-Analysten zu „Starker Kauf“, „Kauf“, „Halten“, „Verkauf“ und „Starker Verkauf“ raten (Finnhub, monatlich).", read: "Ab 70 % Kauf gilt eine Aktie als Favorit. Wichtiger ist die Richtung: Wurden es mehr Kaufempfehlungen als im Vormonat?", tip: "Analysten sind im Schnitt zu optimistisch, Verkaufsempfehlungen selten – wenn sie kommen, haben sie mehr Gewicht." },
+    insider: { g: "Experten", t: "Insider-Käufe", what: "Vorstände und Aufsichtsräte, die mit eigenem Geld Aktien ihrer Firma am Markt kaufen (Meldung an die US-Börsenaufsicht, Formular 4).", read: "Kaufen mehrere Insider in kurzer Zeit, hat das laut Forschung Aussagekraft. Verkäufe haben oft private Gründe (Steuern, Haus).", tip: "Firmen mit Sitz außerhalb der USA melden meist nicht nach Formular 4 – ihre Zahlen sind kaum vergleichbar." },
+    zahlen: { g: "Experten", t: "Quartalszahlen und Überraschung", what: "Der Gewinn je Aktie, den die Firma meldet, verglichen mit der Erwartung der Analysten.", read: "Liegt der Gewinn deutlich über der Erwartung, driftet der Kurs oft noch Wochen nach (Bernard & Thomas 1989) – bei großen Aktien heute schwächer.", tip: "Am Zahlentag springt der Kurs oft über den Stop hinweg. Der Swing-Planer kauft deshalb 10 Tage vorher nicht neu." },
+    stop: { g: "Handeln", t: "Stop-Loss und Trailing-Stop", what: "Stop-Loss: verkauft automatisch, wenn der Kurs eine Marke unterschreitet. Trailing-Stop: zieht die Marke mit steigendem Kurs nach oben.", read: "Begrenzt den Verlust einer Idee. Bei eToro beim Kauf unter „Stop Loss“ eintragen, „Trailing Stop Loss“ einschalten.", tip: "Zu eng gesetzt, löst ihn normales Rauschen aus – Faustregel 2–3 ATR unter dem Kauf." },
+  };
+  const S = () => window.DTD.shared;
+  // Wert der Aktie zur Kennzahl, mit Einordnung gegen alle Werte
+  function context(key, sym) {
+    const T = TERMS[key];
+    if (!T || !T.ctx || !sym || !S()) return "";
+    const s = window.DTD.score ? window.DTD.score(sym) : null, x = S().item(sym), f = S().fund(sym) || {};
+    if (!x) return "";
+    const n = (v, d = 1, suf = "") => (Number.isFinite(v) ? `${fmt(v, d)}${suf}` : null);
+    const better = p => (Number.isFinite(p) ? ` – höher als bei ${fmt(p, 0)} % der Werte hier` : "");
+    const cheaper = p => (Number.isFinite(p) ? ` – niedriger als bei ${fmt(100 - p, 0)} % ${s && s.indN ? `der Branche ${esc(s.ind)}` : "der Aktien hier"}` : "");
+    let line = null;
+    if (T.ctx === "note") line = s && Number.isFinite(s.note) ? `Gesamtnote ${s.note} von 100 (${window.DTD.scoreLabel(s.note)})` : null;
+    else if (T.ctx.startsWith("part:")) { const v = s && s.parts[T.ctx.slice(5)]; line = Number.isFinite(v) ? `Teilnote ${v} von 100 – besser als ${fmt(v, 0)} % der Werte` : "keine Daten für diese Aktie"; }
+    else if (T.ctx === "pe") line = n(f.pe) && f.pe > 0 ? `KGV ${n(f.pe)}${cheaper(s && s.pct.pe)}` : "kein positives KGV (Verlust oder keine Daten)";
+    else if (T.ctx === "ps") line = n(f.ps) ? `KUV ${n(f.ps)}${cheaper(s && s.pct.ps)}` : null;
+    else if (T.ctx === "revG") line = n(f.revG) ? `Umsatz ${f.revG > 0 ? "+" : ""}${n(f.revG)} %${better(s && s.pct.revG)}` : null;
+    else if (T.ctx === "epsG") line = n(f.epsG) ? `Gewinn je Aktie ${f.epsG > 0 ? "+" : ""}${n(f.epsG)} %${better(s && s.pct.epsG)}` : null;
+    else if (T.ctx === "netM") line = n(f.netM) ? `Nettomarge ${n(f.netM)} %${better(s && s.pct.netM)}` : null;
+    else if (T.ctx === "roe") line = n(f.roe) ? `Eigenkapitalrendite ${n(f.roe)} %${better(s && s.pct.roe)}` : null;
+    else if (T.ctx === "de") line = n(f.de) ? `Schulden das ${n(f.de, 2)}-Fache des Eigenkapitals${Number.isFinite(s && s.pct.de) ? ` – mehr als bei ${fmt(s.pct.de, 0)} % der Aktien hier` : ""}` : null;
+    else if (T.ctx === "vol60") line = n(x.vol60) ? `Schwankung ${n(x.vol60)} % pro Jahr${better(s && s.pct.vol60)}` : null;
+    else if (T.ctx === "mdd") line = n(x.mdd) ? `größter Rückgang −${n(x.mdd)} %${better(s && s.pct.mdd)}` : null;
+    else if (T.ctx === "beta") line = n(x.beta) ? `Beta ${n(x.beta, 2)}${better(s && s.pct.beta)}` : null;
+    else if (T.ctx === "momRank") line = n(x.momRank, 0) ? `Momentum-Rang ${n(x.momRank, 0)} von 100` : null;
+    else if (T.ctx === "d200") line = n(x.d200) ? `Kurs ${x.d200 > 0 ? "+" : ""}${n(x.d200)} % zum 200-Tage-Schnitt` : null;
+    return line ? `<p class="term-ctx"><b>${esc(x.sym)}:</b> ${line}</p>` : "";
+  }
+  function open(key, sym) {
+    const T = TERMS[key];
+    if (!T) return;
+    openDrawer(T.t, `${context(key, sym)}<p>${T.what}</p>${T.read ? `<h3 class="swing-h3">So lesen Sie es</h3><p>${T.read}</p>` : ""}${T.tip ? `<h3 class="swing-h3">Worauf achten</h3><p>${T.tip}</p>` : ""}
+      <p class="muted small" style="margin-top:14px">Alle Begriffe: Werkzeuge → Lexikon. Keine Anlageberatung.</p>`);
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-term]");
+    if (!b || !TERMS[b.dataset.term]) return;
+    e.preventDefault();
+    e.stopPropagation();
+    open(b.dataset.term, b.dataset.sym || "");
+  });
+  window.DTD.term = (key, label, sym = "") => (TERMS[key] ? `<button type="button" class="term" data-term="${key}"${sym ? ` data-sym="${esc(sym)}"` : ""} title="Was bedeutet das?">${label}</button>` : label);
+  window.DTD.openTerm = open;
+  // Lexikon-Karte für die Werkzeuge: alle Begriffe nach Gruppen
+  window.DTD.lexiconCard = () => {
+    const groups = [...new Set(Object.values(TERMS).map(t => t.g))];
+    return `<article class="card" data-section="Lexikon" id="lexikon">
+      <h2 class="card-title">Lexikon: Kennzahlen erklärt</h2>
+      <p class="muted small" style="margin:-6px 0 12px">Antippen öffnet die Erklärung. Im Aktien-Check zeigt jede unterstrichene Kennzahl zusätzlich den Wert der Aktie im Vergleich.</p>
+      ${groups.map(g => `<div class="lex-group"><span class="tchips-lbl">${g}</span><div class="chips">${Object.entries(TERMS).filter(([, t]) => t.g === g).map(([k, t]) => `<button type="button" class="chip-btn" data-term="${k}">${t.t.split(" – ")[0].split(" (")[0]}</button>`).join("")}</div></div>`).join("")}
+    </article>`;
+  };
+})();

@@ -6,7 +6,6 @@
 (() => {
   const RAW = "https://raw.githubusercontent.com/shg9d54y9j-langw/Anna-test/";
   const get = url => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).catch(() => null);
-  const newest = list => list.filter(d => d && d.updated).sort((a, b) => new Date(b.updated) - new Date(a.updated))[0] || null;
   const A = (url, text) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
   const sign = (x, d = 1) => (Number.isFinite(x) ? (x > 0 ? "+" : "") + fmt(x, d) : "–");
   const pc = (x, d = 1) => (Number.isFinite(x) ? `<span class="${x < 0 ? "down" : "up"}">${sign(x, d)} %</span>` : "–");
@@ -48,6 +47,7 @@
 
   // ---------- Screener ----------
   const PRESETS = {
+    best: { label: "Beste Gesamtnote", note: "Gesamtnote ab 85 (besser als 85 % aller Werte) aus Trend, Qualität, Bewertung, Wachstum, Experten und Sicherheit – nur Aktien mit Bilanzdaten (USA). Erklärt im Aktien-Check und im Lexikon.", f: { minNote: 85, type: "Aktie" }, sort: "note" },
     momentum: { label: "Momentum-Führer", note: "Momentum unter den besten 15 %, Aufwärtstrend, höchstens 7 % unter dem Jahreshoch – die Regel des Swing-Planers.", f: { trend: "up", minMom: 85, maxBelowHigh: 7 } },
     pullback: { label: "Rücksetzer im Aufwärtstrend", note: "Aufwärtstrend, aber zurück am 50-Tage-Schnitt (−3 % bis +2 %): klassische Kaufzone.", f: { trend: "up", d50min: -3, d50max: 2 } },
     highs: { label: "Neue Jahreshochs", note: "Höchstens 1 % unter dem 52-Wochen-Hoch.", f: { maxBelowHigh: 1 } },
@@ -59,7 +59,7 @@
     theory: { label: "Theorie-Firmen", note: "Alle Firmen der Theorie-Seite.", f: { theory: "all" } },
     all: { label: "Alle", note: "Keine Vorauswahl – filtern Sie selbst.", f: {} },
   };
-  const filter = () => Object.assign({ type: "Aktie", region: "all", theory: "", ind: "", trend: "", minMom: null, maxBelowHigh: null, d50min: null, d50max: null, minBuy: null, minBuyers: null, maxPe: null, minRevG: null, minDiv: null, minSurprise: null, q: "" }, (PRESETS[ui.preset] || PRESETS.all).f, ui.custom || {});
+  const filter = () => Object.assign({ type: "Aktie", region: "all", theory: "", ind: "", trend: "", minMom: null, maxBelowHigh: null, d50min: null, d50max: null, minBuy: null, minBuyers: null, maxPe: null, minRevG: null, minDiv: null, minSurprise: null, minNote: null, q: "" }, (PRESETS[ui.preset] || PRESETS.all).f, ui.custom || {});
   // Quartalszahlen-Überraschung der letzten 45 Tage (in %), sonst null
   const surprise = x => (x.lastEarn && Number.isFinite(x.lastEarn.surprisePct) && (Date.now() - Date.parse(`${x.lastEarn.date}T12:00:00Z`)) / 864e5 <= 45 ? x.lastEarn.surprisePct : null);
   function screen(f) {
@@ -85,15 +85,17 @@
       if (f.minRevG !== null && !(fx.revG >= f.minRevG)) return false;
       if (f.minDiv !== null && !(fx.div >= f.minDiv)) return false;
       if (f.minSurprise !== null && !(surprise(x) >= f.minSurprise)) return false;
+      if (f.minNote !== null) { const s = window.DTD.score && window.DTD.score(x.sym); if (!(s && s.note >= f.minNote && s.coverage >= 0.6)) return false; }
       if (q && !x.sym.includes(q) && !String(x.name || "").toUpperCase().includes(q)) return false;
       return true;
     });
   }
   const COLS = [
-    { key: "sym", label: "Aktie", get: x => x.sym, cell: x => `<button type="button" class="chip-btn" data-open="${esc(x.sym)}">${esc(x.sym)}</button><button type="button" class="name-link muted small scr-name" data-open="${esc(x.sym)}">${esc(x.name || "")}</button>` },
+    { key: "sym", label: "Aktie", get: x => x.sym, cell: x => `<span class="scr-sym"><button type="button" class="chip-btn" data-open="${esc(x.sym)}">${esc(x.sym)}</button>${window.DTD.watch ? window.DTD.watch.star(x.sym, "sm") : ""}</span><button type="button" class="name-link muted small scr-name" data-open="${esc(x.sym)}">${esc(x.name || "")}</button>` },
     { key: "last", label: "Kurs", num: true, opt: true, get: x => x.last, cell: x => price(x.last) },
     { key: "ret12m", label: "12 Mon.", num: true, get: x => x.ret12m, cell: x => pc(x.ret12m, 0) },
-    { key: "momRank", label: "Mom.", num: true, get: x => x.momRank, cell: x => (Number.isFinite(x.momRank) ? x.momRank : "–") },
+    { key: "note", label: "Note", num: true, get: x => { const s = window.DTD.score && window.DTD.score(x.sym); return s && Number.isFinite(s.note) ? s.note : null; }, cell: x => { const s = window.DTD.score && window.DTD.score(x.sym); return s && Number.isFinite(s.note) ? `<b class="${window.DTD.scoreTone(s.note)}">${s.note}</b>` : `<span class="muted">–</span>`; } },
+    { key: "momRank", label: "Mom.", num: true, opt: true, get: x => x.momRank, cell: x => (Number.isFinite(x.momRank) ? x.momRank : "–") },
     { key: "trend", label: "Trend", get: x => ({ up: 2, flat: 1, down: 0, nodata: -1 })[trendOf(x)], cell: x => { const [l, c] = TREND[trendOf(x)]; return `<span class="light ${c}">${l}</span>`; } },
     { key: "dHi52", label: "zum Hoch", num: true, opt: true, get: x => x.dHi52, cell: x => pc(x.dHi52, 0) },
     { key: "pe", label: "KGV", num: true, opt: true, get: x => F(x.sym).pe, cell: x => (Number.isFinite(F(x.sym).pe) ? fmt(F(x.sym).pe, 1) : "–") },
@@ -252,7 +254,7 @@
     if (!host || $("tools").hidden) { badge(); return; }
     const kept = ["scQ", "alSym", "alPrice", "alNote"].reduce((o, id) => { const el = $(id); if (el && el.value) o[id] = el.value; return o; }, {});
     host.innerHTML = (stocks ? "" : `<article class="card"><p class="muted">${loading ? "Lade die Aktien-Daten …" : "Noch keine Aktien-Daten vorhanden."}</p></article>`)
-      + screenerCard() + calendarCard() + insiderCard() + alarmCard() + moreCard();
+      + screenerCard() + calendarCard() + insiderCard() + alarmCard() + moreCard() + (window.DTD.lexiconCard ? window.DTD.lexiconCard() : "");
     for (const [id, v] of Object.entries(kept)) if ($(id)) $(id).value = v;
     if ($("alSym") && window.DTD.attachSuggest) window.DTD.attachSuggest($("alSym"), { source: text => (stocks && text ? window.DTD.matchStocks(stocks.items, text, 8) : []), onPick: () => { if ($("alPrice")) $("alPrice").focus(); } });
     badge();
@@ -301,13 +303,9 @@
     if (loading || (stocks && !force)) { if (stocks) render(); return; }
     loading = true;
     if (!stocks) render();
-    const t = Date.now();
-    const shared = !force && window.DTD.stockData ? window.DTD.stockData() : null;
-    const [s1, s2, f1, w1, fi] = await Promise.all([
-      shared ? Promise.resolve(shared) : get(`data/stocks.json?t=${t}`), shared ? Promise.resolve(null) : get(`${RAW}stock-data/stocks.json?t=${t}`),
-      get(`${RAW}fund-data/fund.json?t=${t}`), get(`${RAW}stock-data/swing.json?t=${t}`), firms ? Promise.resolve(firms) : get(`data/firms.json?t=${t}`),
-    ]);
-    const s = newest([s1, s2]);
+    const S = window.DTD.shared;
+    const [s, f1, w1, fi] = await Promise.all([S.load("stocks", force), S.load("fund", force), S.load("swing", force), S.load("firms")]);
+    if (window.DTD.scoreReady) await window.DTD.scoreReady();
     if (s && Array.isArray(s.items)) stocks = s;
     if (f1 && f1.items) fund = f1;
     if (w1 && Array.isArray(w1.setups)) swing = w1;
@@ -319,6 +317,6 @@
   window.DTD.reloadTools = () => load(true);
   window.DTD.alarmCount = () => alarms().length;
   // Kennzahlen für den Aktien-Check (wird nach dem Zeichnen der Aktie aufgerufen)
-  window.DTD.fundData = async () => { if (!fund) { const f = await get(`${RAW}fund-data/fund.json?t=${Date.now()}`); if (f && f.items) fund = f; } return fund; };
+  window.DTD.fundData = async () => { if (!fund) { const f = await window.DTD.shared.load("fund"); if (f && f.items) fund = f; } return fund; };
   if (alarms().length) setTimeout(() => load(false), 2000);
 })();
