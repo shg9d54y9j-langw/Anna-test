@@ -199,7 +199,7 @@
             ${x ? `<p class="stock-price">${price(x.last)} <span class="${x.chg1d < 0 ? "down" : "up"}">${sign(x.chg1d, 2)} %</span></p>
               <p class="muted small">Schlusskurs ${esc(x.asOf)} laut eToro · Live-Kurs in der Grafik</p>` : `<p class="muted">Nicht unter den ${data ? data.count : "beliebtesten"} Werten mit täglichen Kennzahlen – unten nur Live-Daten von TradingView.</p>`}
           </div>
-          <div class="btn-row">${x && window.DTD.watch ? window.DTD.watch.star(x.sym, "big") : ""}${x ? `<a class="btn ghost" href="${etoroUrl}" target="_blank" rel="noopener noreferrer">In eToro öffnen ↗</a>` : `<a class="btn ghost" href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/" target="_blank" rel="noopener noreferrer">Bei TradingView öffnen ↗</a>`}</div>
+          <div class="btn-row">${x && window.DTD.watch ? window.DTD.watch.star(x.sym, "big") : ""}${x && window.DTD.compare ? window.DTD.compare.button(x.sym) : ""}${x ? `<a class="btn ghost" href="${etoroUrl}" target="_blank" rel="noopener noreferrer">In eToro öffnen ↗</a>` : `<a class="btn ghost" href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/" target="_blank" rel="noopener noreferrer">Bei TradingView öffnen ↗</a>`}</div>
         </div>
         ${x ? `<div class="stats-grid">
           ${kpi(T("rendite", "1 Monat"), sign(x.ret1m) + " %", x.ret1m < 0 ? "down" : "up")}
@@ -230,6 +230,10 @@
       ${x && x.type === "Aktie" ? `<section class="block" data-section="Kennzahlen">
         <h2 class="card-title">Kennzahlen und Insider</h2>
         <div id="skFund"><p class="muted small">Lade Kennzahlen …</p></div>
+      </section>
+      <section class="block" data-section="Konkurrenz">
+        <h2 class="card-title">Konkurrenz-Vergleich</h2>
+        <div id="skPeers"><p class="muted small">Lade die Branche …</p></div>
       </section>` : ""}
 
       <section class="block" data-section="Termine">
@@ -322,7 +326,7 @@
     drawChart();
     drawInfo();
     if (x && x.type === "Aktie") fillFund(x);
-    if (x && window.DTD.scoreReady) window.DTD.scoreReady().then(() => { const el = $("skNote"); if (el && current && current.query === x.sym) el.innerHTML = window.DTD.scoreCard(x.sym) || `<p class="muted small">Für diesen Wert reichen die Daten nicht für eine Note.</p>`; });
+    if (x && window.DTD.scoreReady) window.DTD.scoreReady().then(() => { const el = $("skNote"); if (el && current && current.query === x.sym) el.innerHTML = window.DTD.scoreCard(x.sym) || `<p class="muted small">Für diesen Wert reichen die Daten nicht für eine Note.</p>`; const pe = $("skPeers"); if (pe && window.DTD.peersHtml && current && current.query === x.sym) pe.innerHTML = window.DTD.peersHtml(x.sym); });
     host.querySelectorAll("[data-cstyle]").forEach(b => b.addEventListener("click", () => {
       chartSet.style = b.dataset.cstyle; saveChart();
       host.querySelectorAll("[data-cstyle]").forEach(o => o.setAttribute("aria-pressed", String(o.dataset.cstyle === chartSet.style)));

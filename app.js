@@ -341,7 +341,14 @@ function showView(id, { scrollTo = null } = {}) {
   requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
   $(`tab-${id}`).scrollIntoView({ block: "nearest", inline: "nearest" });
   if (scrollTo && $(scrollTo)) jumpTo($(scrollTo));
+  else if (scrollTo) waitAndJump(scrollTo);
   else window.scrollTo({ top: 0 });
+}
+// Abschnitte, die erst beim ersten Öffnen ihres Bereichs entstehen (Werkzeuge, Portfolio): kurz warten, dann springen
+const LAZY = { vergleich: "tools", screener: "tools", branchen: "tools", lexikon: "tools", pfTax: "portfolio" };
+function waitAndJump(id, tries = 50) {
+  if ($(id)) return jumpTo($(id));
+  if (tries > 0) setTimeout(() => waitAndJump(id, tries - 1), 100);
 }
 // Sprung zu einem Abschnitt: Inhalte darüber laden oft noch nach und schieben ihn weg – bis zu 3 Sekunden nachführen,
 // aber sofort aufhören, sobald der Besucher selbst scrollt oder tippt.
@@ -364,6 +371,7 @@ function route() {
   const el = h && document.getElementById(h);
   const view = el && el.closest(".view");
   if (view) return showView(view.id, { scrollTo: h });
+  if (LAZY[h]) return showView(LAZY[h], { scrollTo: h });
   // gespeicherter Reiter von früher (z. B. „journal“) → der Bereich, in dem er jetzt steckt
   const saved = store.get("dtd-tab", "home"), home = !VIEWS.includes(saved) && document.getElementById(saved);
   showView(home && home.closest(".view") ? home.closest(".view").id : saved);

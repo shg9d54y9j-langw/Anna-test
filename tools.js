@@ -115,7 +115,7 @@
     const sel = (id, opts, val) => `<select id="${id}">${opts.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(val ?? "") ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     const inp = (id, val, ph) => `<input id="${id}" inputmode="decimal" value="${val ?? ""}" placeholder="${ph}">`;
     const noFund = !fund ? "Kennzahlen und Insider-Daten kommen mit dem ersten nächtlichen Lauf." : !fund.available.insider ? "Insider-Daten liefert Finnhub im Gratis-Tarif nicht – dafür OpenInsider (unten)." : "";
-    return `<article class="card" data-section="Screener">
+    return `<article class="card" data-section="Screener" id="screener">
       <div class="card-head"><h2 class="card-title">Screener: Aktien nach Regeln finden</h2><span class="muted small">${stocks ? `${rows.length} von ${stocks.items.length} Werten` : "lade …"}</span></div>
       <div class="seg wrap-seg" role="group" aria-label="Vorlagen">${Object.entries(PRESETS).map(([k, p]) => `<button type="button" data-preset="${k}" aria-pressed="${ui.preset === k}">${p.label}</button>`).join("")}</div>
       <p class="muted small" style="margin:8px 0 0">${(PRESETS[ui.preset] || PRESETS.all).note}${noFund ? ` ${noFund}` : ""}</p>
@@ -254,7 +254,9 @@
     if (!host || $("tools").hidden) { badge(); return; }
     const kept = ["scQ", "alSym", "alPrice", "alNote"].reduce((o, id) => { const el = $(id); if (el && el.value) o[id] = el.value; return o; }, {});
     host.innerHTML = (stocks ? "" : `<article class="card"><p class="muted">${loading ? "Lade die Aktien-Daten …" : "Noch keine Aktien-Daten vorhanden."}</p></article>`)
-      + screenerCard() + calendarCard() + insiderCard() + alarmCard() + moreCard() + (window.DTD.lexiconCard ? window.DTD.lexiconCard() : "");
+      + (window.DTD.compare ? window.DTD.compare.card() : "") + screenerCard() + (stocks && window.DTD.sectorsCard ? window.DTD.sectorsCard() : "")
+      + calendarCard() + insiderCard() + alarmCard() + moreCard() + (window.DTD.lexiconCard ? window.DTD.lexiconCard() : "");
+    if (window.DTD.compare) window.DTD.compare.charts();
     for (const [id, v] of Object.entries(kept)) if ($(id)) $(id).value = v;
     if ($("alSym") && window.DTD.attachSuggest) window.DTD.attachSuggest($("alSym"), { source: text => (stocks && text ? window.DTD.matchStocks(stocks.items, text, 8) : []), onPick: () => { if ($("alPrice")) $("alPrice").focus(); } });
     badge();
@@ -314,6 +316,16 @@
     render();
   }
   window.DTD.startTools = () => load(false);
+  // Branche aus dem Konkurrenz-Vergleich im Screener zeigen (nach Gesamtnote sortiert)
+  let dirty = false;   // Filter von außen geändert, während die Werkzeuge verdeckt waren
+  window.DTD.screenerIndustry = ind => {
+    ui.custom = { ind, type: "Aktie" }; ui.preset = "all"; ui.sort = "note"; ui.dir = -1; saveUi();
+    dirty = true;
+    if (!$("tools").hidden && stocks) { dirty = false; render(); }
+    location.hash = "screener";
+  };
+  window.addEventListener("dtd:view", e => { if (e.detail === "tools" && dirty && stocks) { dirty = false; render(); } });
+  window.addEventListener("dtd:compare", () => { if (!$("tools").hidden && stocks) render(); });
   window.DTD.reloadTools = () => load(true);
   window.DTD.alarmCount = () => alarms().length;
   // Kennzahlen für den Aktien-Check (wird nach dem Zeichnen der Aktie aufgerufen)

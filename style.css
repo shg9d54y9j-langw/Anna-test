@@ -913,3 +913,59 @@ button.scr-name { display: block; max-width: 100%; overflow: hidden; text-overfl
 .note-why { margin-top: 16px; }
 .note-why .swing-h3 { margin-top: 0; }
 @media (max-width: 640px) { .note-wrap { grid-template-columns: 1fr; } }
+
+/* ---------- Konkurrenz-Vergleich ---------- */
+table.peers tr.me td { background: var(--panel-3); }
+table.peers tr.me td:first-child { box-shadow: inset 3px 0 0 var(--text); }
+.peer-says { margin: 8px 0 12px; }
+.cmp-btn[aria-pressed="true"] { background: #fff; color: #000; }
+
+/* Vergleich 2–4 Aktien */
+.cmp-pill { position: fixed; right: 16px; bottom: 20px; z-index: 30; background: #fff; color: #000; text-decoration: none; padding: 10px 14px; font: 800 12px var(--font); letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; box-shadow: 0 8px 24px rgba(0, 0, 0, .6); }
+.cmp-pill b { font-family: var(--mono); }
+.cmp-pill[hidden] { display: none; }
+@media (max-width: 720px) { .cmp-pill { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); right: 12px; } }
+.cmp-wrap { margin-top: 10px; }
+table.cmp th[scope="row"] { text-align: left; font: 600 12.5px var(--font); color: var(--text-2); letter-spacing: 0; text-transform: none; position: sticky; left: 0; background: var(--panel); z-index: 1; min-width: 96px; max-width: 150px; }
+table.cmp td, table.cmp th { padding-left: 8px; padding-right: 8px; }
+table.cmp thead th { vertical-align: top; }
+table.cmp .cmp-col { min-width: 96px; text-align: left; }
+table.cmp .cmp-x { width: 24px; height: 24px; font-size: 11px; margin-left: 4px; vertical-align: middle; }
+table.cmp .cmp-name { margin-top: 4px; white-space: normal; line-height: 1.3; text-transform: none; letter-spacing: 0; font-weight: 500; }
+table.cmp td { position: relative; }
+table.cmp td.best { background: rgba(255, 255, 255, .07); font-weight: 800; }
+table.cmp td.best::after { content: "★"; color: #ffd23f; font-size: 10px; margin-left: 4px; }
+table.cmp tr.cmp-sub th[scope="row"] { color: var(--muted); padding-left: 16px; }
+.cmp-bar { display: block; height: 3px; margin-top: 4px; border-radius: 2px; background: var(--up, #22c55e); }
+.cmp-bar.neg { background: var(--down, #ef4444); }
+.cmp-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 14px; }
+.cmp-chart p { margin: 0 0 6px; }
+
+/* Branchen-Rotation */
+.sec-head, .sec-row > summary { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(80px, 1fr) auto 70px; gap: 10px; align-items: center; }
+.sec-head { padding: 12px 10px 6px; border-bottom: 1px solid var(--line); }
+.sec-list { display: grid; }
+.sec-row { border-bottom: 1px solid var(--line); }
+.sec-row > summary { list-style: none; cursor: pointer; padding: 10px; }
+.sec-row > summary::-webkit-details-marker { display: none; }
+.sec-row > summary:hover { background: var(--panel-2); }
+.sec-row[open] > summary { background: var(--panel-2); }
+.sec-name { min-width: 0; font-weight: 600; font-size: 13.5px; }
+.sec-name .light { font-size: 9px; padding: 1px 6px; }
+.sec-bar { position: relative; height: 8px; background: var(--panel-3); border-radius: 4px; }
+.sec-bar::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--line-2); }
+.sec-bar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--up, #22c55e); }
+.sec-bar i.neg { background: var(--down, #ef4444); }
+.sec-vals { white-space: nowrap; font-size: 12.5px; }
+.sec-up { text-align: right; font-size: 12.5px; }
+.sec-top { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 10px 12px; }
+@media (max-width: 640px) {
+  /* am Handy nur die Spalte, nach der sortiert wird */
+  .sec-head, .sec-row > summary { grid-template-columns: minmax(0, 1fr) 56px auto; }
+  .sec-vals > span:not(.on) { display: none; }
+  .sec-head .sec-vals { font-size: 0; }
+  .sec-head .sec-vals > span.on { font-size: 12px; }
+  .sec-up:not(.on) { display: none; }
+  .sec-head > .sec-up.on, .sec-row > summary > .sec-up.on { grid-column: 3; }
+  .sec-head:has(.sec-up.on) .sec-vals, .sec-row > summary:has(.sec-up.on) .sec-vals { display: none; }
+}
