@@ -490,7 +490,7 @@
     const rows = list.map(h => ({ h, x: item(h.sym) }));
     const order = r => (!r.x ? 3 : { sell: 0, holdstop: 1, secure: 2, hold: 2 }[(verdict(r.h, r.x) || {}).key] ?? 3);
     rows.sort((a, b) => order(a) - order(b) || alerts(b.h, b.x).length - alerts(a.h, a.x).length || a.h.sym.localeCompare(b.h.sym));
-    host.innerHTML = (list.length ? summaryCard(rows) + mixCard(rows) : `<article class="card"><h2 class="card-title">Noch keine Aktien eingetragen</h2><p class="small">Tragen Sie unten Ihre erste Aktie mit Kaufpreis ein – die Seite zeigt dann Ergebnis, Risiko, ob Halten oder Raus und Nachrichten.</p></article>`)
+    host.innerHTML = (list.length ? summaryCard(rows) + mixCard(rows) + (window.DTD.depotHistoryCard ? window.DTD.depotHistoryCard() : "") : `<article class="card"><h2 class="card-title">Noch keine Aktien eingetragen</h2><p class="small">Tragen Sie unten Ihre erste Aktie mit Kaufpreis ein – die Seite zeigt dann Ergebnis, Risiko, ob Halten oder Raus und Nachrichten.</p></article>`)
       + (list.length ? `<article class="card" data-section="Aktien"><div class="card-head"><h2 class="card-title">Ihre Aktien</h2><span class="muted small">${loading && !stocks ? "Lade Kennzahlen …" : "„Verkauf prüfen“ zuerst"}</span></div><div class="pf-list">${rows.map(r => card(r.h)).join("")}</div></article>` : "")
       + formCard() + notifyCard();
     const extra = $("portfolioExtra");
@@ -500,6 +500,7 @@
       extra.innerHTML = taxCard() + backupCard() + methodCard();
       extra.querySelectorAll("details[data-section]").forEach(d => { if (opened.has(d.dataset.section)) d.open = true; });
     }
+    if (window.DTD.drawDepotHistory) window.DTD.drawDepotHistory();
     for (const id of open.chart) {
       const el = document.getElementById(`pfChart-${id}`);
       if (el && window.DTD.bigChart) window.DTD.bigChart(el.id, el.dataset.tv);

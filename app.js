@@ -354,7 +354,7 @@ function showView(id, { scrollTo = null } = {}) {
   else window.scrollTo({ top: 0 });
 }
 // Abschnitte, die erst beim ersten Öffnen ihres Bereichs entstehen (Werkzeuge, Portfolio): kurz warten, dann springen
-const LAZY = { vergleich: "tools", screener: "tools", branchen: "tools", lexikon: "tools", kalender: "tools", pfTax: "portfolio", pfBackup: "portfolio", pfMix: "portfolio", notebilanz: "tools", hinweise: "home" };
+const LAZY = { vergleich: "tools", screener: "tools", branchen: "tools", lexikon: "tools", kalender: "tools", pfTax: "portfolio", pfBackup: "portfolio", pfMix: "portfolio", pfHist: "portfolio", notebilanz: "tools", hinweise: "home" };
 function waitAndJump(id, tries = 50) {
   if ($(id)) return jumpTo($(id));
   if (tries > 0) setTimeout(() => waitAndJump(id, tries - 1), 100);

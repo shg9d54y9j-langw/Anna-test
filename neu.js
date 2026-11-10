@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-10-history", t: "Depot-Verlauf", d: "Im Portfolio: Ihr Depot Tag für Tag im Vergleich mit S&P 500 und MSCI World – zeitgewichtet, nur in Ihrem Browser gespeichert. Der Verlauf baut sich ab heute auf.", href: "#pfHist" },
     { id: "2026-11-10-lots", t: "Nachkäufe und Teilverkäufe", d: "Bei jeder Aktie im Portfolio: Nachkauf zum Durchschnittspreis (wie die österreichische KESt rechnet) und Teilverkauf – der Gewinn landet automatisch im Journal und im Steuer-Schätzer.", href: "#portfolio" },
     { id: "2026-11-10-risers", t: "Notenverlauf, Aufsteiger und Notenalarm", d: "Im Aktien-Check steht, wie sich die Gesamtnote entwickelt hat; im Screener gibt es die Vorlage „Aufsteiger“, und ein smarter Alarm meldet, wenn eine Ihrer Aktien unter Note 40 fällt oder über 80 steigt. Erste Vergleiche nach einer Woche.", href: "#screener" },
     { id: "2026-11-10-finance", t: "Finanzkraft-Ampel", d: "Im Aktien-Check: bis zu acht Bilanz-Prüfungen nach dem Piotroski-Prinzip (Gewinn, Geldzufluss, Schulden, Liquidität, Marge, Effizienz) mit Ampel; dazu die Screener-Vorlage „Finanzstark im Aufwärtstrend“. Die Jahreswerte kommen mit dem Kennzahlen-Lauf heute Nacht.", href: "#aktie" },
