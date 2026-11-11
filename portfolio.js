@@ -23,8 +23,11 @@
   // Durchschnitt neu, ein Verkauf ändert ihn nicht.
   const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
   const okTrade = l => l && Number.isFinite(l.q) && l.q > 0 && Number.isFinite(l.p) && l.p > 0;
-  // t = Zeitpunkt der Eingabe: ordnet Käufe und Verkäufe am selben Tag in der Reihenfolge, in der sie eingetragen wurden
-  const cleanTrades = a => (Array.isArray(a) ? a.filter(okTrade).map(l => ({ q: l.q, p: l.p, d: DAY_RE.test(l.d || "") ? l.d : null, t: Number.isFinite(l.t) ? l.t : 0 })) : []);
+  // t = Zeitpunkt der Eingabe: ordnet Käufe und Verkäufe am selben Tag in der Reihenfolge, in der sie eingetragen wurden;
+  // s = Depot, aus dem der Eintrag importiert wurde (tr Trade Republic, sc Scalable Capital, ot anderes) – fehlt bei Handeingaben
+  const cleanTrades = a => (Array.isArray(a) ? a.filter(okTrade).map(l => ({ q: l.q, p: l.p, d: DAY_RE.test(l.d || "") ? l.d : null, t: Number.isFinite(l.t) ? l.t : 0,
+    ...(/^[a-z]{2}$/.test(l.s || "") ? { s: l.s } : {}) })) : []);
+  const DEPOT = { tr: "Trade Republic", sc: "Scalable Capital", ot: "anderes Depot" };
   function avgAt(h, until = null) {
     const ev = [...h.lots.map((l, i) => ({ ...l, k: "b", i })), ...(h.sells || []).map((s, i) => ({ ...s, k: "s", i: 1e4 + i }))]
       .filter(e => !until || !e.d || e.d <= until)
@@ -240,7 +243,7 @@
   }
   function tradeLog(h) {
     const ev = [...h.lots.map(l => ({ ...l, k: "Kauf" })), ...(h.sells || []).map(s => ({ ...s, k: "Verkauf" }))].sort((a, b) => ((a.d || "") < (b.d || "") ? -1 : (a.d || "") > (b.d || "") ? 1 : (a.t || 0) - (b.t || 0)));
-    return `<details class="more pf-log"><summary>Käufe und Verkäufe (${ev.length})</summary><ul class="checklist small">${ev.map(e => `<li>${e.d ? dDate(e.d) : "ohne Datum"}: <b>${e.k}</b> ${fmt(e.q, e.q % 1 ? 2 : 0)} Stück zu ${price(e.p)}</li>`).join("")}</ul></details>`;
+    return `<details class="more pf-log"><summary>Käufe und Verkäufe (${ev.length})</summary><ul class="checklist small">${ev.map(e => `<li>${e.d ? dDate(e.d) : "ohne Datum"}: <b>${e.k}</b> ${fmt(e.q, e.q % 1 ? 2 : 0)} Stück zu ${price(e.p)}${DEPOT[e.s] ? ` <span class="muted">· ${DEPOT[e.s]}</span>` : ""}</li>`).join("")}</ul></details>`;
   }
   function formCard() {
     const h = editId ? list.find(x => x.id === editId) : null;
@@ -575,10 +578,11 @@
       <p class="small">Eine Zeile je Aktie: <code>Kürzel; Kaufpreis; Stück; Kaufdatum; Stop; Notiz</code>. „Kopieren“ legt Ihre Liste in die Zwischenablage, „Hinzufügen“ übernimmt Zeilen aus dem Feld (gleiche Aktie mit gleichem Kaufpreis wird nicht doppelt angelegt).</p>
       <textarea id="pfText" rows="5" placeholder="NVDA; 120,50; 10; 2026-03-02; 105; KI-Chips"></textarea>
       <div class="btn-row" style="margin-top:8px"><button type="button" class="btn ghost" data-act="export">Liste kopieren</button><button type="button" class="btn ghost" data-act="import">Zeilen hinzufügen</button></div>
-      <h3 class="swing-h3" style="margin-top:18px">Aus Trade Republic übernehmen</h3>
-      <p class="small">In der Trade-Republic-App unter <b>Profil → Kontoauszüge → Transaktionsexport</b> die CSV-Datei sichern und hier wählen. Die Seite liest sie nur in diesem Browser, zeigt Stück und Ø Kaufkurs je Wert und übernimmt erst nach Ihrer Bestätigung.</p>
+      <h3 class="swing-h3" style="margin-top:18px">Aus Trade Republic oder Scalable übernehmen</h3>
+      <p class="small"><b>Trade Republic:</b> in der App unter Profil → Kontoauszüge → Transaktionsexport die CSV-Datei sichern. <b>Scalable Capital:</b> im Web-Broker am Computer unter Transaktionen als CSV exportieren (laut Scalable für PRIME und PRIME+). Dann hier wählen – je Depot eine Datei; Werte in beiden Depots werden zusammengeführt.</p>
+      <p class="small muted">Die Seite liest die Datei nur in diesem Browser, zeigt Stück und Ø Kaufkurs je Wert und übernimmt erst nach Ihrer Bestätigung.</p>
       <input type="file" id="trFile" accept=".csv,text/csv,text/plain" hidden>
-      <div class="btn-row"><button type="button" class="btn ghost" data-act="tr-import">Transaktionsexport wählen</button></div>
+      <div class="btn-row"><button type="button" class="btn ghost" data-act="tr-import">Umsatzliste (CSV) wählen</button></div>
     </details>`;
   }
   window.DTD.backupDue = backupDue;
@@ -832,21 +836,45 @@
   // Gleiche Kürzel werden ersetzt; der bisherige Stand bleibt 7 Tage über „Stand vor dem Laden zurückholen“ erhalten.
   window.DTD.pfCurrency = currency;
   window.DTD.pfRateOn = rateOn;
-  window.DTD.pfImport = (recs, from) => {
+  // Mehrere Depots: Käufe und Verkäufe tragen ihr Depot (s). Ein Import aus Depot X ersetzt nur die X-Einträge der Werte in der
+  // Datei – Einträge aus anderen Depots bleiben, so ergibt sich je Wert eine gemeinsame Position. Von Hand eingetragene Käufe
+  // desselben Werts werden ersetzt (trimport.js fragt vorher). drop: in der Datei ganz verkaufte Werte – ihre X-Einträge fallen weg.
+  window.DTD.pfImport = (recs, from, src = "", drop = []) => {
     let before = null;
     try { before = localStorage.getItem(KEY); } catch { /* egal */ }
     try { localStorage.setItem(BK_UNDO, JSON.stringify({ at: new Date().toISOString(), from, data: { [KEY]: before } })); } catch { /* ohne Rückweg */ }
-    const stamp = Date.now().toString(36), add = [];
+    const tag = /^[a-z]{2}$/.test(src) ? src : "", stamp = Date.now().toString(36);
+    const otherDepot = l => !!l.s && l.s !== tag, fromHere = l => !!tag && l.s === tag;
+    const AUTO = /^(Trade Republic|Scalable Capital|anderes Depot)( \+ (Trade Republic|Scalable Capital|anderes Depot))* · [A-Z]{2}[A-Z0-9]{10}$/;
+    const out = list.slice();
+    let added = 0, merged = 0, replaced = 0;
+    const place = (k, pos) => { if (pos.qty > 0) { if (k >= 0) out[k] = pos; else out.push(pos); } else if (k >= 0) out.splice(k, 1); };
     (Array.isArray(recs) ? recs : []).forEach((r, i) => {
-      const sym = String(r && r.sym || "").toUpperCase(), lots = cleanTrades(r && r.lots), sells = cleanTrades(r && r.sells);
+      const sym = String(r && r.sym || "").toUpperCase();
+      const mark = l => (tag ? { ...l, s: tag } : l), lots = cleanTrades(r && r.lots).map(mark), sells = cleanTrades(r && r.sells).map(mark);
       if (!SYM.test(sym) || !lots.length) return;
-      const h = derive({ id: `p${stamp}t${i}`, sym, buy: lots[0].p, qty: null, date: null, stop: null, note: String(r.note || "").slice(0, 200), lots, ...(sells.length ? { sells } : {}) });
-      if (h.qty > 0) add.push(h);
+      const k = out.findIndex(h => h.sym === sym), h = k >= 0 ? out[k] : null;
+      const keepL = h && h.lots ? h.lots.filter(otherDepot) : [], keepS = h && h.sells ? h.sells.filter(otherDepot) : [];
+      if (h) { if (keepL.length) merged++; else replaced++; }
+      const all = [...keepL, ...lots], depots = [...new Set(all.map(l => DEPOT[l.s]).filter(Boolean))];
+      const isin = /[A-Z]{2}[A-Z0-9]{10}$/.exec(String(r.note || "")), auto = depots.length && isin ? `${depots.join(" + ")} · ${isin[0]}` : String(r.note || "");
+      const note = h && h.note && !AUTO.test(h.note) ? h.note : auto.slice(0, 200);
+      const sl = [...keepS, ...sells];
+      place(k, derive({ id: h ? h.id : `p${stamp}t${i}`, sym, buy: all[0].p, qty: null, date: null, stop: h ? h.stop : null, note, lots: all, ...(sl.length ? { sells: sl } : {}) }));
+      added++;
     });
-    const syms = new Set(add.map(h => h.sym)), replaced = list.filter(h => syms.has(h.sym)).length;
-    list = [...list.filter(h => !syms.has(h.sym)), ...add];
+    for (const sym of Array.isArray(drop) ? drop : []) {
+      const k = out.findIndex(h => h.sym === sym && h.lots && h.lots.some(fromHere));
+      if (k < 0) continue;
+      const h = out[k], lots = h.lots.filter(l => !fromHere(l)), sells = (h.sells || []).filter(l => !fromHere(l));
+      if (!lots.length) { out.splice(k, 1); continue; }
+      const { sells: _old, ...rest } = h, isin = /[A-Z]{2}[A-Z0-9]{10}$/.exec(h.note || ""), depots = [...new Set(lots.map(l => DEPOT[l.s]).filter(Boolean))];
+      const note = AUTO.test(h.note || "") && isin && depots.length ? `${depots.join(" + ")} · ${isin[0]}` : h.note;
+      place(k, derive({ ...rest, note, lots, ...(sells.length ? { sells } : {}) }));
+    }
+    list = out;
     save(); render();
-    return { added: add.length, replaced };
+    return { added, merged, replaced };
   };
   window.DTD.startPortfolio = () => load(false);
   window.DTD.reloadPortfolio = () => load(true);

@@ -1,14 +1,18 @@
-// ---------- Import aus Trade Republic: CSV „Transaktionsexport“ (App: Profil → Kontoauszüge → Transaktionsexport) ----------
-// Die Datei wird nur in diesem Browser gelesen – nichts wird hochgeladen. Trade Republic beschreibt das Format nicht öffentlich;
+// ---------- Import aus dem Depot: Trade Republic (App: Profil → Kontoauszüge → Transaktionsexport) und Scalable Capital
+// (Web-Broker: Transaktionen → Export, CSV) – oder eine andere Umsatzliste als CSV ----------
+// Die Datei wird nur in diesem Browser gelesen – nichts wird hochgeladen. Die Broker beschreiben ihr Format nicht öffentlich;
 // darum erkennt der Import Trennzeichen, Zahlen- und Datumsformat und die Spalten selbst (deutsche und englische Namen), und jede
-// Zuordnung lässt sich im Fenster ändern. Käufe (auch Sparplan, Saveback, Round-up) und Verkäufe je ISIN ergeben Stück und
+// Zuordnung lässt sich im Fenster ändern. Stornierte oder abgelehnte Aufträge (Spalte Status) zählen nicht. Jeder Kauf merkt sich
+// sein Depot: Ein neuer Import aus demselben Depot ersetzt dessen Einträge, Käufe aus dem anderen Depot bleiben – so ergibt sich je
+// Wert eine gemeinsame Position. Käufe (auch Sparplan, Saveback, Round-up) und Verkäufe je ISIN ergeben Stück und
 // Ø Kaufkurs nach dem gleitenden Durchschnittspreis (wie bei der KESt). Die Kurse werden zum EZB-Kurs am Handelstag in die
 // Währung der Kursdaten umgerechnet (US-Aktien in Dollar), das Kürzel schlägt der Import über Name und ISIN-Land vor.
 // Übernommen wird erst nach einem Klick; der bisherige Stand bleibt 7 Tage über „Stand vor dem Laden zurückholen“ erhalten.
 (() => {
   const MAX_BYTES = 5e6, MAX_ROWS = 20000;
-  const FIELDS = ["date", "type", "isin", "name", "qty", "price", "amount", "fee", "cur"];
-  const LABEL = { date: "Datum", type: "Art", isin: "ISIN", name: "Name", qty: "Stück", price: "Kurs je Stück", amount: "Betrag", fee: "Gebühr", cur: "Währung" };
+  const FIELDS = ["date", "type", "isin", "name", "qty", "price", "amount", "fee", "cur", "status"];
+  const LABEL = { date: "Datum", type: "Art", isin: "ISIN", name: "Name", qty: "Stück", price: "Kurs je Stück", amount: "Betrag", fee: "Gebühr", cur: "Währung", status: "Status" };
+  const DEPOTS = { tr: "Trade Republic", sc: "Scalable Capital", ot: "anderes Depot" };
   // Spaltennamen nach Vorrang (normalisiert: klein, ohne Umlautpunkte und Sonderzeichen)
   const SYN = {
     date: ["date", "datum", "datetime", "timestamp", "zeitpunkt", "buchungsdatum", "transactiondate", "tradedate", "handelsdatum", "time", "zeit", "valuedate", "valuta"],
@@ -20,6 +24,7 @@
     amount: ["amount", "betrag", "total", "gesamt", "gesamtbetrag", "summe", "netamount", "nettobetrag", "cashamount", "value", "wert"],
     fee: ["fee", "fees", "gebuhr", "gebuehr", "gebuhren", "gebuehren", "kosten", "commission", "fremdkosten"],
     cur: ["currency", "wahrung", "waehrung", "ccy", "currencycode"],
+    status: ["status", "state", "orderstatus", "auftragsstatus", "zustand"],
   };
   const SYM = /^[A-Z0-9][A-Z0-9.\-_]{0,19}$/;
   const normH = s => String(s || "").replace(/ß/g, "ss").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -43,6 +48,13 @@
     }
     if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
     return rows.map(r => r.map(v => v.trim())).filter(r => r.some(Boolean));
+  }
+  // Depot aus Dateiname und Spalten (Scalable: reference, description, assetType); sonst Trade Republic – im Fenster änderbar
+  function depotOf(fileName, header) {
+    const h = header.map(normH), fn = String(fileName || "").toLowerCase();
+    if (/scalable/.test(fn) || (h.includes("reference") && (h.includes("assettype") || h.includes("description")))) return "sc";
+    if (/trade.?republic|traderepublic/.test(fn)) return "tr";
+    return "tr";
   }
   function guess(header) {
     const h = header.map(normH), used = new Set(), map = {};
@@ -85,7 +97,8 @@
   }
   const SELL = /verkauf|sell|sale|veräu|verau|abgang/i;
   const BUY = /kauf|buy|purchase|sparplan|saving|invest|saveback|round.?up|zugang|bonus|erwerb/i;
-  const OTHER = /dividend|aussch[uü]tt|zins|interest|steuer|tax|geb[uü]hr|fee|einzahl|auszahl|deposit|withdraw|[uü]berweis|transfer|split|kapitalma|corporate|karte|card/i;
+  const OTHER = /dividend|distribution|aussch[uü]tt|zins|interest|steuer|tax|geb[uü]hr|fee|einzahl|auszahl|deposit|withdraw|[uü]berweis|transfer|[uü]bertrag|split|kapitalma|corporate|karte|card/i;
+  const VOID = /cancel|storn|reject|abgelehnt|fail|expired|abgelaufen|pending|offen|declined|nicht ausgef/i;
   function side(type, qty, amount) {
     if (type) { if (SELL.test(type)) return "s"; if (BUY.test(type)) return "b"; if (OTHER.test(type)) return null; }
     if (qty < 0) return "s";
@@ -99,6 +112,7 @@
     rows.slice(1).forEach((r, i) => {
       const isin = cell(r, "isin").toUpperCase().replace(/\s/g, "");
       if (!isinOk(isin)) { skipped.noIsin++; return; }
+      if (VOID.test(cell(r, "status"))) { skipped.other++; return; }   // storniert, abgelehnt, noch offen
       const qRaw = toNum(cell(r, "qty")), amount = toNum(cell(r, "amount")), fee = toNum(cell(r, "fee"));
       const s = side(cell(r, "type"), qRaw, amount), q = Math.abs(qRaw || 0), d = toDay(cell(r, "date"));
       if (!s) { skipped.other++; return; }
@@ -178,6 +192,8 @@
     };
     const s = res.skipped, skip = s.noIsin + s.other + s.bad;
     return `<p class="small">Gelesen wird nur in diesem Browser – die Datei wird nirgends hochgeladen. <b>${esc(st.file)}</b>: ${st.rows.length - 1} Zeilen, getrennt mit „${st.delim === "\t" ? "Tab" : esc(st.delim)}“.</p>
+      <label class="tr-depot small">Aus welchem Depot? <select data-tr-src>${Object.entries(DEPOTS).map(([k, v]) => `<option value="${k}"${st.src === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
+      <p class="small muted">Käufe aus einem anderen Depot bleiben erhalten und werden mit diesen zusammengeführt; ein erneuter Import aus diesem Depot ersetzt seine bisherigen Einträge.</p>
       <details class="more"${FIELDS.some(f => st.map[f] < 0 && ["date", "isin", "qty"].includes(f)) ? " open" : ""}><summary>Spalten zuordnen</summary>
         <p class="small muted">Die Zuordnung ist erraten. Passt etwas nicht, hier die richtige Spalte wählen – Kurs je Stück oder Betrag genügt.</p>
         <div class="tr-map">${FIELDS.map(sel).join("")}</div></details>
@@ -213,9 +229,9 @@
     await Promise.all([S.get("stocks") ? null : S.load("stocks"), S.get("fx") ? null : S.load("fx")]);
     const delim = sniff(text), rows = parseCsv(text, delim);
     if (rows.length < 2) return toast("Import", "In der Datei stehen keine Zeilen – bitte den Transaktionsexport als CSV wählen.", 7000);
-    st = { file: String(file.name || "Datei").slice(0, 60), delim, rows, map: guess(rows[0]), syms: new Map(), off: new Set() };
+    st = { file: String(file.name || "Datei").slice(0, 60), delim, rows, map: guess(rows[0]), syms: new Map(), off: new Set(), src: depotOf(file.name, rows[0]) };
     recompute();
-    openDrawer("Import aus Trade Republic", body());
+    openDrawer("Import aus dem Depot", body());
     paint();
   }
   function apply() {
@@ -228,15 +244,18 @@
       if (!SYM.test(sym)) { problems.push(`${P.name || P.isin}: kein Kürzel`); continue; }
       const b = build(P, sym);
       if (b.err) { problems.push(`${P.name || P.isin}: ${b.err}`); continue; }
-      recs.push({ sym, lots: b.lots, sells: b.sells, note: `Trade Republic · ${P.isin}` });
+      recs.push({ sym, lots: b.lots, sells: b.sells, note: `${DEPOTS[st.src]} · ${P.isin}` });
     }
+    // in der Datei ganz verkauft: die Einträge dieses Depots fallen bei einem erneuten Import weg
+    const drop = st.res.list.filter(P => !(P.held > 0)).map(guessSym).filter(Boolean);
     if (!recs.length) return toast("Import", problems.length ? `Nichts übernommen – ${problems.slice(0, 3).join("; ")}.` : "Nichts ausgewählt – bitte Werte anhaken und ein Kürzel eintragen.", 8000);
-    const mine = new Set((store.get("dtd-portfolio", []) || []).map(h => h && h.sym));
-    const same = recs.filter(r => mine.has(r.sym)).map(r => r.sym);
-    if (same.length && !confirm(`${same.length} Wert(e) stehen schon im Portfolio (${same.slice(0, 6).join(", ")}${same.length > 6 ? " …" : ""}) und werden durch den Import ersetzt. Weiter?`)) return;
-    const r = window.DTD.pfImport(recs, "dem Trade-Republic-Import");
+    // Rückfrage nur, wenn von Hand eingetragene Käufe ersetzt würden (Einträge ohne Depot)
+    const pf = store.get("dtd-portfolio", []), byHand = h => !h.lots || !h.lots.length || h.lots.some(l => !l.s) || (h.sells || []).some(l => !l.s);
+    const same = recs.filter(r => (Array.isArray(pf) ? pf : []).some(h => h && h.sym === r.sym && byHand(h))).map(r => r.sym);
+    if (same.length && !confirm(`${same.length} Wert(e) stehen schon von Hand eingetragen im Portfolio (${same.slice(0, 6).join(", ")}${same.length > 6 ? " …" : ""}) und werden durch den Import ersetzt. Käufe aus anderen Depots bleiben. Weiter?`)) return;
+    const r = window.DTD.pfImport(recs, `dem Import aus ${DEPOTS[st.src]}`, st.src, drop);
     closeDrawer();
-    toast("Import", `${r.added} Wert(e) ins Portfolio übernommen${r.replaced ? `, ${r.replaced} ersetzt` : ""}.${problems.length ? ` Nicht übernommen: ${problems.slice(0, 3).join("; ")}${problems.length > 3 ? " …" : ""}.` : ""}${left.length ? ` Nicht ausgewählt: ${left.length}.` : ""} Rückgängig: „Sichern und übertragen“ → „Stand vor dem Laden zurückholen“.`, 10000);
+    toast("Import", `${r.added} Wert(e) aus ${DEPOTS[st.src]} übernommen${r.merged ? `, ${r.merged} mit einem anderen Depot zusammengeführt` : ""}${r.replaced ? `, ${r.replaced} ersetzt` : ""}.${problems.length ? ` Nicht übernommen: ${problems.slice(0, 3).join("; ")}${problems.length > 3 ? " …" : ""}.` : ""}${left.length ? ` Nicht ausgewählt: ${left.length}.` : ""} Rückgängig: „Sichern und übertragen“ → „Stand vor dem Laden zurückholen“.`, 10000);
   }
 
   document.addEventListener("change", e => {
@@ -244,6 +263,7 @@
     if (t.id === "trFile") { const f = t.files && t.files[0]; t.value = ""; start(f).catch(err => toast("Import", `Die Datei ließ sich nicht lesen (${err.message || err}).`, 7000)); return; }
     if (!st) return;
     if (t.dataset && t.dataset.trMap) { st.map[t.dataset.trMap] = +t.value; recompute(); paint(); return; }
+    if (t.dataset && "trSrc" in t.dataset) { if (DEPOTS[t.value]) st.src = t.value; return; }
     if (t.dataset && t.dataset.trOn) { if (t.checked) st.off.delete(t.dataset.trOn); else st.off.add(t.dataset.trOn); return; }
     if (t.dataset && t.dataset.trSym) remember(t);
   });
@@ -254,5 +274,5 @@
     if (b.dataset.trAct === "apply") apply();
     if (b.dataset.trAct === "close") closeDrawer();
   });
-  window.DTD.trImport = { sniff, parseCsv, guess, toNum, toDay, isinOk, analyze };
+  window.DTD.trImport = { sniff, parseCsv, guess, toNum, toDay, isinOk, analyze, depotOf };
 })();

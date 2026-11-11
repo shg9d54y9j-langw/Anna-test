@@ -3,7 +3,10 @@
 // mit Semikolon und Dezimalkomma, Spalten ohne Kurs (Betrag minus Gebühr); Einzahlungen und Dividenden übersprungen; gleitender
 // Durchschnittspreis; Kürzel über Name und ISIN-Land (NVIDIA → NVDA, OMV ohne eToro → OMV.VI); Umrechnung Euro → Dollar zum
 // EZB-Kurs des Handelstags; ganz verkaufte Werte bleiben draußen; gleiches Kürzel wird nach Rückfrage ersetzt; „Rückgängig“
-// steht bereit; präparierte Namen werden nicht zu HTML. node test-trimport.js <port> <ausgabe>
+// steht bereit; präparierte Namen werden nicht zu HTML. Scalable Capital (Semikolon, englische Spalten, Status): Depot erkannt,
+// stornierte Aufträge zählen nicht, gleiche Werte werden mit Trade Republic zusammengeführt (ohne Rückfrage); ein erneuter
+// Trade-Republic-Import ersetzt nur dessen Einträge, ein dort ganz verkaufter Wert behält die Scalable-Käufe.
+// node test-trimport.js <port> <ausgabe>
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -26,6 +29,15 @@ const CSV_EN = [
   '2025-10-10,SELL,DE0007164600,SAP,-2,200.00,399.00,1.00,EUR',
   '2025-11-11,BUY,DE000BASF111,"<img src=x class=xss-canary onerror=alert(1)>",1,40.00,-41.00,1.00,EUR',
 ].join('\r\n');
+const CSV_SC = [
+  'date;time;status;reference;description;assetType;type;isin;shares;price;amount;fee;tax;currency',
+  '2025-07-01;10:15:00;Executed;SCAL001;NVIDIA;Security;Buy;US67066G1040;5;130,00;-650,99;0,99;0,00;EUR',
+  '2025-07-02;11:00:00;Cancelled;SCAL002;NVIDIA;Security;Buy;US67066G1040;100;131,00;-13100,99;0,99;0,00;EUR',
+  '2025-08-01;09:00:00;Executed;SCAL003;Apple;Security;Savings plan;US0378331005;1;190,00;-190,00;0,00;0,00;EUR',
+  '2025-09-15;09:00:00;Executed;SCAL004;Apple;Security;Distribution;US0378331005;;;0,25;0,00;0,07;EUR',
+  '2025-01-02;08:00:00;Executed;SCAL005;Einzahlung;Cash;Deposit;;;;1000,00;0,00;0,00;EUR',
+].join('\n');
+const CSV_EN2 = CSV_EN + '\r\n2025-12-01,SELL,US67066G1040,NVIDIA,-15,160.00,2399.00,1.00,EUR';
 const CSV_DE = '﻿' + [
   'Datum;Typ;ISIN;Wertpapier;Stück;Betrag;Gebühr',
   '03.03.2025;Kauf;US67066G1040;NVIDIA Corp.;10;-1.001,00;1,00',
@@ -89,18 +101,49 @@ const CSV_DE = '﻿' + [
   await p.waitForTimeout(600);
   const pf = await p.evaluate(() => JSON.parse(localStorage.getItem('dtd-portfolio') || '[]'));
   const nv = pf.find(h => h.sym === 'NVDA'), om = pf.find(h => h.sym === 'OMV.VI'), ap = pf.find(h => h.sym === 'AAPL');
-  check(dialogs.some(m => /schon im Portfolio \(NVDA\)/.test(m)), `Rückfrage vor dem Ersetzen (${dialogs.join(' | ').slice(0, 100)})`);
+  check(dialogs.some(m => /von Hand eingetragen im Portfolio \(NVDA\)/.test(m)), `Rückfrage vor dem Ersetzen (${dialogs.join(' | ').slice(0, 100)})`);
   const want = (10 * 100 * usd('2025-03-03') + 10 * 120 * usd('2025-06-02')) / 20;
   check(nv && nv.qty === 15 && nv.lots.length === 2 && nv.sells.length === 1 && Math.abs(nv.buy - Math.round(want * 100) / 100) < 0.011 && Math.abs(nv.lots[0].p - 100 * usd('2025-03-03')) < 0.001,
     `NVDA in Dollar zum EZB-Kurs je Kauftag: ${nv && nv.qty} Stück, Ø ${nv && nv.buy} (erwartet ${want.toFixed(2)})`);
   check(om && om.qty === 4 && om.buy === 45.5 && ap && ap.qty === 0.5, 'OMV.VI in Euro (45,50), Apple 0,5 Stück');
   check(!pf.some(h => h.sym === 'SAP.DE') && pf.some(h => h.sym === 'KO') && pf.filter(h => h.sym === 'NVDA').length === 1, 'SAP nicht übernommen, KO bleibt, NVDA nur einmal');
   const undo = await p.evaluate(() => JSON.parse(localStorage.getItem('dtd-restore-undo') || 'null'));
-  check(undo && /NVDA/.test(undo.data['dtd-portfolio']) && /KO/.test(undo.data['dtd-portfolio']) && /Trade-Republic/.test(undo.from), 'bisheriger Stand für „Rückgängig“ aufgehoben');
+  check(undo && /NVDA/.test(undo.data['dtd-portfolio']) && /KO/.test(undo.data['dtd-portfolio']) && /Trade Republic/.test(undo.from), 'bisheriger Stand für „Rückgängig“ aufgehoben');
   const toasts = await p.$eval('#toasts', e => e.innerText.replace(/\s+/g, ' ')).catch(() => '');
-  check(/3 Wert\(e\) ins Portfolio übernommen, 1 ersetzt/.test(toasts) && /Nicht ausgewählt: 1/.test(toasts), `Meldung nennt Übernommenes und Ausgelassenes (${toasts.slice(0, 160)})`);
+  check(/3 Wert\(e\) aus Trade Republic übernommen, 1 ersetzt/.test(toasts) && /Nicht ausgewählt: 1/.test(toasts), `Meldung nennt Übernommenes und Ausgelassenes (${toasts.slice(0, 160)})`);
   const cards = await p.$$eval('#portfolio [data-id], #portfolio .pf-card', l => l.length).catch(() => 0);
   check(cards >= 4 && await p.$('[data-act="undo-restore"]').then(Boolean), `Portfolio zeigt die Werte, „Stand vor dem Laden zurückholen“ ist da (${cards})`);
+
+  // 4) Scalable Capital: Depot erkannt, Storno zählt nicht, mit Trade Republic zusammengeführt – ohne Rückfrage
+  const nDialogs = dialogs.length;
+  await p.evaluate(() => { const d = document.getElementById('pfBackup'); if (d) d.open = true; });
+  await p.setInputFiles('#trFile', { name: 'scalable-transactions.csv', mimeType: 'text/csv', buffer: Buffer.from(CSV_SC, 'utf8') });
+  await p.waitForSelector('.tr-table', { timeout: 8000 }).catch(() => null);
+  const src = await p.$eval('[data-tr-src]', e => e.value).catch(() => '');
+  const prevSc = await p.$$eval('.tr-table tbody tr', rows => rows.map(r => r.innerText.replace(/\s+/g, ' ')));
+  check(src === 'sc' && prevSc.length === 2 && prevSc.some(t => /NVIDIA/.test(t) && /5 Stück/.test(t) && /130,00 EUR/.test(t)), `Scalable erkannt, Storno nicht gezählt (${src}: ${prevSc.join(' | ').slice(0, 120)})`);
+  await p.click('[data-tr-act="apply"]'); await p.waitForTimeout(600);
+  let pf2 = await p.evaluate(() => JSON.parse(localStorage.getItem('dtd-portfolio') || '[]'));
+  let nv2 = pf2.find(h => h.sym === 'NVDA'), ap2 = pf2.find(h => h.sym === 'AAPL');
+  check(dialogs.length === nDialogs && nv2 && nv2.qty === 20 && nv2.lots.length === 3 && nv2.lots.filter(l => l.s === 'sc').length === 1 && nv2.lots.filter(l => l.s === 'tr').length === 2 && ap2 && ap2.qty === 1.5,
+    `NVDA aus beiden Depots: 15 + 5 = ${nv2 && nv2.qty} Stück, Apple 0,5 + 1 = ${ap2 && ap2.qty}, keine Rückfrage`);
+  check(nv2 && nv2.note === 'Trade Republic + Scalable Capital · US67066G1040' && pf2.filter(h => h.sym === 'NVDA').length === 1, `eine Position je Wert, Notiz nennt beide Depots (${nv2 && nv2.note})`);
+  const toast2 = await p.$eval('#toasts', e => e.innerText.replace(/\s+/g, ' ')).catch(() => '');
+  check(/2 Wert\(e\) aus Scalable Capital übernommen, 2 mit einem anderen Depot zusammengeführt/.test(toast2), `Meldung: zusammengeführt (${toast2.slice(-200)})`);
+
+  // 5) Neuer Trade-Republic-Export: ersetzt nur dessen Einträge; NVIDIA dort ganz verkauft → nur die Scalable-Käufe bleiben
+  await p.evaluate(() => { const d = document.getElementById('pfBackup'); if (d) d.open = true; });
+  await p.setInputFiles('#trFile', { name: 'transaktionen-neu.csv', mimeType: 'text/csv', buffer: Buffer.from(CSV_EN2, 'utf8') });
+  await p.waitForSelector('.tr-table', { timeout: 8000 }).catch(() => null);
+  check(await p.$eval('[data-tr-src]', e => e.value).catch(() => '') === 'tr', 'Trade Republic als Depot vorgewählt');
+  await p.click('[data-tr-act="apply"]'); await p.waitForTimeout(600);
+  pf2 = await p.evaluate(() => JSON.parse(localStorage.getItem('dtd-portfolio') || '[]'));
+  nv2 = pf2.find(h => h.sym === 'NVDA'); ap2 = pf2.find(h => h.sym === 'AAPL');
+  const om2 = pf2.find(h => h.sym === 'OMV.VI');
+  check(nv2 && nv2.qty === 5 && nv2.lots.length === 1 && nv2.lots[0].s === 'sc' && !nv2.sells && Math.abs(nv2.buy - Math.round(130 * usd('2025-07-01') * 100) / 100) < 0.011 && nv2.note === 'Scalable Capital · US67066G1040',
+    `NVDA bei Trade Republic ganz verkauft: 5 Stück aus Scalable bleiben (${nv2 && nv2.qty}, ${nv2 && nv2.note})`);
+  check(ap2 && ap2.qty === 1.5 && ap2.lots.length === 2 && om2 && om2.qty === 4 && om2.lots.length === 1 && pf2.some(h => h.sym === 'KO') && dialogs.length === nDialogs,
+    `erneuter Import doppelt nichts: Apple ${ap2 && ap2.qty}, OMV ${om2 && om2.qty}, KO bleibt, keine Rückfrage`);
 
   check(!errs.length, `Keine Skriptfehler${errs.length ? ': ' + [...new Set(errs)].join(' | ') : ''}`);
   await b.close();

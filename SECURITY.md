@@ -20,7 +20,7 @@ Hier steht, wie das geschützt ist, was bei jeder Änderung automatisch geprüft
 - Portfolio, Journal, Merkliste, Kursalarme und Vermögensprofil bleiben im Browser.
 - Die Push-Liste für das Handy liegt nur als Secret.
 - Der Zwischenstand der Kursalarme ist verschlüsselt (AES-256-GCM).
-- Den Transaktionsexport von Trade Republic liest die Seite nur im Browser. Der Import enthält keinen Code, der etwas sendet; der Sicherheits-Check prüft das.
+- Die Umsatzlisten von Trade Republic und Scalable Capital liest die Seite nur im Browser. Der Import enthält keinen Code, der etwas sendet; der Sicherheits-Check prüft das.
 - Öffentliche Daten und Protokolle enthalten keine Beträge und keine eigenen Positionen.
 
 **Anmeldung und Synchronisierung (sobald eingerichtet, siehe LOGIN.md)**
