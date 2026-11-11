@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-11-sparplan", t: "Sparplan-Rechner", d: "Unter Werkzeuge: was aus einer monatlichen ETF-Rate wird – mit Zinseszins, Kosten, 27,5 % KESt nach österreichischem Recht und Inflation. Mit Ziel: wann Sie es erreichen und welche Rate dafür nötig ist.", href: "#sparplan" },
     { id: "2026-11-10-journal", t: "Journal-Auswertung", d: "Unter dem Journal: was ein Trade im Schnitt bringt, Ø Gewinn gegen Ø Verlust, Serien und welche Wochentage, Tageszeiten, Richtungen und Aktien bei Ihnen funktionieren – mit Einsichten in Worten. Schlagwörter in der Notiz (#breakout, #fomo) werden mit ausgewertet.", href: "#jInsights" },
     { id: "2026-11-10-risk", t: "Risiko-Check", d: "Im Portfolio: wie viel Sie verlieren, wenn alle Stops greifen – in Euro und in % des Depots, Positionen ohne Stop und je Aktie ein Vorschlag zur Größe nach Ihrem Risikobudget.", href: "#pfRisk" },
     { id: "2026-11-10-euro", t: "Depot in Euro", d: "Im Portfolio: Depotwert und Ergebnis in Euro mit EZB-Kursen – aufgeteilt in Kursgewinn und Währungseffekt, je Aktie und im Steuer-Schätzer (Kurs am Verkaufstag).", href: "#portfolio" },

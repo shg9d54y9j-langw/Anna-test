@@ -1305,3 +1305,18 @@ table.risk-t td.wrap { min-width: 220px; white-space: normal; line-height: 1.45;
   table.js-t td:first-child { white-space: normal; }
   table.js-t .js-meta { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
 }
+
+/* ---------- Sparplan-Rechner ---------- */
+.sp-lead { margin: 0 0 14px; }
+.sp-in, .sp-more .calc { grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); }
+.sp-presets { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+@media (max-width: 760px) { .sp-presets .sp-word { display: none; } }
+.sp-more .calc { margin-top: 12px; }
+#spOut { margin-top: 16px; }
+.sp-sum { margin: 12px 0 4px; font-size: 14px; color: var(--text-2); line-height: 1.55; }
+.sp-goal { list-style: none; margin: 12px 0 14px; padding: 0; display: grid; gap: 7px; font-size: 14px; color: var(--text-2); line-height: 1.5; }
+.sp-goal li { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; }
+.sp-goal .sa-icon { margin: 1px 0 0; }
+p.sp-goal { display: block; }
+#spChart { margin-bottom: 4px; }
+.sp-t td:first-child .muted { font-size: 12.5px; }
