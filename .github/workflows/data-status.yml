@@ -1,0 +1,111 @@
+name: Daten-Status
+
+# Alle zwei Stunden: Wie frisch ist jede Auswertung, und sind die letzten Läufe gelungen? Schreibt status.json auf den Zweig
+# status (die Seite zeigt sie an der Live-Uhr) und meldet neue Ausfälle und behobene aufs Handy, falls ntfy eingerichtet ist.
+on:
+  schedule:
+    - cron: "53 */2 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: data-status
+  cancel-in-progress: false
+
+jobs:
+  # Liest die öffentlichen Datenzweige und die letzten Läufe (nur lesen) – kennt keine Secrets.
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      alerts: ${{ steps.check.outputs.alerts }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Bisherigen Stand holen
+        run: |
+          if git fetch -q --depth=1 origin status 2>/dev/null; then
+            git show FETCH_HEAD:status.json > "$RUNNER_TEMP/status-prev.json" || true
+          else
+            echo "Noch kein Stand vorhanden."
+          fi
+
+      - name: Datenstand und Läufe prüfen
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          STATUS_PREV: ${{ runner.temp }}/status-prev.json
+          STATUS_OUT: ${{ runner.temp }}/status.json
+        run: |
+          node scripts/data-status.mjs
+          # shellcheck disable=SC2016
+          echo "alerts=$(node -e 'const d = JSON.parse(require("fs").readFileSync(process.env.STATUS_OUT, "utf8")); process.stdout.write(String(d.alerts.new.length + d.alerts.resolved.length))')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: status
+          path: ${{ runner.temp }}/status.json
+          retention-days: 1
+          if-no-files-found: error
+
+  # Veröffentlicht status.json auf dem Zweig status.
+  save:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: status
+          path: incoming
+
+      - name: Daten-Status veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir out && cd out
+          cp ../incoming/status.json .
+          node -e 'const d = JSON.parse(require("fs").readFileSync("status.json", "utf8")); if (!Array.isArray(d.sources) || !d.sources.length) process.exit(1);'
+          git init -q -b status
+          git add status.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Daten-Status $(date -u +%FT%TZ)"
+          for i in 1 2 3 4 5; do
+            git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:status && break
+            [ "$i" = 5 ] && exit 1
+            sleep $((i * 4))
+          done
+
+  # Neue Ausfälle und behobene aufs Handy – kennt nur den ntfy-Kanal, darf im Repository nichts ändern.
+  notify:
+    needs: [check, save]
+    if: needs.check.outputs.alerts != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: status
+          path: incoming
+
+      - name: Ausfälle aufs Handy (ntfy), falls eingerichtet
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NOTIFY_MODE: status
+          STATUS_JSON: incoming/status.json
+        run: node scripts/notify.mjs

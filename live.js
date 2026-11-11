@@ -5,11 +5,14 @@
 (() => {
   const bar = document.querySelector(".appbar");
   if (!bar) return;
-  const chip = document.createElement("div");
+  // Knopf: öffnet den Datenstand (status.js) – die tickende Uhr ist nur zum Ansehen und für Screenreader ausgeblendet
+  const chip = document.createElement("button");
+  chip.type = "button";
   chip.className = "livechip";
-  chip.setAttribute("role", "status");
-  chip.title = "Kurse und Grafiken: Echtzeit. Auswertungen: Live-Wächter und Marktlage alle 15 Minuten, Aktien-Daten und Swing-Planer 2× täglich, Trend-Bot 1× pro Börsentag. Die Seite prüft jede Minute selbst auf Neues.";
-  chip.innerHTML = `<span class="dot on" aria-hidden="true"></span><b>Live</b><span class="lc-clock num"></span><span class="lc-age muted"></span>`;
+  chip.setAttribute("aria-label", "Datenstand anzeigen");
+  chip.title = "Datenstand: wann welche Auswertung zuletzt kam. Kurse und Grafiken: Echtzeit. Die Seite prüft jede Minute selbst auf Neues.";
+  chip.innerHTML = `<span class="dot on" aria-hidden="true"></span><b aria-hidden="true">Live</b><span class="lc-clock num" aria-hidden="true"></span><span class="lc-age muted" aria-hidden="true"></span>`;
+  chip.addEventListener("click", () => { if (window.DTD && window.DTD.openDataStatus) window.DTD.openDataStatus(); });
   bar.append(chip);
   const clock = chip.querySelector(".lc-clock"), age = chip.querySelector(".lc-age");
   let checked = Date.now(), lastStocks = 0, lastSwing = Date.now(), lastPortfolio = Date.now(), lastTools = Date.now();

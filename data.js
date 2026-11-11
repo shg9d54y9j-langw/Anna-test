@@ -16,8 +16,9 @@
     fx: t => get(`${RAW}fx-data/fx.json?t=${t}`).then(d => (d && d.base === "EUR" && Array.isArray(d.dates) && d.rates ? d : null)),   // EZB-Kurse (scripts/fx-data.mjs)
     wealth: t => get(`data/wealth.json?t=${t}`).then(d => (d && d.version === 1 && Array.isArray(d.evidence) && Array.isArray(d.blocks) && d.profile ? d : null)),   // Bereich Vermögen (monatlich geprüft)
     macro: t => get(`${RAW}wealth-data/macro.json?t=${t}`).then(d => (d && d.series && typeof d.series === "object" ? d : null)),   // Zinsen und Inflation (scripts/wealth-data.mjs)
+    status: t => get(`${RAW}status/status.json?t=${t}`).then(d => (d && Array.isArray(d.sources) ? d : null)),   // Datenstand (scripts/data-status.mjs)
   };
-  const ON_DEMAND = new Set(["fx", "wealth", "macro"]);   // nur laden, wenn ein Bereich sie braucht (Depot mit Aktien in Fremdwährung)
+  const ON_DEMAND = new Set(["fx", "wealth", "macro", "status"]);   // nur laden, wenn ein Bereich sie braucht (Depot mit Aktien in Fremdwährung)
   const cache = {}, pending = {}, fetched = {};
   function load(name, force = false) {
     if (!SRC[name]) return Promise.resolve(null);

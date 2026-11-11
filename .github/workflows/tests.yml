@@ -149,6 +149,9 @@ jobs:
       - name: Kursalarme alle 15 Minuten – Verschlüsselung, Ereignisse, Läufe gegen den Test-Server, nichts Geheimes im Protokoll
         run: node tests/price-alarms.mjs
 
+      - name: Daten-Status – Werktags- und Live-Stunden, Ausfälle, neue und behobene Probleme, Handy-Meldung
+        run: node tests/data-status.mjs
+
       - name: Handy-Meldungen (ntfy) mit nachgebautem Server, auch mit den Aktien-Daten und Nachrichten der Testläufe
         env:
           NOTIFY_REAL_STOCKS: /tmp/stocks.json   # aus dem Aktien-Daten-Schritt

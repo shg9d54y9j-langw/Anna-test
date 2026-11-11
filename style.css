@@ -1386,3 +1386,19 @@ p.sp-goal { display: block; }
 #wFan { margin: 6px 0 4px; }
 .w-macro-t td:last-child { white-space: nowrap; color: var(--muted); }
 #wPortfolio .btn-row { margin: 8px 0 14px; }
+
+/* ---------- Datenstand (Knopf an der Live-Uhr) ---------- */
+button.livechip { font: inherit; font-size: 12.5px; cursor: pointer; transition: border-color .15s, background .15s; }
+button.livechip:hover { border-color: var(--line-3); }
+button.livechip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.livechip[data-health="warn"] .dot { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-bg); }
+.livechip[data-health="bad"] .dot { background: var(--down); box-shadow: 0 0 0 3px var(--down-bg); animation: none; }
+.ds-list { list-style: none; margin: 10px 0 14px; padding: 0; display: grid; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.ds-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; }
+.ds-row + .ds-row { border-top: 1px solid var(--line); }
+.ds-main { display: grid; gap: 2px; min-width: 0; }
+.ds-main b { font-size: 14px; }
+.ds-dot { width: 9px; height: 9px; border-radius: 50%; }
+.ds-dot.ds-ok { background: var(--up); } .ds-dot.ds-warn { background: var(--warn); } .ds-dot.ds-bad { background: var(--down); } .ds-dot.ds-off { background: var(--surface-3); border: 1px solid var(--line-3); }
+.ds-state { font: 600 12px var(--font); white-space: nowrap; }
+.ds-state.ds-ok { color: var(--up); } .ds-state.ds-warn { color: var(--warn); } .ds-state.ds-bad { color: var(--down); } .ds-state.ds-off { color: var(--muted); }

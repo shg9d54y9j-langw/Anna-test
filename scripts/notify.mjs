@@ -10,6 +10,7 @@
 //   weekly – freitags: Wochenbericht zu Depot und Merkliste, Noten und Termine der nächsten Woche (STOCKS_NEW, NOTE_RECENT)
 //   briefing – an Börsentagen morgens, nur wenn in der Push-Liste eingeschaltet ("b":1): Stops und Kursalarme in der Nähe,
 //            Quartalszahlen heute, Marktlage (STOCKS_NEW, MARKET)
+//   status – nach dem Daten-Status (alle zwei Stunden): neue Ausfälle und behobene (STATUS_JSON) – braucht keine Push-Liste
 //   test   – eine Probe-Meldung, um die Einrichtung zu prüfen
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -207,7 +208,7 @@ export async function main() {
   if (!/^[A-Za-z0-9_-]{12,64}$/.test(topic)) { log("::warning::NTFY_TOPIC ungültig: 12 bis 64 Zeichen aus Buchstaben, Ziffern, - und _ – am besten in der Seite erzeugen lassen."); return 0; }
   const cfg = parseWatch(env.PUSH_WATCH);
   const mode = env.NOTIFY_MODE || "events";
-  if (!cfg && mode !== "test") { log("::warning::Secret PUSH_WATCH fehlt oder ist ungültig – in der Seite unter Portfolio → Benachrichtigungen „Push-Liste kopieren“ und als Secret eintragen."); return 0; }
+  if (!cfg && mode !== "test" && mode !== "status") { log("::warning::Secret PUSH_WATCH fehlt oder ist ungültig – in der Seite unter Portfolio → Benachrichtigungen „Push-Liste kopieren“ und als Secret eintragen."); return 0; }
   let lines = [], title = "RojkoMoney", priority = 3, tags = ["chart_with_upwards_trend"];
   if (mode === "events") {
     const ev = events(cfg, await readJson(env.STOCKS_PREV), await readJson(env.STOCKS_NEW), await readJson(env.NOTE_RECENT));
@@ -230,6 +231,12 @@ export async function main() {
     title = "RojkoMoney: Heute wichtig";
     tags = ["sunrise"];
     if (lines.some(l => l.startsWith("▼"))) { priority = 4; tags = ["sunrise", "warning"]; }
+  } else if (mode === "status") {
+    const d = await readJson(env.STATUS_JSON), a = (d && d.alerts) || {}, neu = Array.isArray(a.new) ? a.new : [], ok = Array.isArray(a.resolved) ? a.resolved : [];
+    lines = [...neu.map(p => `⚠ ${String(p.text || "").slice(0, 200)}`), ...ok.map(p => `✓ Wieder in Ordnung: ${String(p.label || p.text || "").slice(0, 120)}`)];
+    title = neu.length ? `RojkoMoney: ${neu.length === 1 ? "ein Datenproblem" : `${neu.length} Datenprobleme`}` : "RojkoMoney: Daten wieder in Ordnung";
+    priority = neu.length ? 4 : 2;
+    tags = neu.length ? ["warning"] : ["white_check_mark"];
   } else if (mode === "test") {
     lines = [cfg ? `Die Einrichtung klappt. Beobachtet: ${cfg.d.length} im Depot, ${cfg.w.length} auf der Merkliste, ${cfg.a.length} Kursalarme, ${Object.keys(cfg.s).length} Stops.`
       : "Der Kanal klappt – es fehlt noch das Secret PUSH_WATCH mit Ihrer Push-Liste aus der Seite."];
@@ -238,7 +245,7 @@ export async function main() {
   } else { log(`::warning::Unbekannte Art „${mode}“`); return 0; }
   if (!lines.length) { log(`Meldungen (${mode}): nichts Neues – nichts gesendet.`); return 0; }
   const message = (lines.length > 12 ? [...lines.slice(0, 12), `… und ${lines.length - 12} weitere – Details auf der Seite`] : lines).join("\n");
-  await send(topic, { title, message, priority, tags, click: `${SITE}#portfolio` });
+  await send(topic, { title, message, priority, tags, click: `${SITE}${mode === "status" ? "#datenstand" : "#portfolio"}` });
   log(`Meldungen (${mode}): 1 Nachricht mit ${lines.length} ${lines.length === 1 ? "Punkt" : "Punkten"} gesendet.`);   // nie Inhalte ausgeben
   return lines.length;
 }
