@@ -257,7 +257,7 @@
         <div class="btn-row wide"><button type="submit">Alarm setzen</button></div>
       </form>
       ${rows ? `<div class="al-list">${rows}</div>` : `<p class="muted" style="margin-top:12px">Noch keine Alarme. Tipp: Bei Ideen im Swing-Planer mit „Kursalarm“ setzt ein Knopf den Alarm gleich richtig.</p>`}
-      <p class="hint">Geprüft wird mit den Kursen der Aktien-Daten (zweimal pro Börsentag, mit Tageshoch und -tief). Ist die Seite offen, meldet sie erreichte Alarme auch als Browser-Meldung; die Zahl steht am Reiter „Werkzeuge“. Für Alarme in Echtzeit: den Kurs bei TradingView öffnen und dort die Glocke wählen. Die Alarme bleiben nur in diesem Browser.</p>
+      <p class="hint">Auf der Seite geprüft mit den Kursen der Aktien-Daten (zweimal pro Börsentag, mit Tageshoch und -tief). Mit Handy-Meldungen (ntfy, eingerichtet im Portfolio) prüft der Live-Wächter Ihre Alarme an Börsentagen etwa alle 15 Minuten. Ist die Seite offen, meldet sie erreichte Alarme auch als Browser-Meldung; die Zahl steht am Reiter „Werkzeuge“. Für Alarme in Echtzeit: den Kurs bei TradingView öffnen und dort die Glocke wählen. Die Alarme bleiben nur in diesem Browser.</p>
     </article>`;
   }
 
@@ -269,7 +269,7 @@
       <ul class="checklist">
         ${item("Telefonkonferenzen zu Quartalszahlen:", `live und als Mitschrift in der kostenlosen ${A("https://quartr.com/app", "Quartr-App")} – Ton und Mitschriften lassen sich nicht frei einbinden.`)}
         ${item("Was große Investoren halten:", `${A("https://dataroma.com/", "Dataroma")} zeigt die Depots bekannter Investoren aus den Pflichtmeldungen (bis zu 45 Tage verzögert). Im Aktien-Check führt ein Link direkt zur jeweiligen Aktie.`)}
-        ${item("Kursalarme in Echtzeit:", `${A("https://www.tradingview.com/", "TradingView")} (kostenloses Konto) – hier auf der Seite prüft der Alarm zweimal pro Börsentag.`)}
+        ${item("Kursalarme in Echtzeit:", `${A("https://www.tradingview.com/", "TradingView")} (kostenloses Konto) – hier prüft die Seite zweimal pro Börsentag, mit Handy-Meldungen (ntfy) etwa alle 15 Minuten.`)}
         ${item("Steuer-Schätzer (Österreich, 27,5 % KESt):", `im <a href="#pfTax">Portfolio</a> unter Ihrem Journal – er rechnet aus den eingetragenen Trades.`)}
         ${item("Depot über mehrere Broker:", `${A("https://www.portfolio-performance.info/", "Portfolio Performance")} (kostenlos, am Computer) – sobald echtes Geld bei mehreren Anbietern liegt.`)}
         ${item("ETF-Mischungen zurückrechnen:", `${A("https://curvo.eu/backtest/", "Curvo Backtest")} (kostenlos, europäische ETFs).`)}

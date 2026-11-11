@@ -146,6 +146,9 @@ jobs:
       - name: Zinsen und Inflation (EZB) – CSV, Alter, Pflicht-Reihen, Plausibilität
         run: node tests/wealth-data.mjs
 
+      - name: Kursalarme alle 15 Minuten – Verschlüsselung, Ereignisse, Läufe gegen den Test-Server, nichts Geheimes im Protokoll
+        run: node tests/price-alarms.mjs
+
       - name: Handy-Meldungen (ntfy) mit nachgebautem Server, auch mit den Aktien-Daten und Nachrichten der Testläufe
         env:
           NOTIFY_REAL_STOCKS: /tmp/stocks.json   # aus dem Aktien-Daten-Schritt

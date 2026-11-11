@@ -115,6 +115,15 @@ const dir = mkdtempSync(join(tmpdir(), "notify-"));
 const f = name => join(dir, name);
 writeFileSync(f("prev.json"), JSON.stringify(prev)); writeFileSync(f("next.json"), JSON.stringify(next)); writeFileSync(f("recent.json"), JSON.stringify(recent));
 for (const [sub, data] of [["new", {}], ["old", old]]) { mkdirSync(join(dir, sub, "co"), { recursive: true }); for (const [sym, items] of Object.entries(data)) writeFileSync(join(dir, sub, "co", `${sym}.json`), JSON.stringify({ sym, items })); }
+// 3b) Laufen die Kursalarme alle 15 Minuten, meldet der Lauf der Aktien-Daten Stops und Alarme nicht noch einmal – den Rest schon
+{
+  const all = texts(events(cfg, prev, next, null, now));
+  process.env.SKIP_PRICE_ALARMS = "1";
+  const rest = texts(events(cfg, prev, next, null, now));
+  delete process.env.SKIP_PRICE_ALARMS;
+  check(/Stop|Kursalarm/.test(all) && !/Stop|Kursalarm/.test(rest) && rest.length > 0, "mit 15-Minuten-Kursalarmen: keine doppelten Stop- und Alarm-Meldungen, übrige Hinweise bleiben");
+}
+
 const got = [];
 let status = 200;
 const server = createServer((req, res) => { let b = ""; req.on("data", c => { b += c; }); req.on("end", () => { got.push({ method: req.method, url: req.url, body: b }); res.writeHead(status); res.end("{}"); }); });

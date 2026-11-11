@@ -2,7 +2,8 @@
 // Geheim (GitHub-Secrets): NTFY_TOPIC (Kanalname, wirkt wie ein Passwort) und PUSH_WATCH (Push-Liste aus der Seite: Depot,
 // Merkliste, Kursalarme, Stops). Beides steht nie im Repository und nie in den Protokollen – ausgegeben werden nur Anzahlen.
 // Arten (NOTIFY_MODE):
-//   events – nach jedem Lauf der Aktien-Daten: Stop oder Kursalarm erreicht, 200-Tage-Schnitt gekreuzt, große Tagesbewegung,
+//   events – nach jedem Lauf der Aktien-Daten: Stop oder Kursalarm erreicht (entfällt mit SKIP_PRICE_ALARMS=1, wenn die
+//            Kursalarme alle 15 Minuten laufen – scripts/price-alarms.mjs), 200-Tage-Schnitt gekreuzt, große Tagesbewegung,
 //            Analysten-Umschwung; im ersten Lauf des Tages auch Zahlen am nächsten Börsentag und Gesamtnote unter 40 / über 80
 //            (STOCKS_PREV, STOCKS_NEW, NOTE_RECENT)
 //   news   – nach jedem Nachrichten-Lauf: neue wichtige Meldungen zu Ihren US-Aktien (NEWS_DIR neu, NEWS_PREV_DIR bisher)
@@ -66,9 +67,9 @@ export function events(cfg, prev, next, recent, now = new Date()) {
   for (const sym of [...new Set([...cfg.d, ...cfg.w, ...cfg.a.map(q => q.sym)])]) {
     const x = N.get(sym), o = P.get(sym);
     if (!x || !fin(x.last)) continue;
-    const stop = cfg.s[sym];
-    if (fin(stop) && crossed(o, x, stop, "down")) add(sym, "down", `Ihr Stop ${price(stop)} wurde erreicht – zuletzt ${price(x.last)}. In eToro prüfen, ob die Position geschlossen wurde.`);
-    for (const al of cfg.a) {
+    const stop = cfg.s[sym], live = env.SKIP_PRICE_ALARMS === "1";   // meldet schon der 15-Minuten-Wächter (price-alarms.mjs)
+    if (!live && fin(stop) && crossed(o, x, stop, "down")) add(sym, "down", `Ihr Stop ${price(stop)} wurde erreicht – zuletzt ${price(x.last)}. In eToro prüfen, ob die Position geschlossen wurde.`);
+    for (const al of live ? [] : cfg.a) {
       if (al.sym !== sym) continue;
       const dir = al.dir === ">" ? "up" : "down";
       if (crossed(o, x, al.p, dir)) add(sym, dir, `Kursalarm ${dir === "up" ? "über" : "unter"} ${price(al.p)} erreicht – zuletzt ${price(x.last)}.`);

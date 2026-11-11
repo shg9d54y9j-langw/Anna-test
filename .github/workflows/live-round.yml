@@ -20,6 +20,10 @@ on:
         required: false
       ETORO_BOT_USER_KEY:
         required: false
+      NTFY_TOPIC:                 # Kursalarme und Stops aufs Handy (ntfy) – nur wenn eingerichtet
+        required: false
+      PUSH_WATCH:
+        required: false
 
 permissions: {}
 
@@ -214,3 +218,74 @@ jobs:
 
           Bot-Stand: https://shg9d54y9j-langw.github.io/Anna-test/#daily"
           done < events.txt
+
+  # Kursalarme und Stops aus der Push-Liste: kennt nur den Lese-Schlüssel und den ntfy-Kanal, darf im Repository nichts ändern.
+  # Der Vergleichsstand ist verschlüsselt (Schlüssel aus dem Kanal); im Protokoll stehen nur Anzahlen, nie Kürzel oder Preise.
+  alarms:
+    needs: fetch
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    outputs:
+      state: ${{ steps.alarms.outputs.state }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Letzten (verschlüsselten) Stand holen
+        run: |
+          if git fetch -q --depth=1 origin alarm-state 2>/dev/null; then
+            git show FETCH_HEAD:state.json > "$RUNNER_TEMP/alarm-prev.json" || true
+          else
+            echo "Noch kein Stand vorhanden."
+          fi
+
+      - name: Kursalarme und Stops prüfen
+        id: alarms
+        env:
+          ETORO_API_KEY: ${{ secrets.ETORO_API_KEY }}
+          ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          PUSH_WATCH: ${{ secrets.PUSH_WATCH }}
+          ALARM_STATE_IN: ${{ runner.temp }}/alarm-prev.json
+          ALARM_STATE_OUT: ${{ runner.temp }}/alarm-state.json
+        run: |
+          node scripts/price-alarms.mjs
+          if [ -f "$ALARM_STATE_OUT" ]; then
+            echo "state=$(base64 -w0 "$ALARM_STATE_OUT")" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Veröffentlicht nur den verschlüsselten Umschlag auf dem Zweig alarm-state – ohne Schlüssel und ohne Kanal.
+  alarm-save:
+    needs: alarms
+    if: ${{ !cancelled() && needs.alarms.outputs.state != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Verschlüsselten Stand veröffentlichen
+        env:
+          STATE_B64: ${{ needs.alarms.outputs.state }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir alarm && cd alarm
+          printf '%s' "$STATE_B64" | base64 -d > state.json
+          # Nur der verschlüsselte Umschlag darf hinaus (v, updated, iv, tag, data) – sonst nichts
+          # shellcheck disable=SC2016
+          node -e '
+            const d = JSON.parse(require("fs").readFileSync("state.json", "utf8"));
+            if (Object.keys(d).sort().join() !== "data,iv,tag,updated,v" || d.v !== 1) { console.log("::error::Unerwarteter Inhalt – nichts veröffentlicht"); process.exit(1); }
+          '
+          git init -q -b alarm-state
+          git add state.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Alarm-Stand $(date -u +%FT%TZ)"
+          for i in 1 2 3 4 5; do
+            git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:alarm-state && break
+            [ "$i" = 5 ] && exit 1
+            sleep $((i * 4))
+          done

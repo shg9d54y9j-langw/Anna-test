@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-11-alarme15", t: "Kursalarme und Stops alle 15 Minuten", d: "Mit Handy-Meldungen (ntfy) prüft der Live-Wächter Ihre Kursalarme und Stops an Börsentagen etwa alle 15 Minuten – auch ein kurzes Unterschreiten des Stops zählt, jede Berührung kommt genau einmal. Ihre Kürzel bleiben dabei verschlüsselt.", href: "#pfPush" },
     { id: "2026-11-11-vermoegen", t: "Vermögen: langfristig anlegen", d: "Neuer Bereich: Ihr Anlegerprofil, ein Musterportfolio aus breit gestreuten ETFs mit erwarteter Rendite und Bandbreite, Rebalancing-Helfer, Steuern in Österreich – und was die Forschung dazu sagt, mit Quellen. Der Forschungsstand wird jeden Monat geprüft, Zinsen und Inflation kommen täglich von der EZB.", href: "#wProfil" },
     { id: "2026-11-11-bots", t: "Bots & Copy-Trading: eigener Knopf", d: "Trend-Bot, Copy-Trading und Tagesempfehlung stehen jetzt gemeinsam hinter dem Knopf „Bots & Copy-Trading“ oben in der Kopfzeile – getrennt von den übrigen Bereichen. Alte Links funktionieren weiter.", href: "#bot" },
     { id: "2026-11-11-sparplan", t: "Sparplan-Rechner", d: "Im Bereich Vermögen: was aus einer monatlichen ETF-Rate wird – mit Zinseszins, Kosten, 27,5 % KESt nach österreichischem Recht und Inflation. Mit Ziel: wann Sie es erreichen und welche Rate dafür nötig ist.", href: "#sparplan" },

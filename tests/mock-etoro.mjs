@@ -118,6 +118,8 @@ function portfolio(acc) {
 }
 // ---------- Marktdaten (Tageskerzen) und FRED-Reihen für das Marktlage-Cockpit ----------
 const INSTRUMENTS = { SPX500: 27, NSDQ100: 28, GER40: 32, GOLD: 18, OIL: 17, BTC: 100000 };
+const candleOverride = {};   // /__test/candles: vorgegebene Tageskerzen je Instrument
+const callLog = [];          // /__test/calls: welche Pfade abgefragt wurden (ohne Kopfzeilen)
 function series(id, n) {   // erfundene, reproduzierbare Tagesschlusskurse, älteste zuerst
   let x = 1000 + id % 997, s = id * 7919 % 4294967296;
   const r = () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
@@ -279,12 +281,15 @@ const readBody = req => new Promise(resolve => { let b = ""; req.on("data", c =>
 http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
   const send = (code, body) => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
+  if (url.pathname.startsWith("/api/") && callLog.length < 500) callLog.push(url.pathname + url.search);
 
   // Steuerung nur für die Tests (gibt es bei eToro nicht)
   if (url.pathname.startsWith("/__test/")) {
     const body = req.method === "POST" ? await readBody(req) : {};
     const acc = accounts[(body && body.account) || url.searchParams.get("account") || "demo"];
     if (url.pathname === "/__test/state") return send(200, { credit: acc.credit, mirrors: acc.mirrors, ops: acc.ops });
+    if (url.pathname === "/__test/candles") { candleOverride[body.id] = body.candles; return send(200, { ok: true }); }   // Tageskerzen vorgeben (Kursalarme)
+    if (url.pathname === "/__test/calls") return send(200, { calls: callLog.splice(0) });
     if (url.pathname === "/__test/trend") return send(200, { credit: acc.credit, positions: acc.positions, pendingOpen: acc.pendingOpen, tradeOps: acc.tradeOps, realTradeOps, prices: Object.fromEntries([...Object.entries(TREND_ETFS), ...Object.entries(UCITS_BY_SYM)].map(([k, id]) => [k, trendPrice(id)])), ids: { ...TREND_ETFS, ...UCITS_BY_SYM } });
     if (url.pathname === "/__test/fail-next-open") { trendFlags.failNextOpen = true; return send(200, { ok: true }); }
     if (url.pathname === "/__test/pending-next-open") { trendFlags.pendingNextOpen = true; return send(200, { ok: true }); }
@@ -445,6 +450,10 @@ http.createServer(async (req, res) => {
     return send(200, { interval: tc[3], candles: [{ instrumentId: Number(tc[1]), candles: tc[2] === "desc" ? list.reverse() : list }] });
   }
   const candles = /^\/api\/v1\/market-data\/instruments\/(\d+)\/history\/candles\/(asc|desc)\/OneDay\/(\d+)$/.exec(url.pathname);
+  if (candles && candleOverride[Number(candles[1])]) {
+    const id = Number(candles[1]), list = candleOverride[id].slice(-Math.min(1000, Number(candles[3])));
+    return send(200, { interval: "OneDay", candles: [{ instrumentId: id, candles: candles[2] === "desc" ? [...list].reverse() : list }] });
+  }
   if (candles) {
     const id = Number(candles[1]), n = Math.min(1000, Number(candles[3]));
     if (!Object.values(INSTRUMENTS).includes(id) && ![...UNIVERSE, ...UNSEARCHED].some(u => u.instrumentId === id)) return send(404, { error: "unknown instrument" });
