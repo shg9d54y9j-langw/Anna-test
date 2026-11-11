@@ -207,17 +207,38 @@ document.addEventListener("click", e => {
 });
 
 // ---------- Vorschläge beim Tippen (Aktien-Suche, Portfolio, Kursalarme) ----------
-// Treffer nach Güte: Kürzel genau, Kürzel beginnt so, Name beginnt so, ein Wort im Namen beginnt so, enthält – sonst nach Beliebtheit
+// Treffer nach Güte: Kürzel genau, Kürzel beginnt so, Name beginnt so, ein Wort im Namen beginnt so, enthält – sonst nach Beliebtheit.
+// Namen auch über Zusatznamen (aka: z. B. „Münchener Rück“, Wiener Kürzel „POS“). Umlaute in jeder Schreibweise: „Münchener“,
+// „Muenchener“ und „Munchener“ finden dasselbe – je zwei Formen (ohne Punkte; ae/oe/ue zusammengezogen) werden verglichen.
 const normText = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const foldText = s => normText(String(s || "").replace(/[ÄäÖöÜü]/g, c => ({ Ä: "Ae", ä: "ae", Ö: "Oe", ö: "oe", Ü: "Ue", ü: "ue" })[c])).replace(/ß/g, "ss").replace(/ae/g, "a").replace(/oe/g, "o").replace(/ue/g, "u");
+const forms = s => { const a = normText(s), b = foldText(s); return a === b ? [a] : [a, b]; };
+const matchCache = new WeakMap();
+function matchKeys(x) {
+  let k = matchCache.get(x);
+  if (!k || k.src !== x.name + "|" + (x.aka || "")) {
+    const names = [x.name, ...String(x.aka || "").split(" · ")].filter(Boolean).flatMap(forms);
+    k = { src: x.name + "|" + (x.aka || ""), s: normText(x.sym), names, words: names.map(n => n.split(/[\s\-.&,/()+']+/)) };
+    matchCache.set(x, k);
+  }
+  return k;
+}
+// Güte eines Treffers: 0 Kürzel genau … 5 Name enthält, -1 kein Treffer
+function matchRank(x, query, qs = forms(String(query || "").trim()).map(q => q.trim()).filter(Boolean)) {
+  if (!x || typeof x !== "object" || !qs.length) return -1;
+  const k = matchKeys(x), s = k.s, base = s.split(".")[0];
+  let r = -1;
+  for (const q of qs) {
+    const t = s === q || base === q ? 0 : s.startsWith(q) ? 1 : k.names.some(n => n.startsWith(q)) ? 2 : k.words.some(ws => ws.some(w => w.startsWith(q))) ? 3 : s.includes(q) ? 4 : k.names.some(n => n.includes(q)) ? 5 : -1;
+    if (t >= 0 && (r < 0 || t < r)) r = t;
+  }
+  return r;
+}
 function matchStocks(items, query, max = 8) {
-  const q = normText(query).trim();
-  if (!q || !Array.isArray(items)) return [];
+  const qs = forms(String(query || "").trim()).map(q => q.trim()).filter(Boolean);
+  if (!qs.length || !Array.isArray(items)) return [];
   const out = [];
-  items.forEach((x, i) => {
-    const s = normText(x.sym), n = normText(x.name), base = s.split(".")[0];
-    const r = s === q || base === q ? 0 : s.startsWith(q) ? 1 : n.startsWith(q) ? 2 : n.split(/[\s\-.&,/()]+/).some(w => w.startsWith(q)) ? 3 : s.includes(q) ? 4 : n.includes(q) ? 5 : -1;
-    if (r >= 0) out.push({ x, r, i });
-  });
+  items.forEach((x, i) => { const r = matchRank(x, query, qs); if (r >= 0) out.push({ x, r, i }); });
   return out.sort((a, b) => a.r - b.r || a.i - b.i).slice(0, max).map(o => o.x);
 }
 // input: das Eingabefeld; source(text) liefert Einträge { sym, name, type?, last?, chg1d? }; onPick(sym) nach der Auswahl.
@@ -276,6 +297,7 @@ function attachSuggest(input, { source, onPick, emptyTitle = "" }) {
   box.addEventListener("click", e => { e.preventDefault(); const o = e.target.closest(".sugg-opt"); if (o) pick(+o.dataset.i); });
 }
 window.DTD.matchStocks = matchStocks;
+window.DTD.matchRank = matchRank;
 window.DTD.attachSuggest = attachSuggest;
 
 tvWidget("tickerTape", "ticker-tape", {

@@ -1,13 +1,16 @@
 """Unabhängige Gegenrechnung der Aktien-Daten gegen den Test-Server (nur für die automatischen Tests).
 
 Holt dieselben Tageskerzen direkt vom Test-Server und rechnet Trend, Momentum, ATR, Schwankung,
-52-Wochen-Spanne, Rückgang und Beta in Python nach. Prüft außerdem Ränge, Filter und die Finnhub-Felder.
+52-Wochen-Spanne, Rückgang und Beta in Python nach. Prüft außerdem Ränge, Filter und die Finnhub-Felder,
+und die europäischen Werte: Europa-Quote (EUROPE_COUNT) und Europa-Liste (EUROPE_IN) mit Zusatznamen und Land.
 Aufruf: python3 tests/verify_stocks.py <stocks.json> <http://localhost:PORT>
 """
 import json
 import math
 import os
+import re
 import sys
+import unicodedata
 import urllib.request
 
 path, base = sys.argv[1], sys.argv[2].rstrip("/")
@@ -85,9 +88,72 @@ if os.environ.get("FIRMS_IN"):
 
 # Beliebtheit ist ein Rang: 1 = beliebteste, ohne Rang ans Ende
 ranked = sorted(universe.values(), key=lambda it: ("popularityUniques7Day" not in it, it.get("popularityUniques7Day", 0), it["instrumentId"]))
+
+# Europa: Börsen am Kürzel, Namen vergleichbar (Umlaute wie ae/oe/ue, ohne Akzente), Wörter ab Wortanfang (bis 3 Zeichen genau)
+EU = ["DE", "VI", "PA", "NV", "AS", "BR", "LSB", "LS", "MI", "MC", "ZU", "SW", "ST", "CO", "HE", "OL", "IR", "L"]
+UML = {"Ä": "Ae", "ä": "ae", "Ö": "Oe", "ö": "oe", "Ü": "Ue", "ü": "ue"}
+
+
+def suffix(sym):
+    m = re.search(r"\.([A-Z]+)$", str(sym).upper())
+    return m.group(1) if m else ""
+
+
+def norm_name(s):
+    s = "".join(UML.get(c, c) for c in str(s or "")).replace("ß", "ss")
+    s = "".join(c for c in unicodedata.normalize("NFD", s) if not "\u0300" <= c <= "\u036f").lower()
+    return re.sub(r"[^a-z0-9]+", " ", s).strip()
+
+
+def name_matches(name, key):
+    n, k = norm_name(name).split(), norm_name(key).split()
+    if not k:
+        return False
+    return any(all((n[i + j] == w) if len(w) <= 3 else n[i + j].startswith(w) for j, w in enumerate(k)) for i in range(len(n) - len(k) + 1))
+
+
+eu_found, eu_open = {}, []   # Kürzel -> (Eintrag, Land)
+if os.environ.get("EUROPE_IN"):
+    ed = json.load(open(os.environ["EUROPE_IN"], encoding="utf-8"))
+    vs = [(it["internalSymbolFull"].upper(), str(it.get("displayname") or it["internalSymbolFull"])[:60]) for it in ranked if valid(it, 5)]
+    names = dict(vs)
+    for g in ed["groups"].values():
+        pref = g.get("pref") or []
+        for e in g.get("items") or []:
+            keys = e.get("match") or [e["name"]]
+            fits = lambda nm: any(name_matches(nm, k) for k in keys)
+            sym = str(e.get("sym") or "").upper()
+            hit = sym if sym in names and fits(names[sym]) else None
+            if not hit:
+                cands = sorted([s for s, nm in vs if suffix(s) in EU and fits(nm)], key=lambda s: pref.index(suffix(s)) if suffix(s) in pref else len(pref))
+                hit = cands[0] if cands else None
+            if not hit:
+                eu_open.append((e, e.get("cc") or g.get("cc")))
+            elif hit not in eu_found:
+                eu_found[hit] = (e, e.get("cc") or g.get("cc"))
+    # was die Suche gar nicht liefert: über das Kürzel, nur mit passendem Namen
+    for e, cc in eu_open:
+        sym = str(e.get("sym") or "").upper()
+        if not sym or sym in universe:
+            continue
+        hit = [r for r in get(f"{base}/api/v2/market-data/instruments?symbols={sym}")["results"] if r["symbol"].upper() == sym]
+        o = hit and official.get(hit[0]["instrumentId"])
+        if o and o["instrumentTypeID"] == 5 and not o["isInternalInstrument"] and any(name_matches(hit[0].get("displayName", ""), k) for k in (e.get("match") or [e["name"]])):
+            eu_found[sym] = (e, cc)
+    for s in ("MUV2.DE", "ABS2.DE", "TBAU.VI", "LKEU.DE"):
+        if s not in eu_found:
+            errors.append(f"Europa-Liste: {s} nicht aufgelöst (Gegenrechnung)")
+    for s in ("WRONG.DE", "TBAU.DE", "LKX.DE", "GONE.DE"):
+        if s in eu_found:
+            errors.append(f"Europa-Liste: {s} fälschlich aufgelöst (Gegenrechnung)")
+
 for kind, t, env in (("Aktie", 5, "STOCK_COUNT"), ("ETF", 6, "ETF_COUNT")):
-    want = {it["internalSymbolFull"].upper() for it in [it for it in ranked if valid(it, t)][:int(os.environ.get(env, "0") or 0)]}
+    valid_syms = [it["internalSymbolFull"].upper() for it in ranked if valid(it, t)]
+    want = set(valid_syms[:int(os.environ.get(env, "0") or 0)])
     if kind == "Aktie":
+        # Europa-Quote: die nächsten EUROPE_COUNT europäischen jenseits der beliebtesten, dazu die Europa-Liste
+        want |= set([s for s in valid_syms[int(os.environ.get(env, "0") or 0):] if suffix(s) in EU][:int(os.environ.get("EUROPE_COUNT", "0") or 0)])
+        want |= set(eu_found)
         want |= {it["internalSymbolFull"].upper() for it in ranked if valid(it, t) and it["internalSymbolFull"].upper() in always}
         # Firmen, die die Suche gar nicht liefert: über das Kürzel nachschlagen, wenn die offizielle Liste sie als Aktie führt
         for sym in always - set(universe):
@@ -184,6 +250,32 @@ if "an:" in d.get("finnhub", ""):
             errors.append(f"{x['sym']}: Überraschung {e['surprisePct']} statt {want:.2f}")
 
 syms = {x["sym"] for x in d["items"]}
+# Zusatznamen (Suche) und Land nur für Werte der Europa-Liste – gleiche Regel wie in der Seite
+for x in d["items"]:
+    f = eu_found.get(x["sym"])
+    if not f:
+        if "aka" in x or "cc" in x:
+            errors.append(f"{x['sym']}: Zusatzname oder Land ohne Europa-Liste")
+        continue
+    e, cc = f
+    seen_a, aka = set(), []
+    for a in [e["name"]] + (e.get("aka") or []):
+        a = str(a).strip()
+        if a and not name_matches(x["name"], a) and a not in seen_a:
+            seen_a.add(a)
+            aka.append(a)
+    want_aka = " · ".join(aka)[:80] or None
+    if x.get("aka") != want_aka or x.get("cc") != cc:
+        errors.append(f"{x['sym']}: Zusatzname {x.get('aka')!r}/{x.get('cc')} statt {want_aka!r}/{cc}")
+if os.environ.get("EUROPE_IN"):
+    for s in ("MUV2.DE", "ABS2.DE", "TBAU.VI", "LKEU.DE", "EUQ1.PA"):
+        if s not in syms:
+            errors.append(f"{s} fehlt (Europa)")
+    for s in ("WRONG.DE", "TBAU.DE", "LKX.DE", "GONE.DE", "EUQ3.L", "USX1"):
+        if s in syms:
+            errors.append(f"{s} zu viel (Europa)")
+    if next((x for x in d["items"] if x["sym"] == "ABS2.DE"), {}).get("aka") != "POS" or next((x for x in d["items"] if x["sym"] == "MUV2.DE"), {}).get("cc") != "DE":
+        errors.append("Porr ohne Wiener Kürzel POS oder Münchener Rück ohne Land DE")
 if "STK008" not in syms:
     errors.append("STK008 fehlt – Börse gerade zu, aber mit Rang: gehört dazu")
 if os.environ.get("FIRMS_IN") and "LOOKUP1" in always and "LOOKUP1" not in syms:

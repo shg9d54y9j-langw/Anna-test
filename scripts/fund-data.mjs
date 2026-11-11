@@ -83,6 +83,9 @@ export function pickEarnings(rows) {
     .sort((a, b) => (a.period < b.period ? 1 : -1)).slice(0, 4)
     .map(r => ({ p: r.period, q: Number.isFinite(r.quarter) ? r.quarter : null, y: Number.isFinite(r.year) ? r.year : null, a: r2(r.actual), e: r2(r.estimate), sp: Math.abs(r.estimate) >= 0.01 ? r2((r.actual - r.estimate) / Math.abs(r.estimate) * 100) : null }));
 }
+// Finnhub-Kürzel einer europäischen eToro-Notierung (Amsterdam heißt bei eToro .NV, Zürich .ZU)
+const FINN_SUFFIX = { DE: "DE", VI: "VI", PA: "PA", NV: "AS", AS: "AS", BR: "BR", MI: "MI", MC: "MC", ZU: "SW", SW: "SW", ST: "ST", CO: "CO", HE: "HE", OL: "OL", LS: "LS", IR: "IR", L: "L" };
+export const finnhubSymbol = sym => { const m = /^([A-Z0-9-]+)\.([A-Z]+)$/.exec(String(sym || "")); return m && FINN_SUFFIX[m[2]] ? `${m[1]}.${FINN_SUFFIX[m[2]]}` : null; };
 // Konkurrenten laut Finnhub (gleiches Land und gleiche Branche), ohne die Aktie selbst, höchstens 10
 export const pickPeers = (rows, sym) => [...new Set((Array.isArray(rows) ? rows : []).map(s => String(s || "").toUpperCase()).filter(s => /^[A-Z0-9][A-Z0-9.\-]{0,11}$/.test(s) && s !== sym))].slice(0, 10);
 const ageDays = iso => (iso ? (Date.now() - Date.parse(`${iso}T00:00:00Z`)) / 864e5 : Infinity);
@@ -152,6 +155,13 @@ async function main() {
   log(`Kennzahlen: ${n(x => Number.isFinite(x.pe) || Number.isFinite(x.mcap))} Aktien mit Bewertung, ${n(x => x.ins)} mit Insider-Daten (${n(x => x.ins && x.ins.buyers >= 2)} mit Käufen mehrerer Insider), ${n(x => x.ind)} mit Branche, ${n(x => x.fs)} mit Jahreswerten für die Finanzkraft; ${errors.length} Fehler`);
   log(`Quartalszahlen-Historie: ${n(x => x.earn)} Aktien, Konkurrenten: ${n(x => x.peers)} Aktien`);
   log(`Im Tarif: Kennzahlen ${out.available.metric ? "ja" : "nein"}, Insider ${out.available.insider ? "ja" : "nein"}, Profil ${out.available.profile ? "ja" : "nein"}, Quartalszahlen ${out.available.earnings ? "ja" : "nein"}, Konkurrenten ${out.available.peers ? "ja" : "nein"}`);
+  // Europäische Aktien: liefert der Tarif auch dort Kennzahlen? Drei Proben, nur fürs Protokoll (Grundlage für eine Erweiterung)
+  const euProbe = (stocks.items || []).filter(x => x.type === "Aktie" && finnhubSymbol(x.sym)).slice(0, 3);
+  let euOk = 0;
+  for (const x of euProbe) {
+    try { const d = await finnhub("/stock/metric", { symbol: finnhubSymbol(x.sym), metric: "all" }); if (d && d.metric && Object.keys(d.metric).length >= 5) euOk++; } catch { /* nicht im Tarif */ }
+  }
+  if (euProbe.length) log(`Europäische Aktien: Finnhub liefert Kennzahlen für ${euOk} von ${euProbe.length} Proben${euOk ? "" : " – im Tarif nicht enthalten; die Gesamtnote rechnet dort mit Trend und Sicherheit"}.`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

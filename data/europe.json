@@ -1,0 +1,1503 @@
+{
+ "version": 1,
+ "reviewed": "2026-11-11",
+ "about": "Europäische Aktien, die immer in den Aktien-Daten sind (scripts/stock-universe.mjs) – dazu kommen die beliebtesten weiteren europäischen Werte. Das Kürzel ist das bei eToro (österreichische Werte führt eToro über ihre Xetra-Notierung, z. B. Porr als ABS2.DE); es gilt nur, wenn der Name passt, sonst wird über den Namen gesucht (match: Suchbegriffe, sonst name). aka: weitere Namen für die Suche, z. B. das Kürzel an der Wiener Börse. Die Gruppen folgen grob DAX/MDAX, ATX Prime, SMI und Euro Stoxx 50 – Indexzugehörigkeit wird nicht behauptet.",
+ "groups": {
+  "at": {
+   "label": "Österreich – Wiener Börse (Prime Market)",
+   "cc": "AT",
+   "pref": [
+    "VI",
+    "DE"
+   ],
+   "items": [
+    {
+     "sym": "ABS2.DE",
+     "name": "Porr",
+     "aka": [
+      "POS"
+     ]
+    },
+    {
+     "sym": "EBO.DE",
+     "name": "Erste Group",
+     "aka": [
+      "EBS",
+      "Erste Bank"
+     ]
+    },
+    {
+     "sym": "OMV.DE",
+     "name": "OMV"
+    },
+    {
+     "sym": "OEWA.DE",
+     "name": "Verbund",
+     "aka": [
+      "VER"
+     ]
+    },
+    {
+     "sym": "VOE.DE",
+     "name": "voestalpine",
+     "aka": [
+      "VOE"
+     ]
+    },
+    {
+     "sym": "AZ2.DE",
+     "name": "Andritz",
+     "aka": [
+      "ANDR"
+     ]
+    },
+    {
+     "sym": "WIB.DE",
+     "name": "Wienerberger",
+     "aka": [
+      "WIE"
+     ]
+    },
+    {
+     "sym": "RAW.DE",
+     "name": "Raiffeisen Bank International",
+     "match": [
+      "raiffeisen bank"
+     ],
+     "aka": [
+      "RBI"
+     ]
+    },
+    {
+     "sym": "BG.DE",
+     "name": "BAWAG Group",
+     "match": [
+      "bawag"
+     ],
+     "aka": [
+      "BG"
+     ]
+    },
+    {
+     "sym": "XD4.DE",
+     "name": "Strabag",
+     "aka": [
+      "STR"
+     ]
+    },
+    {
+     "sym": "UQA.DE",
+     "name": "UNIQA",
+     "aka": [
+      "UQA"
+     ]
+    },
+    {
+     "sym": "WSV2.DE",
+     "name": "Vienna Insurance Group",
+     "match": [
+      "vienna insurance"
+     ],
+     "aka": [
+      "VIG",
+      "Wiener Städtische"
+     ]
+    },
+    {
+     "sym": "TA1.DE",
+     "name": "Telekom Austria",
+     "match": [
+      "telekom austria",
+      "a1 telekom"
+     ],
+     "aka": [
+      "TKA",
+      "A1 Group"
+     ]
+    },
+    {
+     "sym": "OPO.DE",
+     "name": "Österreichische Post",
+     "match": [
+      "österreichische post",
+      "austrian post"
+     ],
+     "aka": [
+      "POST"
+     ]
+    },
+    {
+     "sym": "LEN.DE",
+     "name": "Lenzing",
+     "aka": [
+      "LNZ"
+     ]
+    },
+    {
+     "sym": "MMK.DE",
+     "name": "Mayr-Melnhof",
+     "match": [
+      "mayr melnhof"
+     ],
+     "aka": [
+      "MMK"
+     ]
+    },
+    {
+     "sym": "EVN.DE",
+     "name": "EVN"
+    },
+    {
+     "sym": "CAI.DE",
+     "name": "CA Immobilien",
+     "match": [
+      "ca immobilien",
+      "ca immo"
+     ],
+     "aka": [
+      "CAI",
+      "CA Immo"
+     ]
+    },
+    {
+     "sym": "DOC.DE",
+     "name": "DO & CO",
+     "match": [
+      "do co"
+     ],
+     "aka": [
+      "DOC"
+     ]
+    },
+    {
+     "sym": "AUS.DE",
+     "name": "AT&S",
+     "match": [
+      "austria technologie",
+      "at s austria"
+     ],
+     "aka": [
+      "ATS"
+     ]
+    },
+    {
+     "sym": "SBO.DE",
+     "name": "Schoeller-Bleckmann",
+     "match": [
+      "schoeller bleckmann",
+      "sbo ag"
+     ],
+     "aka": [
+      "SBO"
+     ]
+    },
+    {
+     "sym": "PAL.DE",
+     "name": "Palfinger",
+     "aka": [
+      "PAL"
+     ]
+    },
+    {
+     "sym": "SEM.DE",
+     "name": "Semperit",
+     "aka": [
+      "SEM"
+     ]
+    },
+    {
+     "sym": "AGR.DE",
+     "name": "Agrana",
+     "aka": [
+      "AGR"
+     ]
+    },
+    {
+     "sym": "KTN.DE",
+     "name": "Kontron",
+     "aka": [
+      "S&T"
+     ]
+    },
+    {
+     "sym": "FQT.DE",
+     "name": "Frequentis",
+     "aka": [
+      "FQT"
+     ]
+    },
+    {
+     "sym": "FLU.DE",
+     "name": "Flughafen Wien",
+     "aka": [
+      "FLU",
+      "Vienna Airport"
+     ]
+    },
+    {
+     "sym": "ROS.DE",
+     "name": "Rosenbauer",
+     "aka": [
+      "ROS"
+     ]
+    },
+    {
+     "sym": "ZAG.DE",
+     "name": "Zumtobel",
+     "aka": [
+      "ZAG"
+     ]
+    },
+    {
+     "sym": "PYT.DE",
+     "name": "Polytec",
+     "aka": [
+      "PYT"
+     ]
+    },
+    {
+     "sym": "AMAG.DE",
+     "name": "AMAG Austria Metall",
+     "match": [
+      "amag austria"
+     ],
+     "aka": [
+      "AMAG"
+     ]
+    }
+   ]
+  },
+  "de": {
+   "label": "Deutschland – DAX, MDAX und bekannte Nebenwerte",
+   "cc": "DE",
+   "pref": [
+    "DE"
+   ],
+   "items": [
+    {
+     "sym": "ADS.DE",
+     "name": "Adidas"
+    },
+    {
+     "sym": "ALV.DE",
+     "name": "Allianz"
+    },
+    {
+     "sym": "BAS.DE",
+     "name": "BASF"
+    },
+    {
+     "sym": "BAYN.DE",
+     "name": "Bayer",
+     "match": [
+      "bayer ag"
+     ]
+    },
+    {
+     "sym": "BEI.DE",
+     "name": "Beiersdorf"
+    },
+    {
+     "sym": "BMW.DE",
+     "name": "BMW",
+     "match": [
+      "bayerische motoren"
+     ]
+    },
+    {
+     "sym": "BNR.DE",
+     "name": "Brenntag"
+    },
+    {
+     "sym": "CBK.DE",
+     "name": "Commerzbank"
+    },
+    {
+     "sym": "CON.DE",
+     "name": "Continental"
+    },
+    {
+     "sym": "DTG.DE",
+     "name": "Daimler Truck"
+    },
+    {
+     "sym": "DBK.DE",
+     "name": "Deutsche Bank"
+    },
+    {
+     "sym": "DB1.DE",
+     "name": "Deutsche Börse"
+    },
+    {
+     "sym": "DHL.DE",
+     "name": "DHL Group",
+     "match": [
+      "deutsche post",
+      "dhl group"
+     ],
+     "aka": [
+      "Deutsche Post"
+     ]
+    },
+    {
+     "sym": "DTE.DE",
+     "name": "Deutsche Telekom"
+    },
+    {
+     "sym": "EOAN.DE",
+     "name": "E.ON"
+    },
+    {
+     "sym": "FRE.DE",
+     "name": "Fresenius",
+     "match": [
+      "fresenius se"
+     ]
+    },
+    {
+     "sym": "FME.DE",
+     "name": "Fresenius Medical Care"
+    },
+    {
+     "sym": "G1A.DE",
+     "name": "GEA Group",
+     "match": [
+      "gea"
+     ]
+    },
+    {
+     "sym": "HNR1.DE",
+     "name": "Hannover Rück"
+    },
+    {
+     "sym": "HEI.DE",
+     "name": "Heidelberg Materials",
+     "match": [
+      "heidelberg materials",
+      "heidelbergcement"
+     ]
+    },
+    {
+     "sym": "HEN3.DE",
+     "name": "Henkel"
+    },
+    {
+     "sym": "IFX.DE",
+     "name": "Infineon"
+    },
+    {
+     "sym": "MBG.DE",
+     "name": "Mercedes-Benz",
+     "match": [
+      "mercedes benz"
+     ]
+    },
+    {
+     "sym": "MRK.DE",
+     "name": "Merck KGaA",
+     "match": [
+      "merck kgaa",
+      "merck"
+     ]
+    },
+    {
+     "sym": "MTX.DE",
+     "name": "MTU Aero Engines",
+     "match": [
+      "mtu aero"
+     ]
+    },
+    {
+     "sym": "MUV2.DE",
+     "name": "Münchener Rück",
+     "match": [
+      "münchener rück",
+      "munich re"
+     ],
+     "aka": [
+      "Munich Re",
+      "Münchner Rück"
+     ]
+    },
+    {
+     "sym": "P911.DE",
+     "name": "Porsche AG",
+     "match": [
+      "porsche ag"
+     ]
+    },
+    {
+     "sym": "PAH3.DE",
+     "name": "Porsche SE",
+     "match": [
+      "porsche automobil",
+      "porsche se"
+     ]
+    },
+    {
+     "sym": "QIA.DE",
+     "name": "Qiagen"
+    },
+    {
+     "sym": "RHM.DE",
+     "name": "Rheinmetall"
+    },
+    {
+     "sym": "RWE.DE",
+     "name": "RWE"
+    },
+    {
+     "sym": "SAP.DE",
+     "name": "SAP"
+    },
+    {
+     "sym": "SRT3.DE",
+     "name": "Sartorius"
+    },
+    {
+     "sym": "SIE.DE",
+     "name": "Siemens",
+     "match": [
+      "siemens aktiengesellschaft",
+      "siemens ag"
+     ]
+    },
+    {
+     "sym": "ENR.DE",
+     "name": "Siemens Energy"
+    },
+    {
+     "sym": "SHL.DE",
+     "name": "Siemens Healthineers"
+    },
+    {
+     "sym": "SY1.DE",
+     "name": "Symrise"
+    },
+    {
+     "sym": "VOW3.DE",
+     "name": "Volkswagen"
+    },
+    {
+     "sym": "VNA.DE",
+     "name": "Vonovia"
+    },
+    {
+     "sym": "ZAL.DE",
+     "name": "Zalando"
+    },
+    {
+     "sym": "G24.DE",
+     "name": "Scout24"
+    },
+    {
+     "sym": "AIXA.DE",
+     "name": "Aixtron"
+    },
+    {
+     "sym": "AT1.DE",
+     "name": "Aroundtown"
+    },
+    {
+     "sym": "NDA.DE",
+     "name": "Aurubis"
+    },
+    {
+     "sym": "BC8.DE",
+     "name": "Bechtle"
+    },
+    {
+     "sym": "GBF.DE",
+     "name": "Bilfinger"
+    },
+    {
+     "sym": "AFX.DE",
+     "name": "Carl Zeiss Meditec"
+    },
+    {
+     "sym": "CEC.DE",
+     "name": "Ceconomy"
+    },
+    {
+     "sym": "EVD.DE",
+     "name": "CTS Eventim",
+     "match": [
+      "cts eventim"
+     ]
+    },
+    {
+     "sym": "DHER.DE",
+     "name": "Delivery Hero"
+    },
+    {
+     "sym": "DWNI.DE",
+     "name": "Deutsche Wohnen"
+    },
+    {
+     "sym": "DOU.DE",
+     "name": "Douglas"
+    },
+    {
+     "sym": "DUE.DE",
+     "name": "Dürr"
+    },
+    {
+     "sym": "DWS.DE",
+     "name": "DWS Group",
+     "match": [
+      "dws"
+     ]
+    },
+    {
+     "sym": "EVK.DE",
+     "name": "Evonik"
+    },
+    {
+     "sym": "EVT.DE",
+     "name": "Evotec"
+    },
+    {
+     "sym": "FRA.DE",
+     "name": "Fraport"
+    },
+    {
+     "sym": "FNTN.DE",
+     "name": "freenet"
+    },
+    {
+     "sym": "FPE3.DE",
+     "name": "Fuchs"
+    },
+    {
+     "sym": "GXI.DE",
+     "name": "Gerresheimer"
+    },
+    {
+     "sym": "HLAG.DE",
+     "name": "Hapag-Lloyd",
+     "match": [
+      "hapag lloyd"
+     ]
+    },
+    {
+     "sym": "HFG.DE",
+     "name": "HelloFresh"
+    },
+    {
+     "sym": "HAG.DE",
+     "name": "Hensoldt"
+    },
+    {
+     "sym": "HOT.DE",
+     "name": "Hochtief"
+    },
+    {
+     "sym": "BOSS.DE",
+     "name": "Hugo Boss"
+    },
+    {
+     "sym": "HYQ.DE",
+     "name": "Hypoport"
+    },
+    {
+     "sym": "IOS.DE",
+     "name": "IONOS"
+    },
+    {
+     "sym": "JEN.DE",
+     "name": "Jenoptik"
+    },
+    {
+     "sym": "JUN3.DE",
+     "name": "Jungheinrich"
+    },
+    {
+     "sym": "SDF.DE",
+     "name": "K+S"
+    },
+    {
+     "sym": "KGX.DE",
+     "name": "Kion"
+    },
+    {
+     "sym": "KCO.DE",
+     "name": "Klöckner & Co",
+     "match": [
+      "klöckner"
+     ]
+    },
+    {
+     "sym": "KBX.DE",
+     "name": "Knorr-Bremse",
+     "match": [
+      "knorr bremse"
+     ]
+    },
+    {
+     "sym": "KRN.DE",
+     "name": "Krones"
+    },
+    {
+     "sym": "LXS.DE",
+     "name": "Lanxess"
+    },
+    {
+     "sym": "LEG.DE",
+     "name": "LEG Immobilien"
+    },
+    {
+     "sym": "LHA.DE",
+     "name": "Lufthansa"
+    },
+    {
+     "sym": "NEM.DE",
+     "name": "Nemetschek"
+    },
+    {
+     "sym": "NDX1.DE",
+     "name": "Nordex"
+    },
+    {
+     "sym": "OHB.DE",
+     "name": "OHB"
+    },
+    {
+     "sym": "PSM.DE",
+     "name": "ProSiebenSat.1",
+     "match": [
+      "prosiebensat"
+     ]
+    },
+    {
+     "sym": "PUM.DE",
+     "name": "Puma"
+    },
+    {
+     "sym": "RAA.DE",
+     "name": "Rational"
+    },
+    {
+     "sym": "RDC.DE",
+     "name": "Redcare Pharmacy"
+    },
+    {
+     "sym": "R3NK.DE",
+     "name": "Renk"
+    },
+    {
+     "sym": "RRTL.DE",
+     "name": "RTL Group"
+    },
+    {
+     "sym": "SZG.DE",
+     "name": "Salzgitter"
+    },
+    {
+     "sym": "SHA0.DE",
+     "name": "Schaeffler"
+    },
+    {
+     "sym": "WAF.DE",
+     "name": "Siltronic"
+    },
+    {
+     "sym": "SIX2.DE",
+     "name": "Sixt"
+    },
+    {
+     "sym": "S92.DE",
+     "name": "SMA Solar"
+    },
+    {
+     "sym": "STM.DE",
+     "name": "Stabilus"
+    },
+    {
+     "sym": "SAX.DE",
+     "name": "Ströer",
+     "aka": [
+      "Stroer"
+     ]
+    },
+    {
+     "sym": "SMHN.DE",
+     "name": "Süss MicroTec",
+     "match": [
+      "süss microtec",
+      "suss microtec"
+     ]
+    },
+    {
+     "sym": "TAG.DE",
+     "name": "TAG Immobilien"
+    },
+    {
+     "sym": "TLX.DE",
+     "name": "Talanx"
+    },
+    {
+     "sym": "TMV.DE",
+     "name": "TeamViewer"
+    },
+    {
+     "sym": "TKA.DE",
+     "name": "thyssenkrupp"
+    },
+    {
+     "sym": "TKMS.DE",
+     "name": "TKMS",
+     "match": [
+      "tkms",
+      "thyssenkrupp marine"
+     ]
+    },
+    {
+     "sym": "8TRA.DE",
+     "name": "Traton"
+    },
+    {
+     "sym": "UN0.DE",
+     "name": "Uniper"
+    },
+    {
+     "sym": "UTDI.DE",
+     "name": "United Internet"
+    },
+    {
+     "sym": "WAC.DE",
+     "name": "Wacker Neuson"
+    },
+    {
+     "sym": "WCH.DE",
+     "name": "Wacker Chemie"
+    },
+    {
+     "sym": "VBK.DE",
+     "name": "Verbio"
+    },
+    {
+     "sym": "NA9.DE",
+     "name": "Nagarro"
+    },
+    {
+     "sym": "1U1.DE",
+     "name": "1&1"
+    }
+   ]
+  },
+  "ch": {
+   "label": "Schweiz – SMI und bekannte Werte",
+   "cc": "CH",
+   "pref": [
+    "ZU",
+    "SW"
+   ],
+   "items": [
+    {
+     "sym": "NESN.ZU",
+     "name": "Nestlé"
+    },
+    {
+     "sym": "NOVN.ZU",
+     "name": "Novartis"
+    },
+    {
+     "sym": "ROG.ZU",
+     "name": "Roche"
+    },
+    {
+     "sym": "UBSG.ZU",
+     "name": "UBS",
+     "match": [
+      "ubs group",
+      "ubs ag"
+     ]
+    },
+    {
+     "sym": "ZURN.ZU",
+     "name": "Zurich Insurance",
+     "match": [
+      "zurich insurance"
+     ]
+    },
+    {
+     "sym": "ABBN.ZU",
+     "name": "ABB"
+    },
+    {
+     "sym": "CFR.ZU",
+     "name": "Richemont",
+     "match": [
+      "richemont",
+      "compagnie financiere richemont"
+     ]
+    },
+    {
+     "sym": "SIKA.ZU",
+     "name": "Sika"
+    },
+    {
+     "sym": "LONN.ZU",
+     "name": "Lonza"
+    },
+    {
+     "sym": "ALC.ZU",
+     "name": "Alcon"
+    },
+    {
+     "sym": "GIVN.ZU",
+     "name": "Givaudan"
+    },
+    {
+     "sym": "HOLN.ZU",
+     "name": "Holcim"
+    },
+    {
+     "sym": "SREN.ZU",
+     "name": "Swiss Re"
+    },
+    {
+     "sym": "SCMN.ZU",
+     "name": "Swisscom"
+    },
+    {
+     "sym": "PGHN.ZU",
+     "name": "Partners Group"
+    },
+    {
+     "sym": "GEBN.ZU",
+     "name": "Geberit"
+    },
+    {
+     "sym": "SLHN.ZU",
+     "name": "Swiss Life"
+    },
+    {
+     "sym": "SOON.ZU",
+     "name": "Sonova"
+    },
+    {
+     "sym": "KNIN.ZU",
+     "name": "Kühne + Nagel",
+     "match": [
+      "kühne nagel"
+     ]
+    },
+    {
+     "sym": "LOGN.ZU",
+     "name": "Logitech"
+    },
+    {
+     "sym": "SGSN.ZU",
+     "name": "SGS"
+    },
+    {
+     "sym": "SCHP.ZU",
+     "name": "Schindler"
+    },
+    {
+     "sym": "STMN.ZU",
+     "name": "Straumann"
+    },
+    {
+     "sym": "VACN.ZU",
+     "name": "VAT Group",
+     "match": [
+      "vat group"
+     ]
+    },
+    {
+     "sym": "UHR.ZU",
+     "name": "Swatch Group",
+     "match": [
+      "swatch"
+     ]
+    },
+    {
+     "sym": "LISN.ZU",
+     "name": "Lindt & Sprüngli",
+     "match": [
+      "lindt"
+     ]
+    }
+   ]
+  },
+  "eu": {
+   "label": "Europas Große – Euro Stoxx 50, London, Skandinavien",
+   "cc": null,
+   "pref": [
+    "PA",
+    "NV",
+    "AS",
+    "MI",
+    "MC",
+    "BR",
+    "HE",
+    "CO",
+    "ST",
+    "OL",
+    "L",
+    "DE"
+   ],
+   "items": [
+    {
+     "sym": "MC.PA",
+     "name": "LVMH",
+     "cc": "FR"
+    },
+    {
+     "sym": "TTE.PA",
+     "name": "TotalEnergies",
+     "cc": "FR"
+    },
+    {
+     "sym": "OR.PA",
+     "name": "L'Oréal",
+     "match": [
+      "loreal",
+      "l oreal"
+     ],
+     "cc": "FR"
+    },
+    {
+     "sym": "RMS.PA",
+     "name": "Hermès",
+     "match": [
+      "hermes"
+     ],
+     "cc": "FR"
+    },
+    {
+     "sym": "SAN.PA",
+     "name": "Sanofi",
+     "cc": "FR"
+    },
+    {
+     "sym": "AIR.PA",
+     "name": "Airbus",
+     "cc": "FR"
+    },
+    {
+     "sym": "SU.PA",
+     "name": "Schneider Electric",
+     "cc": "FR"
+    },
+    {
+     "sym": "AI.PA",
+     "name": "Air Liquide",
+     "cc": "FR"
+    },
+    {
+     "sym": "EL.PA",
+     "name": "EssilorLuxottica",
+     "cc": "FR"
+    },
+    {
+     "sym": "BNP.PA",
+     "name": "BNP Paribas",
+     "cc": "FR"
+    },
+    {
+     "sym": "SAF.PA",
+     "name": "Safran",
+     "cc": "FR"
+    },
+    {
+     "sym": "CS.PA",
+     "name": "AXA",
+     "cc": "FR"
+    },
+    {
+     "sym": "DG.PA",
+     "name": "Vinci",
+     "cc": "FR"
+    },
+    {
+     "sym": "BN.PA",
+     "name": "Danone",
+     "cc": "FR"
+    },
+    {
+     "sym": "RI.PA",
+     "name": "Pernod Ricard",
+     "match": [
+      "pernod"
+     ],
+     "cc": "FR"
+    },
+    {
+     "sym": "SGO.PA",
+     "name": "Saint-Gobain",
+     "match": [
+      "saint gobain",
+      "compagnie de saint"
+     ],
+     "cc": "FR"
+    },
+    {
+     "sym": "KER.PA",
+     "name": "Kering",
+     "cc": "FR"
+    },
+    {
+     "sym": "DSY.PA",
+     "name": "Dassault Systèmes",
+     "match": [
+      "dassault systemes"
+     ],
+     "cc": "FR"
+    },
+    {
+     "sym": "ORA.PA",
+     "name": "Orange",
+     "cc": "FR"
+    },
+    {
+     "sym": "ENGI.PA",
+     "name": "Engie",
+     "cc": "FR"
+    },
+    {
+     "sym": "HO.PA",
+     "name": "Thales",
+     "cc": "FR"
+    },
+    {
+     "sym": "CAP.PA",
+     "name": "Capgemini",
+     "cc": "FR"
+    },
+    {
+     "sym": "ACA.PA",
+     "name": "Crédit Agricole",
+     "match": [
+      "credit agricole"
+     ],
+     "cc": "FR"
+    },
+    {
+     "sym": "GLE.PA",
+     "name": "Société Générale",
+     "match": [
+      "societe generale"
+     ],
+     "cc": "FR"
+    },
+    {
+     "sym": "ASML.NV",
+     "name": "ASML",
+     "cc": "NL"
+    },
+    {
+     "sym": "INGA.NV",
+     "name": "ING",
+     "match": [
+      "ing groep"
+     ],
+     "cc": "NL"
+    },
+    {
+     "sym": "PRX.NV",
+     "name": "Prosus",
+     "cc": "NL"
+    },
+    {
+     "sym": "ADYEN.NV",
+     "name": "Adyen",
+     "cc": "NL"
+    },
+    {
+     "sym": "AD.NV",
+     "name": "Ahold Delhaize",
+     "match": [
+      "ahold"
+     ],
+     "cc": "NL"
+    },
+    {
+     "sym": "PHIA.NV",
+     "name": "Philips",
+     "match": [
+      "koninklijke philips",
+      "philips"
+     ],
+     "cc": "NL"
+    },
+    {
+     "sym": "HEIA.NV",
+     "name": "Heineken",
+     "cc": "NL"
+    },
+    {
+     "sym": "WKL.NV",
+     "name": "Wolters Kluwer",
+     "cc": "NL"
+    },
+    {
+     "sym": "UMG.NV",
+     "name": "Universal Music Group",
+     "match": [
+      "universal music"
+     ],
+     "cc": "NL"
+    },
+    {
+     "sym": "ASM.NV",
+     "name": "ASM International",
+     "match": [
+      "asm international"
+     ],
+     "cc": "NL"
+    },
+    {
+     "sym": "STLAM.MI",
+     "name": "Stellantis",
+     "cc": "NL"
+    },
+    {
+     "sym": "ENEL.MI",
+     "name": "Enel",
+     "cc": "IT"
+    },
+    {
+     "sym": "ENI.MI",
+     "name": "Eni",
+     "cc": "IT"
+    },
+    {
+     "sym": "ISP.MI",
+     "name": "Intesa Sanpaolo",
+     "cc": "IT"
+    },
+    {
+     "sym": "UCG.MI",
+     "name": "UniCredit",
+     "cc": "IT"
+    },
+    {
+     "sym": "RACE.MI",
+     "name": "Ferrari",
+     "cc": "IT"
+    },
+    {
+     "sym": "G.MI",
+     "name": "Generali",
+     "match": [
+      "generali",
+      "assicurazioni generali"
+     ],
+     "cc": "IT"
+    },
+    {
+     "sym": "LDO.MI",
+     "name": "Leonardo",
+     "cc": "IT"
+    },
+    {
+     "sym": "PRY.MI",
+     "name": "Prysmian",
+     "cc": "IT"
+    },
+    {
+     "sym": "IBE.MC",
+     "name": "Iberdrola",
+     "cc": "ES"
+    },
+    {
+     "sym": "ITX.MC",
+     "name": "Inditex",
+     "match": [
+      "inditex",
+      "industria de diseno"
+     ],
+     "cc": "ES"
+    },
+    {
+     "sym": "SAN.MC",
+     "name": "Banco Santander",
+     "cc": "ES"
+    },
+    {
+     "sym": "BBVA.MC",
+     "name": "BBVA",
+     "cc": "ES"
+    },
+    {
+     "sym": "TEF.MC",
+     "name": "Telefónica",
+     "match": [
+      "telefonica"
+     ],
+     "cc": "ES"
+    },
+    {
+     "sym": "REP.MC",
+     "name": "Repsol",
+     "cc": "ES"
+    },
+    {
+     "sym": "ABI.BR",
+     "name": "AB InBev",
+     "match": [
+      "anheuser busch",
+      "ab inbev"
+     ],
+     "cc": "BE"
+    },
+    {
+     "sym": "ARGX.BR",
+     "name": "argenx",
+     "cc": "BE"
+    },
+    {
+     "sym": "UCB.BR",
+     "name": "UCB",
+     "cc": "BE"
+    },
+    {
+     "sym": "KBC.BR",
+     "name": "KBC",
+     "cc": "BE"
+    },
+    {
+     "sym": "NOKIA.HE",
+     "name": "Nokia",
+     "cc": "FI"
+    },
+    {
+     "sym": "NESTE.HE",
+     "name": "Neste",
+     "cc": "FI"
+    },
+    {
+     "sym": "NDA-FI.HE",
+     "name": "Nordea",
+     "cc": "FI"
+    },
+    {
+     "sym": "KNEBV.HE",
+     "name": "Kone",
+     "cc": "FI"
+    },
+    {
+     "sym": "NOVO-B.CO",
+     "name": "Novo Nordisk",
+     "cc": "DK"
+    },
+    {
+     "sym": "VWS.CO",
+     "name": "Vestas",
+     "cc": "DK"
+    },
+    {
+     "sym": "DSV.CO",
+     "name": "DSV",
+     "cc": "DK"
+    },
+    {
+     "sym": "MAERSKB.CO",
+     "name": "Maersk",
+     "match": [
+      "moller maersk",
+      "maersk"
+     ],
+     "cc": "DK"
+    },
+    {
+     "sym": "ORSTED.CO",
+     "name": "Orsted",
+     "aka": [
+      "Ørsted"
+     ],
+     "cc": "DK"
+    },
+    {
+     "sym": "CARLB.CO",
+     "name": "Carlsberg",
+     "cc": "DK"
+    },
+    {
+     "sym": "ATCOA.ST",
+     "name": "Atlas Copco",
+     "cc": "SE"
+    },
+    {
+     "sym": "VOLVB.ST",
+     "name": "Volvo",
+     "cc": "SE"
+    },
+    {
+     "sym": "ERICB.ST",
+     "name": "Ericsson",
+     "cc": "SE"
+    },
+    {
+     "sym": "HMB.ST",
+     "name": "H&M",
+     "match": [
+      "hennes mauritz",
+      "h m"
+     ],
+     "cc": "SE"
+    },
+    {
+     "sym": "INVEB.ST",
+     "name": "Investor",
+     "match": [
+      "investor ab"
+     ],
+     "cc": "SE"
+    },
+    {
+     "sym": "SAABB.ST",
+     "name": "Saab",
+     "cc": "SE"
+    },
+    {
+     "sym": "EVO.ST",
+     "name": "Evolution",
+     "match": [
+      "evolution ab",
+      "evolution gaming"
+     ],
+     "cc": "SE"
+    },
+    {
+     "sym": "EQNR.OL",
+     "name": "Equinor",
+     "cc": "NO"
+    },
+    {
+     "sym": "KOG.OL",
+     "name": "Kongsberg",
+     "cc": "NO"
+    },
+    {
+     "sym": "NHY.OL",
+     "name": "Norsk Hydro",
+     "cc": "NO"
+    },
+    {
+     "sym": "DNB.OL",
+     "name": "DNB",
+     "match": [
+      "dnb bank",
+      "dnb"
+     ],
+     "cc": "NO"
+    },
+    {
+     "sym": "SHEL.L",
+     "name": "Shell",
+     "cc": "GB"
+    },
+    {
+     "sym": "AZN.L",
+     "name": "AstraZeneca",
+     "cc": "GB"
+    },
+    {
+     "sym": "HSBA.L",
+     "name": "HSBC",
+     "cc": "GB"
+    },
+    {
+     "sym": "ULVR.L",
+     "name": "Unilever",
+     "cc": "GB"
+    },
+    {
+     "sym": "BP.L",
+     "name": "BP",
+     "cc": "GB"
+    },
+    {
+     "sym": "GSK.L",
+     "name": "GSK",
+     "match": [
+      "glaxosmithkline",
+      "gsk"
+     ],
+     "cc": "GB"
+    },
+    {
+     "sym": "RIO.L",
+     "name": "Rio Tinto",
+     "cc": "GB"
+    },
+    {
+     "sym": "BATS.L",
+     "name": "British American Tobacco",
+     "cc": "GB"
+    },
+    {
+     "sym": "DGE.L",
+     "name": "Diageo",
+     "cc": "GB"
+    },
+    {
+     "sym": "REL.L",
+     "name": "RELX",
+     "cc": "GB"
+    },
+    {
+     "sym": "LSEG.L",
+     "name": "London Stock Exchange",
+     "cc": "GB"
+    },
+    {
+     "sym": "NG.L",
+     "name": "National Grid",
+     "cc": "GB"
+    },
+    {
+     "sym": "BA.L",
+     "name": "BAE Systems",
+     "cc": "GB"
+    },
+    {
+     "sym": "RR.L",
+     "name": "Rolls-Royce",
+     "match": [
+      "rolls royce"
+     ],
+     "cc": "GB"
+    },
+    {
+     "sym": "GLEN.L",
+     "name": "Glencore",
+     "cc": "GB"
+    },
+    {
+     "sym": "BARC.L",
+     "name": "Barclays",
+     "cc": "GB"
+    },
+    {
+     "sym": "LLOY.L",
+     "name": "Lloyds",
+     "match": [
+      "lloyds",
+      "lloyd s"
+     ],
+     "cc": "GB"
+    },
+    {
+     "sym": "VOD.L",
+     "name": "Vodafone",
+     "cc": "GB"
+    },
+    {
+     "sym": "TSCO.L",
+     "name": "Tesco",
+     "cc": "GB"
+    },
+    {
+     "sym": "PRU.L",
+     "name": "Prudential",
+     "cc": "GB"
+    }
+   ]
+  }
+ }
+}

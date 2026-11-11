@@ -13,7 +13,7 @@ import { call, field, findArray, num, log, warn, fail, hasKeys, sleep } from "./
 const here = p => fileURLToPath(new URL(p, import.meta.url));
 const OUT = process.env.STOCKS_OUT || here("../data/stocks.json");
 const CLOSES_OUT = process.env.CLOSES_OUT || "";   // Schlusskurse für die Note-Bilanz – nur lokal, nie hochgeladen
-export const CONFIG = { stocks: Number(process.env.STOCK_COUNT || 700), etfs: Number(process.env.ETF_COUNT || 150), candles: 300 };
+export const CONFIG = { stocks: Number(process.env.STOCK_COUNT || 700), etfs: Number(process.env.ETF_COUNT || 150), europe: Number(process.env.EUROPE_COUNT ?? 200), candles: 300 };
 // Firmen der Theorie-Seite (Steckbriefe in data/firms.json): immer in den Aktien-Daten, auch wenn sie nicht unter den beliebtesten sind
 const FIRMS = process.env.FIRMS_IN || here("../data/firms.json");
 export function firmSymbols(d) {
@@ -21,6 +21,52 @@ export function firmSymbols(d) {
   const moon = Object.values(d.moon || {});
   return [...new Set([...Object.keys(d.firms || {}), ...Object.values(d.sectors || {}).flat(), ...moon.flatMap(m => [...(m.firms || []), ...(m.saferSyms || [])])]
     .map(s => String(s).toUpperCase()))];
+}
+// Europa (data/europe.json): bekannte europäische Aktien – auch österreichische, die eToro über ihre Xetra-Notierung führt –
+// sind immer dabei, dazu die beliebtesten weiteren europäischen Aktien (CONFIG.europe) jenseits der beliebtesten insgesamt.
+const EUROPE_IN = process.env.EUROPE_IN || here("../data/europe.json");
+export const EU_SUFFIX = ["DE", "VI", "PA", "NV", "AS", "BR", "LSB", "LS", "MI", "MC", "ZU", "SW", "ST", "CO", "HE", "OL", "IR", "L"];
+export const suffixOf = sym => { const m = /\.([A-Z]+)$/.exec(String(sym || "").toUpperCase()); return m ? m[1] : ""; };
+export const isEuropean = sym => EU_SUFFIX.includes(suffixOf(sym));
+// Namen vergleichbar machen: Umlaute wie ae/oe/ue, ohne Akzente, klein, nur Buchstaben und Ziffern als Wörter
+export function normName(s) {
+  return String(s || "").replace(/[ÄäÖöÜü]/g, c => ({ Ä: "Ae", ä: "ae", Ö: "Oe", ö: "oe", Ü: "Ue", ü: "ue" })[c]).replace(/ß/g, "ss")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+// Passt der Suchbegriff zum Namen? Seine Wörter müssen aufeinanderfolgende Wörter des Namens beginnen (kurze, bis 3 Zeichen, genau)
+export function nameMatches(name, key) {
+  const n = normName(name).split(" ").filter(Boolean), k = normName(key).split(" ").filter(Boolean);
+  if (!k.length) return false;
+  for (let i = 0; i + k.length <= n.length; i++) if (k.every((w, j) => (w.length <= 3 ? n[i + j] === w : n[i + j].startsWith(w)))) return true;
+  return false;
+}
+// Europa-Liste auflösen. stocks: gültige Aktien aus der Suche, beliebteste zuerst ({ sym, name }). Das Kürzel der Liste gilt,
+// wenn eToro es führt und der Name passt; sonst entscheidet der Name (bevorzugte Börsen der Gruppe, dann die beliebteste
+// Notierung). So schleust ein falsch vermutetes Kürzel nie eine fremde Firma ein.
+export function resolveEurope(data, stocks) {
+  const bySym = new Map(stocks.map(s => [s.sym, s])), found = [], open = [], seen = new Set();
+  for (const [gid, g] of Object.entries((data && data.groups) || {})) {
+    const pref = Array.isArray(g.pref) ? g.pref : [];
+    const rank = s => { const i = pref.indexOf(suffixOf(s.sym)); return i < 0 ? pref.length : i; };
+    for (const e of Array.isArray(g.items) ? g.items : []) {
+      const keys = Array.isArray(e.match) && e.match.length ? e.match : [e.name];
+      const ok = s => keys.some(k => nameMatches(s.name, k));
+      let hit = bySym.get(String(e.sym || "").toUpperCase()), how = "Kürzel";
+      if (hit && !ok(hit)) hit = null;
+      if (!hit) { hit = stocks.filter(s => isEuropean(s.sym) && ok(s)).sort((a, b) => rank(a) - rank(b))[0] || null; how = "Name"; }
+      const row = { entry: e, group: gid, cc: e.cc || g.cc || null };
+      if (!hit) { open.push(row); continue; }
+      if (seen.has(hit.sym)) continue;   // in zwei Gruppen (z. B. DAX und Euro Stoxx 50): einmal genügt
+      seen.add(hit.sym);
+      found.push({ ...row, sym: hit.sym, how });
+    }
+  }
+  return { found, open };
+}
+// Zusatznamen für die Suche: der gebräuchliche Name (wenn eToro anders schreibt) und weitere (Wiener Kürzel, englischer Name)
+export function akaOf(entry, etoroName) {
+  const list = [entry.name, ...(Array.isArray(entry.aka) ? entry.aka : [])].filter(a => a && !nameMatches(etoroName, a));
+  return [...new Set(list.map(a => String(a).trim()).filter(Boolean))].join(" · ").slice(0, 80) || null;
 }
 const FINNHUB_KEY = process.env.FINNHUB_API_KEY || "";
 const FINNHUB = (process.env.FINNHUB_BASE || "https://finnhub.io/api/v1").replace(/\/$/, "");
@@ -151,7 +197,8 @@ export function popularityIsRank(list) {
   if (!known.length || !vals.length) return true;   // so beobachtet bei eToro
   return median(known) <= median(vals);
 }
-function popular(list, typeId, count, index, isRank, always = []) {
+// Gültige Werte eines Typs, beliebteste zuerst (ohne Rang ans Ende, bei Gleichstand kleinere ID)
+export function validList(list, typeId, index, isRank) {
   const out = [];
   let closed = 0;
   for (const it of list) {
@@ -163,15 +210,25 @@ function popular(list, typeId, count, index, isRank, always = []) {
     if (field(it, "isActiveInPlatform") === false) { if (popVal(it) === null) continue; closed++; }
     out.push({ id, sym: sym.toUpperCase(), name: String(field(it, "displayname") || sym).slice(0, 60), crowd: num(field(it, "buyHoldingPct")) ?? null, pop: popVal(it) });
   }
-  // beliebteste zuerst, ohne Wert ans Ende, bei Gleichstand kleinere ID
   out.sort((a, b) => (a.pop === null) - (b.pop === null) || (isRank ? a.pop - b.pop : b.pop - a.pop) || a.id - b.id);
+  return { out, closed };
+}
+// Auswahl: die beliebtesten count Werte, dazu die nächsten europe europäischen und alle Werte aus always (Theorie-Seite, Europa-Liste)
+function popular(list, typeId, count, index, isRank, always = [], europe = 0, firms = always) {
+  const { out, closed } = validList(list, typeId, index, isRank);
   log(`Typ ${typeId}: ${out.length} gültige (${closed} davon gerade ohne Handel), davon ${Math.min(count, out.length)} übernommen; beliebteste: ${out.slice(0, 6).map(x => x.sym).join(", ")}`);
-  const top = out.slice(0, count), extra = out.slice(count).filter(x => always.includes(x.sym));
-  if (always.length) {
-    const missing = always.filter(s => !out.some(x => x.sym === s));
-    log(`Firmen der Theorie-Seite: ${always.length - missing.length} von ${always.length} gefunden${extra.length ? `, zusätzlich aufgenommen: ${extra.map(x => x.sym).join(", ")}` : ""}${missing.length ? `; nicht als Aktie bei eToro: ${missing.join(", ")}` : ""}`);
+  const top = out.slice(0, count), rest = out.slice(count);
+  const eu = europe > 0 ? rest.filter(x => isEuropean(x.sym)).slice(0, europe) : [];
+  if (europe > 0) {
+    const by = {}; for (const x of eu) by[suffixOf(x.sym)] = (by[suffixOf(x.sym)] || 0) + 1;
+    log(`Europa: ${eu.length} weitere beliebte europäische Aktien übernommen (${Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(", ")})`);
   }
-  return [...top, ...extra];
+  const taken = new Set([...top, ...eu].map(x => x.sym)), extra = rest.filter(x => !taken.has(x.sym) && always.includes(x.sym));
+  if (firms.length) {
+    const missing = firms.filter(s => !out.some(x => x.sym === s)), more = extra.filter(x => firms.includes(x.sym));
+    log(`Firmen der Theorie-Seite: ${firms.length - missing.length} von ${firms.length} gefunden${more.length ? `, zusätzlich aufgenommen: ${more.map(x => x.sym).join(", ")}` : ""}${missing.length ? `; nicht als Aktie bei eToro: ${missing.join(", ")}` : ""}`);
+  }
+  return [...top, ...eu, ...extra];
 }
 async function dailyCandles(id) {
   const d = await call(`/v1/market-data/instruments/${id}/history/candles/desc/OneDay/${CONFIG.candles}`);
@@ -228,8 +285,17 @@ async function main() {
   log(`Beliebtheit ist ${isRank ? "ein Rang (1 = beliebteste)" : "eine Anzahl (mehr = beliebter)"}`);
   let always = [];
   try { always = firmSymbols(JSON.parse(await readFile(FIRMS, "utf8"))); } catch (e) { warn(`Firmen der Theorie-Seite nicht lesbar (${e.message}) – nur die beliebtesten Werte.`); }
+  // Europa-Liste: über Kürzel oder Namen in den gültigen Aktien der Suche finden
+  let europe = null, euFound = [], euOpen = [];
+  try { europe = JSON.parse(await readFile(EUROPE_IN, "utf8")); } catch (e) { warn(`Europa-Liste nicht lesbar (${e.message}) – nur die beliebtesten europäischen Werte.`); }
+  if (europe) {
+    ({ found: euFound, open: euOpen } = resolveEurope(europe, validList(list, types.stock, index, isRank).out));
+    const byName = euFound.filter(f => f.how === "Name");
+    log(`Europa-Liste: ${euFound.length} Werte gefunden${byName.length ? `, davon über den Namen: ${byName.map(f => `${f.entry.name} → ${f.sym}`).join(", ")}` : ""}${euOpen.length ? `; in der Suche nicht gefunden: ${euOpen.map(o => o.entry.name).join(", ")}` : ""}`);
+  }
+  const euSyms = euFound.map(f => f.sym);
   const universe = [
-    ...popular(list, types.stock, CONFIG.stocks, index, isRank, always).map(x => ({ ...x, type: "Aktie" })),
+    ...popular(list, types.stock, CONFIG.stocks, index, isRank, [...always, ...euSyms], CONFIG.europe, always).map(x => ({ ...x, type: "Aktie" })),
     ...(Number.isInteger(types.etf) ? popular(list, types.etf, CONFIG.etfs, index, isRank).map(x => ({ ...x, type: "ETF" })) : []),
   ];
   // Die Suche liest nie ganz alle Instrumente (rund 550 von 13.000 fehlen). Firmen der Theorie-Seite, die dort nicht
@@ -252,6 +318,34 @@ async function main() {
     }
     log(`Firmen der Theorie-Seite über das Kürzel nachgeschlagen: ${found.length ? found.join(", ") : "keine"} gefunden${lost.length > found.length ? `; nicht bei eToro: ${lost.filter(s => !found.includes(s)).join(", ")}` : ""}`);
   }
+  // Europa-Liste: was die Suche gar nicht liefert, über das Kürzel nachschlagen – nur wenn der Name passt
+  const euLost = euOpen.filter(o => o.entry.sym && !seen.has(String(o.entry.sym).toUpperCase()));
+  if (euLost.length) {
+    const got = [];
+    for (const o of euLost) {
+      const s = String(o.entry.sym).toUpperCase();
+      try {
+        const d = await call("/v2/market-data/instruments", { symbols: s });
+        const hit = findArray(d).find(x => String(field(x, "symbol", "internalSymbolFull") || "").toUpperCase() === s);
+        const id = hit ? num(field(hit, "instrumentId", "instrumentID")) : null, name = hit ? String(field(hit, "displayName", "displayname") || "") : "";
+        const keys = Array.isArray(o.entry.match) && o.entry.match.length ? o.entry.match : [o.entry.name];
+        if (Number.isInteger(id) && index.get(id) === types.stock && keys.some(k => nameMatches(name, k)) && !universe.some(u => u.id === id)) {
+          universe.push({ id, sym: s, name: name.slice(0, 60), crowd: null, pop: null, type: "Aktie" });
+          euFound.push({ ...o, sym: s, how: "Kürzel" });
+          got.push(s);
+        }
+      } catch (e) { warn(`${s} nachschlagen: ${e.message}`); }
+    }
+    log(`Europa-Liste über das Kürzel nachgeschlagen: ${got.length ? got.join(", ") : "keine"} gefunden`);
+  }
+  const euMissing = euOpen.filter(o => !euFound.some(f => f.entry === o.entry));
+  if (euMissing.length) log(`Europa-Liste – nicht bei eToro: ${euMissing.map(o => `${o.entry.name}${o.entry.sym ? ` (${o.entry.sym})` : ""}`).join(", ")}`);
+  // Zusatznamen (Suche nach „Münchener Rück“, Wiener Kürzel) und Land der Firma
+  const euBy = new Map(euFound.map(f => [f.sym, f]));
+  for (const u of universe) {
+    const f = euBy.get(u.sym);
+    if (f) { u.aka = akaOf(f.entry, u.name); u.cc = f.cc; }
+  }
   log(`${universe.length} Werte: ${universe.slice(0, 8).map(x => x.sym).join(", ")} …`);
 
   // S&P 500 als Markt für das Beta
@@ -271,7 +365,7 @@ async function main() {
       const candles = await dailyCandles(u.id);
       const s = stockStats(candles, spxByDay);
       if (!s) { errors.push(`${u.sym}: zu wenige Kerzen`); continue; }
-      items.push({ sym: u.sym, tv: tvSymbol(u.sym), name: u.name, type: u.type, crowd: r2(u.crowd), ...s });
+      items.push({ sym: u.sym, tv: tvSymbol(u.sym), name: u.name, ...(u.aka ? { aka: u.aka } : {}), ...(u.cc ? { cc: u.cc } : {}), type: u.type, crowd: r2(u.crowd), ...s });
       if (CLOSES_OUT && u.type === "Aktie") closes[u.sym] = candles.map(x => [x.d, x.c]);
     } catch (e) { errors.push(`${u.sym}: ${e.message}`); }
   }

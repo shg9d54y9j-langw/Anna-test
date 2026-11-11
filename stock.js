@@ -58,8 +58,20 @@
     if (!data) return null;
     const s = q.trim().toUpperCase();
     return data.items.find(x => x.sym === s) || data.items.find(x => x.tv.toUpperCase() === s) || data.items.find(x => x.name.toUpperCase() === s)
-      || data.items.find(x => x.sym.split(".")[0] === s.split(":").pop()) || null;
+      || data.items.find(x => x.sym.split(".")[0] === s.split(":").pop())
+      // ein Name wie „Porr“ oder „Münchener Rück“: der beste Treffer, wenn ein Name oder Zusatzname so beginnt (nicht bei TradingView-Kürzeln)
+      || (() => { if (s.includes(":")) return null; const hit = window.DTD.matchStocks(data.items, q, 1)[0]; return hit && window.DTD.matchRank(hit, q) <= 3 ? hit : null; })();
   };
+  // Herkunft europäischer Werte: Land der Firma, Börse des Kurses (österreichische Werte bei eToro über Xetra) und weitere Namen
+  const EXCH = { DE: "Xetra", VI: "Wiener Börse", PA: "Euronext Paris", NV: "Euronext Amsterdam", AS: "Euronext Amsterdam", BR: "Euronext Brüssel", LS: "Euronext Lissabon", MI: "Borsa Italiana", MC: "Börse Madrid", ZU: "SIX Zürich", SW: "SIX Zürich", ST: "Nasdaq Stockholm", CO: "Nasdaq Kopenhagen", HE: "Nasdaq Helsinki", OL: "Börse Oslo", L: "London Stock Exchange" };
+  const LAND = { AT: "Österreich", DE: "Deutschland", CH: "der Schweiz", FR: "Frankreich", NL: "den Niederlanden", IT: "Italien", ES: "Spanien", BE: "Belgien", FI: "Finnland", DK: "Dänemark", SE: "Schweden", NO: "Norwegen", GB: "Großbritannien" };
+  function origin(x) {
+    const m = /\.([A-Z]+)$/.exec(x.sym), ex = m && EXCH[m[1]], parts = [];
+    if (x.cc && LAND[x.cc]) parts.push(`Firma aus ${LAND[x.cc]}`);
+    if (ex) parts.push(`Kurs von ${ex}${x.cc === "AT" && m[1] !== "VI" ? " (Heimatbörse: Wien)" : ""}`);
+    if (x.aka) parts.push(`auch: ${x.aka}`);
+    return parts.length ? `<p class="muted small stock-origin">${esc(parts.join(" · "))}</p>` : "";
+  }
   function renderQuick() {
     const host = $("stockQuick");
     if (!host) return;
@@ -220,7 +232,7 @@
         <div class="stock-head">
           <div>
             <p class="eyebrow">${x ? `${esc(x.type)} · ${esc(x.sym)}` : esc(q.toUpperCase())}</p>
-            <h2 class="stock-name">${x ? esc(x.name) : esc(q.toUpperCase())}</h2>
+            <h2 class="stock-name">${x ? esc(x.name) : esc(q.toUpperCase())}</h2>${x ? origin(x) : ""}
             ${x ? `<p class="stock-price">${price(x.last)} <span class="${x.chg1d < 0 ? "down" : "up"}">${sign(x.chg1d, 2)} %</span></p>
               <p class="muted small">Schlusskurs ${esc(x.asOf)} laut eToro · Live-Kurs in der Grafik</p>${Math.abs(x.chg1d) >= 3 ? `<p class="why" data-why="${esc(x.sym)}"></p>` : ""}` : `<p class="muted">Nicht unter den ${data ? data.count : "beliebtesten"} Werten mit täglichen Kennzahlen – unten nur Live-Daten von TradingView.</p>`}
           </div>

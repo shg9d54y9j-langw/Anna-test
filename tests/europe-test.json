@@ -1,0 +1,20 @@
+{
+ "version": 1,
+ "reviewed": "2026-11-11",
+ "about": "Testliste für tests/verify_stocks.py gegen tests/mock-etoro.mjs",
+ "groups": {
+  "at": {"label": "Österreich", "cc": "AT", "pref": ["VI", "DE"], "items": [
+   {"sym": "ABS2.DE", "name": "Porr", "aka": ["POS"]},
+   {"sym": "WRONG.DE", "name": "Testbau"},
+   {"sym": "GONE.DE", "name": "Gibtsnicht"},
+   {"sym": "LKX.DE", "name": "Erwartet"}
+  ]},
+  "de": {"label": "Deutschland", "cc": "DE", "pref": ["DE"], "items": [
+   {"sym": "MUV2.DE", "name": "Münchener Rück", "match": ["münchener rück", "munich re"], "aka": ["Munich Re"]},
+   {"sym": "LKEU.DE", "name": "Nur Kürzel Europa"}
+  ]},
+  "eu": {"label": "Europa", "cc": null, "pref": [], "items": [
+   {"sym": "MUV2.DE", "name": "Münchener Rück", "cc": "DE"}
+  ]}
+ }
+}

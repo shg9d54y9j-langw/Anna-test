@@ -52,6 +52,9 @@ jobs:
       - name: Bereich Vermögen – Forschungsstand, Quellen, ISIN, Steuerpunkte (data/wealth.json)
         run: node tests/check-wealth.mjs
 
+      - name: Europäische Aktien – Namen vergleichen, Europa-Liste auflösen, Zusatznamen, Aufbau von data/europe.json
+        run: node tests/europe.mjs
+
       - name: Aktien-Daten gegen den Test-Server, unabhängige Gegenrechnung
         env:
           ETORO_API_BASE: http://localhost:8792/api
@@ -67,6 +70,8 @@ jobs:
           STOCKS_OUT: /tmp/stocks.json
           CLOSES_OUT: /tmp/closes.json      # Schlusskurse für die Note-Bilanz (nur lokal)
           FIRMS_IN: tests/firms-test.json   # Firmen der Theorie-Seite: STK065 muss trotz geringer Beliebtheit dabei sein
+          EUROPE_IN: tests/europe-test.json # Europa-Liste: über Kürzel und Namen, Wien vor Xetra, fremde Namen bleiben draußen
+          EUROPE_COUNT: "3"                 # dazu die drei beliebtesten weiteren europäischen Aktien
         run: |
           node tests/mock-etoro.mjs 8792 & sleep 1
           node scripts/stock-universe.mjs

@@ -29,7 +29,12 @@
     return "flat";
   }
   const TREND = { up: ["Auf", "green"], flat: ["Offen", "yellow"], down: ["Ab", "red"], nodata: ["–", ""] };
-  const region = sym => { const m = /\.([A-Z]+)$/.exec(sym); if (!m) return "us"; return ["HK", "T", "KS", "KQ", "SS", "SZ", "TW", "SI", "AX"].includes(m[1]) ? "asia" : "eu"; };
+  // Region am Börsenkürzel (US-Aktiengattungen wie BRK.B bleiben USA); Land der Firma aus der Europa-Liste (cc), sonst aus der Börse
+  const SUF = sym => { const m = /\.([A-Z]+)$/.exec(sym); return m ? m[1] : ""; };
+  const EU_SUF = ["DE", "VI", "PA", "NV", "AS", "BR", "LSB", "LS", "MI", "MC", "ZU", "SW", "ST", "CO", "HE", "OL", "IR", "L"], ASIA_SUF = ["HK", "T", "KS", "KQ", "SS", "SZ", "TW", "SI", "AX", "ASX"];
+  const region = sym => { const s = SUF(sym); return EU_SUF.includes(s) ? "eu" : ASIA_SUF.includes(s) ? "asia" : s.length <= 1 ? "us" : "other"; };
+  const country = x => x.cc || ({ DE: "DE", VI: "AT", ZU: "CH", SW: "CH" })[SUF(x.sym)] || null;
+  const inRegion = (x, r) => (["de", "at", "ch"].includes(r) ? country(x) === r.toUpperCase() : region(x.sym) === r);
   const total = r => (r ? r.sb + r.b + r.h + r.s + r.ss : 0);
   const buyPct = x => (x.rec && total(x.rec) >= 5 ? (x.rec.sb + x.rec.b) / total(x.rec) * 100 : null);
   const F = sym => (fund && fund.items && fund.items[sym]) || {};
@@ -76,7 +81,7 @@
     return stocks.items.filter(x => {
       const fx = F(x.sym), t = trendOf(x);
       if (f.type && f.type !== "all" && x.type !== f.type) return false;
-      if (f.region !== "all" && region(x.sym) !== f.region) return false;
+      if (f.region !== "all" && !inRegion(x, f.region)) return false;
       if (theory && !theory.has(x.sym)) return false;
       if (f.ind && fx.ind !== f.ind) return false;
       if (f.trend === "up" && t !== "up") return false;
@@ -135,7 +140,7 @@
         <div class="calc scr-grid">
           <label>Suche<input id="scQ" value="${esc(f.q || "")}" placeholder="Name oder Kürzel"></label>
           <label>Art${sel("scType", [["Aktie", "Aktien"], ["ETF", "ETFs"], ["all", "Alle"]], f.type)}</label>
-          <label>Region${sel("scRegion", [["all", "Alle"], ["us", "USA"], ["eu", "Europa"], ["asia", "Asien"]], f.region)}</label>
+          <label>Region${sel("scRegion", [["all", "Alle"], ["us", "USA"], ["eu", "Europa"], ["de", "· Deutschland"], ["at", "· Österreich"], ["ch", "· Schweiz"], ["asia", "Asien"]], f.region)}</label>
           <label>Trend${sel("scTrend", [["", "egal"], ["up", "Aufwärts"], ["notdown", "kein Abwärtstrend"], ["down", "Abwärts"]], f.trend)}</label>
           <label>Theorie${sel("scTheory", [["", "egal"], ["all", "alle Theorie-Firmen"], ...themeSets().map(t => [t.key, themeName(t.key)])], f.theory)}</label>
           <label>Branche (USA)${sel("scInd", [["", "egal"], ...inds.map(i => [i, i])], f.ind)}</label>

@@ -210,11 +210,18 @@ const UNIVERSE = [
   { instrumentId: 2999, internalSymbolFull: "BAD SYMBOL!", displayname: "Ungültig", instrumentTypeID: 5, exchangeID: 4, popularityUniques7Day: 99999, isDelisted: false, isActiveInPlatform: true },
   ...Array.from({ length: 15 }, (_, i) => ({ instrumentId: 3000 + i, internalSymbolFull: `ETF${String(i).padStart(2, "0")}`, displayname: `Test-ETF ${i}`, instrumentTypeID: 6, exchangeID: 5, buyHoldingPct: 90, popularityUniques7Day: 50000 - i * 100, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false })),
   { instrumentId: 2500, internalSymbolFull: "NOPOP", displayname: "Aktie ohne Beliebtheit", instrumentTypeID: 5, exchangeID: 4, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false },
+  // Europa (wenig beliebt, jenseits der beliebtesten): drei für die Europa-Quote (dazwischen eine US-Aktie, die nie zählt),
+  // dann Werte der Europa-Liste (tests/europe-test.json): über das Kürzel, ein Kürzel mit fremdem Namen, über den Namen (Wien vor Xetra)
+  ...[["EUQ1.PA", "Europa Quote Eins SA", 39000], ["USX1", "Amerika nach der Quote Inc", 38995], ["EUQ2.MI", "Europa Quote Zwei SpA", 38990], ["EUQ3.L", "Europa Quote Drei plc", 38980],
+    ["MUV2.DE", "Muenchener Rueckversicherungs-Gesellschaft AG", 30000], ["ABS2.DE", "Porr AG", 29990], ["WRONG.DE", "Andere Firma AG", 29980],
+    ["TBAU.DE", "Testbau AG", 29970], ["TBAU.VI", "Testbau AG", 29000]].map(([sym, name, pop], i) => ({ instrumentId: 6000 + i, internalSymbolFull: sym, displayname: name, instrumentTypeID: 5, exchangeID: sym.includes(".") ? 6 : 4, buyHoldingPct: 55, popularityUniques7Day: pop, isDelisted: false, isActiveInPlatform: true, isHiddenFromClient: false })),
 ];
 // Wie bei eToro ist die Beliebtheit ein Rang (1 = beliebteste): aus den erfundenen Zahlen oben einen Rang machen
 UNIVERSE.filter(u => u.popularityUniques7Day !== undefined).sort((a, b) => b.popularityUniques7Day - a.popularityUniques7Day).forEach((u, i) => { u.popularityUniques7Day = i + 1; });
 // Nur über das Kürzel zu finden: die Suche liefert sie nicht (wie bei eToro, wo rund 550 Instrumente nie in der Suche auftauchen)
-const UNSEARCHED = [{ instrumentId: 2950, internalSymbolFull: "LOOKUP1", displayname: "Nur über das Kürzel", instrumentTypeID: 5, exchangeID: 4 }];
+const UNSEARCHED = [{ instrumentId: 2950, internalSymbolFull: "LOOKUP1", displayname: "Nur über das Kürzel", instrumentTypeID: 5, exchangeID: 4 },
+  { instrumentId: 6100, internalSymbolFull: "LKEU.DE", displayname: "Nur Kuerzel Europa AG", instrumentTypeID: 5, exchangeID: 6 },   // Europa-Liste: Name passt
+  { instrumentId: 6101, internalSymbolFull: "LKX.DE", displayname: "Ganz Anders AG", instrumentTypeID: 5, exchangeID: 6 }];         // Europa-Liste: fremder Name
 // alte, nicht mehr handelbare Einträge ohne Rang
 const DEAD = Array.from({ length: 30 }, (_, i) => ({ instrumentId: 4000 + i, internalSymbolFull: `OLD${i}`, displayname: `Alt ${i}`, instrumentTypeID: i % 3 ? 5 : 6, exchangeID: 4, isDelisted: i % 2 === 0, isActiveInPlatform: i % 2 === 0 }));
 const SEARCH_ORDER = [...DEAD, ...[...UNIVERSE].sort((a, b) => (a.instrumentId * 7919) % 1009 - (b.instrumentId * 7919) % 1009)];
