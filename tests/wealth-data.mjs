@@ -1,7 +1,7 @@
 // Zinsen und Inflation (scripts/wealth-data.mjs) mit erfundenen Antworten im CSV-Format der EZB: Spalten über ihre Namen,
 // Felder in Anführungszeichen mit Kommas, leere und kaputte Werte, Sortierung, Alter von Tages- und Monatswerten,
 // Pflicht-Reihen und Plausibilität, ganzer Lauf mit Dateien. Aufruf: node tests/wealth-data.mjs
-import { splitCsv, parse, ageDays, build, SERIES } from "../scripts/wealth-data.mjs";
+import { splitCsv, parse, parseAll, ageDays, build, SERIES } from "../scripts/wealth-data.mjs";
 import { writeFileSync, readFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -45,7 +45,13 @@ b = build({ ...good, hicpEA: [] });
 ok(b.problems.some(x => /Inflation Euroraum.*: keine Werte/.test(x)), "fehlende Pflicht-Reihe erkannt");
 b = build({ ...good, estr: [[day(1), 250]] });
 ok(b.problems.some(x => /unplausibler Wert 250/.test(x)), "unplausibler Wert (Basispunkte statt Prozent) erkannt");
-ok(Object.values(SERIES).every(s => /^[A-Z]+\/[A-Z0-9_.]+$/.test(s.key)), "Reihen-Schlüssel im EZB-Format");
+ok(Object.values(SERIES).every(s => Array.isArray(s.keys) && s.keys.length && s.keys.every(k => /^[A-Z]+\/[A-Z0-9_.+]+$/.test(k))), "Reihen-Schlüssel im EZB-Format (Platzhalter und Alternativen erlaubt)");
+ok(SERIES.hicpEA.keys[0].startsWith("HICP/") && SERIES.hicpEA.keys[SERIES.hicpEA.keys.length - 1].startsWith("ICP/"), "Inflation: neuer Datensatz HICP zuerst, alter ICP nur als Rückfall");
+// Antwort mit mehreren Reihen (Platzhalter): die mit dem neuesten Wert zählt
+const multi = `KEY,FREQ,TIME_PERIOD,OBS_VALUE\nHICP.M.U2.N.TOTAL.4F0.ANR,M,2026-09,3.8\nHICP.M.U2.N.TOTAL.4F0.ANR,M,2026-10,4.0\nHICP.M.U2.N.000000.4.ANR,M,2025-12,2.0\n`;
+const pm = parse(multi);
+ok(JSON.stringify(pm) === JSON.stringify([["2026-09", 3.8], ["2026-10", 4]]) && parse.lastKey === "HICP.M.U2.N.TOTAL.4F0.ANR", `mehrere Reihen: die neueste gewinnt (${parse.lastKey})`);
+ok(parseAll(multi).length === 2, "alle Reihen einzeln auslesbar (für die Suche nach umgestellten Schlüsseln)");
 
 // ganzer Lauf mit Dateien
 const dir = mkdtempSync(join(tmpdir(), "macro-"));
