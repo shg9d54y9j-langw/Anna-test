@@ -65,6 +65,22 @@
   // Herkunft europäischer Werte: Land der Firma, Börse des Kurses (österreichische Werte bei eToro über Xetra) und weitere Namen
   const EXCH = { DE: "Xetra", VI: "Wiener Börse", PA: "Euronext Paris", NV: "Euronext Amsterdam", AS: "Euronext Amsterdam", BR: "Euronext Brüssel", LS: "Euronext Lissabon", MI: "Borsa Italiana", MC: "Börse Madrid", ZU: "SIX Zürich", SW: "SIX Zürich", ST: "Nasdaq Stockholm", CO: "Nasdaq Kopenhagen", HE: "Nasdaq Helsinki", OL: "Börse Oslo", L: "London Stock Exchange" };
   const LAND = { AT: "Österreich", DE: "Deutschland", CH: "der Schweiz", FR: "Frankreich", NL: "den Niederlanden", IT: "Italien", ES: "Spanien", BE: "Belgien", FI: "Finnland", DK: "Dänemark", SE: "Schweden", NO: "Norwegen", GB: "Großbritannien" };
+  // Werte ohne eToro (Suche über window.DTD.stockPool): Börse aus dem TradingView-Kürzel
+  const TVEX = { VIE: "Wiener Börse", XETR: "Xetra", EURONEXT: "Euronext", MIL: "Borsa Italiana", BME: "Börse Madrid", SIX: "SIX Zürich", OMXSTO: "Nasdaq Stockholm",
+    OMXCOP: "Nasdaq Kopenhagen", OMXHEX: "Nasdaq Helsinki", OSL: "Börse Oslo", LSE: "London Stock Exchange" };
+  const pool = () => (data ? window.DTD.stockPool(data) : []);
+  const outsideOf = q => {
+    const ext = pool().filter(x => x.outside), s = q.trim().toUpperCase();
+    if (!ext.length) return null;
+    return ext.find(x => x.sym === s) || (() => { if (s.includes(":")) return null; const hit = window.DTD.matchStocks(ext, q, 1)[0]; return hit && window.DTD.matchRank(hit, q) <= 3 ? hit : null; })();
+  };
+  function extOrigin(e) {
+    const parts = [], ex = TVEX[e.sym.split(":")[0]];
+    if (e.cc && LAND[e.cc]) parts.push(`Firma aus ${LAND[e.cc]}`);
+    if (ex) parts.push(`Kurs von der ${ex}`);
+    if (e.aka) parts.push(`auch: ${e.aka}`);
+    return parts.length ? `<p class="muted small stock-origin">${esc(parts.join(" · "))}</p>` : "";
+  }
   function origin(x) {
     const m = /\.([A-Z]+)$/.exec(x.sym), ex = m && EXCH[m[1]], parts = [];
     if (x.cc && LAND[x.cc]) parts.push(`Firma aus ${LAND[x.cc]}`);
@@ -216,7 +232,7 @@
   }
 
   let lastSize = null;
-  function render(x, q) {
+  function render(x, q, ext = null) {
     const host = $("stockBody");
     const tv = x ? x.tv : tvGuess(q);
     const T = (k, l) => (window.DTD.term && x ? window.DTD.term(k, l, x.sym) : l);   // Kennzahl antippen → Erklärung
@@ -231,10 +247,11 @@
       <section class="block" data-section="Überblick">
         <div class="stock-head">
           <div>
-            <p class="eyebrow">${x ? `${esc(x.type)} · ${esc(x.sym)}` : esc(q.toUpperCase())}</p>
-            <h2 class="stock-name">${x ? esc(x.name) : esc(q.toUpperCase())}</h2>${x ? origin(x) : ""}
+            <p class="eyebrow">${x ? `${esc(x.type)} · ${esc(x.sym)}` : ext ? `Aktie · ${esc(ext.sym)} · nicht bei eToro` : esc(q.toUpperCase())}</p>
+            <h2 class="stock-name">${x ? esc(x.name) : ext ? esc(ext.name) : esc(q.toUpperCase())}</h2>${x ? origin(x) : ext ? extOrigin(ext) : ""}
             ${x ? `<p class="stock-price">${price(x.last)} <span class="${x.chg1d < 0 ? "down" : "up"}">${sign(x.chg1d, 2)} %</span></p>
-              <p class="muted small">Schlusskurs ${esc(x.asOf)} laut eToro · Live-Kurs in der Grafik</p>${Math.abs(x.chg1d) >= 3 ? `<p class="why" data-why="${esc(x.sym)}"></p>` : ""}` : `<p class="muted">Nicht unter den ${data ? data.count : "beliebtesten"} Werten mit täglichen Kennzahlen – unten nur Live-Daten von TradingView.</p>`}
+              <p class="muted small">Schlusskurs ${esc(x.asOf)} laut eToro · Live-Kurs in der Grafik</p>${Math.abs(x.chg1d) >= 3 ? `<p class="why" data-why="${esc(x.sym)}"></p>` : ""}` : ext ? `<p class="muted ext-note">Bei eToro nicht handelbar – darum ohne tägliche Kennzahlen, Note und Kauf-Marken. Kurs und Diagramm kommen live von TradingView. Bei Trade Republic und anderen Brokern finden Sie die Aktie über ihren Namen.</p>`
+              : `<p class="muted">Nicht unter den ${data ? data.count : "beliebtesten"} Werten mit täglichen Kennzahlen – unten nur Live-Daten von TradingView.</p>`}
           </div>
           <div class="btn-row">${x && window.DTD.watch ? window.DTD.watch.star(x.sym, "big") : ""}${x && window.DTD.compare ? window.DTD.compare.button(x.sym) : ""}${x ? `<a class="btn ghost" href="${etoroUrl}" target="_blank" rel="noopener noreferrer">In eToro öffnen ↗</a>` : `<a class="btn ghost" href="https://www.tradingview.com/symbols/${encodeURIComponent(tv.replace(":", "-"))}/" target="_blank" rel="noopener noreferrer">Bei TradingView öffnen ↗</a>`}</div>
         </div>
@@ -393,27 +410,32 @@
     if (window.DTD.fillNews) window.DTD.fillNews($("skNewsList"), x ? x.sym : q.trim().toUpperCase());
     if (window.DTD.fillWhy) window.DTD.fillWhy(host);
     tvWidget("skProfile", "symbol-profile", { ...COMMON, symbol: tv, width: "100%", height: "100%" });
-    host.querySelectorAll("[data-style]").forEach(b => b.addEventListener("click", () => { style = b.dataset.style; store.set("dtd-stock-style", style); render(x, q); }));
-    const r = $("skRisk"); if (r) r.addEventListener("change", () => render(x, q));
+    host.querySelectorAll("[data-style]").forEach(b => b.addEventListener("click", () => { style = b.dataset.style; store.set("dtd-stock-style", style); render(x, q, ext); }));
+    const r = $("skRisk"); if (r) r.addEventListener("change", () => render(x, q, ext));
     window.dispatchEvent(new CustomEvent("dtd:sections", { detail: "aktie" }));
   }
 
   function show(q, push = true) {
     if (!q || !q.trim()) return;
     // genaues Kürzel oder genauer Name – sonst der beste Vorschlag (z. B. „apple“ → AAPL)
-    const x = find(q) || (data ? window.DTD.matchStocks(data.items, q, 1)[0] || null : null);
-    if (x && $("stockInput").value.trim().toUpperCase() !== x.sym) $("stockInput").value = x.sym;
-    current = { query: x ? x.sym : q.trim() };
+    // Werte, die eToro nicht führt (OMV, Post …): eigene Ansicht mit dem Diagramm der Heimatbörse
+    // genaues Kürzel eines solchen Werts zuerst: VIE:DOC ist DO & CO, nicht das US-Kürzel DOC
+    let ext = pool().find(y => y.outside && y.sym === q.trim().toUpperCase()) || null, x = ext ? null : find(q);
+    if (!x && !ext) ext = outsideOf(q);
+    if (!x && !ext && data) { const best = window.DTD.matchStocks(pool(), q, 1)[0] || null; if (best && best.outside) ext = best; else x = best; }
+    const sym = x ? x.sym : ext ? ext.sym : null;
+    if (sym && $("stockInput").value.trim().toUpperCase() !== sym) $("stockInput").value = sym;
+    current = { query: sym || q.trim() };
     store.set("dtd-stock", current.query);
-    if (x) store.set(RECENT, [x.sym, ...recent().filter(v => v !== x.sym)].slice(0, 8));
-    render(x, q.trim());
+    if (sym) store.set(RECENT, [sym, ...recent().filter(v => v !== sym)].slice(0, 8));
+    render(x, ext ? ext.sym : q.trim(), ext);
     if (push) $("stockBody").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   $("stockForm").addEventListener("submit", e => { e.preventDefault(); show($("stockInput").value); });
   // Vorschläge unter dem Suchfeld: beim Tippen die passenden Werte, im leeren Feld die zuletzt angesehenen
   window.DTD.attachSuggest($("stockInput"), {
-    source: text => (!data ? [] : text ? window.DTD.matchStocks(data.items, text, 8) : recent().map(v => data.items.find(y => y.sym === v)).filter(Boolean)),
+    source: text => (!data ? [] : text ? window.DTD.matchStocks(pool(), text, 8) : recent().map(v => pool().find(y => y.sym === v)).filter(Boolean)),
     onPick: sym => show(sym),
     emptyTitle: "Zuletzt angesehen",
   });

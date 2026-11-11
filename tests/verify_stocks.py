@@ -112,7 +112,7 @@ def name_matches(name, key):
     return any(all((n[i + j] == w) if len(w) <= 3 else n[i + j].startswith(w) for j, w in enumerate(k)) for i in range(len(n) - len(k) + 1))
 
 
-eu_found, eu_open = {}, []   # Kürzel -> (Eintrag, Land)
+eu_found, eu_open, eu_group = {}, [], {}   # Kürzel -> (Eintrag, Land); Gruppe je Eintrag
 if os.environ.get("EUROPE_IN"):
     ed = json.load(open(os.environ["EUROPE_IN"], encoding="utf-8"))
     vs = [(it["internalSymbolFull"].upper(), str(it.get("displayname") or it["internalSymbolFull"])[:60]) for it in ranked if valid(it, 5)]
@@ -120,6 +120,7 @@ if os.environ.get("EUROPE_IN"):
     for g in ed["groups"].values():
         pref = g.get("pref") or []
         for e in g.get("items") or []:
+            eu_group[id(e)] = g
             keys = e.get("match") or [e["name"]]
             fits = lambda nm: any(name_matches(nm, k) for k in keys)
             sym = str(e.get("sym") or "").upper()
@@ -146,6 +147,49 @@ if os.environ.get("EUROPE_IN"):
     for s in ("WRONG.DE", "TBAU.DE", "LKX.DE", "GONE.DE"):
         if s in eu_found:
             errors.append(f"Europa-Liste: {s} fälschlich aufgelöst (Gegenrechnung)")
+
+# Werte der Europa-Liste, die eToro nicht führt: für die Suche mit TradingView-Kürzel der Heimatbörse (wie die Seite sie erwartet)
+TV_SUFFIX = {"DE": "XETR", "L": "LSE", "PA": "EURONEXT", "AS": "EURONEXT", "NV": "EURONEXT", "BR": "EURONEXT", "LSB": "EURONEXT", "MI": "MIL", "MC": "BME",
+             "ZU": "SIX", "SW": "SIX", "HK": "HKEX", "OL": "OSL", "ST": "OMXSTO", "CO": "OMXCOP", "HE": "OMXHEX", "VI": "VIE", "LS": "EURONEXT"}
+
+
+def outside_tv(e, g):
+    tv = e.get("tv")
+    if isinstance(tv, str) and re.fullmatch(r"[A-Z]+:[A-Z0-9_.]+", tv):
+        return tv
+    if (g.get("pref") or [None])[0] == "VI":
+        for a in list(e.get("aka") or []) + [e["name"]]:
+            if re.fullmatch(r"[A-Z]{2,5}", str(a or "")):
+                return "VIE:" + str(a)
+    m = re.fullmatch(r"([A-Z0-9-]+)\.([A-Z]+)", str(e.get("sym") or "").upper())
+    return f"{TV_SUFFIX[m.group(2)]}:{m.group(1).replace('-', '_')}" if m and m.group(2) in TV_SUFFIX else None
+
+
+want_out = []
+if os.environ.get("EUROPE_IN"):
+    found_ids = {id(e) for e, _ in eu_found.values()}
+    found_names = {norm_name(e["name"]) for e, _ in eu_found.values()}
+    seen_tv = set()
+    for e, cc in eu_open:
+        if id(e) in found_ids or norm_name(e["name"]) in found_names:
+            continue
+        tv = outside_tv(e, eu_group[id(e)])
+        if not tv or tv in seen_tv or norm_name(e["name"]) in seen_tv:
+            continue
+        seen_tv |= {tv, norm_name(e["name"])}
+        aka, seen_a = [], set()
+        for a in [e["name"]] + list(e.get("aka") or []):
+            a = str(a).strip()
+            if a and not name_matches(e["name"], a) and a not in seen_a:
+                seen_a.add(a)
+                aka.append(a)
+        row = {"name": str(e["name"])[:60], "tv": tv}
+        if cc:
+            row["cc"] = cc
+        if aka:
+            row["aka"] = " · ".join(aka)[:80]
+        want_out.append(row)
+    want_out = want_out[:80]
 
 for kind, t, env in (("Aktie", 5, "STOCK_COUNT"), ("ETF", 6, "ETF_COUNT")):
     valid_syms = [it["internalSymbolFull"].upper() for it in ranked if valid(it, t)]
@@ -276,6 +320,10 @@ if os.environ.get("EUROPE_IN"):
             errors.append(f"{s} zu viel (Europa)")
     if next((x for x in d["items"] if x["sym"] == "ABS2.DE"), {}).get("aka") != "POS" or next((x for x in d["items"] if x["sym"] == "MUV2.DE"), {}).get("cc") != "DE":
         errors.append("Porr ohne Wiener Kürzel POS oder Münchener Rück ohne Land DE")
+if os.environ.get("EUROPE_IN") and [o.get("tv") for o in (d.get("outside") or [])] != ["XETR:GONE", "XETR:LKX", "VIE:OMVX", "VIE:PSTX"]:
+    errors.append(f"Werte ohne eToro (Testliste): {[o.get('tv') for o in (d.get('outside') or [])]} statt Gibtsnicht, Erwartet, OMVX und Post Test")
+if (d.get("outside") or []) != want_out:
+    errors.append(f"Werte ohne eToro für die Suche: {d.get('outside')!r} statt {want_out!r}")
 if "STK008" not in syms:
     errors.append("STK008 fehlt – Börse gerade zu, aber mit Rang: gehört dazu")
 if os.environ.get("FIRMS_IN") and "LOOKUP1" in always and "LOOKUP1" not in syms:

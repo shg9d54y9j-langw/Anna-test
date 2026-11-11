@@ -296,6 +296,21 @@ function attachSuggest(input, { source, onPick, emptyTitle = "" }) {
   // preventDefault: steht das Feld in einem <label>, würde der Klick sonst den Fokus zurück ins Feld holen
   box.addEventListener("click", e => { e.preventDefault(); const o = e.target.closest(".sugg-opt"); if (o) pick(+o.dataset.i); });
 }
+// Suchbestand: Werte mit eToro-Daten, dahinter Werte der Europa-Liste, die eToro nicht führt (OMV, Post, EVN …) – mit dem
+// TradingView-Kürzel der Heimatbörse als Kürzel; geöffnet zeigen sie Kurs und Diagramm von TradingView
+const poolCache = new WeakMap();
+function stockPool(d) {
+  if (!d || !Array.isArray(d.items)) return [];
+  let p = poolCache.get(d);
+  if (!p) {
+    const ext = (Array.isArray(d.outside) ? d.outside : []).filter(o => o && typeof o.name === "string" && o.name && /^[A-Z]+:[A-Z0-9_.]{1,20}$/.test(String(o.tv || "")))
+      .map(o => ({ sym: o.tv, tv: o.tv, name: o.name.slice(0, 60), aka: typeof o.aka === "string" ? o.aka.slice(0, 80) : null, cc: /^[A-Z]{2}$/.test(o.cc || "") ? o.cc : null, type: "nicht bei eToro", outside: true }));
+    p = ext.length ? [...d.items, ...ext] : d.items;
+    poolCache.set(d, p);
+  }
+  return p;
+}
+window.DTD.stockPool = stockPool;
 window.DTD.matchStocks = matchStocks;
 window.DTD.matchRank = matchRank;
 window.DTD.attachSuggest = attachSuggest;

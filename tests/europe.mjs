@@ -3,7 +3,7 @@
 // Zusatznamen für die Suche, und die Liste selbst: Aufbau, Kürzel, keine Doppelten, Porr und Münchener Rück dabei.
 // Aufruf: node tests/europe.mjs
 import { readFileSync } from "node:fs";
-import { normName, nameMatches, resolveEurope, akaOf, isEuropean, suffixOf, EU_SUFFIX } from "../scripts/stock-universe.mjs";
+import { normName, nameMatches, resolveEurope, akaOf, isEuropean, suffixOf, EU_SUFFIX, outsideTv, outsideList } from "../scripts/stock-universe.mjs";
 
 let fail = 0;
 const ok = (c, msg) => { if (!c) { fail++; console.log(`✗ ${msg}`); } };
@@ -63,7 +63,8 @@ for (const [gid, g] of groups) {
     ok(e.match === undefined || (Array.isArray(e.match) && e.match.length && e.match.every(m => normName(m).length >= 2)), `${where}: Suchbegriffe`);
     ok(e.aka === undefined || (Array.isArray(e.aka) && e.aka.every(a => typeof a === "string" && a && a.length <= 30)), `${where}: Zusatznamen`);
     ok(e.cc === undefined || /^[A-Z]{2}$/.test(e.cc), `${where}: Land`);
-    ok(Object.keys(e).every(k => ["sym", "name", "match", "aka", "cc"].includes(k)), `${where}: nur bekannte Felder`);
+    ok(e.tv === undefined || /^[A-Z]+:[A-Z0-9_.]+$/.test(e.tv), `${where}: TradingView-Kürzel`);
+    ok(Object.keys(e).every(k => ["sym", "name", "match", "aka", "cc", "tv"].includes(k)), `${where}: nur bekannte Felder`);
   }
 }
 const syms = all.map(e => e.sym), names = all.map(e => normName(e.name));
@@ -71,6 +72,22 @@ ok(new Set(syms).size === syms.length && new Set(names).size === names.length, "
 const porr = all.find(e => e.name === "Porr"), muv = all.find(e => e.name === "Münchener Rück");
 ok(porr && porr.sym === "ABS2.DE" && d.groups.at.items.includes(porr) && muv && muv.sym === "MUV2.DE" && d.groups.de.items.includes(muv), "Porr (Österreich) und Münchener Rück (Deutschland) dabei");
 ok(d.groups.at.items.length >= 25 && d.groups.de.items.length >= 80 && all.length >= 200, `genug Werte (${all.length})`);
+
+// Werte ohne eToro: Kürzel der Heimatbörse für die Suche (Wien über das Wiener Kürzel, sonst aus dem vermuteten Kürzel)
+const AT = { pref: ["VI", "DE"] }, DEG = { pref: ["DE"] };
+ok(outsideTv({ sym: "OMV.DE", name: "OMV" }, AT) === "VIE:OMV" && outsideTv({ sym: "OPO.DE", name: "Österreichische Post", aka: ["POST"] }, AT) === "VIE:POST"
+  && outsideTv({ sym: "AMAG.DE", name: "AMAG Austria Metall", aka: ["AMAG"] }, AT) === "VIE:AMAG", "Wiener Werte: Kürzel aus Name oder Zusatzname (OMV, POST, AMAG)");
+ok(outsideTv({ sym: "KCO.DE", name: "Klöckner & Co" }, DEG) === "XETR:KCO" && outsideTv({ sym: "XYZ.DE", name: "Langer Name AG" }, AT) === "XETR:XYZ"
+  && outsideTv({ sym: "ABC.DE", name: "Abc", tv: "VIE:ABC" }, DEG) === "VIE:ABC" && outsideTv({ sym: "", name: "Ohne" }, DEG) === null, "sonst aus dem vermuteten Kürzel, eigenes tv geht vor, ohne Kürzel nichts");
+const od = { groups: { at: { cc: "AT", pref: ["VI", "DE"], items: [{ sym: "OMV.DE", name: "OMV" }, { sym: "VER.DE", name: "Verbund", aka: ["VER"] }, { sym: "OPO.DE", name: "Österreichische Post", aka: ["POST", "Austrian Post"] }] },
+  eu: { cc: null, pref: [], items: [{ sym: "OMV.PA", name: "OMV", cc: "AT" }] } } };
+const oFound = [{ entry: od.groups.at.items[1], group: "at", cc: "AT", sym: "OEWA.DE" }];
+const oOpen = [{ entry: od.groups.at.items[0], group: "at", cc: "AT" }, { entry: od.groups.at.items[2], group: "at", cc: "AT" }, { entry: od.groups.eu.items[0], group: "eu", cc: "AT" }, { entry: od.groups.at.items[1], group: "at", cc: "AT" }];
+const ol = outsideList(od, oOpen, oFound);
+ok(JSON.stringify(ol) === JSON.stringify([{ name: "OMV", tv: "VIE:OMV", cc: "AT" }, { name: "Österreichische Post", tv: "VIE:POST", cc: "AT", aka: "Austrian Post" }]),
+  `Liste ohne eToro: gefundene fehlen, gleiche Firma nur einmal, Zusatznamen für die Suche (${JSON.stringify(ol)})`);
+const atNoTicker = d.groups.at.items.filter(e => !/^VIE:/.test(outsideTv(e, d.groups.at) || ""));
+ok(!atNoTicker.length, `jeder Wiener Wert hat ein Wiener Kürzel für den Fall, dass eToro ihn nicht führt (${atNoTicker.map(e => e.name).join(", ")})`);
 
 if (fail) { console.log(`::error::Europäische Aktien: ${fail} Fehler`); process.exit(1); }
 console.log(`Europäische Aktien: Namen, Auflösung über Kürzel und Namen, Zusatznamen und die Liste (${all.length} Werte) stimmen.`);

@@ -26,6 +26,8 @@ const poison = (v, key = '') => {
 };
 const stocks = poison(fixture('stocks.json'));
 stocks.items.slice(0, 40).forEach(x => { x.aka = `Zusatzname${BAD}`; x.cc = x.cc || 'AT'; });
+// Werte ohne eToro (Suche und eigene Ansicht): präparierte Namen und Zusatznamen
+stocks.outside = [{ name: `Ohne eToro${BAD}`, tv: 'VIE:XSSA', cc: 'AT', aka: `Wien${BAD}` }, { name: `Zweiter${BAD}`, tv: 'VIE:XSSB', cc: 'AT' }];
 const fund = poison(fixture('fund.json')), swing = poison(fixture('swing.json'));
 const firms = poison(repo('firms.json')), wealth = poison(repo('wealth.json')), ranking = poison(repo('ranking.json'));
 const N = (i, extra = {}) => ({ id: `n${i}`, t: `Schlagzeile ${i}${BAD}`, s: `Quelle${BAD}`, u: 'javascript:alert(1)', d: Math.floor(Date.now() / 1000) - i * 600, sum: `Zusammenfassung${BAD}`, type: 'general', tone: 'neutral', rel: ['NVDA'], m: 1, ...extra });
@@ -109,6 +111,8 @@ const json = body => ({ status: 200, contentType: 'application/json', body: JSON
   // Vorschläge (Aktien-Check und Schnellsuche) und das Datenstand-Fenster
   await p.evaluate(() => { location.hash = 'aktie'; }); await p.waitForTimeout(500);
   await p.fill('#stockInput', ''); await p.type('#stockInput', 'Zusatz', { delay: 5 }); await p.waitForTimeout(300); await scan('Vorschläge im Aktien-Check');
+  await p.fill('#stockInput', ''); await p.type('#stockInput', 'Ohne eToro', { delay: 5 }); await p.waitForTimeout(300); await scan('Vorschläge: Werte ohne eToro');
+  await p.evaluate(() => window.DTD.openStock('VIE:XSSA')); await p.waitForTimeout(800); await scan('Aktien-Check: Wert ohne eToro');
   await p.fill('#stockInput', ''); await p.focus('#stockInput'); await p.waitForTimeout(300); await scan('zuletzt angesehene Werte');
   await p.click('#qsInput').catch(() => null); await p.type('#qsInput', 'NV', { delay: 5 }).catch(() => null); await p.waitForTimeout(300); await scan('Schnellsuche');
   await p.keyboard.press('Escape');

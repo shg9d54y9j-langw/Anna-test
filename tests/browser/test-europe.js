@@ -2,7 +2,9 @@
 // Europäische Aktien: Suche mit deutschen Namen in jeder Schreibweise (Münchener Rück, Muenchener, Munchener, Münchner),
 // über Zusatznamen (Munich Re, Wiener Kürzel POS) und mit Enter ohne Auswahl; Herkunft im Aktien-Check (Land, Börse, weitere
 // Namen); TradingView-Kürzel bleiben, wie sie sind; Screener mit Deutschland, Österreich, Schweiz; US-Aktiengattungen (BRK.B)
-// zählen zu den USA. Schnellsuche in der Kopfzeile. node test-europe.js <port> <ausgabe>
+// zählen zu den USA. Schnellsuche in der Kopfzeile. Werte, die eToro nicht führt (OMV, Post, DO & CO): in beiden Suchen mit
+// „nicht bei eToro“, eigene Ansicht mit Börse und TradingView-Kürzel; VIE:DOC ist DO & CO, nicht das US-Kürzel DOC; kaputte
+// Einträge erscheinen nicht. node test-europe.js <port> <ausgabe>
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -15,6 +17,12 @@ const stocks = JSON.stringify({ ...base, items: [...base.items,
   add('ABS2.DE', 'Porr AG', { aka: 'POS', cc: 'AT' }),
   add('EBO.DE', 'Erste Group Bank AG', { aka: 'EBS · Erste Bank', cc: 'AT' }),
   { ...like, sym: 'NOVN.ZU', tv: 'SIX:NOVN', name: 'Novartis AG' },
+  { ...like, sym: 'DOC', tv: 'DOC', name: 'Healthpeak Properties' },
+], outside: [
+  { name: 'OMV', tv: 'VIE:OMV', cc: 'AT' },
+  { name: 'Österreichische Post', tv: 'VIE:POST', cc: 'AT', aka: 'Austrian Post' },
+  { name: 'DO & CO', tv: 'VIE:DOC', cc: 'AT' },
+  { name: '<img src=x onerror=alert(1)>', tv: 'VIE:"><b>X', cc: 'AT' },
 ] });
 
 (async () => {
@@ -61,11 +69,35 @@ const stocks = JSON.stringify({ ...base, items: [...base.items,
   head = await p.$eval('#stockBody .stock-head', e => e.innerText.replace(/\s+/g, ' ')).catch(() => '');
   check(/Nicht unter den/.test(head), 'unbekannter Name: kein falscher Treffer');
 
+  // 2b) Werte ohne eToro: Vorschlag mit Hinweis, eigene Ansicht mit Börse; genaues Kürzel schlägt das gleichnamige US-Kürzel
+  const sOmv = await suggest('OMV');
+  check(/VIE:OMV/.test(sOmv[0] || '') && /nicht bei eToro/.test(sOmv[0] || ''), `„OMV“ → VIE:OMV mit „nicht bei eToro“ (${(sOmv[0] || '–').slice(0, 60)})`);
+  const sPost = await suggest('austrian post'), sImg = await suggest('img');
+  check(sPost.some(t => /VIE:POST/.test(t)) && !sImg.some(t => /VIE:|<img|onerror/.test(t)), `Post über den Zusatznamen; kaputter Eintrag erscheint nicht (${sPost.join(' | ').slice(0, 80)} / ${sImg.join(' | ').slice(0, 80)})`);
+  await open('OMV');
+  head = await p.$eval('#stockBody .stock-head', e => e.innerText.replace(/\s+/g, ' ')).catch(() => '');
+  const tvLink = await p.$eval('#stockBody .stock-head a[href*="tradingview"]', a => a.href).catch(() => '');
+  check(/Aktie · VIE:OMV · nicht bei eToro/.test(head) && /Firma aus Österreich · Kurs von der Wiener Börse/.test(head) && /Bei eToro nicht handelbar/.test(head) && /VIE-OMV/.test(tvLink),
+    `OMV: eigene Ansicht mit Wiener Börse und TradingView (${head.slice(0, 160)})`);
+  try { await (await p.$('#stockBody .stock-head')).screenshot({ path: `${out}/europe-omv.png` }); } catch { /* Bildschirmfoto nur zur Ansicht */ }
+  await open('VIE:DOC');
+  head = await p.$eval('#stockBody .stock-head', e => e.innerText.replace(/\s+/g, ' ')).catch(() => '');
+  check(/DO & CO/.test(head) && !/Healthpeak/.test(head), `VIE:DOC zeigt DO & CO (${head.slice(0, 80)})`);
+  await open('DOC');
+  head = await p.$eval('#stockBody .stock-head', e => e.innerText.replace(/\s+/g, ' ')).catch(() => '');
+  check(/Healthpeak/.test(head), 'DOC bleibt das US-Kürzel');
+  check(await p.evaluate(() => !document.querySelector('#stockBody img, #stockInput-vorschlaege img, #stockInput-vorschlaege b:not(.sugg-sym)')), 'kein eingeschleustes HTML aus der Liste');
+
   // 3) Schnellsuche in der Kopfzeile
   await p.click('#qsInput'); await p.type('#qsInput', 'münchner rück', { delay: 10 }); await p.waitForTimeout(250);
   const opts = await p.$$eval('#qsInput-vorschlaege [role="option"]', l => l.map(o => o.innerText));
   check(opts.some(t => /MUV2\.DE/.test(t)), `Schnellsuche in der Kopfzeile findet Münchener Rück (${opts.length} Vorschläge)`);
-  await p.keyboard.press('Escape');
+  await p.fill('#qsInput', ''); await p.type('#qsInput', 'omv', { delay: 10 }); await p.waitForTimeout(250);
+  const qsOmv = await p.$$eval('#qsInput-vorschlaege [role="option"]', l => l.map(o => o.innerText.replace(/\s+/g, ' ')));
+  check(/VIE:OMV/.test(qsOmv[0] || ''), `Schnellsuche findet OMV (${(qsOmv[0] || '–').slice(0, 50)})`);
+  await p.press('#qsInput', 'Enter'); await p.waitForTimeout(700);
+  head = await p.$eval('#stockBody .stock-head', e => e.innerText.replace(/\s+/g, ' ')).catch(() => '');
+  check(await p.evaluate(() => location.hash) === '#aktie' && /VIE:OMV/.test(head), 'Enter in der Schnellsuche öffnet OMV im Aktien-Check');
 
   // 4) Screener: Länder und Regionen
   await p.goto(`http://localhost:${port}/#tools`, { waitUntil: 'load' });

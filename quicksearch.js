@@ -12,7 +12,7 @@
   bar.insertBefore(box, bar.querySelector(".sessions"));
   const input = box.querySelector("#qsInput");
   const recent = () => { const r = store.get("dtd-stock-recent", []); return Array.isArray(r) ? r.filter(v => typeof v === "string").slice(0, 6) : []; };
-  const items = () => { const st = S.get("stocks"); return st && Array.isArray(st.items) ? st.items : []; };
+  const items = () => { const st = S.get("stocks"); return st && Array.isArray(st.items) ? window.DTD.stockPool(st) : []; };   // mit Werten ohne eToro
   const close = () => { box.classList.remove("open"); input.blur(); };
   window.DTD.attachSuggest(input, {
     source: text => (text ? window.DTD.matchStocks(items(), text, 8) : recent().map(v => items().find(y => y.sym === v)).filter(Boolean)),

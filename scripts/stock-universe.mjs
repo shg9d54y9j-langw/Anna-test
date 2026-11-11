@@ -68,6 +68,34 @@ export function akaOf(entry, etoroName) {
   const list = [entry.name, ...(Array.isArray(entry.aka) ? entry.aka : [])].filter(a => a && !nameMatches(etoroName, a));
   return [...new Set(list.map(a => String(a).trim()).filter(Boolean))].join(" · ").slice(0, 80) || null;
 }
+// Werte der Europa-Liste, die eToro gar nicht führt (OMV, Post, EVN …): für die Suche, mit Kurs und Diagramm von TradingView an
+// der Heimatbörse. Wiener Werte über ihr Wiener Kürzel (Zusatzname oder Name wie „OMV“), sonst aus dem vermuteten Kürzel.
+const TICKER = /^[A-Z]{2,5}$/, TVSYM = /^[A-Z]+:[A-Z0-9_.]+$/;
+export function outsideTv(entry, group) {
+  if (!entry) return null;
+  if (typeof entry.tv === "string" && TVSYM.test(entry.tv)) return entry.tv;
+  const pref = group && Array.isArray(group.pref) ? group.pref : [];
+  if (pref[0] === "VI") {
+    const t = [...(Array.isArray(entry.aka) ? entry.aka : []), entry.name].map(a => String(a || "")).find(a => TICKER.test(a));
+    if (t) return `VIE:${t}`;
+  }
+  const tv = tvSymbol(String(entry.sym || "").toUpperCase());
+  return TVSYM.test(tv) ? tv : null;
+}
+// open: nicht aufgelöste Einträge (resolveEurope), found: aufgelöste – auch über das Kürzel nachgeschlagene
+export function outsideList(data, open, found) {
+  const out = [], seen = new Set(), have = new Set(found.map(f => normName(f.entry.name)));
+  for (const o of open) {
+    const nm = normName(o.entry.name);
+    if (found.some(f => f.entry === o.entry) || have.has(nm)) continue;
+    const tv = outsideTv(o.entry, data && data.groups ? data.groups[o.group] : null);
+    if (!tv || seen.has(tv) || seen.has(nm)) continue;   // dieselbe Firma in zwei Gruppen: einmal, mit der ersten Börse
+    seen.add(tv); seen.add(nm);
+    const aka = akaOf(o.entry, o.entry.name);
+    out.push({ name: String(o.entry.name).slice(0, 60), tv, ...(o.cc ? { cc: o.cc } : {}), ...(aka ? { aka } : {}) });
+  }
+  return out.slice(0, 80);
+}
 const FINNHUB_KEY = process.env.FINNHUB_API_KEY || "";
 const FINNHUB = (process.env.FINNHUB_BASE || "https://finnhub.io/api/v1").replace(/\/$/, "");
 if (!["finnhub.io", "localhost", "127.0.0.1"].includes(new URL(FINNHUB).hostname)) fail("Unzulässige Finnhub-Adresse – der Schlüssel geht nur an finnhub.io.");
@@ -339,6 +367,8 @@ async function main() {
     log(`Europa-Liste über das Kürzel nachgeschlagen: ${got.length ? got.join(", ") : "keine"} gefunden`);
   }
   const euMissing = euOpen.filter(o => !euFound.some(f => f.entry === o.entry));
+  const outside = europe ? outsideList(europe, euOpen, euFound) : [];
+  if (outside.length) log(`Für die Suche ohne eToro-Daten (Kurs von TradingView): ${outside.map(o => o.tv).join(", ")}`);
   if (euMissing.length) {
     // Grund je Eintrag, damit sich die Liste gezielt pflegen lässt: Kürzel unbekannt, bei eToro nicht handelbar, oder anderer Name
     const raw = new Map(list.map(it => [String(field(it, "internalSymbolFull") || "").toUpperCase(), it]));
@@ -420,7 +450,7 @@ async function main() {
     } catch (e) { finn = `Fehler: ${e.message}`; warn(`Finnhub: ${e.message}`); }
   }
 
-  const out = { updated: new Date().toISOString(), count: items.length, finnhub: finn, source: "eToro-Marktdaten (Tageskerzen); optional Finnhub", errors: errors.slice(0, 30), items };
+  const out = { updated: new Date().toISOString(), count: items.length, finnhub: finn, source: "eToro-Marktdaten (Tageskerzen); optional Finnhub", errors: errors.slice(0, 30), ...(outside.length ? { outside } : {}), items };
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(out));
   // Schlusskurse für die Note-Bilanz (scripts/note-track.mjs): nur auf dem Rechner des Laufs, wird nicht veröffentlicht

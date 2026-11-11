@@ -7,7 +7,9 @@
    {"sym": "ABS2.DE", "name": "Porr", "aka": ["POS"]},
    {"sym": "WRONG.DE", "name": "Testbau"},
    {"sym": "GONE.DE", "name": "Gibtsnicht"},
-   {"sym": "LKX.DE", "name": "Erwartet"}
+   {"sym": "LKX.DE", "name": "Erwartet"},
+   {"sym": "OMVX.DE", "name": "OMVX"},
+   {"sym": "PSTX.DE", "name": "Post Test", "aka": ["PSTX", "Austrian Post Test"]}
   ]},
   "de": {"label": "Deutschland", "cc": "DE", "pref": ["DE"], "items": [
    {"sym": "MUV2.DE", "name": "Münchener Rück", "match": ["münchener rück", "munich re"], "aka": ["Munich Re"]},
