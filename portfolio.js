@@ -575,6 +575,10 @@
       <p class="small">Eine Zeile je Aktie: <code>Kürzel; Kaufpreis; Stück; Kaufdatum; Stop; Notiz</code>. „Kopieren“ legt Ihre Liste in die Zwischenablage, „Hinzufügen“ übernimmt Zeilen aus dem Feld (gleiche Aktie mit gleichem Kaufpreis wird nicht doppelt angelegt).</p>
       <textarea id="pfText" rows="5" placeholder="NVDA; 120,50; 10; 2026-03-02; 105; KI-Chips"></textarea>
       <div class="btn-row" style="margin-top:8px"><button type="button" class="btn ghost" data-act="export">Liste kopieren</button><button type="button" class="btn ghost" data-act="import">Zeilen hinzufügen</button></div>
+      <h3 class="swing-h3" style="margin-top:18px">Aus Trade Republic übernehmen</h3>
+      <p class="small">In der Trade-Republic-App unter <b>Profil → Kontoauszüge → Transaktionsexport</b> die CSV-Datei sichern und hier wählen. Die Seite liest sie nur in diesem Browser, zeigt Stück und Ø Kaufkurs je Wert und übernimmt erst nach Ihrer Bestätigung.</p>
+      <input type="file" id="trFile" accept=".csv,text/csv,text/plain" hidden>
+      <div class="btn-row"><button type="button" class="btn ghost" data-act="tr-import">Transaktionsexport wählen</button></div>
     </details>`;
   }
   window.DTD.backupDue = backupDue;
@@ -775,6 +779,7 @@
       copyOut(text, () => { pushOpen = true; render(); note("Push-Liste kopiert – auf GitHub als Secret PUSH_WATCH eintragen (oder ersetzen)."); }, $("pfPushText"));
       return;
     }
+    if (act === "tr-import") { const f = $("trFile"); if (f) f.click(); return; }
     if (act === "backup") return downloadBackup();
     if (act === "restore") return pickBackup();
     if (act === "undo-restore") return undoRestore();
@@ -823,6 +828,26 @@
     // Branchen und Gesamtnote für die Depot-Analyse
     if (window.DTD.scoreReady && !(window.DTD.scoreAll && window.DTD.scoreAll() && window.DTD.shared.get("fund"))) window.DTD.scoreReady().then(() => render());
   }
+  // Für den Trade-Republic-Import (trimport.js): Währung der Kursdaten, EZB-Kurs am Tag und das Übernehmen fertiger Positionen.
+  // Gleiche Kürzel werden ersetzt; der bisherige Stand bleibt 7 Tage über „Stand vor dem Laden zurückholen“ erhalten.
+  window.DTD.pfCurrency = currency;
+  window.DTD.pfRateOn = rateOn;
+  window.DTD.pfImport = (recs, from) => {
+    let before = null;
+    try { before = localStorage.getItem(KEY); } catch { /* egal */ }
+    try { localStorage.setItem(BK_UNDO, JSON.stringify({ at: new Date().toISOString(), from, data: { [KEY]: before } })); } catch { /* ohne Rückweg */ }
+    const stamp = Date.now().toString(36), add = [];
+    (Array.isArray(recs) ? recs : []).forEach((r, i) => {
+      const sym = String(r && r.sym || "").toUpperCase(), lots = cleanTrades(r && r.lots), sells = cleanTrades(r && r.sells);
+      if (!SYM.test(sym) || !lots.length) return;
+      const h = derive({ id: `p${stamp}t${i}`, sym, buy: lots[0].p, qty: null, date: null, stop: null, note: String(r.note || "").slice(0, 200), lots, ...(sells.length ? { sells } : {}) });
+      if (h.qty > 0) add.push(h);
+    });
+    const syms = new Set(add.map(h => h.sym)), replaced = list.filter(h => syms.has(h.sym)).length;
+    list = [...list.filter(h => !syms.has(h.sym)), ...add];
+    save(); render();
+    return { added: add.length, replaced };
+  };
   window.DTD.startPortfolio = () => load(false);
   window.DTD.reloadPortfolio = () => load(true);
   window.DTD.portfolioCount = () => list.length;

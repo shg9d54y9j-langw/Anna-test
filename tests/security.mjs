@@ -99,6 +99,11 @@ for (const f of scripts) {
   }
 }
 
+// ---------- 4b. Import aus Trade Republic: die Datei bleibt im Browser ----------
+{
+  const tj = read("trimport.js");
+  ok(!/\bfetch\(|XMLHttpRequest|sendBeacon|WebSocket|EventSource|navigator\.share|\.submit\(/.test(tj), "trimport.js: der Import darf nichts senden – die Datei bleibt im Browser");
+}
 // ---------- 4a. Anmeldung (login.js, data/login.json) ----------
 // Nur die öffentliche Projektadresse und der öffentliche Schlüssel (anon bzw. sb_publishable_) – nie der geheime;
 // Zugangsdaten nie in der Sicherungsdatei; Anfragen mit Zugang nur an die eingerichtete Adresse und ohne Weiterleitungen.

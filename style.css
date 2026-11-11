@@ -1174,6 +1174,12 @@ table.cmp tr.cmp-sub th[scope="row"] { color: var(--muted); padding-left: 16px; 
 .acc-form label { display: grid; gap: 4px; margin: 8px 0; }
 .acc-form input { width: 100%; }
 .acc-more { margin-top: 14px; }
+/* Import aus Trade Republic */
+.tr-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 12px; margin: 8px 0 4px; }
+.tr-map label { display: grid; gap: 4px; font-size: 13px; }
+.tr-table td { vertical-align: middle; }
+.tr-symrow { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.tr-table .tr-sym { width: 9em; text-transform: uppercase; }
 .acc-more .acc-form { margin-top: 6px; }
 .theme-btn:hover { color: var(--text); }
 @media (max-width: 760px) { .appbar .theme-btn { order: 1; margin-left: 0; } }
