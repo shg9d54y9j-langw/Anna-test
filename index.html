@@ -41,6 +41,8 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Übersicht</span> <span class="new" id="homeBadge" hidden></span></button>
     <button class="tab" role="tab" id="tab-portfolio" aria-controls="portfolio" data-tab="portfolio">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M8 7V4h8v3M3 12.5h18"/></svg><span>Portfolio</span> <span class="new" id="pfBadge" hidden></span></button>
+    <button class="tab" role="tab" id="tab-vermoegen" aria-controls="vermoegen" data-tab="vermoegen">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v4c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 10v4c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-4M5 14v4c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-4"/></svg><span>Vermögen</span></button>
     <button class="tab" role="tab" id="tab-aktie" aria-controls="aktie" data-tab="aktie">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M7.5 12l2-2.5 2 1.5 2.5-3"/></svg><span>Aktien-Check</span></button>
     <button class="tab" role="tab" id="tab-markt" aria-controls="markt" data-tab="markt">
@@ -200,6 +202,15 @@
       </article>
     </section>
 
+    <!-- VERMÖGEN · langfristig anlegen, wissenschaftlich belegt -->
+    <section id="vermoegen" class="view" role="tabpanel" aria-labelledby="tab-vermoegen" hidden>
+      <div class="view-head">
+        <div><p class="eyebrow">Vermögen · langfristig und wissenschaftlich belegt</p><h1>Langfristig Vermögen aufbauen</h1></div>
+        <p class="lead">Ihr Anlegerprofil, ein passendes Musterportfolio aus breit gestreuten ETFs, was daraus werden kann und wie Sie es im Gleichgewicht halten – dazu, was die Forschung sagt. Der Forschungsstand wird jeden Monat geprüft, Zinsen und Inflation kommen an jedem Werktag von der EZB. Allgemeine Information, keine Anlageberatung.</p>
+      </div>
+      <div id="wealthBody" class="stack"><p class="muted">Lade …</p></div>
+    </section>
+
     <!-- AKTIEN-CHECK -->
     <section id="aktie" class="view" role="tabpanel" aria-labelledby="vs-aktie" hidden>
       <div class="view-head">
@@ -217,8 +228,8 @@
     <!-- WERKZEUGE -->
     <section id="tools" class="view" role="tabpanel" aria-labelledby="tab-tools" hidden>
       <div class="view-head">
-        <div><p class="eyebrow">Werkzeuge · Screener, Kalender, Insider, Alarme, Sparplan</p><h1>Die Werkzeuge der Profis – eingebaut</h1></div>
-        <p class="lead">Aktien nach Regeln finden, Quartalszahlen im Blick behalten, sehen, wo Insider kaufen, Kursalarme setzen und einen ETF-Sparplan durchrechnen – mit den Daten dieser Seite, ohne Abo.</p>
+        <div><p class="eyebrow">Werkzeuge · Screener, Kalender, Insider, Alarme</p><h1>Die Werkzeuge der Profis – eingebaut</h1></div>
+        <p class="lead">Aktien nach Regeln finden, Quartalszahlen im Blick behalten, sehen, wo Insider kaufen, und Kursalarme setzen – mit den Daten dieser Seite, ohne Abo. Den ETF-Sparplan-Rechner finden Sie im Bereich <a href="#sparplan">Vermögen</a>.</p>
       </div>
       <div id="toolsBody" class="stack"></div>
     </section>
@@ -541,6 +552,7 @@
   <script src="journal-stats.js"></script>
   <script src="tools.js"></script>
   <script src="sparplan.js"></script>
+  <script src="wealth.js"></script>
   <script src="bot.js"></script>
   <script src="live.js"></script>
   <script src="quicksearch.js"></script>

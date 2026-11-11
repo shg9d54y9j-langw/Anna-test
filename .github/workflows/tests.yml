@@ -49,6 +49,9 @@ jobs:
       - name: Firmen-Steckbriefe der Theorie-Seite prüfen
         run: node tests/check-firms.mjs
 
+      - name: Bereich Vermögen – Forschungsstand, Quellen, ISIN, Steuerpunkte (data/wealth.json)
+        run: node tests/check-wealth.mjs
+
       - name: Aktien-Daten gegen den Test-Server, unabhängige Gegenrechnung
         env:
           ETORO_API_BASE: http://localhost:8792/api
@@ -139,6 +142,9 @@ jobs:
 
       - name: Wechselkurse (EZB) – Auswahl, Lücken, Wochenenden, Prüfungen
         run: node tests/fx-data.mjs
+
+      - name: Zinsen und Inflation (EZB) – CSV, Alter, Pflicht-Reihen, Plausibilität
+        run: node tests/wealth-data.mjs
 
       - name: Handy-Meldungen (ntfy) mit nachgebautem Server, auch mit den Aktien-Daten und Nachrichten der Testläufe
         env:

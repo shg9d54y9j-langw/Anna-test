@@ -319,9 +319,9 @@ symIn.addEventListener("keydown", e => { if (e.key === "Enter") loadSymbol(symIn
 // ---------- Reiter-Navigation ----------
 // Zusammengelegt: News → Markt, Journal (mit Steuer) → Portfolio, Copy-Trading und Trader-Vergleich → „daily“ (Reiter Copy-Trading).
 // Alte Adressen wie #news, #journal, #copy, #compare springen zum Abschnitt im neuen Bereich.
-const VIEWS = ["home", "portfolio", "aktie", "setup", "markt", "tools", "hot", "swing", "ideen", "theorie", "bot", "daily"];
+const VIEWS = ["home", "portfolio", "vermoegen", "aktie", "setup", "markt", "tools", "hot", "swing", "ideen", "theorie", "bot", "daily"];
 // Sieben Bereiche: Ähnliches ist zusammengelegt und wird oben im Bereich umgeschaltet (alte Adressen wie #swing gelten weiter)
-const GROUPS = { home: ["home"], portfolio: ["portfolio"], aktie: ["aktie", "setup"], markt: ["markt"], tools: ["tools"], ideas: ["hot", "swing", "ideen", "theorie"], bots: ["bot", "daily"] };
+const GROUPS = { home: ["home"], portfolio: ["portfolio"], vermoegen: ["vermoegen"], aktie: ["aktie", "setup"], markt: ["markt"], tools: ["tools"], ideas: ["hot", "swing", "ideen", "theorie"], bots: ["bot", "daily"] };
 const GROUP_ORDER = Object.keys(GROUPS);
 const GROUP_OF = Object.fromEntries(Object.entries(GROUPS).flatMap(([g, l]) => l.map(v => [v, g])));
 const GROUP_LABEL = { aktie: "Aktien-Check", ideas: "Ideen", bots: "Bots & Copy-Trading" };
@@ -351,7 +351,7 @@ document.addEventListener("keydown", e => {
   location.hash = id;
   setTimeout(() => { const f = document.querySelector(`#${id} > .viewswitch [data-view="${id}"]`); if (f) f.focus(); }, 0);
 });
-const TITLES = { home: "Übersicht", portfolio: "Portfolio", markt: "Markt", aktie: "Aktien-Check", tools: "Werkzeuge", ideen: "Trade-Ideen", hot: "HotStuff", swing: "Swing-Planer", bot: "Trend-Bot", setup: "Trade-Setup", daily: "Copy-Trading", theorie: "Theorie" };
+const TITLES = { home: "Übersicht", portfolio: "Portfolio", vermoegen: "Vermögen", markt: "Markt", aktie: "Aktien-Check", tools: "Werkzeuge", ideen: "Trade-Ideen", hot: "HotStuff", swing: "Swing-Planer", bot: "Trend-Bot", setup: "Trade-Setup", daily: "Copy-Trading", theorie: "Theorie" };
 // Erst laden, wenn der Abschnitt in die Nähe kommt (TradingView-Fenster sind schwer)
 function whenNear(el, fn) {
   if (!el || !("IntersectionObserver" in window)) return fn();
@@ -362,6 +362,7 @@ const VIEW_INIT = {
   portfolio: () => { window.DTD.startPortfolio(); window.DTD.renderWatch(); },
   markt: () => { loadHeatmap(heatSel.value); loadHotlist(); window.DTD.loadMarketLive(); whenNear($("news"), () => { loadNews(); loadCalendar(); if (window.DTD.startNews) window.DTD.startNews(); }); },
   aktie: () => window.DTD.startStock(),
+  vermoegen: () => window.DTD.startWealth(),
   tools: () => window.DTD.startTools(),
   ideen: () => window.DTD.renderIdeas(),
   hot: () => window.DTD.startHot(),
@@ -398,7 +399,7 @@ function showView(id, { scrollTo = null } = {}) {
   else window.scrollTo({ top: 0 });
 }
 // Abschnitte, die erst beim ersten Öffnen ihres Bereichs entstehen (Werkzeuge, Portfolio): kurz warten, dann springen
-const LAZY = { vergleich: "tools", screener: "tools", branchen: "tools", lexikon: "tools", kalender: "tools", pfTax: "portfolio", pfBackup: "portfolio", pfMix: "portfolio", pfHist: "portfolio", pfPush: "portfolio", pfRisk: "portfolio", notebilanz: "tools", sparplan: "tools", hinweise: "home" };
+const LAZY = { vergleich: "tools", screener: "tools", branchen: "tools", lexikon: "tools", kalender: "tools", pfTax: "portfolio", pfBackup: "portfolio", pfMix: "portfolio", pfHist: "portfolio", pfPush: "portfolio", pfRisk: "portfolio", notebilanz: "tools", sparplan: "vermoegen", wProfil: "vermoegen", wPortfolio: "vermoegen", wRebal: "vermoegen", wForschung: "vermoegen", wZinsen: "vermoegen", wSteuer: "vermoegen", hinweise: "home" };
 function waitAndJump(id, tries = 50) {
   if ($(id)) return jumpTo($(id));
   if (tries > 0) setTimeout(() => waitAndJump(id, tries - 1), 100);

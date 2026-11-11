@@ -1,0 +1,452 @@
+{
+ "version": 1,
+ "reviewed": "2026-11-11",
+ "nextReview": "2026-12-11",
+ "method": "Monatlich geprüft: neue begutachtete Studien (Journal of Finance, Journal of Financial Economics, Review of Financial Studies, Financial Analysts Journal u. a.), neue Ausgaben von SPIVA, Global Investment Returns Yearbook und Morningstar, österreichisches Steuerrecht (BMF, RIS) sowie Kosten und Bestand der Beispiel-ETFs. Arbeitspapiere ohne Begutachtung sind als „neu“ markiert, widersprüchliche Befunde als „umstritten“. Zinsen und Inflation kommen täglich von der EZB.",
+ "model": {
+  "equityPremium": 4.0,
+  "equityVol": 16,
+  "bondVol": 6,
+  "cashVol": 0.5,
+  "corrEquityBonds": 0.1,
+  "terAvg": 0.15,
+  "longRun": {
+   "cash": 2.0,
+   "bonds": 2.5,
+   "inflation": 2.0
+  },
+  "crash": {
+   "equity": 50,
+   "bonds": 13,
+   "cash": 0
+  },
+  "note": "Bausteinmethode: Aktien = Geldmarktzins + Aktienprämie von rund 4 % pro Jahr (langfristiger Weltdurchschnitt laut Dimson, Marsh & Staunton; Ibbotson & Chen 2003), Anleihen = aktuelle Rendite 5-jähriger Staatsanleihen bester Bonität, Geldmarkt = aktueller Tagesgeldsatz unter Banken (€STR). Absturz-Annahmen: Welt-Aktien rund −50 % (2007–2009), globale Anleihen in Euro abgesichert −13 % (2022 zweistellig im Minus).",
+  "sources": [
+   {
+    "t": "Dimson, Marsh & Staunton: UBS Global Investment Returns Yearbook 2026",
+    "url": "https://www.ubs.com/global/en/media/display-page-ndp/en-20260303-global-investment-returns-yearbook-2026.html"
+   },
+   {
+    "t": "Ibbotson & Chen (2003): Long-Run Stock Returns: Participating in the Real Economy. Financial Analysts Journal 59(1)",
+    "url": "https://doi.org/10.2469/faj.v59.n1.2505"
+   }
+  ]
+ },
+ "profile": {
+  "horizonCap": {
+   "lt3": 10,
+   "3to5": 30,
+   "5to10": 60,
+   "10to20": 90,
+   "gt20": 100
+  },
+  "reactionCap": {
+   "sell": 30,
+   "some": 60,
+   "hold": 100,
+   "buy": 100
+  },
+  "incomeAdj": {
+   "safe": 0,
+   "mid": 0,
+   "unsafe": -10
+  },
+  "crashEquity": 50,
+  "safeSplit": {
+   "lt3": [
+    0,
+    100
+   ],
+   "3to5": [
+    30,
+    70
+   ],
+   "5to10": [
+    60,
+    40
+   ],
+   "10to20": [
+    100,
+    0
+   ],
+   "gt20": [
+    100,
+    0
+   ]
+  },
+  "note": "Fähigkeit (Horizont, Einkommen) und Bereitschaft (Verlust, den Sie aushalten, Ihre Reaktion auf einen Kurssturz) werden getrennt bewertet – das Vorsichtigere zählt. Aktienquote = höchstens erträglicher Verlust ÷ 50 % (so tief fielen Welt-Aktien 2007–2009)."
+ },
+ "blocks": [
+  {
+   "id": "aktien",
+   "name": "Aktien weltweit",
+   "role": "Wachstum",
+   "what": "Tausende Unternehmen aus Industrie- und Schwellenländern nach Börsenwert – eine Beteiligung an der Weltwirtschaft statt einer Wette auf einzelne Firmen oder Länder.",
+   "products": [
+    {
+     "name": "Vanguard FTSE All-World UCITS ETF (USD) Accumulating",
+     "isin": "IE00BK5BQT80",
+     "ter": 0.14,
+     "note": "ein ETF für die ganze Welt (Kosten seit 28. 7. 2026 gesenkt)",
+     "checked": "2026-11-11"
+    },
+    {
+     "name": "iShares Core MSCI World UCITS ETF (Acc)",
+     "isin": "IE00B4L5Y983",
+     "ter": 0.2,
+     "note": "Industrieländer – zusammen mit Schwellenländern etwa 90 : 10",
+     "checked": "2026-11-11"
+    },
+    {
+     "name": "iShares Core MSCI EM IMI UCITS ETF (Acc)",
+     "isin": "IE00BKM4GZ66",
+     "ter": 0.18,
+     "note": "Schwellenländer, zum MSCI World dazu",
+     "checked": "2026-11-11"
+    }
+   ]
+  },
+  {
+   "id": "anleihen",
+   "name": "Anleihen, auf Euro abgesichert",
+   "role": "Ausgleich",
+   "what": "Staats- und Unternehmensanleihen guter Bonität weltweit; Wechselkurse sind gegen den Euro abgesichert. Schwankt deutlich weniger als Aktien – beim Zinsanstieg 2022 aber zweistellig im Minus.",
+   "products": [
+    {
+     "name": "iShares Core Global Aggregate Bond UCITS ETF EUR Hedged (Acc)",
+     "isin": "IE00BDBRDM35",
+     "ter": 0.1,
+     "note": "weltweite Anleihen, in Euro abgesichert",
+     "checked": "2026-11-11"
+    }
+   ]
+  },
+  {
+   "id": "geldmarkt",
+   "name": "Geldmarkt / Tagesgeld",
+   "role": "Sicherheit",
+   "what": "Zinsen nahe dem EZB-Satz, kaum Schwankung. Für Geld, das Sie in wenigen Jahren brauchen, und für den Notgroschen.",
+   "products": [
+    {
+     "name": "Xtrackers II EUR Overnight Rate Swap UCITS ETF 1C",
+     "isin": "LU0290358497",
+     "ter": 0.1,
+     "note": "bildet den Tagesgeldsatz unter Banken (€STR) nach",
+     "checked": "2026-11-11"
+    },
+    {
+     "name": "Tagesgeldkonto bei einer Bank",
+     "isin": null,
+     "ter": 0,
+     "note": "Einlagensicherung bis 100.000 € je Bank; Zinsen mit 25 % KESt",
+     "checked": "2026-11-11"
+    }
+   ]
+  }
+ ],
+ "productNote": "Beispiele, keine Kaufempfehlung. Vor dem Kauf prüfen: Kosten im aktuellen Factsheet und den Status als Meldefonds bei der OeKB (sonst drohen in Österreich deutlich höhere Steuern). Gleichwertige ETFs anderer Anbieter sind genauso geeignet – günstigere gibt es ab etwa 0,07 % pro Jahr.",
+ "evidence": [
+  {
+   "id": "streuen",
+   "title": "Breit streuen statt auf einzelne Aktien setzen",
+   "level": "stark",
+   "claim": "Die meisten einzelnen US-Aktien brachten über ihre ganze Börsenzeit weniger als kurzfristige Staatsanleihen; das gesamte Vermögenswachstum seit 1926 stammt von rund 4 % der Aktien. Streuung senkt das Risiko, ohne die erwartete Rendite zu senken.",
+   "forYou": "Kern des Vermögens: ein ETF auf den Weltaktienmarkt. Einzelaktien und Trading höchstens mit einem kleinen, klar getrennten Teil.",
+   "sources": [
+    {
+     "t": "Bessembinder (2018): Do stocks outperform Treasury bills? Journal of Financial Economics 129(3)",
+     "url": "https://doi.org/10.1016/j.jfineco.2018.06.004"
+    },
+    {
+     "t": "Markowitz (1952): Portfolio Selection. Journal of Finance 7(1)",
+     "url": "https://doi.org/10.2307/2975974"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "kosten",
+   "title": "Niedrige Kosten schlagen die meisten Fondsmanager",
+   "level": "stark",
+   "claim": "Vor Kosten erzielen aktive Anleger zusammen genau die Marktrendite, nach Kosten weniger. In Europa lagen über zehn Jahre mehr als 95 % der aktiven Aktienfonds hinter ihrem Vergleichsindex (SPIVA, Ende 2025), und kaum ein Fonds schlägt den Markt verlässlich.",
+   "forYou": "Breite Index-ETFs mit laufenden Kosten um 0,1–0,2 % pro Jahr. Ein Fonds mit 1,5 % Kosten kostet bei einer Einmalanlage über 30 Jahre fast ein Drittel des Endvermögens.",
+   "sources": [
+    {
+     "t": "Sharpe (1991): The Arithmetic of Active Management. Financial Analysts Journal 47(1)",
+     "url": "https://doi.org/10.2469/faj.v47.n1.7"
+    },
+    {
+     "t": "S&P Dow Jones Indices: SPIVA Europe Year-End 2025",
+     "url": "https://www.spglobal.com/spdji/en/spiva/article/spiva-europe-year-end-2025/"
+    },
+    {
+     "t": "Fama & French (2010): Luck versus Skill in the Cross-Section of Mutual Fund Returns. Journal of Finance 65(5)",
+     "url": "https://doi.org/10.1111/j.1540-6261.2010.01598.x"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "praemie",
+   "title": "Aktien bringen langfristig am meisten – mit großen Rückschlägen",
+   "level": "stark",
+   "claim": "Weltweit brachten Aktien seit 1900 nach Inflation rund 5 % pro Jahr, Anleihen knapp 2 %, kurzfristige Geldanlagen knapp 1 %. Auch seit 2000 lag der Vorsprung der Aktien vor dem Geldmarkt bei rund 4 % pro Jahr. Dafür fielen Welt-Aktien zwischenzeitlich um rund die Hälfte (2007–2009).",
+   "forYou": "Für Geld, das Sie zehn Jahre und länger nicht brauchen, sind Aktien die wichtigste Renditequelle. Planen Sie so, dass Sie bei −50 % nicht verkaufen müssen.",
+   "sources": [
+    {
+     "t": "Dimson, Marsh & Staunton: UBS Global Investment Returns Yearbook 2026",
+     "url": "https://www.ubs.com/global/en/media/display-page-ndp/en-20260303-global-investment-returns-yearbook-2026.html"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "langfrist",
+   "title": "Auch lange Zeiträume sind nicht risikolos",
+   "level": "stark",
+   "claim": "Daten aus 39 Industrieländern von 1841 bis 2019: Selbst über 30 Jahre lag die Wahrscheinlichkeit, mit einem breit gestreuten Aktiendepot nach Inflation Geld zu verlieren, bei rund 12 %.",
+   "forYou": "Weltweit statt nur in einem Land oder einer Region anlegen und eine sichere Reserve halten – „Aktien gewinnen auf lange Sicht immer“ stimmt so nicht.",
+   "sources": [
+    {
+     "t": "Anarkulova, Cederburg & O'Doherty (2022): Stocks for the long run? Evidence from a broad sample of developed markets. Journal of Financial Economics 143(1)",
+     "url": "https://doi.org/10.1016/j.jfineco.2021.06.040"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "timing",
+   "title": "Den richtigen Zeitpunkt trifft niemand verlässlich",
+   "level": "stark",
+   "claim": "Kennzahlen, die die Börse vorhersagen sollen (Bewertung, Zinsen, Dividendenrendite), versagen in Echtzeit fast alle. Hohe Bewertungen wie ein hohes Shiller-KGV deuten zwar auf niedrigere Renditen der nächsten zehn Jahre, taugen aber nicht als Ein- und Ausstiegssignal.",
+   "forYou": "Feste Aufteilung halten und regelmäßig investieren, statt auf den „richtigen Moment“ zu warten.",
+   "sources": [
+    {
+     "t": "Welch & Goyal (2008): A Comprehensive Look at the Empirical Performance of Equity Premium Prediction. Review of Financial Studies 21(4)",
+     "url": "https://doi.org/10.1093/rfs/hhm014"
+    },
+    {
+     "t": "Campbell & Shiller (1998): Valuation Ratios and the Long-Run Stock Market Outlook. Journal of Portfolio Management 24(2)",
+     "url": "https://doi.org/10.3905/jpm.24.2.11"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "handeln",
+   "title": "Häufiges Handeln kostet Rendite",
+   "level": "stark",
+   "claim": "Die 20 % der Privatanleger, die am meisten handelten, erzielten 11,4 % pro Jahr, der Markt 17,9 %. Unter Daytradern in Taiwan war weniger als 1 % verlässlich profitabel; in Brasilien verloren 97 % derer, die mehr als 300 Tage durchhielten, Geld (Arbeitspapier).",
+   "forYou": "Trading-Spielgeld klar vom Langfrist-Vermögen trennen (zum Beispiel höchstens 5–10 %). Das Langfrist-Depot einmal im Jahr prüfen, nicht täglich.",
+   "sources": [
+    {
+     "t": "Barber & Odean (2000): Trading Is Hazardous to Your Wealth. Journal of Finance 55(2)",
+     "url": "https://doi.org/10.1111/0022-1082.00226"
+    },
+    {
+     "t": "Barber, Lee, Liu & Odean (2014): The cross-section of speculator skill: Evidence from day trading. Journal of Financial Markets 18",
+     "url": "https://doi.org/10.1016/j.finmar.2013.05.006"
+    },
+    {
+     "t": "Chague, De-Losso & Giovannetti (2019): Day Trading for a Living? Arbeitspapier, SSRN",
+     "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3423101"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "verhalten",
+   "title": "Wie viel kostet schlechtes Timing der Anleger?",
+   "level": "umstritten",
+   "claim": "Morningstar misst seit Jahren, dass Fondsanleger durch Kaufen und Verkaufen zur falschen Zeit rund 1,2 Prozentpunkte pro Jahr verlieren. Eine Studie im Financial Analysts Journal (2026) hält das für stark überzeichnet: Mit denselben Daten koste schlechtes Timing nur rund 0,1 % pro Jahr.",
+   "forYou": "Wie groß der Schaden ist, ist umstritten – dass Verkaufen im Kurssturz schadet, nicht. Automatische Sparraten und ein fester Plan schützen davor.",
+   "sources": [
+    {
+     "t": "Morningstar: Mind the Gap 2025 (Anlegerrendite gegen Fondsrendite)",
+     "url": "https://www.morningstar.com/podcasts/investing-insights/investors-still-need-mind-gap-their-funds-returns"
+    },
+    {
+     "t": "Fulkerson, Jordan, Riley & Yan (2026): Bad Timing Does Not Cost Investors 15% of Their Funds' Returns. Financial Analysts Journal 82(3)",
+     "url": "https://doi.org/10.1080/0015198X.2026.2657253"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "heimat",
+   "title": "Weltweit statt Heimatmarkt",
+   "level": "stark",
+   "claim": "Anleger halten weit mehr Aktien ihres eigenen Landes, als es dessen Anteil am Weltmarkt entspricht – ohne Belohnung durch höhere Rendite. Österreich ist nur ein kleiner Bruchteil des Weltmarkts.",
+   "forYou": "Aktien nach Weltmarktgewicht, Industrie- und Schwellenländer zusammen.",
+   "sources": [
+    {
+     "t": "French & Poterba (1991): Investor Diversification and International Equity Markets. American Economic Review 81(2)",
+     "url": "https://www.jstor.org/stable/2006858"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "waehrung",
+   "title": "Anleihen gegen den Euro absichern, Aktien nicht unbedingt",
+   "level": "stark",
+   "claim": "Bei Anleihen macht der Wechselkurs einen großen Teil der Schwankung aus – Absicherung senkt sie deutlich. Bei Aktien ist der Nutzen kleiner; Währungen wie der US-Dollar steigen in Krisen oft und dämpfen dann sogar Verluste.",
+   "forYou": "Sicherer Teil in Euro oder auf Euro abgesichert; Aktien-ETFs dürfen ungesichert sein.",
+   "sources": [
+    {
+     "t": "Campbell, Serfaty-de Medeiros & Viceira (2010): Global Currency Hedging. Journal of Finance 65(1)",
+     "url": "https://doi.org/10.1111/j.1540-6261.2009.01524.x"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "faktoren",
+   "title": "Faktor-Prämien: belegt, aber kleiner und unbeständig",
+   "level": "mittel",
+   "claim": "Günstige Aktien (Value), kleine Firmen, Momentum, Profitabilität und Qualität brachten historisch Mehrrenditen, und viele lassen sich wiederholen. Nach ihrer Veröffentlichung schrumpften solche Effekte aber um rund die Hälfte, und Value lag ab 2007 über ein Jahrzehnt zurück.",
+   "forYou": "Optional, höchstens 10–20 % der Aktien und nur, wenn Sie auch zehn schwache Jahre durchhalten. Für den Kern reicht der Weltmarkt.",
+   "sources": [
+    {
+     "t": "Fama & French (1993): Common risk factors in the returns on stocks and bonds. Journal of Financial Economics 33(1)",
+     "url": "https://doi.org/10.1016/0304-405X(93)90023-5"
+    },
+    {
+     "t": "Fama & French (2015): A five-factor asset pricing model. Journal of Financial Economics 116(1)",
+     "url": "https://doi.org/10.1016/j.jfineco.2014.10.010"
+    },
+    {
+     "t": "McLean & Pontiff (2016): Does Academic Research Destroy Stock Return Predictability? Journal of Finance 71(1)",
+     "url": "https://doi.org/10.1111/jofi.12365"
+    },
+    {
+     "t": "Fama & French (2021): The Value Premium. Review of Asset Pricing Studies 11(1)",
+     "url": "https://doi.org/10.1093/rapstu/raaa021"
+    },
+    {
+     "t": "Jensen, Kelly & Pedersen (2023): Is There a Replication Crisis in Finance? Journal of Finance 78(5)",
+     "url": "https://doi.org/10.1111/jofi.13249"
+    },
+    {
+     "t": "Harvey, Liu & Zhu (2016): … and the Cross-Section of Expected Returns. Review of Financial Studies 29(1)",
+     "url": "https://doi.org/10.1093/rfs/hhv059"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "ausgleich",
+   "title": "Einmal im Jahr ausgleichen reicht",
+   "level": "mittel",
+   "claim": "Ausgleichen (Rebalancing) dient der Risikokontrolle, nicht der Rendite. Ob monatlich, vierteljährlich oder jährlich, macht kaum Unterschied – häufiger kostet nur mehr. Bewährt: einmal im Jahr prüfen und ausgleichen, wenn ein Teil mehr als 5 Prozentpunkte vom Ziel abweicht, am besten mit neuen Einzahlungen statt Verkäufen.",
+   "forYou": "Der Rebalancing-Helfer weiter unten sagt, wohin die nächste Einzahlung fließen soll.",
+   "sources": [
+    {
+     "t": "Jaconetti, Kinniry & Zilbering (Vanguard): Best Practices for Portfolio Rebalancing",
+     "url": "https://aaii.com/journal/article/best-practices-for-portfolio-rebalancing"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "lebenszyklus",
+   "title": "Mehr Aktien in jungen Jahren?",
+   "level": "umstritten",
+   "claim": "Klassische Lebenszyklus-Modelle: Künftiges Arbeitseinkommen wirkt wie eine sichere Anleihe – wer jung ist und ein stabiles Einkommen hat, kann mehr Aktien tragen, mit dem Alter weniger. Ein neues, noch nicht begutachtetes Arbeitspapier hält dagegen ein Leben lang 100 % weltweit gestreute Aktien für besser.",
+   "forYou": "Ihr Profil berücksichtigt Horizont und Einkommenssicherheit. Wird Ihr Horizont kürzer, sinkt die empfohlene Aktienquote von selbst.",
+   "sources": [
+    {
+     "t": "Cocco, Gomes & Maenhout (2005): Consumption and Portfolio Choice over the Life Cycle. Review of Financial Studies 18(2)",
+     "url": "https://doi.org/10.1093/rfs/hhi017"
+    },
+    {
+     "t": "Anarkulova, Cederburg & O'Doherty: Beyond the Status Quo – A Critical Assessment of Lifecycle Investment Advice. Arbeitspapier (AEA-Tagung 2025)",
+     "url": "https://www.aeaweb.org/conference/2025/program/paper/EFddaa8b"
+    }
+   ],
+   "checked": "2026-11-11"
+  },
+  {
+   "id": "reserve",
+   "title": "Erst die Reserve, dann investieren",
+   "level": "praxis",
+   "claim": "Eine Reserve von drei bis sechs Monatsausgaben (bei unsicherem Einkommen mehr) verhindert, dass Sie in einem Kurssturz verkaufen müssen. Tagesgeld ist bis 100.000 € je Bank und Person gesetzlich gesichert.",
+   "forYou": "Notgroschen auf Tagesgeld zählt nicht zum Depot – er kommt zuerst.",
+   "sources": [
+    {
+     "t": "Einlagensicherung Austria: 100.000 € je Bank und Person",
+     "url": "https://www.einlagensicherung.at/"
+    }
+   ],
+   "checked": "2026-11-11"
+  }
+ ],
+ "tax": [
+  {
+   "t": "Steuersatz",
+   "text": "27,5 % Kapitalertragsteuer (KESt) auf Kursgewinne, Dividenden und Fondserträge; 25 % auf Zinsen von Sparbuch und Girokonto.",
+   "sources": [
+    {
+     "t": "BMF: Allgemeine Informationen zu Einkünften aus Kapitalvermögen",
+     "url": "https://www.bmf.gv.at/themen/steuern/sparen-veranlagen/information-zu-einkuenften-aus-kapitalvermoegen.html"
+    }
+   ]
+  },
+  {
+   "t": "Meldefonds",
+   "text": "Bei Meldefonds werden jedes Jahr die ausschüttungsgleichen Erträge versteuert – auch bei thesaurierenden ETFs. Bereits versteuerte Erträge erhöhen die Anschaffungskosten, damit nichts doppelt besteuert wird. Den Status zeigt die OeKB nach Eingabe der ISIN. Nicht-Meldefonds werden pauschal und meist deutlich höher besteuert.",
+   "sources": [
+    {
+     "t": "OeKB: Fondsdaten und Meldefonds-Status (ISIN eingeben)",
+     "url": "https://my.oekb.at/"
+    }
+   ]
+  },
+  {
+   "t": "Ausländischer Broker",
+   "text": "Bei ausländischen Brokern (zum Beispiel eToro) wird keine KESt abgezogen: Erträge selbst in der Steuererklärung angeben (Beilage E1kv). Österreichische Banken und Broker ziehen die KESt automatisch ab („steuereinfach“).",
+   "sources": [
+    {
+     "t": "BMF: Allgemeine Informationen zu Einkünften aus Kapitalvermögen",
+     "url": "https://www.bmf.gv.at/themen/steuern/sparen-veranlagen/information-zu-einkuenften-aus-kapitalvermoegen.html"
+    }
+   ]
+  },
+  {
+   "t": "Verluste",
+   "text": "Verluste lassen sich nur im selben Jahr mit Kursgewinnen, Dividenden und Fondserträgen ausgleichen – nicht mit Sparbuchzinsen und ohne Vortrag in spätere Jahre. Über mehrere Banken hinweg nur über die Steuererklärung.",
+   "sources": [
+    {
+     "t": "BMF: Allgemeine Informationen zu Einkünften aus Kapitalvermögen",
+     "url": "https://www.bmf.gv.at/themen/steuern/sparen-veranlagen/information-zu-einkuenften-aus-kapitalvermoegen.html"
+    }
+   ]
+  },
+  {
+   "t": "Behaltefrist",
+   "text": "Derzeit gibt es keine: Kursgewinne sind unabhängig von der Haltedauer steuerpflichtig (die frühere Spekulationsfrist fiel 2012 weg). Eine steuerfreie Behaltefrist – im Gespräch sind zehn Jahre – wird politisch diskutiert, ist aber nicht beschlossen (Stand November 2026).",
+   "sources": [
+    {
+     "t": "AK, 4. 9. 2026: Debatte um eine neue Behaltefrist (nicht beschlossen)",
+     "url": "https://www.ots.at/presseaussendung/OTS_20260904_OTS0030/steuergeschenk-fuer-die-reichsten-ak-praesident-andreas-stangl-warnt-vor-neuer-behaltefrist-bei-wertpapieren"
+    }
+   ]
+  },
+  {
+   "t": "Gebühren",
+   "text": "Kauf- und Depotgebühren mindern die Steuer im Privatvermögen nicht.",
+   "sources": [
+    {
+     "t": "BMF: Allgemeine Informationen zu Einkünften aus Kapitalvermögen",
+     "url": "https://www.bmf.gv.at/themen/steuern/sparen-veranlagen/information-zu-einkuenften-aus-kapitalvermoegen.html"
+    }
+   ]
+  }
+ ],
+ "changes": [
+  {
+   "date": "2026-11-11",
+   "text": "Erste Fassung: Forschungsstand, Steuerlage Österreich und Beispiel-ETFs geprüft. Neu bewertet: die Morningstar-Zahl zum Anleger-Timing ist seit einer Studie von 2026 umstritten; Vanguard FTSE All-World kostet seit 28. 7. 2026 nur noch 0,14 %."
+  }
+ ]
+}

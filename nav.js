@@ -3,7 +3,7 @@
   const tabs = [...document.querySelectorAll(".tabs .tab")];
   // Sieben Bereiche – am Handy alle direkt in der Leiste unten
   const MAIN = tabs.map(t => t.dataset.tab);
-  const SHORT = { home: "Start", portfolio: "Depot", aktie: "Aktie", markt: "Markt", tools: "Tools", ideas: "Ideen", bots: "Bots" };
+  const SHORT = { home: "Start", portfolio: "Depot", vermoegen: "Vermögen", aktie: "Aktie", markt: "Markt", tools: "Tools", ideas: "Ideen", bots: "Bots" };
   const icon = id => { const t = $(`tab-${id}`); const svg = t && t.querySelector("svg"); return svg ? svg.outerHTML : ""; };
   const go = g => window.DTD.openGroup(g);
 

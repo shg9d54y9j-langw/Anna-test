@@ -1,5 +1,5 @@
 // ---------- Sparplan-Rechner: monatlich in einen ETF sparen – Zinseszins, Kosten, KESt (Österreich), Inflation, Ziel ----------
-// Steht unter Werkzeuge → „Sparplan“ (#sparplan). Die Eingaben bleiben nur in diesem Browser (localStorage dtd-sparplan).
+// Steht im Bereich Vermögen → „Sparplan“ (#sparplan). Die Eingaben bleiben nur in diesem Browser (localStorage dtd-sparplan).
 // Gerechnet wird Monat für Monat: Rate am Monatsanfang (abzüglich Gebühr), Rendite nach laufenden Kosten (TER); an jedem
 // Jahresende 27,5 % KESt auf die Dividenden bzw. ausschüttungsgleichen Erträge (Meldefonds; der Rest bleibt angelegt), beim
 // Verkauf 27,5 % auf den übrigen Kursgewinn. Gebühren mindern die Steuer im Privatvermögen nicht (§ 27a Abs. 4 Z 2 EStG).
@@ -213,6 +213,7 @@
 
   function update() {
     const o = $("spOut");
+    window.dispatchEvent(new Event("dtd:sparplan"));   // der Bereich Vermögen rechnet seine Bandbreite mit denselben Beträgen
     if (!o) return;
     o.innerHTML = outHtml();
     document.querySelectorAll("#sparplan [data-sp-ret]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.spRet === P.ret)));
@@ -232,8 +233,20 @@
   });
   document.addEventListener("toggle", e => { if (e.target.classList && e.target.classList.contains("sp-more")) moreOpen = e.target.open; }, true);
   let queued = false;
-  window.addEventListener("resize", () => { if (queued || !$("spChart")) return; queued = true; requestAnimationFrame(() => { queued = false; if (!$("tools").hidden) draw(); }); });
+  window.addEventListener("resize", () => { if (queued || !$("spChart")) return; queued = true; requestAnimationFrame(() => { queued = false; const v = $("spChart") && $("spChart").closest(".view"); if (v && !v.hidden) draw(); }); });
   window.DTD.sparplanCard = card;
+  window.DTD.sparplanGet = () => ({ ...P });
+  // Werte von außen setzen (z. B. erwartete Rendite des Musterportfolios) – begrenzt wie die Eingaben
+  window.DTD.sparplanSet = v => {
+    for (const [k, id, , lo, hi] of F) {
+      if (!(k in v) || !fin(v[k])) continue;
+      P[k] = Math.min(hi, Math.max(lo, v[k]));
+      if ($(id)) $(id).value = String(P[k]);
+    }
+    P.years = Math.round(P.years);
+    store.set(KEY, P);
+    update();
+  };
   window.DTD.sparplanDraw = draw;
   window.DTD.sparplanCalc = p => { const s = simulate({ ...read(), ...p }); return { last: s[s.length - 1], net: net(s[s.length - 1]) }; };
 })();

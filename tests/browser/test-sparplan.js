@@ -1,5 +1,5 @@
 // Browser-Test (Playwright) – läuft in der Rechenkontrolle über tests/browser/run.sh
-// Sparplan-Rechner (Werkzeuge → #sparplan), Zahlen unabhängig nachgerechnet: Endwert mit der Rentenformel (Rate am Monatsanfang),
+// Sparplan-Rechner (Vermögen → #sparplan), Zahlen unabhängig nachgerechnet: Endwert mit der Rentenformel (Rate am Monatsanfang),
 // KESt beim Verkauf, Kaufkraft nach Inflation; Ziel: nötige Rate und Monat, in dem es erreicht ist; jährliche KESt auf
 // Dividenden (Ein-Jahres-Beispiel von Hand), Kosten der TER mit entgangenem Zinseszins, jährliche Erhöhung der Rate, Warnung bei
 // hoher Gebühr, Vorgaben für die Rendite, Diagramm mit Fadenkreuz und Pfeiltasten, Tabelle, gespeicherte Eingaben, Handy-Breite.
@@ -22,7 +22,7 @@ const MONTHS = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', '
     await p.clock.setFixedTime(new Date('2026-11-11T10:00:00Z'));
     p.on('pageerror', e => errs.push(e.message));
     await p.route('**/stock-data/stocks.json*', r => r.fulfill({ status: 200, contentType: 'application/json', body: stocks }));
-    await p.route(/tradingview|finnhub\.io|news-data|fund-data|note-|swing\.json|live-data|fx-data/, r => r.abort());
+    await p.route(/tradingview|finnhub\.io|news-data|fund-data|note-|swing\.json|live-data|fx-data|wealth-data/, r => r.abort());
     await p.goto(`http://localhost:${port}/#sparplan`, { waitUntil: 'load' });
     await p.waitForSelector('#sparplan #spOut .kpi', { timeout: 15000 });
     return p;
@@ -38,9 +38,9 @@ const MONTHS = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', '
   }
 
   const p = await open();
-  check(await p.$eval('#tools', e => !e.hidden), 'Sprung #sparplan öffnet die Werkzeuge');
+  check(await p.$eval('#vermoegen', e => !e.hidden), 'Sprung #sparplan öffnet den Bereich Vermögen');
   await p.waitForTimeout(300);
-  check((await p.$$eval('#tools > .subnav button', bs => bs.map(x => x.textContent))).includes('Sparplan'), 'Knopf „Sparplan“ in der Leiste „Springen zu“');
+  check((await p.$$eval('#vermoegen > .subnav button', bs => bs.map(x => x.textContent))).includes('Sparplan'), 'Knopf „Sparplan“ in der Leiste „Springen zu“');
 
   // 1) Rentenformel: 100 € am Monatsanfang, 6 % im Jahr, 10 Jahre, ohne Kosten und Dividenden
   await set(p, { start: 0, rate: 100, years: 10, ret: 6, goal: '', ter: 0, fee: 0, dyn: 0, infl: 2, div: 0 });

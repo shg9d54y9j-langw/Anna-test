@@ -24,7 +24,7 @@ const fx = n => (FX[n] ? path.join(__dirname, 'fixtures', FX[n]) : path.join(pro
   console.log('  Start:', JSON.stringify(await topOrder()));
   await p.click('[data-layout-open]');
   await p.waitForSelector('#layBody');
-  check(await p.$$eval('#layBody input[data-lay="view"]', l => l.length) === 6, 'alle 5 Bereiche außer der Übersicht und der Knopf „Bots & Copy-Trading“ wählbar');
+  check(await p.$$eval('#layBody input[data-lay="view"]', l => l.length) === 7, 'alle 6 Bereiche außer der Übersicht und der Knopf „Bots & Copy-Trading“ wählbar');
   try { await (await p.$('.drawer, #layBody')).screenshot({ path: `${out}/layout-drawer.png` }).catch(() => null); } catch { /* Bildschirmfoto nur zur Ansicht */ }
   // Knopf „Bots & Copy-Trading“ ausblenden
   await p.click('#layBody input[data-lay="view"][data-id="bots"]');

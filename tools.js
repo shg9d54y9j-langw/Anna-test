@@ -1,4 +1,4 @@
-// ---------- Werkzeuge: Screener, Quartalszahlen-Kalender, Insider-Käufe, Kursalarme (Sparplan-Rechner: sparplan.js) ----------
+// ---------- Werkzeuge: Screener, Quartalszahlen-Kalender, Insider-Käufe, Kursalarme ----------
 // (Der Steuer-Schätzer steht im Portfolio unter dem Journal, aus dem er rechnet.)
 // Die Funktionen bekannter Börsen-Werkzeuge, gebaut aus den Daten dieser Seite: stocks.json (eToro-Kurse, Analysten und
 // Quartalszahlen von Finnhub, 2× pro Börsentag), fund.json (Kennzahlen, Branche, Insider-Geschäfte – nachts von Finnhub),
@@ -286,10 +286,9 @@
     const cmpOn = !!(window.DTD.compare && window.DTD.compare.list().length);   // gewählte Aktien oben, sonst die Erklärung weiter unten
     host.innerHTML = (stocks ? "" : `<article class="card"><p class="muted">${loading ? "Lade die Aktien-Daten …" : "Noch keine Aktien-Daten vorhanden."}</p></article>`)
       + (cmpOn ? window.DTD.compare.card() : "") + screenerCard() + (window.DTD.noteTrackCard ? window.DTD.noteTrackCard() : "") + (stocks && window.DTD.sectorsCard ? window.DTD.sectorsCard() : "")
-      + calendarCard() + insiderCard() + alarmCard() + (window.DTD.sparplanCard ? window.DTD.sparplanCard() : "") + (window.DTD.compare && !cmpOn ? window.DTD.compare.card() : "") + moreCard() + (window.DTD.lexiconCard ? window.DTD.lexiconCard() : "");
+      + calendarCard() + insiderCard() + alarmCard() + (window.DTD.compare && !cmpOn ? window.DTD.compare.card() : "") + moreCard() + (window.DTD.lexiconCard ? window.DTD.lexiconCard() : "");
     if (window.DTD.compare) window.DTD.compare.charts();
     if (window.DTD.noteTrackDraw) window.DTD.noteTrackDraw();
-    if (window.DTD.sparplanDraw) window.DTD.sparplanDraw();
     for (const [id, v] of Object.entries(kept)) if ($(id)) $(id).value = v;
     if (focusId && $(focusId)) $(focusId).focus({ preventScroll: true });
     if ($("alSym") && window.DTD.attachSuggest) window.DTD.attachSuggest($("alSym"), { source: text => (stocks && text ? window.DTD.matchStocks(stocks.items, text, 8) : []), onPick: () => { if ($("alPrice")) $("alPrice").focus(); } });

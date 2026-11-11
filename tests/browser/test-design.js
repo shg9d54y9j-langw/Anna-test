@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const stocks = fs.readFileSync(path.join(__dirname, 'fixtures', 'stocks.json'), 'utf8');
-const ORDER = 'home,portfolio,aktie,markt,tools,ideas';
+const ORDER = 'home,portfolio,vermoegen,aktie,markt,tools,ideas';
 
 (async () => {
   const [port, out] = process.argv.slice(2);
@@ -45,7 +45,7 @@ const ORDER = 'home,portfolio,aktie,markt,tools,ideas';
   await d.focus('#tab-home'); await d.keyboard.press('ArrowDown'); await d.waitForTimeout(300);
   await d.keyboard.press('ArrowDown'); await d.waitForTimeout(400);
   const now = await d.evaluate(() => [location.hash, document.activeElement.id]);
-  check(now[0] === '#aktie' && now[1] === 'tab-aktie', `Pfeiltaste nach unten folgt der Seitenleiste (${now.join(' ')})`);
+  check(now[0] === '#vermoegen' && now[1] === 'tab-vermoegen', `Pfeiltaste nach unten folgt der Seitenleiste (${now.join(' ')})`);
   const bar = await d.evaluate(() => { const a = document.querySelector('.appbar'); return [getComputedStyle(a).position, Math.round(a.getBoundingClientRect().height)]; });
   check(bar[0] === 'sticky' && bar[1] <= 64, `Kopfzeile bleibt oben (${bar.join(', ')} px)`);
   for (const v of ['home', 'portfolio', 'aktie', 'tools']) { await d.goto(`http://localhost:${port}/#${v}`); await d.waitForTimeout(600); check(await wide(d), `Computer ${v}: nichts zu breit`); }
@@ -72,6 +72,8 @@ const ORDER = 'home,portfolio,aktie,markt,tools,ideas';
   check(h0 < 90 && h1 > h0 * 1.5, `Einleitung erst drei Zeilen (${Math.round(h0)} px), angetippt ganz (${Math.round(h1)} px)`);
   const btns = await m.$$eval('.bottomnav button', l => l.map(b => b.dataset.go || 'mehr').join());
   check(btns === ORDER, `Leiste unten mit allen Hauptbereichen (${btns})`);
+  const fit = await m.$$eval('.bottomnav button span', l => l.filter(s => s.scrollWidth > s.clientWidth + 1 || s.getBoundingClientRect().right > innerWidth).map(s => s.textContent));
+  check(!fit.length, `Leiste unten: jede Beschriftung passt (${fit.join(', ') || 'alle'})`);
   // Ideen: Umschaltleiste, der zuletzt benutzte Teil bleibt gemerkt
   await m.click('.bottomnav [data-go="ideas"]'); await m.waitForTimeout(500);
   const vs = await m.evaluate(() => { const v = document.querySelector('#views > .view:not([hidden])'); return { id: v.id, n: v.querySelectorAll(':scope > .viewswitch [data-view]').length, sel: (v.querySelector(':scope > .viewswitch [aria-selected="true"]') || {}).dataset?.view }; });

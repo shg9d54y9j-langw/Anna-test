@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
   await p.waitForTimeout(1500);
   const off = await p.evaluate(() => ({ tabs: document.querySelectorAll('.tabs .tab').length, bar: !document.querySelector('.offline-bar').hidden, bg: getComputedStyle(document.body).backgroundColor, js: typeof window.DTD.openStock, controlled: !!navigator.serviceWorker.controller }));
   console.log(JSON.stringify({ off, errs: errs.slice(0, 5) }));
-  const ok = off.tabs === 6 && off.bar && off.controlled && off.js === 'function' && !errs.length;
+  const ok = off.tabs === 7 && off.bar && off.controlled && off.js === 'function' && !errs.length;
   console.log(ok ? 'ALLES OK' : 'FEHLER: ohne Netz nicht alles da');
   process.exitCode = ok ? 0 : 1;
   await b.close();

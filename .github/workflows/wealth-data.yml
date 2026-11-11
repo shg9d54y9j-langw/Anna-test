@@ -1,0 +1,72 @@
+name: Zinsen und Inflation
+
+# Für den Bereich „Vermögen“: EZB-Einlagezins, €STR, Inflation (Euroraum, Österreich) und Renditen von Staatsanleihen
+# bester Bonität aus dem EZB Data Portal – an jedem Werktag nach den Veröffentlichungen der EZB. Kein Schlüssel nötig;
+# veröffentlicht wird nur eine kleine aufbereitete Datei auf dem Zweig wealth-data.
+on:
+  schedule:
+    - cron: "13 16 * * 1-5"   # Mo–Fr 16:13 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: wealth-data
+  cancel-in-progress: false
+
+jobs:
+  # Holt die Reihen von der EZB und prüft sie – darf im Repository nichts ändern.
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Zinsen und Inflation von der EZB holen
+        run: MACRO_OUT="$RUNNER_TEMP/macro.json" node scripts/wealth-data.mjs
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macro
+          path: ${{ runner.temp }}/macro.json
+          retention-days: 1
+          if-no-files-found: error
+
+  # Veröffentlicht die Datei auf dem Zweig wealth-data.
+  save:
+    needs: fetch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: macro
+          path: incoming
+
+      - name: Zinsen und Inflation veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir out && cd out
+          cp ../incoming/macro.json .
+          # shellcheck disable=SC2016
+          node -e '
+            const d = JSON.parse(require("fs").readFileSync("macro.json", "utf8")), s = d.series || {};
+            if (!s.deposit || !s.hicpEA || !s.y5) { console.log("::error::Zinsen und Inflation unvollständig – nichts veröffentlicht"); process.exit(1); }
+            console.log(Object.keys(s).join(", "));
+          '
+          git init -q -b wealth-data
+          git add macro.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Zinsen und Inflation $(date -u +%FT%TZ)"
+          for i in 1 2 3 4 5; do
+            git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:wealth-data && break
+            [ "$i" = 5 ] && exit 1
+            sleep $((i * 4))
+          done
