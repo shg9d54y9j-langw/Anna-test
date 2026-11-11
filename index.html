@@ -29,6 +29,9 @@
       <span class="wordmark">Rojko<b>Money</b></span>
     </div>
     <div class="sessions" id="sessions" aria-label="Börsenzeiten"></div>
+    <!-- Eigener Knopf, getrennt von den Hauptbereichen: Trend-Bot, Copy-Trading und Tagesempfehlung -->
+    <button type="button" class="bots-btn" id="botsBtn" aria-label="Bots &amp; Copy-Trading: Trend-Bot, Copy-Trading und Tagesempfehlung" title="Trend-Bot, Copy-Trading und Tagesempfehlung">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 3v5M8.5 13h.01M15.5 13h.01M9 17h6M2 13v3M22 13v3"/></svg><span class="bb-long">Bots &amp; Copy-Trading</span><span class="bb-short" aria-hidden="true">Bots</span></button>
   </header>
 
   <div class="ticker" id="tickerTape"></div>
@@ -46,8 +49,6 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5a4 4 0 0 0-5 5L4 16v4h4l5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/></svg><span>Werkzeuge</span> <span class="new" id="toolsBadge" hidden></span></button>
     <button class="tab" role="tab" id="tab-ideas" aria-controls="hot" data-tab="ideas">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"/></svg><span>Ideen</span></button>
-    <button class="tab" role="tab" id="tab-bots" aria-controls="bot" data-tab="bots">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 3v5M8.5 13h.01M15.5 13h.01M9 17h6M2 13v3M22 13v3"/></svg><span>Bots</span></button>
   </nav>
 
   <main id="views">
@@ -58,7 +59,7 @@
           <p class="eyebrow" id="ovDate"></p>
           <h1 id="ovGreeting">Übersicht</h1>
         </div>
-        <p class="lead">Hinweise zu Ihren Aktien, Depot, Merkliste, neue Signale, Termine und die Marktlage – darunter Copy-Trading und Ihr Handelstag.</p>
+        <p class="lead">Hinweise zu Ihren Aktien, Depot, Merkliste, neue Signale, Termine und die Marktlage – darunter Ihr Handelstag. Trend-Bot, Copy-Trading und Tagesempfehlung stehen oben hinter dem eigenen Knopf „Bots &amp; Copy-Trading“.</p>
       </div>
       <div id="ovSmart" class="stack"></div>
       <div class="dash" id="ovDash">
@@ -67,14 +68,6 @@
           <h2 class="card-title">Börsen</h2>
           <div id="ovSessions" class="session-list"></div>
           <p class="hint">Feiertage sind nicht berücksichtigt.</p>
-        </article>
-        <article class="card" data-home="reco">
-          <h2 class="card-title">Tagesempfehlung</h2>
-          <div id="ovReco"><p class="muted">Lade …</p></div>
-        </article>
-        <article class="card" data-home="live">
-          <h2 class="card-title">Live-Wächter</h2>
-          <div id="ovLive"><p class="muted">Lade …</p></div>
         </article>
         <article class="card" data-home="journal">
           <h2 class="card-title">Mein Handelstag</h2>

@@ -1320,3 +1320,18 @@ table.risk-t td.wrap { min-width: 220px; white-space: normal; line-height: 1.45;
 p.sp-goal { display: block; }
 #spChart { margin-bottom: 4px; }
 .sp-t td:first-child .muted { font-size: 12.5px; }
+
+/* ---------- Eigener Knopf „Bots & Copy-Trading“ in der Kopfzeile (getrennt von den Hauptbereichen) ---------- */
+.bots-btn { display: inline-flex; align-items: center; gap: 7px; flex: none; height: 34px; padding: 0 13px 0 10px; margin-left: 8px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--text-2); font: 600 12.5px var(--font); white-space: nowrap; cursor: pointer; transition: color .15s, background .15s, border-color .15s; }
+.bots-btn svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bots-btn:hover { color: var(--text); border-color: var(--line-3); }
+.bots-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bots-btn[aria-current="page"] { color: var(--accent-2); background: var(--accent-bg); border-color: var(--accent-line); }
+.bots-btn[hidden] { display: none; }
+.bots-btn .bb-short { display: none; }
+.bots-btn .count { min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--down); color: #fff; font: 600 11px/18px var(--font); text-align: center; }
+@media (max-width: 1240px) { .bots-btn .bb-long { display: none; } .bots-btn .bb-short { display: inline; } }
+@media (max-width: 760px) {
+  .appbar .sessions { flex: 1 1 200px; width: auto; }
+  .appbar .bots-btn { order: 3; margin-left: 0; height: 30px; padding: 0 11px 0 9px; }
+}

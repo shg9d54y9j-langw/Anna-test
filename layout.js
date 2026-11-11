@@ -3,9 +3,10 @@
 // und „Alle Themen“; über Links (z. B. „Neu in RojkoMoney“) bleiben sie erreichbar. Die Übersicht lässt sich nicht ausblenden.
 (() => {
   const KEY = "dtd-layout";
-  const VIEWS = [...document.querySelectorAll(".tabs .tab")].map(t => ({ id: t.dataset.tab, label: (t.querySelector("span") || t).textContent.trim() }));
+  const VIEWS = [...document.querySelectorAll(".tabs .tab")].map(t => ({ id: t.dataset.tab, label: (t.querySelector("span") || t).textContent.trim() }))
+    .concat(document.getElementById("botsBtn") ? [{ id: "bots", label: "Bots & Copy-Trading (Knopf oben)" }] : []);
   const TOP = [["brief", "Heute wichtig (Tagesbriefing)"], ["neu", "Neu in RojkoMoney"], ["since", "Seit Ihrem letzten Besuch"], ["alerts", "Hinweise (smarte Alarme)"], ["depot", "Depot und Merkliste"], ["today", "Neu heute und Termine"]];
-  const DASH = [["market", "Marktlage"], ["sessions", "Börsen"], ["reco", "Tagesempfehlung (Copy-Trading)"], ["live", "Live-Wächter"], ["journal", "Mein Handelstag"], ["rules", "Tagesregeln"], ["quick", "Schnellzugriff"]];
+  const DASH = [["market", "Marktlage"], ["sessions", "Börsen"], ["journal", "Mein Handelstag"], ["rules", "Tagesregeln"], ["quick", "Schnellzugriff"]];
   const arr = a => (Array.isArray(a) ? a.filter(x => typeof x === "string") : []);
   // gespeicherte Reihenfolge, ergänzt um später hinzugekommene Karten
   const order = (saved, all) => { const ids = all.map(([k]) => k), s = arr(saved).filter(k => ids.includes(k)); const add = ids.filter(k => !s.includes(k)); return [...add.filter(k => k === "brief"), ...s, ...add.filter(k => k !== "brief")]; };
@@ -20,7 +21,7 @@
     const c = get(), hide = new Set(c.hide);
     for (const v of VIEWS) {
       const off = hide.has(v.id);
-      const tab = document.getElementById(`tab-${v.id}`);
+      const tab = document.getElementById(v.id === "bots" ? "botsBtn" : `tab-${v.id}`);
       if (tab) tab.hidden = off;
       document.querySelectorAll(`.bottomnav [data-go="${v.id}"], .navsheet [data-go="${v.id}"]`).forEach(b => { b.hidden = off; });
     }

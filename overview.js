@@ -48,6 +48,7 @@
   function renderReco() {
     const d = window.DTD.ranking;
     const box = $("ovReco");
+    if (!box) return;   // Startseiten-Karte entfallen – die Tagesempfehlung steht unter „Bots & Copy-Trading“
     if (!d) { box.innerHTML = `<p class="muted">Noch keine Auswertung vorhanden.</p>${goto("daily", "Zur Tagesempfehlung")}`; return; }
     const cfg = d.config || {}, thr = cfg.threshold || 0.9;
     const rec = d.recommendation && okName(d.recommendation.userName) ? d.recommendation : null;
@@ -93,6 +94,7 @@
 
   function renderLive() {
     const l = window.DTD.live, box = $("ovLive");
+    if (!box) return;
     if (!l) { box.innerHTML = `<p class="muted">Der Live-Wächter läuft an Börsentagen alle 15 Minuten. Noch kein Stand vorhanden.</p>`; return; }
     const age = (Date.now() - new Date(l.updated)) / 6e4;
     const alerts = (l.alerts || []).filter(a => a && typeof a.text === "string");

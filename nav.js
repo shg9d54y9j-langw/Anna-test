@@ -74,7 +74,7 @@
     sections.forEach(s => io.observe(s));
   }
   function sync() {
-    const g = (tabs.find(t => t.getAttribute("aria-selected") === "true") || {}).dataset?.tab || "home";
+    const v = document.querySelector("#views > .view:not([hidden])"), g = (v && window.DTD.groupOf(v.id)) || "home";
     bar.querySelectorAll("[data-go]").forEach(b => { const on = b.dataset.go === g; b.classList.toggle("on", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
     requestAnimationFrame(() => buildSubnav(document.querySelector("#views > .view:not([hidden])")));
   }

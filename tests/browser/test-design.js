@@ -1,12 +1,12 @@
 // Browser-Test (Playwright) – läuft in der Rechenkontrolle über tests/browser/run.sh
-// Design „Präzision“ mit sieben Bereichen: Computer mit Seitenleiste (Reihenfolge, Pfeiltasten, Hervorhebung), Umschaltleiste in
+// Design „Präzision“ mit den Hauptbereichen (Bots & Copy-Trading über den eigenen Knopf oben): Computer mit Seitenleiste (Reihenfolge, Pfeiltasten, Hervorhebung), Umschaltleiste in
 // zusammengelegten Bereichen (merkt sich den Teil), Tablet mit Reitern oben, Handy mit allen sieben Bereichen in der Leiste unten
 // und gekürzter Einleitung, die sich antippen lässt; nirgends zu breit. node test-design.js <port> <ausgabe>
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const stocks = fs.readFileSync(path.join(__dirname, 'fixtures', 'stocks.json'), 'utf8');
-const ORDER = 'home,portfolio,aktie,markt,tools,ideas,bots';
+const ORDER = 'home,portfolio,aktie,markt,tools,ideas';
 
 (async () => {
   const [port, out] = process.argv.slice(2);
@@ -31,7 +31,15 @@ const ORDER = 'home,portfolio,aktie,markt,tools,ideas,bots';
       order: [...nav.querySelectorAll('.tab')].map(t => t.dataset.tab).join(), main: Math.round(document.querySelector('main').getBoundingClientRect().left) };
   });
   check(side.dir === 'column' && side.left === 0 && side.w > 200 && side.main >= side.w, `Seitenleiste links (${side.w} px), Inhalt daneben ab ${side.main} px`);
-  check(side.order === ORDER, `sieben Bereiche in der Seitenleiste: ${side.order}`);
+  check(side.order === ORDER, `Hauptbereiche in der Seitenleiste, ohne Bots: ${side.order}`);
+  // eigener Knopf „Bots & Copy-Trading“ in der Kopfzeile: öffnet Trend-Bot und Copy-Trading mit Tagesempfehlung
+  const bb = await d.evaluate(() => { const b = document.getElementById('botsBtn'); return { inBar: !!b.closest('.appbar'), text: b.innerText.trim(), label: b.getAttribute('aria-label') }; });
+  check(bb.inBar && bb.text === 'Bots & Copy-Trading' && /Tagesempfehlung/.test(bb.label), `Knopf oben in der Kopfzeile (${JSON.stringify(bb)})`);
+  await d.click('#botsBtn'); await d.waitForTimeout(500);
+  const bv = await d.evaluate(() => ({ view: document.querySelector('#views > .view:not([hidden])').id, cur: document.getElementById('botsBtn').getAttribute('aria-current'), tabSel: document.querySelectorAll('.tab[aria-selected="true"]').length, parts: [...document.querySelectorAll('#bot > .viewswitch [data-view]')].map(x => x.dataset.view).join() }));
+  check(bv.view === 'bot' && bv.cur === 'page' && bv.tabSel === 0 && bv.parts === 'bot,daily', `Knopf öffnet Trend-Bot | Copy-Trading & Tagesempfehlung, als aktiv markiert (${JSON.stringify(bv)})`);
+  await d.goto(`http://localhost:${port}/#home`); await d.waitForTimeout(400);
+  check(await d.evaluate(() => !document.getElementById('botsBtn').hasAttribute('aria-current')), 'auf der Startseite ist der Knopf nicht markiert');
   const sel = await d.evaluate(() => { const t = document.querySelector('.tab[aria-selected="true"]'); return { id: t.dataset.tab, bg: getComputedStyle(t).backgroundColor }; });
   check(sel.id === 'home' && sel.bg !== 'rgba(0, 0, 0, 0)', `gewählter Bereich hervorgehoben (${sel.bg})`);
   await d.focus('#tab-home'); await d.keyboard.press('ArrowDown'); await d.waitForTimeout(300);
@@ -63,7 +71,7 @@ const ORDER = 'home,portfolio,aktie,markt,tools,ideas,bots';
   const h1 = await m.$eval(lead, e => e.getBoundingClientRect().height);
   check(h0 < 90 && h1 > h0 * 1.5, `Einleitung erst drei Zeilen (${Math.round(h0)} px), angetippt ganz (${Math.round(h1)} px)`);
   const btns = await m.$$eval('.bottomnav button', l => l.map(b => b.dataset.go || 'mehr').join());
-  check(btns === ORDER, `Leiste unten mit allen sieben Bereichen (${btns})`);
+  check(btns === ORDER, `Leiste unten mit allen Hauptbereichen (${btns})`);
   // Ideen: Umschaltleiste, der zuletzt benutzte Teil bleibt gemerkt
   await m.click('.bottomnav [data-go="ideas"]'); await m.waitForTimeout(500);
   const vs = await m.evaluate(() => { const v = document.querySelector('#views > .view:not([hidden])'); return { id: v.id, n: v.querySelectorAll(':scope > .viewswitch [data-view]').length, sel: (v.querySelector(':scope > .viewswitch [aria-selected="true"]') || {}).dataset?.view }; });
@@ -73,8 +81,10 @@ const ORDER = 'home,portfolio,aktie,markt,tools,ideas,bots';
   await m.click('.bottomnav [data-go="ideas"]'); await m.waitForTimeout(500);
   const back = await m.evaluate(() => [location.hash, (document.querySelector('.bottomnav button.on') || {}).dataset?.go, document.querySelector('#swing > .viewswitch [aria-selected="true"]').textContent]);
   check(back[0] === '#swing' && back[1] === 'ideas' && /Swing/.test(back[2]), `zuletzt benutzter Teil bleibt gemerkt (${back.join(' · ')})`);
-  const oldUrl = await m.evaluate(async () => { location.hash = 'daily'; await new Promise(r => setTimeout(r, 400)); return [(document.querySelector('.bottomnav button.on') || {}).dataset?.go, !document.getElementById('daily').hidden]; });
-  check(oldUrl[0] === 'bots' && oldUrl[1], `alte Adresse #daily landet bei Bots → Copy-Trading (${oldUrl})`);
+  const oldUrl = await m.evaluate(async () => { location.hash = 'daily'; await new Promise(r => setTimeout(r, 400)); return [document.getElementById('botsBtn').getAttribute('aria-current'), !document.getElementById('daily').hidden, document.querySelectorAll('.bottomnav button.on').length]; });
+  check(oldUrl[0] === 'page' && oldUrl[1] && oldUrl[2] === 0, `alte Adresse #daily landet bei Bots → Copy-Trading, Knopf oben markiert (${oldUrl})`);
+  const mb = await m.evaluate(() => { const b = document.getElementById('botsBtn'), r = b.getBoundingClientRect(), s = document.getElementById('sessions').getBoundingClientRect(); return { text: b.innerText.trim(), sameRow: Math.abs(r.top - s.top) < 12, right: Math.round(r.right) }; });
+  check(mb.text === 'Bots' && mb.sameRow && mb.right <= 390, `Handy: Knopf „Bots“ neben den Börsenzeiten (${JSON.stringify(mb)})`);
   check(await wide(m), 'Handy: nichts zu breit');
 
   check(!errs.length, `Keine Skriptfehler${errs.length ? ': ' + errs.join(' | ') : ''}`);

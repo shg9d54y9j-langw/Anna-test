@@ -324,8 +324,8 @@ const VIEWS = ["home", "portfolio", "aktie", "setup", "markt", "tools", "hot", "
 const GROUPS = { home: ["home"], portfolio: ["portfolio"], aktie: ["aktie", "setup"], markt: ["markt"], tools: ["tools"], ideas: ["hot", "swing", "ideen", "theorie"], bots: ["bot", "daily"] };
 const GROUP_ORDER = Object.keys(GROUPS);
 const GROUP_OF = Object.fromEntries(Object.entries(GROUPS).flatMap(([g, l]) => l.map(v => [v, g])));
-const GROUP_LABEL = { aktie: "Aktien-Check", ideas: "Ideen", bots: "Bots" };
-const SUB_LABEL = { aktie: ["Aktie prüfen", "Prüfen"], setup: ["Trade planen", "Planen"], hot: ["HotStuff", "HotStuff"], swing: ["Swing-Planer", "Swing"], ideen: ["Trade-Ideen", "Muster"], theorie: ["Theorie", "Theorie"], bot: ["Trend-Bot", "Trend-Bot"], daily: ["Copy-Trading", "Copy-Trading"] };
+const GROUP_LABEL = { aktie: "Aktien-Check", ideas: "Ideen", bots: "Bots & Copy-Trading" };
+const SUB_LABEL = { aktie: ["Aktie prüfen", "Prüfen"], setup: ["Trade planen", "Planen"], hot: ["HotStuff", "HotStuff"], swing: ["Swing-Planer", "Swing"], ideen: ["Trade-Ideen", "Muster"], theorie: ["Theorie", "Theorie"], bot: ["Trend-Bot", "Trend-Bot"], daily: ["Copy-Trading & Tagesempfehlung", "Copy-Trading"] };
 const lastOf = g => { const l = store.get("dtd-group-last", {}) || {}; return GROUPS[g].includes(l[g]) ? l[g] : GROUPS[g][0]; };
 // Umschaltleiste oben in jedem Teil eines zusammengelegten Bereichs
 for (const [g, members] of Object.entries(GROUPS)) {
@@ -378,10 +378,13 @@ function showView(id, { scrollTo = null } = {}) {
   for (const name of VIEWS) $(name).hidden = name !== id;
   for (const g of GROUP_ORDER) {
     const tab = $(`tab-${g}`), on = g === group;
+    if (!tab) continue;   // „Bots & Copy-Trading“ hat keinen Reiter, sondern den eigenen Knopf oben
     tab.setAttribute("aria-selected", String(on));
     tab.tabIndex = on ? 0 : -1;
     if (on) tab.setAttribute("aria-controls", id);
   }
+  const bb = $("botsBtn");
+  if (bb) { if (group === "bots") bb.setAttribute("aria-current", "page"); else bb.removeAttribute("aria-current"); }
   store.set("dtd-tab", id);
   if (GROUPS[group].length > 1) store.set("dtd-group-last", { ...(store.get("dtd-group-last", {}) || {}), [group]: id });
   document.title = `${TITLES[id]} · RojkoMoney`;
@@ -389,7 +392,7 @@ function showView(id, { scrollTo = null } = {}) {
   if (!initialized.has(id)) { initialized.add(id); if (VIEW_INIT[id]) VIEW_INIT[id](); }
   // Diagramme kennen ihre Breite erst, wenn der Bereich sichtbar ist
   requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
-  $(`tab-${group}`).scrollIntoView({ block: "nearest", inline: "nearest" });
+  if ($(`tab-${group}`)) $(`tab-${group}`).scrollIntoView({ block: "nearest", inline: "nearest" });
   if (scrollTo && $(scrollTo)) jumpTo($(scrollTo));
   else if (scrollTo) waitAndJump(scrollTo);
   else window.scrollTo({ top: 0 });
@@ -441,6 +444,7 @@ function openGroup(g) {
   if (location.hash === `#${id}`) showView(id); else location.hash = id;
 }
 window.DTD.openGroup = openGroup;
+if ($("botsBtn")) $("botsBtn").addEventListener("click", () => openGroup("bots"));
 window.DTD.groupOf = id => GROUP_OF[id];
 document.querySelector(".tabs").addEventListener("click", e => {
   const tab = e.target.closest(".tab");

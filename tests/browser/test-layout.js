@@ -24,37 +24,38 @@ const fx = n => (FX[n] ? path.join(__dirname, 'fixtures', FX[n]) : path.join(pro
   console.log('  Start:', JSON.stringify(await topOrder()));
   await p.click('[data-layout-open]');
   await p.waitForSelector('#layBody');
-  check(await p.$$eval('#layBody input[data-lay="view"]', l => l.length) === 6, 'alle 6 Bereiche außer der Übersicht wählbar');
+  check(await p.$$eval('#layBody input[data-lay="view"]', l => l.length) === 6, 'alle 5 Bereiche außer der Übersicht und der Knopf „Bots & Copy-Trading“ wählbar');
   try { await (await p.$('.drawer, #layBody')).screenshot({ path: `${out}/layout-drawer.png` }).catch(() => null); } catch { /* Bildschirmfoto nur zur Ansicht */ }
-  // Bereich „Bots“ ausblenden
+  // Knopf „Bots & Copy-Trading“ ausblenden
   await p.click('#layBody input[data-lay="view"][data-id="bots"]');
-  const vis = await p.evaluate(() => ({ tab: document.getElementById('tab-bots').hidden, bar: document.querySelector('.bottomnav [data-go="bots"]').hidden }));
-  check(vis.tab && vis.bar, `Bots aus Reitern und Leiste unten (${JSON.stringify(vis)})`);
-  // Karten: Live-Wächter und „Neu heute“ aus, „Seit Ihrem letzten Besuch“ nach oben, Tagesregeln nach oben
-  await p.click('#layBody input[data-lay="dash"][data-id="live"]');
+  const vis = await p.evaluate(() => ({ btn: document.getElementById('botsBtn').hidden, shown: getComputedStyle(document.getElementById('botsBtn')).display }));
+  check(vis.btn && vis.shown === 'none', `Knopf „Bots & Copy-Trading“ ausgeblendet (${JSON.stringify(vis)})`);
+  // Karten: Börsen und „Neu heute“ aus, „Seit Ihrem letzten Besuch“ nach oben, Tagesregeln nach oben
+  await p.click('#layBody input[data-lay="dash"][data-id="sessions"]');
   await p.click('#layBody input[data-lay="top"][data-id="today"]');
   await p.click('#layBody [data-lay-move="top"][data-id="depot"][data-dir="-1"]');
   await p.click('#layBody [data-lay-move="dash"][data-id="rules"][data-dir="-1"]');
   await p.waitForTimeout(300);
-  const st = await p.evaluate(() => ({ live: getComputedStyle(document.querySelector('#home [data-home="live"]')).display, rulesOrder: getComputedStyle(document.querySelector('#ovDash > [data-home="rules"]')).order, journalOrder: getComputedStyle(document.querySelector('#ovDash > [data-home="journal"]')).order }));
+  const st = await p.evaluate(() => ({ live: getComputedStyle(document.querySelector('#home [data-home="sessions"]')).display, rulesOrder: getComputedStyle(document.querySelector('#ovDash > [data-home="rules"]')).order, journalOrder: getComputedStyle(document.querySelector('#ovDash > [data-home="journal"]')).order }));
   const t1 = await topOrder();
   console.log('  Danach:', JSON.stringify(t1), JSON.stringify(st));
-  check(st.live === 'none', 'Live-Wächter ausgeblendet');
+  check(st.live === 'none', 'Karte „Börsen“ ausgeblendet');
   check(!t1.includes('today') && t1.indexOf('depot') < t1.indexOf('alerts'), 'Neu heute ausgeblendet, Depot vor den Hinweisen');
   check(Number(st.rulesOrder) < Number(st.journalOrder), 'Tagesregeln vor „Mein Handelstag“');
   // bleibt nach dem Neuladen
   await p.reload(); await p.waitForSelector('#ovSmart [data-home="depot"]', { timeout: 15000 });
-  const after = await p.evaluate(() => ({ tab: document.getElementById('tab-bots').hidden, bar: document.querySelector('.bottomnav [data-go="bots"]').hidden, live: getComputedStyle(document.querySelector('#home [data-home="live"]')).display }));
-  check(after.tab && after.bar && after.live === 'none' && JSON.stringify(await topOrder()) === JSON.stringify(t1), 'Einstellungen bleiben nach dem Neuladen');
+  const after = await p.evaluate(() => ({ btn: document.getElementById('botsBtn').hidden, live: getComputedStyle(document.querySelector('#home [data-home="sessions"]')).display }));
+  check(after.btn && after.live === 'none' && JSON.stringify(await topOrder()) === JSON.stringify(t1), 'Einstellungen bleiben nach dem Neuladen');
   // ausgeblendeter Bereich über Link erreichbar
   await p.evaluate(() => { location.hash = 'bot'; }); await p.waitForTimeout(500);
   check(await p.evaluate(() => !document.getElementById('bot').hidden), 'Trend-Bot über Link trotzdem erreichbar');
+  check(await p.evaluate(() => !document.querySelector('#home [data-home="reco"], #home [data-home="live"]')), 'Startseite ohne Copy-Trading-Karten (Tagesempfehlung, Live-Wächter)');
   // zurücksetzen
   await p.evaluate(() => { location.hash = 'home'; }); await p.waitForTimeout(300);
   await p.click('[data-layout-open]'); await p.waitForSelector('#layBody');
   await p.click('#layBody [data-lay-reset]'); await p.waitForTimeout(300);
-  const reset = await p.evaluate(() => ({ tab: document.getElementById('tab-bots').hidden, live: getComputedStyle(document.querySelector('#home [data-home="live"]')).display }));
-  check(!reset.tab && reset.live !== 'none' && (await topOrder()).includes('today'), 'Zurücksetzen zeigt alles wieder');
+  const reset = await p.evaluate(() => ({ btn: document.getElementById('botsBtn').hidden, live: getComputedStyle(document.querySelector('#home [data-home="sessions"]')).display }));
+  check(!reset.btn && reset.live !== 'none' && (await topOrder()).includes('today'), 'Zurücksetzen zeigt alles wieder');
   // Knopf unten auf der Startseite öffnet das Fenster wieder
   await p.click('#drawerClose'); await p.waitForTimeout(300);
   await p.click('#home .home-custom [data-layout-open]'); await p.waitForTimeout(300);
