@@ -7,7 +7,8 @@
   const fin = Number.isFinite;
   const SYM = /^[A-Z0-9][A-Z0-9.\-_:]{0,24}$/;
   const price = v => (!fin(v) ? "–" : v >= 1000 ? fmt(v, 0) : v >= 1 ? fmt(v, 2) : fmt(v, 4));
-  const viennaDay = (t = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Vienna", year: "numeric", month: "2-digit", day: "2-digit" }).format(t);
+  const F_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Vienna", year: "numeric", month: "2-digit", day: "2-digit" });   // einmal anlegen – läuft oft
+  const viennaDay = (t = new Date()) => F_DAY.format(t);
   const addDays = (iso, n) => { const t = new Date(`${iso}T12:00:00Z`); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
   const holdings = () => { const l = store.get("dtd-portfolio", []); return Array.isArray(l) ? l.filter(h => h && typeof h.sym === "string" && SYM.test(h.sym)) : []; };
   const alarms = () => { const l = store.get("dtd-alarms", []); return Array.isArray(l) ? l.filter(a => a && SYM.test(a.sym) && fin(a.price) && (a.dir === "up" || a.dir === "down")) : []; };

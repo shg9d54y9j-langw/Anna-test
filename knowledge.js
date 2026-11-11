@@ -343,11 +343,12 @@
   // ================= Termine mit belegtem Muster =================
   // Zinsentscheide der US-Notenbank (2. Sitzungstag, Bekanntgabe 14:00 Uhr New York). 2027: vorläufiger Kalender der Fed.
   const FOMC = [["2026-12-09", false], ["2027-01-27", true], ["2027-03-17", true], ["2027-04-28", true], ["2027-06-09", true], ["2027-07-28", true]];
+  const F_NY = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hourCycle: "h23" });   // einmal anlegen
   function nyTime(dateIso, h) {
     // Uhrzeit in New York → Date (Sommer-/Winterzeit automatisch)
     for (const off of [4, 5]) {
       const d = new Date(`${dateIso}T${String(h + off).padStart(2, "0")}:00:00Z`);
-      const ny = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hourCycle: "h23" }).format(d));
+      const ny = Number(F_NY.format(d));
       if (ny === h) return d;
     }
     return new Date(`${dateIso}T${h + 5}:00:00Z`);
@@ -367,7 +368,8 @@
     }
     return res[0];
   }
-  const dLabel = d => ({ day: d.toLocaleDateString("de-DE", { day: "2-digit" }), mon: d.toLocaleDateString("de-DE", { month: "short" }).replace(".", "") });
+  const F_D = new Intl.DateTimeFormat("de-DE", { day: "2-digit" }), F_M = new Intl.DateTimeFormat("de-DE", { month: "short" });   // einmal anlegen
+  const dLabel = d => ({ day: F_D.format(d), mon: F_M.format(d).replace(".", "") });
   const longDate = d => d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   function datesHtml() {
