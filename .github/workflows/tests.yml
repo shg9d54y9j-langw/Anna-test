@@ -209,12 +209,16 @@ jobs:
       - name: Playwright und Chromium installieren
         run: |
           npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.63.0
-          # Die Paketquellen von Ubuntu sind manchmal kurz nicht erreichbar: bis zu dreimal versuchen
+          # Chromium selbst (von Playwright) – bei kurzen Netzstörungen bis zu dreimal
           for i in 1 2 3; do
-            npx playwright install --with-deps chromium && break
+            npx playwright install chromium && break
             [ "$i" = 3 ] && exit 1
-            sleep $((i * 30))
+            sleep $((i * 20))
           done
+          # Zusätzliche Systempakete (Schriften u. a.) aus den Ubuntu-Paketquellen: höchstens 5 Minuten. Sind die Quellen nicht
+          # erreichbar, laufen die Tests mit dem, was der GitHub-Rechner mitbringt (Chrome und seine Bibliotheken sind vorinstalliert).
+          timeout 300 npx playwright install-deps chromium \
+            || echo "::warning::Systempakete für Chromium nicht installiert (Paketquellen nicht erreichbar) – Tests laufen mit den vorhandenen."
 
       - name: Browser-Tests – Suche, Note, Vergleich, Alarme, News, Portfolio, Sicherung, Bilanz, Seite anpassen, ohne Netz
         run: bash tests/browser/run.sh
