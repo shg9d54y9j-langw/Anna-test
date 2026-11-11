@@ -1,6 +1,8 @@
 // Note-Bilanz (scripts/note-track.mjs) mit erfundenen Daten: Noten wie auf der Website, Momentaufnahmen, Auswertung ohne Blick
-// in die Zukunft, Körbe, ganzer Lauf mit Dateien (erster Lauf, Folgelauf, kaputte bisherige Noten). Aufruf: node tests/note-track.mjs
-import { computeNotes, addSnapshot, evaluate, addWeekdays, recent, CAP } from "../scripts/note-track.mjs";
+// in die Zukunft, Körbe, ganzer Lauf mit Dateien (erster Lauf, Folgelauf, kaputte bisherige Noten), und „Note lernt dazu“:
+// Teilnoten nur 30 Tage, Rangkorrelation je Teilnote erst nach Ablauf des Monats, Newey-West, begrenztes Lernen ab 120 Messtagen,
+// Seite und Lauf mit denselben Gewichten. Aufruf: node tests/note-track.mjs
+import { computeNotes, computeScores, addSnapshot, evaluate, addWeekdays, recent, CAP, PARTS_KEEP, LEARN, spearman, measureIC, nwT, learn } from "../scripts/note-track.mjs";
 import { readFileSync, writeFileSync, mkdtempSync, existsSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -124,5 +126,76 @@ H = JSON.parse(readFileSync(f("h.json"), "utf8"));
 check(H.snaps.length === 1 && /keine Momentaufnahme/.test(out), "ohne Kennzahlen: keine neue Momentaufnahme, Bilanz trotzdem");
 rmSync(dir, { recursive: true, force: true });
 
+
+// 6) Note lernt dazu
+check(spearman([1, 2, 3, 4], [10, 20, 30, 40]) === 1 && spearman([1, 2, 3, 4], [4, 3, 2, 1]) === -1 && Math.abs(spearman([1, 1, 2, 2], [1, 2, 3, 4]) - 0.894) < 0.01, "Rangkorrelation (auch mit gleichen Werten)");
+const sc = computeScores(stocks, fund, src);
+check(sc.defaults.map(d => d.k).join() === "trend,quality,value,growth,experts,risk" && Math.abs(sc.defaults.reduce((a, d) => a + d.w, 0) - 1) < 1e-9, "Standardgewichte aus score.js");
+check(Object.keys(sc.parts).length === N && sc.parts.S099.length === 6 && sc.parts.S099[0] > sc.parts.S000[0], "Teilnoten je Aktie");
+// mit gelernten Gewichten rechnet score.js anders – nur Trend zählt: Note folgt dem Trend
+const onlyTrend = { trend: 0.95, quality: 0.01, value: 0.01, growth: 0.01, experts: 0.01, risk: 0.01 };
+// Trend gegen alle anderen Teilnoten: mit Standardgewichten oben die „guten“ Firmen, mit fast nur Trend die mit starkem Kurs
+const against = { ...stocks, updated: "x2", items: stocks.items.map(x => (x.type === "Aktie" ? { ...x, momRank: 100 - x.momRank, d200: -x.d200, dHi52: -42 - x.dHi52 } : x)) };
+const nStd = computeNotes(against, fund, src), nTrend = computeNotes(against, fund, src, onlyTrend);
+check(nStd.S099 > nStd.S000 && nTrend.S000 > nTrend.S099 && JSON.stringify(computeNotes(against, fund, src, { trend: 2 })) === JSON.stringify(nStd), `gelernte Gewichte wirken (S000 ${nStd.S000} → ${nTrend.S000}), ungültige werden ignoriert`);
+// Teilnoten nur für die letzten 30 Messtage, gemessene Treffsicherheit bleibt
+let hh = { snaps: [], ic: [{ d: "2025-01-02", n: 100, ic: { trend: 0.1 } }] };
+for (let k = 0; k < 35; k++) hh = addSnapshot(hh, addWeekdays("2026-01-01", k), { A: 50 }, CAP, { A: [1, 2, 3, 4, 5, 6] });
+check(hh.snaps.filter(x => x.p).length === PARTS_KEEP && !hh.snaps[0].p && hh.snaps[34].p && hh.ic.length === 1, `Teilnoten nur ${PARTS_KEEP} Tage, Treffsicherheit bleibt`);
+// Treffsicherheit: Trend sagt die Rendite voraus, Bewertung umgekehrt, Qualität nicht
+const M = 120, dd = []; let dt = "2026-01-01";
+for (let k = 0; k < 60; k++) { dd.push(dt); dt = addWeekdays(dt, 1); }
+const cl = {}, snapP = {}, rnd = (() => { let x = 7; return () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; }; })();
+for (let i = 0; i < M; i++) {
+  const g = (i / M - 0.5) * 0.002;   // tägliche Drift je nach Aktie
+  let px = 100; cl[`X${i}`] = dd.map(d => [d, (px *= 1 + g + (rnd() - 0.5) * 0.002)]);
+  snapP[`X${i}`] = [i / M * 100, rnd() * 100, 100 - i / M * 100, null, 50, rnd() * 100];
+}
+const hx = { snaps: [{ d: dd[5], n: {}, p: snapP }, { d: dd[50], n: {}, p: snapP }], ic: [] };
+const icl = measureIC(hx, cl, "2026-12-31", sc.defaults);
+check(icl.length === 1 && icl[0].d === dd[5], `nur abgelaufene Monate gemessen (${icl.map(x => x.d)})`);
+check(icl[0].ic.trend > 0.9 && icl[0].ic.value < -0.9 && Math.abs(icl[0].ic.quality) < 0.3 && icl[0].ic.growth === null, `Treffsicherheit: Trend ${icl[0].ic.trend}, Bewertung ${icl[0].ic.value}, Qualität ${icl[0].ic.quality}`);
+check(measureIC({ ...hx, ic: icl }, cl, "2026-12-31", sc.defaults).length === 1, "einmal gemessen, nicht doppelt");
+check(measureIC(hx, cl, dd[20], sc.defaults).length === 0, "ohne Kurse nach dem Monat: keine Messung (kein Blick in die Zukunft)");
+// Newey-West: überlappende Fenster machen den t-Wert ehrlicher (kleiner als ohne Korrektur)
+const ser = Array.from({ length: 200 }, (_, k) => 0.03 + 0.05 * Math.sin(k / 7));
+check(nwT(ser).t > 0 && nwT(ser).t < nwT(ser, 0).t && nwT(ser.slice(0, 20)).t === 0, `t-Wert mit Korrektur ${nwT(ser).t.toFixed(1)} < ohne ${nwT(ser, 0).t.toFixed(1)}; unter 30 Werten 0`);
+// Lernen: vor 120 Messtagen Standard, danach schrittweise, begrenzt, Summe 1
+const mk = (n, f) => Array.from({ length: n }, (_, k) => ({ d: addWeekdays("2025-01-01", k), n: 300, ic: f(k) }));
+const strong = k => ({ trend: 0.08 + 0.01 * Math.sin(k), quality: 0.01 * Math.sin(k / 3), value: -0.08 + 0.01 * Math.cos(k), growth: 0.0, experts: 0.02 * Math.sin(k / 5), risk: 0.01 * Math.cos(k / 4) });
+let LW = learn(mk(100, strong), sc.defaults);
+check(!LW.active && LW.weights === null && LW.lambda === 0 && LW.factors.every(f => Math.abs(f.w - f.w0) < 0.001), `vor ${LEARN.minDays} Messtagen: Standardgewichte (${LW.days} Tage)`);
+LW = learn(mk(240, strong), sc.defaults);
+const fw = k => LW.factors.find(f => f.k === k);
+check(LW.active && LW.lambda === 0.5 && fw("trend").w > fw("trend").w0 && fw("value").w < fw("value").w0 && fw("trend").t > 3, `240 Tage: halb eingemischt, Trend ${Math.round(fw("trend").w * 100)} % (Standard ${fw("trend").w0 * 100}), Bewertung ${Math.round(fw("value").w * 100)} %`);
+LW = learn(mk(400, strong), sc.defaults);
+const sumW = LW.factors.reduce((a, f) => a + f.w, 0);
+check(Math.abs(sumW - 1) < 0.003 && LW.factors.every(f => f.w >= f.w0 * 0.5 - 0.001 && f.w <= f.w0 * 1.5 + 0.001) && Object.keys(LW.weights).length === 6, `voll gelernt, begrenzt und Summe 1 (${LW.factors.map(f => `${f.k} ${f.w}`).join(", ")})`);
+// Grenzen gelten auch nach dem Umrechnen auf 100 %: eine Teilnote sehr gut, alle anderen sehr schlecht
+const lopsided = k => ({ trend: 0.1 + 0.01 * Math.sin(k), quality: -0.1 + 0.01 * Math.cos(k), value: -0.1 + 0.01 * Math.sin(k / 2), growth: -0.1 + 0.01 * Math.cos(k / 3), experts: -0.1 + 0.01 * Math.sin(k / 4), risk: -0.1 + 0.01 * Math.cos(k / 5) });
+const LX = learn(mk(400, lopsided), sc.defaults), fx = k => LX.factors.find(f => f.k === k);
+check(fx("trend").w === 0.375 && LX.factors.every(f => f.w >= f.w0 * 0.5 - 0.001 && f.w <= f.w0 * 1.5 + 0.001) && Math.abs(LX.factors.reduce((a, f) => a + f.w, 0) - 1) < 0.003, `einseitig: Trend höchstens 1½ × Standard (${fx("trend").w}), alle in den Grenzen (${LX.factors.map(f => f.w).join(", ")})`);
+const LH = learn(mk(240, lopsided), sc.defaults);
+check(LH.factors.every(f => f.w >= f.w0 * 0.75 - 0.001 && f.w <= f.w0 * 1.25 + 0.001), `halb eingemischt: Grenzen ¾ bis 1¼ × Standard (${LH.factors.map(f => f.w).join(", ")})`);
+check(JSON.stringify(recent({ snaps: [{ d: "2026-01-02", n: { A: 50 } }] }, LW.weights).w) === JSON.stringify(LW.weights) && !("w" in recent({ snaps: [{ d: "2026-01-02", n: { A: 50 } }] })), "Verlaufsdatei trägt die Gewichte nur, wenn gelernt");
+// ganzer Lauf: mit vorhandener Treffsicherheit (400 Tage) rechnet der Lauf mit gelernten Gewichten und gibt sie der Seite
+{
+  const d2 = mkdtempSync(join(tmpdir(), "ntl-")), g = n => join(d2, n);
+  writeFileSync(g("stocks.json"), JSON.stringify(stocks)); writeFileSync(g("fund.json"), JSON.stringify(fund));
+  writeFileSync(g("closes.json"), JSON.stringify({ asOf: "x", items: closes }));
+  writeFileSync(g("h.json"), JSON.stringify({ v: 1, snaps: [], ic: mk(400, strong) }));
+  const o = execFileSync(process.execPath, [new URL("../scripts/note-track.mjs", import.meta.url).pathname], { env: { PATH: process.env.PATH, STOCKS_IN: g("stocks.json"), FUND_IN: g("fund.json"), CLOSES_IN: g("closes.json"), HISTORY_IN: g("h.json"), HISTORY_OUT: g("h2.json"), TRACK_OUT: g("t.json"), RECENT_OUT: g("r.json"), NOTE_MIN_STOCKS: "20", NOTE_TODAY: days[60] }, encoding: "utf8" });
+  const T2 = JSON.parse(readFileSync(g("t.json"), "utf8")), R2 = JSON.parse(readFileSync(g("r.json"), "utf8")), H2 = JSON.parse(readFileSync(g("h2.json"), "utf8"));
+  check(/mit gelernten Gewichten/.test(o) && /Note lernt dazu: 400 Messtage/.test(o) && T2.learn.active && R2.w && Math.abs(Object.values(R2.w).reduce((a, b) => a + b, 0) - 1) < 0.003, `Lauf mit gelernten Gewichten, Seite bekommt sie (${o.trim().split("\n").pop()})`);
+  check(H2.snaps.length === 1 && H2.snaps[0].p && H2.ic.length === 400, "Teilnoten gespeichert, Treffsicherheit erhalten");
+  check(!("firstAt" in T2.learn), "mit Messungen kein Termin für die erste Messung");
+  // vor der ersten Messung: Termin einen Monat (21 Börsentage) nach dem ersten Messtag mit Teilnoten
+  writeFileSync(g("h0.json"), JSON.stringify({ v: 1, snaps: [] }));
+  execFileSync(process.execPath, [new URL("../scripts/note-track.mjs", import.meta.url).pathname], { env: { PATH: process.env.PATH, STOCKS_IN: g("stocks.json"), FUND_IN: g("fund.json"), CLOSES_IN: g("closes.json"), HISTORY_IN: g("h0.json"), HISTORY_OUT: g("h3.json"), TRACK_OUT: g("t3.json"), RECENT_OUT: g("r3.json"), NOTE_MIN_STOCKS: "20", NOTE_TODAY: days[60] }, encoding: "utf8" });
+  const T3 = JSON.parse(readFileSync(g("t3.json"), "utf8")), R3 = JSON.parse(readFileSync(g("r3.json"), "utf8"));
+  check(T3.learn.days === 0 && !T3.learn.active && T3.learn.firstAt === addWeekdays(days[60], 22) && !("w" in R3), `vor der ersten Messung: Termin ${T3.learn.firstAt}, Seite ohne Gewichte`);
+  rmSync(d2, { recursive: true, force: true });
+}
+
 if (fail) { console.log(`::error::Note-Bilanz: ${fail} Fehler`); process.exit(1); }
-console.log("Note-Bilanz: Noten, Momentaufnahmen, Auswertung ohne Blick in die Zukunft, Körbe und Lauf mit Dateien stimmen.");
+console.log("Note-Bilanz: Noten, Momentaufnahmen, Auswertung ohne Blick in die Zukunft, Körbe, Lauf mit Dateien und „Note lernt dazu“ stimmen.");

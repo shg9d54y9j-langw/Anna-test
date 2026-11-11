@@ -120,11 +120,16 @@ jobs:
             const n = h.snaps.length === 1 ? Object.keys(h.snaps[0].n).length : 0;
             if (n < 20 || Object.keys(h.snaps[0].n).some(k => !aktien.includes(k))) throw new Error(`Momentaufnahme falsch (${n} Noten)`);
             if (t.days !== 1 || t.stocks !== n || t.horizons.some(x => x.days !== 0 || !x.firstAt)) throw new Error("Bilanz des ersten Tages falsch");
-            // nur Noten und Durchschnitte: Momentaufnahmen nur mit Datum und ganzzahligen Noten, Bilanz nur mit bekannten Feldern
-            if (h.snaps.some(x => Object.keys(x).join() !== "d,n" || Object.values(x.n).some(v => !Number.isInteger(v) || v < 0 || v > 100))) throw new Error("Momentaufnahme mit fremden Feldern");
-            if (Object.keys(t).sort().join() !== "curve,days,groups,horizons,last,since,stocks,updated" || Object.keys(t.curve).sort().join() !== "all,dates,low,top") throw new Error("Bilanz mit fremden Feldern");
-            if (Object.keys(r.n).length !== n || Object.values(r.n).some(v => v.length !== 5 || v.slice(1).some(x => x !== null))) throw new Error("Notenverlauf des ersten Tages falsch");
-            console.log(`Note-Bilanz mit Testdaten: ${n} Noten, erste Wochen-Bilanz ab ${t.horizons[0].firstAt}.`);
+            // nur Noten und Durchschnitte: Momentaufnahmen nur mit Datum, ganzzahligen Noten und den sechs ganzzahligen Teilnoten,
+            // Bilanz nur mit bekannten Feldern, „Note lernt dazu“ nur mit Kennzahlen je Teilnote
+            const note = v => Number.isInteger(v) && v >= 0 && v <= 100;
+            if (h.snaps.some(x => Object.keys(x).join() !== "d,n,p" || Object.values(x.n).some(v => !note(v)) || Object.keys(x.p).some(k => !(k in x.n)) || Object.values(x.p).some(a => !Array.isArray(a) || a.length !== 6 || a.some(v => v !== null && !note(v))))) throw new Error("Momentaufnahme mit fremden Feldern");
+            if (!Array.isArray(h.ic) || h.ic.length !== 0 || Object.keys(h).sort().join() !== "ic,snaps,updated,v") throw new Error("Treffsicherheit am ersten Tag falsch");
+            if (Object.keys(t).sort().join() !== "curve,days,groups,horizons,last,learn,since,stocks,updated" || Object.keys(t.curve).sort().join() !== "all,dates,low,top") throw new Error("Bilanz mit fremden Feldern");
+            const L = t.learn;
+            if (Object.keys(L).sort().join() !== "active,days,factors,firstAt,fullDays,lambda,minDays,since,until,weights" || L.days !== 0 || L.active || L.weights !== null || !/^\d{4}-\d\d-\d\d$/.test(L.firstAt) || L.factors.length !== 6 || L.factors.some(f => Object.keys(f).sort().join() !== "ic,k,label,n,t,w,w0" || f.n !== 0 || f.w !== f.w0)) throw new Error("Note lernt dazu: falsche Felder am ersten Tag");
+            if (Object.keys(r.n).length !== n || "w" in r || Object.values(r.n).some(v => v.length !== 5 || v.slice(1).some(x => x !== null))) throw new Error("Notenverlauf des ersten Tages falsch");
+            console.log(`Note-Bilanz mit Testdaten: ${n} Noten, erste Wochen-Bilanz ab ${t.horizons[0].firstAt}, erste Messung der Treffsicherheit ab ${L.firstAt}.`);
           '
 
       - name: Nachrichten gegen den Test-Server, Einordnung nach Typ, unabhängige Gegenrechnung

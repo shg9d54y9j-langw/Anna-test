@@ -61,6 +61,7 @@
         <div class="legend-row"><span class="legend-item"><span class="lkey" style="background:${PAL.series1}"></span>Note 80–100</span><span class="legend-item"><span class="lkey dash" style="color:${PAL.gray}"></span>Alle Aktien</span><span class="legend-item"><span class="lkey dot" style="color:${PAL.series2}"></span>Note 0–19</span></div>
         <div class="chart-host" id="ntChart"></div>
         <p class="small muted">An jedem Messtag neu zusammengestellt, alle Aktien gleich gewichtet; ohne Gebühren, Spreads und Steuern.</p>` : ""}
+      ${learnBox(d)}
       <details class="more"><summary>So wird gemessen</summary><ul class="checklist small">
         <li>Gespeichert wird nur die Note, die am Messtag galt – spätere Änderungen der Note oder der Formel ändern die Vergangenheit nicht.</li>
         <li>Rendite vom Schlusskurs des Messtags bis 5, 21 oder 63 Börsentage später (eine Woche, ein Monat, drei Monate), je Aktie an ihrer eigenen Börse.</li>
@@ -69,6 +70,22 @@
         <li>Die Kurse dafür kommen von eToro (Tageskerzen) und bleiben im Lauf auf GitHub; veröffentlicht werden nur Noten und Durchschnitte.</li>
         <li>Keine Anlageberatung: Was bisher funktioniert hat, muss nicht weiter funktionieren.</li>
       </ul></details>`;
+  }
+  // Note lernt dazu: Treffsicherheit je Teilnote und die daraus vorsichtig angepassten Gewichte (scripts/note-track.mjs)
+  function learnBox(d) {
+    const L = d.learn, std = window.DTD.scoreParts || [];
+    const head = `<h3 class="swing-h3" style="margin-top:18px">Note lernt dazu: Gewichte der Teilnoten</h3>`;
+    if (!L || !Array.isArray(L.factors)) return `${head}<p class="small muted">Die Gewichte stammen aus der Forschung (${std.map(p => `${esc(p.label)} ${fmt(p.w * 100, 0)} %`).join(", ")}). Sobald die Note-Bilanz genug gemessen hat, passt die Seite sie vorsichtig an.</p>`;
+    const sign = v => (Number.isFinite(v) ? `${v > 0 ? "+" : v < 0 ? "−" : "±"}${fmt(Math.abs(v), 3)}` : "–");
+    const tv = v => (Number.isFinite(v) ? `${v < 0 ? "−" : ""}${fmt(Math.abs(v), 1)}` : "–");
+    const rows = L.factors.map(f => `<tr><td>${esc(f.label)}</td><td class="num">${fmt(f.w0 * 100, 0)} %</td><td class="num"><b>${fmt(f.w * 100, 1)} %</b></td><td class="num">${f.n ? sign(f.ic) : "–"}</td><td class="num opt">${f.n >= 30 ? tv(f.t) : "–"}</td></tr>`).join("");
+    const status = L.active
+      ? `Seit ${fmt(L.days, 0)} Messtagen gemessen – die Gewichte sind zu ${fmt(L.lambda * 100, 0)} % an die eigenen Messungen angepasst (voll ab ${fmt(L.fullDays, 0)} Tagen).`
+      : L.days ? `Bisher ${fmt(L.days, 0)} von ${fmt(L.minDays, 0)} Messtagen mit Treffsicherheit – bis dahin gelten die Standardgewichte aus der Forschung.`
+      : `Noch keine Messung: Die Treffsicherheit einer Teilnote zeigt sich erst einen Monat nach dem Messtag${L.firstAt ? ` – die erste voraussichtlich am ${dDate(L.firstAt)}` : ""}. Angepasst wird ab ${fmt(L.minDays, 0)} Messtagen, bis dahin gelten die Standardgewichte aus der Forschung.`;
+    return `${head}<p class="small">${status}</p>
+      <div class="table-wrap"><table class="scr nt-learn"><thead><tr><th>Teilnote</th><th class="num">Standard</th><th class="num">Jetzt</th><th class="num">Treffsicherheit</th><th class="num opt">t-Wert</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="hint">Treffsicherheit: mittlere Rangkorrelation zwischen Teilnote und Kursentwicklung des folgenden Monats (+1 = perfekt, 0 = kein Zusammenhang); t-Wert mit Korrektur für die sich überlappenden Monate. Lernen erst ab ${fmt(L.minDays, 0)} Messtagen, danach schrittweise; jede Teilnote bleibt zwischen der Hälfte und dem Anderthalbfachen ihres Standardgewichts – so verdreht ein Zufallsmonat die Note nicht.</p>`;
   }
   function card() {
     if (!data && !loading && !failed) load();

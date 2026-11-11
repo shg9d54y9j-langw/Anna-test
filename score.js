@@ -15,6 +15,16 @@
     { k: "risk", label: "Sicherheit", w: 0.1, term: "n-risk" },
   ];
   const fin = v => Number.isFinite(v);
+  // Gewichte: Standard aus der Forschung (PARTS.w). Hat die Note-Bilanz genug gemessen (scripts/note-track.mjs, ab 120 Messtagen),
+  // liefert note-recent.json vorsichtig angepasste Gewichte (w) – höchstens halb bis anderthalb so viel wie der Standard.
+  function learned() {
+    const r = S.get("recent"), w = r && r.w;
+    if (!w || typeof w !== "object") return null;
+    const v = PARTS.map(p => w[p.k]);
+    if (!v.every(x => fin(x) && x > 0 && x < 1)) return null;
+    const sum = v.reduce((a, b) => a + b, 0);
+    return Math.abs(sum - 1) < 0.02 ? Object.fromEntries(PARTS.map((p, i) => [p.k, v[i] / sum])) : null;
+  }
   const total = r => (r ? r.sb + r.b + r.h + r.s + r.ss : 0);
   const buyShare = r => (total(r) >= 5 ? (r.sb + r.b) / total(r) : null);
   const avg = a => { const v = a.filter(fin); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
@@ -31,7 +41,8 @@
     };
   }
   let key = "", table = null;
-  function build(stocks, fund) {
+  function build(stocks, fund, W = null) {
+    const wOf = p => (W ? W[p.k] : p.w);
     const items = stocks.items.filter(x => x.type === "Aktie" || x.type === "ETF");
     const F = sym => (fund && fund.items && fund.items[sym]) || {};
     const pos = v => (fin(v) && v > 0 ? v : null);
@@ -73,9 +84,10 @@
         })(),
         risk: (() => { const a = [inv(R.vol60(x.vol60)), inv(R.mdd(x.mdd)), inv(R.beta(x.beta))].filter(v => v !== null); return a.length >= 2 ? avg(a) : null; })(),
       };
-      let sw = 0, sum = 0;
-      for (const p of PARTS) if (P[p.k] !== null && fin(P[p.k])) { sw += p.w; sum += p.w * P[p.k]; }
-      const raw = sw >= 0.35 ? sum / sw : null;
+      // Abdeckung mit den Standardgewichten (gleiche Bedeutung wie bisher), Mittel mit den aktuellen Gewichten
+      let sw = 0, swW = 0, sum = 0;
+      for (const p of PARTS) if (P[p.k] !== null && fin(P[p.k])) { sw += p.w; swW += wOf(p); sum += wOf(p) * P[p.k]; }
+      const raw = sw >= 0.35 && swW > 0 ? sum / swW : null;
       out.set(x.sym, {
         sym: x.sym, raw, note: null, coverage: Math.round(sw * 100) / 100, parts: Object.fromEntries(PARTS.map(p => [p.k, P[p.k] === null ? null : Math.round(P[p.k])])),
         ind: f.ind || null, indN: ir ? ir.n : 0,
@@ -92,8 +104,9 @@
   function ensure() {
     const st = S.get("stocks"), fu = S.get("fund");
     if (!st || !Array.isArray(st.items)) return null;
-    const k = `${st.updated}|${fu ? fu.updated : "-"}`;
-    if (k !== key) { table = build(st, fu); key = k; }
+    const W = learned();
+    const k = `${st.updated}|${fu ? fu.updated : "-"}|${W ? JSON.stringify(W) : "std"}`;
+    if (k !== key) { table = build(st, fu, W); key = k; }
     return table;
   }
   const label = n => (!fin(n) ? "–" : n >= 80 ? "sehr stark" : n >= 60 ? "stark" : n >= 40 ? "durchschnittlich" : n >= 20 ? "schwach" : "sehr schwach");
@@ -223,9 +236,10 @@
   window.DTD.finCard = finCard;
   window.DTD.score = sym => { const t = ensure(); return t ? t.get(sym) || null : null; };
   window.DTD.scoreAll = () => ensure();
+  window.DTD.scoreWeights = () => learned() || Object.fromEntries(PARTS.map(p => [p.k, p.w]));
   window.DTD.scoreReady = () => Promise.all([S.load("stocks"), S.load("fund"), S.load("recent")]).then(ensure);
   window.DTD.scoreCard = card;
   window.DTD.scoreLabel = label;
   window.DTD.scoreTone = tone;
-  window.DTD.scoreParts = PARTS;
+  window.DTD.scoreParts = PARTS;   // Teilnoten mit Standardgewichten (auch für scripts/note-track.mjs und die Note-Bilanz)
 })();

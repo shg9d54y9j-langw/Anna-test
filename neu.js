@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-11-lernt", t: "Note lernt dazu", d: "Die Note-Bilanz misst jetzt auch, wie treffsicher jede der sechs Teilnoten ist. Ab etwa sechs Monaten Messung passt die Seite die Gewichte der Gesamtnote vorsichtig daran an – begrenzt und offen zu sehen in der Note-Bilanz.", href: "#notebilanz" },
     { id: "2026-11-11-wischen", t: "Wischen am Handy", d: "Nach links oder rechts wischen wechselt zum nächsten oder vorherigen Bereich – in Tabellen, Diagrammen und Leisten bleibt Wischen deren Sache. Abschaltbar unter „Seite anpassen“.", act: "layout" },
     { id: "2026-11-11-datenstand", t: "Datenstand an der Live-Uhr", d: "Ein Tipp auf die Live-Uhr oben zeigt, wann jede Auswertung zuletzt kam – ein gelber oder roter Punkt warnt bei Verspätung oder Ausfall. Ausfälle und ihre Behebung kommen auch aufs Handy (ntfy).", act: "status" },
     { id: "2026-11-11-alarme15", t: "Kursalarme und Stops alle 15 Minuten", d: "Mit Handy-Meldungen (ntfy) prüft der Live-Wächter Ihre Kursalarme und Stops an Börsentagen etwa alle 15 Minuten – auch ein kurzes Unterschreiten des Stops zählt, jede Berührung kommt genau einmal. Ihre Kürzel bleiben dabei verschlüsselt.", href: "#pfPush" },

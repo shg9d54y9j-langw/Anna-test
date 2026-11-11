@@ -1,6 +1,6 @@
 // Abgeleitete Testdaten für die Browser-Tests (nicht im Repository): Noten wie auf der Website, eine Note-Bilanz aus erfundenen
 // Kursen, ein früher Stand der Bilanz, Kennzahlen mit Jahreswerten für die Finanzkraft und erfundene EZB-Kurse. Aufruf: node tests/browser/make-fixtures.mjs <ordner>
-import { computeNotes, addSnapshot, evaluate, addWeekdays } from "../../scripts/note-track.mjs";
+import { computeNotes, computeScores, addSnapshot, evaluate, addWeekdays, learn } from "../../scripts/note-track.mjs";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -28,8 +28,16 @@ for (const [s, n] of Object.entries(notes)) {
 }
 let hist = { snaps: [] };
 for (let k = 0; k < 70; k++) hist = addSnapshot(hist, days[k], Object.fromEntries(Object.entries(notes).map(([s, n]) => [s, Math.max(0, Math.min(100, n + Math.round(gauss() * 3)))])));
-writeFileSync(join(out, "nt-track.json"), JSON.stringify(evaluate(hist, closes, addWeekdays(days[days.length - 1], 1))));
-writeFileSync(join(out, "nt-early.json"), JSON.stringify(evaluate({ snaps: [hist.snaps[69]] }, closes, addWeekdays(days[69], 1))));
+// „Note lernt dazu“: 240 Messtage mit erfundener Treffsicherheit je Teilnote (Trend gut, Experten schwach) → Gewichte zur Hälfte angepasst
+const defaults = computeScores({ items: [] }, null, src).defaults;
+const IC = { trend: 0.05, quality: 0.03, value: 0.02, growth: 0, experts: -0.02, risk: 0.01 };
+const icList = Array.from({ length: 240 }, (_, k) => ({ d: addWeekdays("2026-01-01", k + 1), n: 400, ic: Object.fromEntries(defaults.map(d => [d.k, +((IC[d.k] || 0) + gauss() * 0.08).toFixed(4)])) }));
+const learned = learn(icList, defaults);
+writeFileSync(join(out, "nt-track.json"), JSON.stringify({ ...evaluate(hist, closes, addWeekdays(days[days.length - 1], 1)), learn: learned }));
+writeFileSync(join(out, "nt-early.json"), JSON.stringify({ ...evaluate({ snaps: [hist.snaps[69]] }, closes, addWeekdays(days[69], 1)), learn: { ...learn([], defaults), firstAt: addWeekdays(days[69], 22) } }));
+// Noten mit den gelernten Gewichten (so rechnet der Server, wenn note-recent.json Gewichte enthält)
+writeFileSync(join(out, "nt-weights.json"), JSON.stringify(learned.weights));
+writeFileSync(join(out, "nt-notes-w.json"), JSON.stringify(computeNotes(stocks, fund, src, learned.weights)));
 
 // Kennzahlen mit Jahreswerten (Finanzkraft): NVDA stark (im Abwärtstrend), AAPL stark im Aufwärtstrend, KO mittel, AMD schwach, MSFT zu wenig
 const f = JSON.parse(JSON.stringify(fund));
