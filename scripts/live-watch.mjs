@@ -11,6 +11,8 @@ const here = p => fileURLToPath(new URL(p, import.meta.url));
 const RANKING = process.env.RANKING_IN || here("../data/ranking.json");
 const OUT = process.env.LIVE_OUT || here("../data/live.json");
 const PREV_URL = process.env.LIVE_PREV_URL;            // vorheriger Live-Stand, um nur neue Warnungen zu melden
+// nur der öffentliche Stand auf GitHub (oder ein lokaler Testserver) – nie eine fremde Adresse
+if (PREV_URL && !["raw.githubusercontent.com", "localhost", "127.0.0.1"].includes(new URL(PREV_URL).hostname)) throw new Error(`Unzulässige Adresse für den vorherigen Live-Stand: ${new URL(PREV_URL).hostname}`);
 const LIMITS = { dayLoss: -3, weekLoss: -7 };           // Warnschwellen in % für den kopierten Trader
 const de = x => x.toFixed(1).replace(".", ",");
 

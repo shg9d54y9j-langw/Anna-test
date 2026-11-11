@@ -112,7 +112,7 @@
   }
   function allocBar(a) {
     const parts = W.blocks.map(b => ({ b, v: a[b.id] })).filter(x => x.v > 0);
-    return `<div class="w-alloc" role="img" aria-label="Aufteilung: ${parts.map(x => `${x.b.name} ${x.v} %`).join(", ")}">${parts.map(x => `<span style="flex:${x.v};background:${BLOCK_COLOR[x.b.id]()}"></span>`).join("")}</div>
+    return `<div class="w-alloc" role="img" aria-label="Aufteilung: ${esc(parts.map(x => `${x.b.name} ${x.v} %`).join(", "))}">${parts.map(x => `<span style="flex:${x.v};background:${BLOCK_COLOR[x.b.id]()}"></span>`).join("")}</div>
       <ul class="w-alloc-legend">${parts.map(x => `<li><span class="lkey" style="background:${BLOCK_COLOR[x.b.id]()};height:10px;width:10px;border-radius:2px"></span><b>${x.v} %</b> ${esc(x.b.name)}</li>`).join("")}</ul>`;
   }
   function portfolioCard() {

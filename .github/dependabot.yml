@@ -1,0 +1,15 @@
+# Sicherheitsupdates für die GitHub-Bausteine (actions/checkout, upload-/download-artifact): einmal im Monat ein gebündelter
+# Vorschlag. Die Bausteine bleiben mit fester Prüfsumme festgenagelt (tests/security.mjs prüft das); Dependabot erneuert
+# Prüfsumme und Versionskommentar gemeinsam. Andere Abhängigkeiten gibt es nicht – die Skripte kommen ohne Pakete aus.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      bausteine:
+        patterns: ["*"]
+    commit-message:
+      prefix: "Bausteine"

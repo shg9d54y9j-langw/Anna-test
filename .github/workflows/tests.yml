@@ -16,6 +16,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Sicherheits-Check – Abläufe, Schutzregel der Seite, Zieladressen der Skripte, Echtgeld-Sperre, keine Schlüssel im Repository
+        run: node tests/security.mjs --list
+
       - name: Job gegen Test-Server, unabhängige Gegenrechnung, Live-Wächter
         env:
           ETORO_API_BASE: http://localhost:8790/api

@@ -95,7 +95,7 @@
     openDrawer(t[0], `<p class="nw-d-meta">${tag(n)} <span class="muted small">${esc(n.s || "")} · ${new Date(n.d * 1000).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })} Uhr</span></p>
       <h3 class="nw-d-t">${esc(n.t)}</h3>
       ${n.sum ? `<p class="small muted">Kurzfassung der Quelle (Englisch): ${esc(n.sum)}</p>` : ""}
-      <p><a class="btn ghost" href="${esc(n.u)}" target="_blank" rel="noopener noreferrer">Artikel lesen ↗</a></p>
+      ${/^https?:\/\/[^\s"<>]+$/i.test(String(n.u || "")) ? `<p><a class="btn ghost" href="${esc(n.u)}" target="_blank" rel="noopener noreferrer">Artikel lesen ↗</a></p>` : ""}
       <h3 class="swing-h3">Was bedeutet das?</h3><p>${t[1]}</p>
       <h3 class="swing-h3">Wie reagiert der Kurs meist?</h3><p>${t[2]}</p>
       <h3 class="swing-h3">Was Sie tun können</h3><p>${t[3]}</p>
