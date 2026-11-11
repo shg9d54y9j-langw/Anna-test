@@ -1402,3 +1402,12 @@ button.livechip:focus-visible { outline: 2px solid var(--accent); outline-offset
 .ds-dot.ds-ok { background: var(--up); } .ds-dot.ds-warn { background: var(--warn); } .ds-dot.ds-bad { background: var(--down); } .ds-dot.ds-off { background: var(--surface-3); border: 1px solid var(--line-3); }
 .ds-state { font: 600 12px var(--font); white-space: nowrap; }
 .ds-state.ds-ok { color: var(--up); } .ds-state.ds-warn { color: var(--warn); } .ds-state.ds-bad { color: var(--down); } .ds-state.ds-off { color: var(--muted); }
+
+/* ---------- Wischen am Handy ---------- */
+@keyframes swipeInL { from { transform: translateX(28px); opacity: .35; } to { transform: none; opacity: 1; } }
+@keyframes swipeInR { from { transform: translateX(-28px); opacity: .35; } to { transform: none; opacity: 1; } }
+.view.swipe-in-l { animation: swipeInL .26s ease-out; }
+.view.swipe-in-r { animation: swipeInR .26s ease-out; }
+@media (prefers-reduced-motion: reduce) { .view.swipe-in-l, .view.swipe-in-r { animation: none; } }
+.lay-swipe { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 4px 0 8px; }
+.lay-swipe input { width: auto; }

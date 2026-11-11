@@ -4,6 +4,7 @@
   const SEEN = "dtd-wn-seen";
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-11-wischen", t: "Wischen am Handy", d: "Nach links oder rechts wischen wechselt zum nächsten oder vorherigen Bereich – in Tabellen, Diagrammen und Leisten bleibt Wischen deren Sache. Abschaltbar unter „Seite anpassen“.", act: "layout" },
     { id: "2026-11-11-datenstand", t: "Datenstand an der Live-Uhr", d: "Ein Tipp auf die Live-Uhr oben zeigt, wann jede Auswertung zuletzt kam – ein gelber oder roter Punkt warnt bei Verspätung oder Ausfall. Ausfälle und ihre Behebung kommen auch aufs Handy (ntfy).", act: "status" },
     { id: "2026-11-11-alarme15", t: "Kursalarme und Stops alle 15 Minuten", d: "Mit Handy-Meldungen (ntfy) prüft der Live-Wächter Ihre Kursalarme und Stops an Börsentagen etwa alle 15 Minuten – auch ein kurzes Unterschreiten des Stops zählt, jede Berührung kommt genau einmal. Ihre Kürzel bleiben dabei verschlüsselt.", href: "#pfPush" },
     { id: "2026-11-11-vermoegen", t: "Vermögen: langfristig anlegen", d: "Neuer Bereich: Ihr Anlegerprofil, ein Musterportfolio aus breit gestreuten ETFs mit erwarteter Rendite und Bandbreite, Rebalancing-Helfer, Steuern in Österreich – und was die Forschung dazu sagt, mit Quellen. Der Forschungsstand wird jeden Monat geprüft, Zinsen und Inflation kommen täglich von der EZB.", href: "#wProfil" },

@@ -40,6 +40,7 @@
       <div class="seg" role="group" aria-label="Farbschema">${[["auto", "Wie das Gerät"], ["light", "Hell"], ["dark", "Dunkel"]].map(([k, l]) => `<button type="button" data-theme-set="${k}" aria-pressed="${th === k}">${l}</button>`).join("")}</div>` : "";
     return `<p class="small">Was Sie nicht brauchen, blenden Sie hier aus. Gespeichert nur in diesem Browser – „Sicherung herunterladen“ im Portfolio nimmt es mit.</p>
       ${themeRow}
+      ${window.DTD.swipe ? `<h3 class="swing-h3">Bedienung am Handy</h3><label class="lay-swipe"><input type="checkbox" data-swipe-toggle${window.DTD.swipe.enabled() ? " checked" : ""}> Nach links oder rechts wischen wechselt den Bereich</label>` : ""}
       <h3 class="swing-h3">Bereiche</h3>
       <ul class="lay-list">${VIEWS.filter(v => v.id !== "home").map(v => row("view", v.id, v.label, !hide.has(v.id))).join("")}</ul>
       <h3 class="swing-h3">Startseite: Ihre Karten oben</h3>
