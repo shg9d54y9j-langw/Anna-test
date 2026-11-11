@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://s3.tradingview.com; frame-src https://*.tradingview.com https://*.tradingview-widget.com; connect-src 'self' https://raw.githubusercontent.com https://*.tradingview.com; img-src 'self' data: https://*.tradingview.com; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://s3.tradingview.com; frame-src https://*.tradingview.com https://*.tradingview-widget.com; connect-src 'self' https://raw.githubusercontent.com https://*.tradingview.com https://*.supabase.co; img-src 'self' data: https://*.tradingview.com; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#07070a">
@@ -19,6 +19,7 @@
   <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <script src="theme.js"></script>
+  <script src="auth-hash.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -522,6 +523,7 @@
 
   <script src="app.js"></script>
   <script src="data.js"></script>
+  <script src="login.js"></script>
   <script src="glossary.js"></script>
   <script src="score.js"></script>
   <script src="bilanz.js"></script>

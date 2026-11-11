@@ -5,7 +5,7 @@ const CACHE = "rojko-v1";
 const CORE = ["./", "index.html", "style.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon.svg", "fonts/inter-latin-wght-normal.woff2",
   "theme.js", "app.js", "data.js", "glossary.js", "score.js", "bilanz.js", "watch.js", "peers.js", "vergleich.js", "sectors.js", "alerts.js", "briefing.js", "neu.js", "layout.js", "home.js", "news.js", "econ.js",
   "stats.js", "compare.js", "daily.js", "overview.js", "cockpit.js", "knowledge.js", "backtest.js", "psych.js", "stock.js", "hot.js", "swing.js",
-  "linechart.js", "verlauf.js", "portfolio.js", "journal-stats.js", "tools.js", "sparplan.js", "wealth.js", "bot.js", "live.js", "status.js", "quicksearch.js", "nav.js", "swipe.js", "pull.js"];
+  "linechart.js", "verlauf.js", "portfolio.js", "journal-stats.js", "tools.js", "sparplan.js", "wealth.js", "bot.js", "live.js", "status.js", "quicksearch.js", "nav.js", "swipe.js", "login.js", "auth-hash.js", "pull.js"];
 self.addEventListener("install", e => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).catch(() => { /* einzelne Datei fehlt: Laufzeit-Speicher genügt */ }));

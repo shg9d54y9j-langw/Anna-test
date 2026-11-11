@@ -15,6 +15,7 @@
     return { hide: arr(c.hide).filter(id => id !== "home" && VIEWS.some(v => v.id === id)), homeHide: arr(c.homeHide), top: order(c.top, TOP), dash: order(c.dash, DASH) };
   }
   const set = c => { store.set(KEY, c); apply(); window.dispatchEvent(new Event("dtd:layout")); };
+  window.addEventListener("dtd:access", () => apply());   // Anmeldung geändert: Bots-Knopf ein- oder ausblenden
 
   let style = null;
   function apply() {
@@ -22,7 +23,8 @@
     for (const v of VIEWS) {
       const off = hide.has(v.id);
       const tab = document.getElementById(v.id === "bots" ? "botsBtn" : `tab-${v.id}`);
-      if (tab) tab.hidden = off;
+      const denied = v.id === "bots" && window.DTD.botsAllowed && !window.DTD.botsAllowed();   // nur für den Besitzer (login.js)
+      if (tab) tab.hidden = off || denied;
       document.querySelectorAll(`.bottomnav [data-go="${v.id}"], .navsheet [data-go="${v.id}"]`).forEach(b => { b.hidden = off; });
     }
     // Karten der Startseite: ausblenden und im Raster umsortieren
@@ -42,7 +44,7 @@
       ${themeRow}
       ${window.DTD.swipe ? `<h3 class="swing-h3">Bedienung am Handy</h3><label class="lay-swipe"><input type="checkbox" data-swipe-toggle${window.DTD.swipe.enabled() ? " checked" : ""}> Nach links oder rechts wischen wechselt den Bereich</label>` : ""}
       <h3 class="swing-h3">Bereiche</h3>
-      <ul class="lay-list">${VIEWS.filter(v => v.id !== "home").map(v => row("view", v.id, v.label, !hide.has(v.id))).join("")}</ul>
+      <ul class="lay-list">${VIEWS.filter(v => v.id !== "home" && !(v.id === "bots" && window.DTD.botsAllowed && !window.DTD.botsAllowed())).map(v => row("view", v.id, v.label, !hide.has(v.id))).join("")}</ul>
       <h3 class="swing-h3">Startseite: Ihre Karten oben</h3>
       <ul class="lay-list">${c.top.map((k, i) => row("top", k, label(TOP, k), !hh.has(k), i, c.top.length)).join("")}</ul>
       <h3 class="swing-h3">Startseite: weitere Karten</h3>

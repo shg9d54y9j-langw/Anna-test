@@ -99,6 +99,29 @@ for (const f of scripts) {
   }
 }
 
+// ---------- 4a. Anmeldung (login.js, data/login.json) ----------
+// Nur die öffentliche Projektadresse und der öffentliche Schlüssel (anon bzw. sb_publishable_) – nie der geheime;
+// Zugangsdaten nie in der Sicherungsdatei; Anfragen mit Zugang nur an die eingerichtete Adresse und ohne Weiterleitungen.
+{
+  const L = JSON.parse(read("data/login.json")), url = String(L.url || ""), k = String(L.anonKey || "");
+  ok((!url && !k) || /^https:\/\/[a-z0-9-]{6,40}\.supabase\.co$/.test(url), `data/login.json: Adresse muss https://<projekt>.supabase.co sein (${url})`);
+  ok(!/^sb_secret_/.test(k), "data/login.json: GEHEIMER Schlüssel (sb_secret_) eingetragen – sofort in Supabase widerrufen und den öffentlichen nehmen");
+  if (k && k.split(".").length === 3) {
+    let role = "?"; try { role = JSON.parse(Buffer.from(k.split(".")[1], "base64url").toString()).role; } catch { /* unten gemeldet */ }
+    ok(role === "anon", `data/login.json: Schlüssel mit Rolle „${role}“ – nur der öffentliche anon-Schlüssel ist erlaubt (service_role sofort widerrufen)`);
+  } else if (k) ok(/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(k), "data/login.json: unbekannter Schlüssel – nur anon (JWT) oder sb_publishable_…");
+  const skip = /BK_SKIP = new Set\(\[([^\]]*)\]\)/.exec(read("portfolio.js"));
+  ok(skip && ["dtd-auth", "dtd-auth-pending", "dtd-auth-req", "dtd-sync", "dtd-login"].every(x => skip[1].includes(`"${x}"`)), "Sicherungsdatei: Anmeldedaten (dtd-auth …) müssen ausgenommen sein");
+  const lj = read("login.js");
+  for (const m of lj.matchAll(/fetch\(([^;]*)/g)) if (/cfg\.url/.test(m[1])) ok(/redirect: "error"/.test(m[1]), "login.js: Anfrage an Supabase ohne redirect: \"error\"");
+  ok(/create_user: false/.test(lj), "login.js: Anmeldung muss create_user: false senden (nur auf Einladung)");
+  ok(!/\/auth\/v1\/signup/.test(lj), "login.js: keine Selbst-Registrierung (/auth/v1/signup) – nur auf Einladung");
+  ok(/asked \|\| confirm\(/.test(lj), "login.js: Anmelde-Link ohne eigene Anforderung nur nach Rückfrage (untergeschobenes Konto)");
+  ok(!/console\.(log|info|debug)\([^)]*(token|pass|key)/i.test(lj), "login.js: Protokoll mit Zugang, Passwort oder Schlüssel");
+  const connect = dir("connect-src").split(/\s+/).filter(Boolean);
+  ok(connect.every(s => ["'self'", "https://raw.githubusercontent.com", "https://*.tradingview.com", "https://*.supabase.co"].includes(s)), `Schutzregel: unerwartete Verbindung in connect-src (${connect.join(" ")})`);
+}
+
 // ---------- 4. Keine Schlüssel im Repository ----------
 const SECRET_PATTERNS = [
   [/gh[pousr]_[A-Za-z0-9]{36,}/, "GitHub-Token"], [/github_pat_[A-Za-z0-9_]{22,}/, "GitHub-Token"], [/AKIA[0-9A-Z]{16}/, "AWS-Schlüssel"],

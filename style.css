@@ -1104,8 +1104,11 @@ table.cmp tr.cmp-sub th[scope="row"] { color: var(--muted); padding-left: 16px; 
   .appbar .logo { width: 28px; height: 28px; }
   .appbar .brand { gap: 8px; }
   .appbar .livechip { padding: 4px 9px; gap: 6px; margin-left: 0; }
-  .appbar .qs-open, .appbar .theme-btn { width: 34px; height: 34px; }
+  .appbar .qs-open, .appbar .theme-btn, .appbar .acc-btn { width: 34px; height: 34px; }
+  .appbar .acc-btn { margin-left: 4px; }
 }
+/* sehr schmale Handys: Platz für den Konto-Knopf – das Farbschema bleibt unter „Seite anpassen“ wählbar */
+@media (max-width: 380px) { .appbar .theme-btn { display: none; } }
 
 /* ---------- Klickbare Nachrichten ---------- */
 .nw-list { display: grid; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
@@ -1162,6 +1165,16 @@ table.cmp tr.cmp-sub th[scope="row"] { color: var(--muted); padding-left: 16px; 
 /* Farbschema-Schalter in der Kopfzeile */
 .theme-btn { width: 38px; height: 38px; color: var(--text-2); flex: none; margin-left: 8px; }
 .theme-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* Konto (login.js): gleich wie der Farbschema-Knopf, Punkt für den Zustand */
+.acc-btn { position: relative; width: 38px; height: 38px; color: var(--text-2); flex: none; margin-left: 8px; }
+.acc-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.acc-btn::after { content: ""; position: absolute; right: 6px; top: 6px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--surface-2); display: none; }
+.acc-btn[data-acc="on"]::after { display: block; background: var(--up); }
+.acc-btn[data-acc="lock"]::after, .acc-btn[data-acc="err"]::after { display: block; background: var(--warn, #d9a400); }
+.acc-form label { display: grid; gap: 4px; margin: 8px 0; }
+.acc-form input { width: 100%; }
+.acc-more { margin-top: 14px; }
+.acc-more .acc-form { margin-top: 6px; }
 .theme-btn:hover { color: var(--text); }
 @media (max-width: 760px) { .appbar .theme-btn { order: 1; margin-left: 0; } }
 

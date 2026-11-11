@@ -1,0 +1,5 @@
+{
+ "about": "Anmeldung über Supabase (nur auf Einladung, Daten Ende-zu-Ende verschlüsselt) – Einrichtung siehe LOGIN.md. url: https://<projekt>.supabase.co, anonKey: der öffentliche Schlüssel (anon bzw. sb_publishable_…), NIE der geheime service_role- oder sb_secret_-Schlüssel. Leer = Anmeldung aus.",
+ "url": "",
+ "anonKey": ""
+}

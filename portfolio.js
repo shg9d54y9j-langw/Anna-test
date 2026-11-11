@@ -453,7 +453,7 @@
   // Alles, was die Seite in diesem Browser speichert (Schlüssel dtd-… und daytrade-…): Depot, Merkliste, Journal, Kursalarme,
   // smarte Alarme, Vergleich, Trader, Einstellungen. Die Datei bleibt beim Nutzer – nichts wird hochgeladen. Beim Laden wird der
   // bisherige Stand 7 Tage aufgehoben und lässt sich zurückholen.
-  const BK = /^(dtd|daytrade)-[a-z0-9-]{1,40}$/, BK_AT = "dtd-backup-at", BK_UNDO = "dtd-restore-undo", BK_SKIP = new Set([BK_AT, BK_UNDO]);
+  const BK = /^(dtd|daytrade)-[a-z0-9-]{1,40}$/, BK_AT = "dtd-backup-at", BK_UNDO = "dtd-restore-undo", BK_SKIP = new Set([BK_AT, BK_UNDO, "dtd-auth", "dtd-auth-pending", "dtd-auth-req", "dtd-sync", "dtd-login"]);   // Anmeldung nie in die Datei
   const BK_APP = "RojkoMoney", WEEK = 7 * 864e5;
   let persisted = null;
   if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(v => { persisted = v; }).catch(() => {});

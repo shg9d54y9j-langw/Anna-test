@@ -22,6 +22,16 @@ Hier steht, wie das geschützt ist, was bei jeder Änderung automatisch geprüft
 - Der Zwischenstand der Kursalarme ist verschlüsselt (AES-256-GCM).
 - Öffentliche Daten und Protokolle enthalten keine Beträge und keine eigenen Positionen.
 
+**Anmeldung und Synchronisierung (sobald eingerichtet, siehe LOGIN.md)**
+- Anmelden können sich nur Eingeladene: Die Registrierung ist aus, die App ruft sie nie auf und fragt Codes mit `create_user: false` an.
+- Anmelde-Passwort und Sync-Passwort sind getrennt. Das Anmelde-Passwort prüft Supabase, das Sync-Passwort verlässt das Gerät nie.
+- Ein Anmelde-Link, den das Gerät nicht selbst angefordert hat, gilt erst nach einer Rückfrage, die das Konto nennt. So kann niemand jemanden unbemerkt in ein fremdes Konto schieben, in das dann dessen Daten wandern würden.
+- Die eigenen Daten verlassen das Gerät nur verschlüsselt (AES-256-GCM). Der Schlüssel entsteht aus dem Sync-Passwort (PBKDF2-SHA-256, 310.000 Runden) und bleibt nicht exportierbar im Browser. Das Passwort selbst wird nie übertragen oder gespeichert.
+- Die Zugriffsregeln in der Datenbank (Row Level Security) lassen jeden Nutzer nur seine eigenen Zeilen lesen und schreiben. Die Besitzer-Rolle kann ein Nutzer nicht selbst setzen.
+- In `data/login.json` steht nur der öffentliche Schlüssel. Ein geheimer Schlüssel (service_role, sb_secret_) wird von der Seite ignoriert und vom Sicherheits-Check abgelehnt.
+- Anmeldedaten kommen nie in eine Sicherungsdatei. Anfragen mit Zugang gehen nur an die eingerichtete Supabase-Adresse, ohne Weiterleitungen.
+- Bots & Copy-Trading werden für andere ausgeblendet. Geheim sind sie dadurch nicht, denn die Bot-Daten liegen ohnehin öffentlich auf GitHub.
+
 **GitHub-Abläufe**
 - Kein Ablauf hat oben Rechte. Schreiben darf nur der Job, der Daten speichert.
 - Fremde Bausteine sind mit fester Prüfsumme festgenagelt.
@@ -43,6 +53,13 @@ Hier steht, wie das geschützt ist, was bei jeder Änderung automatisch geprüft
   - die Zieladressen der Skripte, die Echtgeld-Sperre und ob ein Protokoll Schlüssel, ntfy-Kanal oder Push-Liste zeigt;
   - ob im Repository Schlüssel bekannter Formate oder fest eingetragene Secret-Werte stehen.
 - `tests/browser/test-xss.js` speist präparierte HTML-Texte in alle Datenquellen und in den Browser-Speicher ein und öffnet dann alle Bereiche. Nirgends darf daraus HTML werden.
+- `tests/browser/test-login.js` spielt die Anmeldung gegen ein nachgebautes Supabase durch:
+  - Nur Eingeladene kommen hinein, mit Code oder mit Passwort, und das Anmelde-Passwort lässt sich ändern.
+  - Ein untergeschobener Anmelde-Link meldet ohne Bestätigung nicht an.
+  - Im Konto liegt nur Verschlüsseltes, und das Passwort wird nie übertragen.
+  - Die Daten kommen auf einem zweiten Gerät an.
+  - Bots sehen nur Besitzer.
+  - Ein geheimer Schlüssel in der Einrichtung schaltet die Anmeldung ab.
 - Dependabot schlägt einmal im Monat Sicherheitsupdates für die GitHub-Bausteine vor.
 
 ## Was Sie selbst tun sollten

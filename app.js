@@ -397,6 +397,8 @@ const VIEW_INIT = {
 const initialized = new Set();
 function showView(id, { scrollTo = null } = {}) {
   if (!VIEWS.includes(id)) id = "home";
+  // Bots & Copy-Trading: mit eingerichteter Anmeldung nur für den Besitzer (login.js)
+  if (GROUP_OF[id] === "bots" && window.DTD.botsAllowed && !window.DTD.botsAllowed()) { id = "home"; if (location.hash !== "#home") history.replaceState(null, "", "#home"); }
   const group = GROUP_OF[id];
   for (const name of VIEWS) $(name).hidden = name !== id;
   for (const g of GROUP_ORDER) {
