@@ -91,7 +91,7 @@ const fv = (start, rate, years, r) => { const g = Math.pow(1 + r / 100, 1 / 12) 
   const k = await txt(p, '#wPortfolioBody .stats');
   console.log('  ', k);
   check(k.includes(`Erwartete Rendite pro Jahr ${pc(exp)}`), `erwartete Rendite ${pc(exp)} (Aktien ${pc(1.93 + MOD.equityPremium)}, Anleihen 2,35 %, Geldmarkt 1,93 %, minus Kosten)`);
-  check(k.includes(`Nach Inflation (2 %) ${pc(exp - MOD.longRun.inflation)}`), 'nach Inflation');
+  check(k.includes(`Nach Inflation (langfristig ${pc(MOD.longRun.inflation, 0)}) ${pc(exp - MOD.longRun.inflation)}`), 'nach Inflation (langfristige Annahme, nicht die aktuelle Rate)');
   check(k.includes(`Schwankung pro Jahr ${pc(vol(a), 0)}`) && k.includes(`Absturz wie 2008 −${de(crash(a), 0)} %`), `Schwankung ${pc(vol(a), 0)}, Absturz −${de(crash(a), 0)} %`);
   check(/mit den Zinsen der EZB vom/.test(await txt(p, '#wPortfolioBody')), 'Quelle der Zinsen genannt');
   const legend = await p.$$eval('#wPortfolioBody .w-alloc-legend li', l => l.map(x => x.innerText.replace(/\s+/g, ' ').trim()));

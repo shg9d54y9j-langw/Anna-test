@@ -134,7 +134,7 @@
       ${allocBar(a)}
       <div class="stats">
         ${kpi("Erwartete Rendite pro Jahr", `<span class="up">${pc(exp)}</span>`)}
-        ${kpi("Nach Inflation (2 %)", pc(exp - r.infl))}
+        ${kpi(`Nach Inflation (langfristig ${pc(r.infl, 0)})`, pc(exp - r.infl))}
         ${kpi("Schwankung pro Jahr", pc(vol(a), 0))}
         ${kpi("Absturz wie 2008", `<span class="down">−${fmt(crash(a), 0)} %</span>`)}
       </div>
