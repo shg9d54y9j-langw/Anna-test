@@ -795,7 +795,9 @@ document.addEventListener("DOMContentLoaded", route);
       if (w.offsetParent === null || w.scrollWidth <= w.clientWidth + 2) return;
       w.tabIndex = 0;
       w.setAttribute("role", "region");
-      const box = w.closest(".card, details, section"), t = box && box.querySelector(".card-title, h2, h3, summary");
+      // eigene Überschrift direkt über der Tabelle zuerst (mehrere Tabellen in einer Karte bekommen so verschiedene Namen)
+      const prev = w.previousElementSibling, own = prev && /^H[2-4]$/.test(prev.tagName) ? prev : null;
+      const box = w.closest(".card, details, section"), t = own || (box && box.querySelector(".card-title, h2, h3, summary"));
       w.setAttribute("aria-label", `Tabelle${t ? `: ${t.textContent.trim().slice(0, 60)}` : ""} – seitlich scrollbar`);
     });
   };

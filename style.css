@@ -1288,3 +1288,20 @@ textarea.push-val { display: block; width: 100%; margin-top: 8px; resize: vertic
 /* Risiko-Check */
 table.risk-t td.wrap { min-width: 220px; white-space: normal; line-height: 1.45; }
 @media (max-width: 760px) { table.risk-t .opt { display: none; } table.risk-t td.wrap { min-width: 150px; } }
+
+/* Journal-Auswertung */
+.js-ins { list-style: none; margin: 14px 0 6px; padding: 0; display: grid; gap: 7px; }
+.js-ins li { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; font-size: 14px; color: var(--text-2); line-height: 1.5; }
+.js-ins .sa-icon { margin: 1px 0 0; }
+.js-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 0 20px; }
+.js-t td.num:last-child { white-space: nowrap; }
+.js-bar { display: inline-block; width: 46px; height: 6px; border-radius: 3px; background: var(--surface-3); margin-right: 8px; vertical-align: middle; overflow: hidden; }
+.js-bar i { display: block; height: 100%; background: var(--up); border-radius: 3px; }
+.js-bar i.neg { background: var(--down); }
+.js-few td, .js-few td.up, .js-few td.down, .js-few td .up, .js-few td .down { color: var(--muted); }
+.js-few .js-bar i { opacity: .45; }
+@media (max-width: 760px) {
+  .js-bar { display: none; }
+  table.js-t td:first-child { white-space: normal; }
+  table.js-t .js-meta { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+}
