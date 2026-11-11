@@ -339,7 +339,18 @@ async function main() {
     log(`Europa-Liste über das Kürzel nachgeschlagen: ${got.length ? got.join(", ") : "keine"} gefunden`);
   }
   const euMissing = euOpen.filter(o => !euFound.some(f => f.entry === o.entry));
-  if (euMissing.length) log(`Europa-Liste – nicht bei eToro: ${euMissing.map(o => `${o.entry.name}${o.entry.sym ? ` (${o.entry.sym})` : ""}`).join(", ")}`);
+  if (euMissing.length) {
+    // Grund je Eintrag, damit sich die Liste gezielt pflegen lässt: Kürzel unbekannt, bei eToro nicht handelbar, oder anderer Name
+    const raw = new Map(list.map(it => [String(field(it, "internalSymbolFull") || "").toUpperCase(), it]));
+    const valid = new Set(validList(list, types.stock, index, isRank).out.map(x => x.sym));
+    const why = o => {
+      const s = String(o.entry.sym || "").toUpperCase(), it = raw.get(s);
+      if (!s || !it) return `${o.entry.name}${s ? ` (${s} unbekannt)` : ""}`;
+      if (!valid.has(s)) return `${o.entry.name} (${s} bei eToro nicht handelbar)`;
+      return `${o.entry.name} (${s} heißt bei eToro „${String(field(it, "displayname") || "").slice(0, 50)}“)`;
+    };
+    log(`Europa-Liste – nicht übernommen: ${euMissing.map(why).join(", ")}`);
+  }
   // Zusatznamen (Suche nach „Münchener Rück“, Wiener Kürzel) und Land der Firma
   const euBy = new Map(euFound.map(f => [f.sym, f]));
   for (const u of universe) {

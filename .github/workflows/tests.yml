@@ -209,7 +209,12 @@ jobs:
       - name: Playwright und Chromium installieren
         run: |
           npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.63.0
-          npx playwright install --with-deps chromium
+          # Die Paketquellen von Ubuntu sind manchmal kurz nicht erreichbar: bis zu dreimal versuchen
+          for i in 1 2 3; do
+            npx playwright install --with-deps chromium && break
+            [ "$i" = 3 ] && exit 1
+            sleep $((i * 30))
+          done
 
       - name: Browser-Tests – Suche, Note, Vergleich, Alarme, News, Portfolio, Sicherung, Bilanz, Seite anpassen, ohne Netz
         run: bash tests/browser/run.sh

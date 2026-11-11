@@ -678,7 +678,11 @@
     },
     {
      "sym": "RDC.DE",
-     "name": "Redcare Pharmacy"
+     "name": "Redcare Pharmacy",
+     "match": [
+      "redcare",
+      "shop apotheke"
+     ]
     },
     {
      "sym": "R3NK.DE",
