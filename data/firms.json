@@ -1,5 +1,5 @@
 {
- "asOf": "2026-11-10",
+ "asOf": "2026-11-16",
  "note": "Firmen-Steckbriefe für die Theorie-Seite: Fakten aus Firmenangaben und Presse, Stand siehe asOf. Rollen: leader = Marktführer, supplier = Zulieferer (verdient, egal wer gewinnt), challenger = Herausforderer, spec = spekulativ. Auch Firmen von Börsen außerhalb von eToro (listing = Börse, tv = TradingView-Symbol für den Kurs-Link). Keine Kaufempfehlung. Alle Kürzel kommen automatisch in die Aktien-Daten (scripts/stock-universe.mjs).",
  "firms": {
   "NVDA": {
@@ -521,11 +521,15 @@
    "role": "spec",
    "what": "Baut riesige Satelliten (Antennenfläche über 200 m²), die gewöhnliche Handys direkt mit Breitband versorgen sollen – ganz ohne Spezialgerät.",
    "why": "Partner sind große Mobilfunker wie AT&T, Verizon und Vodafone, die das Netz an ihre Kunden weiterverkaufen würden; im Juni 2026 starteten drei Satelliten der neuen Generation. Gelingt der Ausbau, wäre AST ein weltweiter Netzbetreiber ohne Funkmasten.",
-   "watch": "Der kommerzielle Start wurde auf Anfang 2027 verschoben; für Dauerbetrieb braucht es 45–60 Satelliten – sehr teuer, laufend neue Aktien; Konkurrenz durch SpaceX (Starlink Direct to Cell).",
+   "watch": "Der kommerzielle Start wurde auf Anfang 2027 verschoben; für Dauerbetrieb braucht es 45–60 Satelliten – sehr teuer, laufend neue Aktien; Konkurrenz durch SpaceX (Starlink Direct to Cell). Im November 2026 kündigte AST eine eigene wiederverwendbare Rakete an (Blacklift): Triebwerksvertrag mit Firefly über mehr als 1,3 Mrd. $, Starts ab Ende 2028 geplant – die Triebwerke sind noch nie in eine Umlaufbahn geflogen, Fachleute halten den Zeitplan für ehrgeizig.",
    "src": [
     [
      "https://satnews.com/2026/07/16/ast-spacemobile-defers-commercial-direct-to-device-timeline-to-early-2027/",
      "SatNews: Start auf Anfang 2027 verschoben (Juli 2026)"
+    ],
+    [
+     "https://lightreading.com/satellite/ast-spacemobile-s-blacklift-rocket-gambit-draws-skepticism",
+     "Light Reading: Blacklift-Rakete stößt auf Skepsis (Nov. 2026)"
     ]
    ]
   },
@@ -598,7 +602,7 @@
    "name": "Oklo",
    "role": "spec",
    "what": "Entwickelt kleine schnelle Reaktoren („Aurora“) und will den Strom direkt an Rechenzentren und Industrie verkaufen.",
-   "why": "Großes Interesse der Tech-Branche; 2026 hat das US-Energieministerium einen Vertrag für den ersten Aurora-Reaktor am Idaho National Laboratory geschlossen, und die US-Atomaufsicht hat die Auslegungs-Grundlagen beschleunigt genehmigt. Gelingt der erste Reaktor, könnte Oklo Dutzende bauen.",
+   "why": "Großes Interesse der Tech-Branche; 2026 hat das US-Energieministerium einen Vertrag für den ersten Aurora-Reaktor am Idaho National Laboratory geschlossen, und die US-Atomaufsicht hat die Auslegungs-Grundlagen beschleunigt genehmigt. Gelingt der erste Reaktor, könnte Oklo Dutzende bauen. Am 6. August 2026 erreichte Oklos kleiner Test-Reaktor Groves (100 Watt, für Isotope) im Pilotprogramm des Energieministeriums erstmals Kritikalität – weniger als ein Jahr nach Baubeginn.",
    "watch": "Noch kein Umsatz und keine Betriebsgenehmigung für Aurora; im 1. Halbjahr 2026 wurden 1,85 Mrd. $ über neue Aktien eingesammelt (Verwässerung). Der Kurs fiel vom Hoch im Oktober 2025 um rund 80 %.",
    "src": [
     [
@@ -608,6 +612,10 @@
     [
      "https://247wallst.com/investing/2026/05/26/oklo-moves-one-step-closer-to-commercialization/",
      "24/7 Wall St.: Genehmigungsschritt (Mai 2026)"
+    ],
+    [
+     "https://www.energy.gov/ne/articles/office-nuclear-energy-celebrates-fifth-advanced-reactor-criticality",
+     "US-Energieministerium: Groves erreicht Kritikalität (Aug. 2026)"
     ]
    ]
   },
@@ -953,6 +961,101 @@
      "Teleborsa: Repsol nach neun Monaten (Okt. 2026)"
     ]
    ]
+  },
+  "CROX": {
+   "name": "Crocs",
+   "role": "leader",
+   "theme": "Schuhe: Crocs und HEYDUDE wachsen wieder, Prognose angehoben",
+   "added": "2026-11-16",
+   "what": "US-Schuhhersteller: die Gummi-Clogs der Marke Crocs, dazu seit 2022 die Freizeitschuh-Marke HEYDUDE; Verkauf weltweit über Handel und eigene Online-Shops.",
+   "why": "Im 3. Quartal 2026 (gemeldet am 29. Oktober) stieg der Umsatz um rund 5 % auf 1,04 Mrd. $, der bereinigte Gewinn je Aktie um 26 % auf 3,69 $ – deutlich über der eigenen Prognose von 3,20 bis 3,30 $. Beide Marken wuchsen wieder, HEYDUDE um rund 6 %. Crocs hob die Jahresprognose zum dritten Mal 2026 an: bereinigter Gewinn je Aktie nun 14,45 bis 14,65 $ (zuvor 13,70 bis 14,00 $), für das 4. Quartal 7 bis 9 % mehr Umsatz.",
+   "watch": "Mode-Risiko: Clogs können aus der Mode kommen; HEYDUDE soll 2026 insgesamt nur stagnieren; US-Zölle auf Schuhe aus Asien – im Quartal half eine einmalige Zollrückerstattung von 67 Mio. $ dem nicht bereinigten Gewinn.",
+   "src": [
+    [
+     "https://fashionunited.com/news/business/crocs-lifts-annual-outlook-as-third-quarter-revenues-reach-1-04-billion-dollars/2026102975461",
+     "FashionUnited: Crocs im 3. Quartal (Okt. 2026)"
+    ],
+    [
+     "https://quartr.com/events/crocs-inc-crox-q3-2026_3sqvURJ3",
+     "Quartr: Crocs, Zahlen zum 3. Quartal (Okt. 2026)"
+    ]
+   ]
+  },
+  "COP": {
+   "name": "ConocoPhillips",
+   "role": "leader",
+   "theme": "Öl und Gas: höhere Dividende, Rückkäufe, Flüssiggas",
+   "added": "2026-11-16",
+   "what": "Größter unabhängiger Öl- und Gasförderer der USA: Schieferöl im Permbecken, Alaska, Norwegen, Katar und Australien; baut das Alaska-Großprojekt Willow und ein Geschäft mit Flüssiggas (LNG) auf.",
+   "why": "Im 3. Quartal 2026 (gemeldet am 5. November) verdiente ConocoPhillips bereinigt 3,9 Mrd. $ oder 3,27 $ je Aktie – mehr als doppelt so viel wie ein Jahr zuvor (1,38 $) und über den Erwartungen –, weil der erzielte Preis je Barrel Öläquivalent um 32 % auf 61,40 $ stieg. Im Quartal gingen 3,4 Mrd. $ an die Aktionäre (davon 2,4 Mrd. $ Rückkäufe), die Quartalsdividende steigt um 11 % auf 0,93 $. Willow ist zu über 75 % gefertigt, erstes Öl ist für Anfang 2029 geplant; das LNG-Abnahmeportfolio wuchs auf 13 Mio. Tonnen pro Jahr.",
+   "watch": "Hängt direkt am Öl- und Gaspreis; die Förderung lag im Quartal rund 4 % unter dem Vorjahr; Willow ist teuer und wegen Umweltklagen umstritten; Ölpreise schwanken mit OPEC-Entscheidungen und Konjunktur.",
+   "src": [
+    [
+     "https://www.sec.gov/Archives/edgar/data/0001163165/000116316526000043/cop-20261105x8kexx991.htm",
+     "ConocoPhillips: Zahlen zum 3. Quartal, SEC-Meldung (Nov. 2026)"
+    ],
+    [
+     "https://oilprice.com/Latest-Energy-News/World-News/ConocoPhillips-Doubles-Profit-to-4-Billion-Raises-Dividend.html",
+     "Oilprice: Gewinn verdoppelt, Dividende erhöht (Nov. 2026)"
+    ]
+   ]
+  },
+  "ASC.L": {
+   "name": "ASOS",
+   "role": "challenger",
+   "theme": "Mode online: Sanierung trägt, wieder Wachstum",
+   "added": "2026-11-16",
+   "what": "Britischer Online-Modehändler für junge Kundschaft: eigene Marken und Fremdmarken, Versand in viele Länder.",
+   "why": "Im Geschäftsjahr 2026 (gemeldet am 5. November) stieg das bereinigte operative Ergebnis (EBITDA) auf 170,3 Mio. £ und übertraf die Erwartungen; vor Steuern verdiente ASOS 24,4 Mio. £ nach 281,6 Mio. £ Verlust im Vorjahr. Im 4. Quartal wuchs der Umsatz erstmals seit Langem wieder. Für das neue Geschäftsjahr erwartet ASOS 180 bis 200 Mio. £ bereinigtes EBITDA, mehr als der Marktkonsens von 177 Mio. £; die Nettoverschuldung sank auf 109,3 Mio. £.",
+   "watch": "Der Fortschritt kommt bisher vor allem aus höheren Margen, kaum aus mehr Bestellungen – erwartet wird nur geringes Wachstum; harte Konkurrenz durch Shein, Temu und Zalando; ein Cyberangriff kostet laut ASOS 4 bis 8 Mio. £ Umsatz; die Aktie schwankt stark.",
+   "src": [
+    [
+     "https://live.euronext.com/en/financial-news/uks-asos-forecasts-return-growth-turnaround-gathers-pace",
+     "Reuters über Euronext: ASOS-Jahreszahlen (Nov. 2026)"
+    ],
+    [
+     "https://fashionunited.uk/news/business/asos-delivers-turnaround-as-fy26-pre-tax-profit-reaches-24-4-million-pounds/2026110591200",
+     "FashionUnited: ASOS-Gewinn vor Steuern (Nov. 2026)"
+    ]
+   ]
+  },
+  "JDW.L": {
+   "name": "J D Wetherspoon",
+   "role": "leader",
+   "theme": "Pubs: Umsatz wächst schneller als die Branche",
+   "added": "2026-11-16",
+   "what": "Größte britische Pub-Kette mit knapp 800 eigenen Pubs und Hotels: günstige Getränke und Essen, dazu Spielautomaten.",
+   "why": "In den ersten 14 Wochen des Geschäftsjahrs (bis 1. November 2026) stieg der vergleichbare Umsatz um 8,2 %, der Gesamtumsatz um 9,1 %; Getränke legten um 9,4 % zu, Essen um 6,8 %. Am 4. November bestätigte Wetherspoon die Gewinnerwartungen; die Nettoverschuldung sank auf 736 Mio. £ (Vorjahr 756 Mio. £).",
+   "watch": "Das Wachstum verlangsamte sich in den letzten fünf Wochen auf 7,5 %; die Gewinnprognose wurde nur bestätigt, nicht angehoben; die Hotelumsätze sanken um 1,4 %; nur 5 bis 10 neue Pubs geplant; nächster Bericht am 20. Januar 2027.",
+   "src": [
+    [
+     "https://www.hl.co.uk/shares/stock-market-news/company--news/jd-wetherspoon-sales-grow-8.2pc-in-q1-as-pub-chain-extends-industry-beating-run",
+     "Hargreaves Lansdown: Umsatz im 1. Quartal (Nov. 2026)"
+    ],
+    [
+     "https://www.investegate.co.uk/announcement/rns/wetherspoon-j-d---jdw/trading-update-announcement/9856806",
+     "Wetherspoon: Trading Update (Nov. 2026)"
+    ]
+   ]
+  },
+  "RAW.DE": {
+   "name": "Raiffeisen Bank International",
+   "role": "challenger",
+   "theme": "Osteuropa-Bank: mehr Gewinn ohne Russland",
+   "added": "2026-11-16",
+   "what": "Österreichische Bankengruppe mit Töchtern in Mittel- und Osteuropa, etwa in Tschechien, der Slowakei, Rumänien und der Ukraine – dazu eine Tochter in Russland, die verkauft werden soll.",
+   "why": "Nach neun Monaten 2026 (gemeldet am 3. November) stieg das Konzernergebnis ohne Russland um 9,8 % auf rund 1,13 Mrd. €, getragen von höheren Kernerträgen und mehr Krediten. Die RBI hob die Prognose für den Zinsüberschuss 2026 auf über 4,5 Mrd. € (zuvor 4,4 Mrd. €) und hat die Übernahme von Garanti BBVA in Rumänien abgeschlossen.",
+   "watch": "Die russische Tochter ist weiter nicht verkauft – politisch, regulatorisch und praktisch schwierig; die Rumänien-Übernahme senkt die harte Kernkapitalquote im 4. Quartal um rund 0,6 Prozentpunkte; Kursbewegungen hängen stark an Nachrichten zum Krieg in der Ukraine; Strategie-Details erst beim Kapitalmarkttag am 10. Februar 2027.",
+   "src": [
+    [
+     "https://www.trend.at/news/rbi-schrieb-nach-neun-monaten-10-prozent-mehr-gewinn",
+     "trend: RBI nach neun Monaten (Nov. 2026)"
+    ],
+    [
+     "https://www.boersen-zeitung.de/banken-finanzen/raiffeisen-bank-international-verdient-mehr-im-kerngeschaeft",
+     "Börsen-Zeitung: RBI verdient mehr im Kerngeschäft (Nov. 2026)"
+    ]
+   ]
   }
  },
  "sectors": {
@@ -1115,6 +1218,11 @@
  "swing": [
   "BAYN.DE",
   "MRK",
-  "REP.MC"
+  "REP.MC",
+  "CROX",
+  "COP",
+  "ASC.L",
+  "JDW.L",
+  "RAW.DE"
  ]
 }
