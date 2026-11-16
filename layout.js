@@ -5,11 +5,15 @@
   const KEY = "dtd-layout";
   const VIEWS = [...document.querySelectorAll(".tabs .tab")].map(t => ({ id: t.dataset.tab, label: (t.querySelector("span") || t).textContent.trim() }))
     .concat(document.getElementById("botsBtn") ? [{ id: "bots", label: "Bots & Copy-Trading (Knopf oben)" }] : []);
-  const TOP = [["brief", "Heute wichtig (Tagesbriefing)"], ["neu", "Neu in RojkoMoney"], ["since", "Seit Ihrem letzten Besuch"], ["alerts", "Hinweise (smarte Alarme)"], ["depot", "Depot und Merkliste"], ["today", "Neu heute und Termine"]];
+  const TOP = [["brief", "Heute wichtig (Tagesbriefing)"], ["since", "Seit Ihrem letzten Besuch"], ["neu", "Neu in RojkoMoney"], ["start", "Schnellstart-Kacheln"], ["alerts", "Hinweise (smarte Alarme)"], ["depot", "Depot und Merkliste"], ["today", "Neu heute und Termine"]];
   const DASH = [["market", "Marktlage"], ["sessions", "Börsen"], ["journal", "Mein Handelstag"], ["rules", "Tagesregeln"], ["quick", "Schnellzugriff"]];
   const arr = a => (Array.isArray(a) ? a.filter(x => typeof x === "string") : []);
-  // gespeicherte Reihenfolge, ergänzt um später hinzugekommene Karten
-  const order = (saved, all) => { const ids = all.map(([k]) => k), s = arr(saved).filter(k => ids.includes(k)); const add = ids.filter(k => !s.includes(k)); return [...add.filter(k => k === "brief"), ...s, ...add.filter(k => k !== "brief")]; };
+  // gespeicherte Reihenfolge; später hinzugekommene Karten hinter ihren Vorgänger in der Grundordnung (sonst ganz nach vorn)
+  const order = (saved, all) => {
+    const ids = all.map(([k]) => k), out = arr(saved).filter(k => ids.includes(k));
+    ids.forEach((k, i) => { if (out.includes(k)) return; const prev = ids.slice(0, i).reverse().find(x => out.includes(x)); out.splice(prev ? out.indexOf(prev) + 1 : 0, 0, k); });
+    return out;
+  };
   function get() {
     const c = store.get(KEY, {}) || {};
     return { hide: arr(c.hide).filter(id => id !== "home" && VIEWS.some(v => v.id === id)), homeHide: arr(c.homeHide), top: order(c.top, TOP), dash: order(c.dash, DASH) };

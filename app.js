@@ -78,12 +78,32 @@ function bindSort(thead, cols, state, onChange) {
 function toast(title, text, ms = 9000) {
   const t = document.createElement("div");
   t.className = "toast";
+  t.title = "Antippen zum Schließen";
   const b = document.createElement("b");
   b.textContent = title;
   t.append(b, document.createTextNode(text));
+  t.addEventListener("click", () => t.remove());   // Hinweis antippen: sofort weg (verdeckt sonst Felder)
   $("toasts").append(t);
   setTimeout(() => t.remove(), ms);
 }
+// Erster Besuch: noch keine eigenen Daten (Depot, Merkliste, Journal) – dann Willkommen statt Änderungsliste
+window.DTD.isNewUser = () => !["dtd-portfolio", "dtd-watch", "daytrade-journal-v1"].some(k => { const v = store.get(k, null); return Array.isArray(v) ? v.length > 0 : !!(v && typeof v === "object" && Object.keys(v).length); });
+// Als App installieren: Chrome und Android bieten es selbst an (beforeinstallprompt), iPhone über „Teilen → Zum Home-Bildschirm“
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; });
+window.DTD.installApp = () => {
+  if (installEvt) { installEvt.prompt(); installEvt = null; return; }
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  toast("Als App installieren", ios ? "Unten in Safari auf „Teilen“ (Quadrat mit Pfeil) tippen, dann „Zum Home-Bildschirm“." : "Im Browser-Menü (⋮) „App installieren“ oder „Zum Startbildschirm hinzufügen“ wählen.", 9000);
+};
+// Kurze Anleitung: wie die App aufgebaut ist (aus „Mehr“ und der Willkommenskarte)
+window.DTD.showGuide = () => openDrawer("Kurze Anleitung", `<ol class="guide">
+  <li><b>Start</b> – was heute wichtig ist: Marktlage, Hinweise zu Ihren Aktien, Termine. Oben die Kacheln für den schnellen Einstieg.</li>
+  <li><b>Depot</b> – Ihre Aktien mit Gewinn, Risiko und Ausstiegs-Plan. Eintragen von Hand oder als Umsatzliste aus Trade Republic oder Scalable (unter „Sichern und übertragen“).</li>
+  <li><b>Aktie</b> – Namen oder Kürzel eintippen: Note, Trend, Termine, Analysten und Nachrichten. Mit dem Stern kommt sie auf die Merkliste.</li>
+  <li><b>Markt</b> – Ampel für neue Käufe, Heatmap, Nachrichten und Wirtschaftstermine.</li>
+  <li><b>Mehr</b> – Vermögensaufbau, Werkzeuge (Screener, Kalender, Kursalarme), Ideen und Bots.</li>
+  </ol><p class="small muted">Tipps: Die Lupe oben sucht auf jeder Seite. Fachbegriffe mit gepunkteter Linie antippen – dann kommt die Erklärung. Am Handy wechselt Wischen nach links oder rechts den Bereich. Ihre Daten bleiben in diesem Browser.</p>`);
 let drawerReturn = null;
 function openDrawer(title, html, after) {
   drawerReturn = document.activeElement;

@@ -28,7 +28,7 @@
 
   function renderHead() {
     const now = new Date(), h = parseInt(F_HOUR.format(now), 10);   // „14 Uhr“ – Number() ergab NaN, die Begrüßung war immer „Guten Abend“
-    setText("ovGreeting", h < 11 ? "Guten Morgen" : h < 18 ? "Guten Tag" : "Guten Abend");
+    setText("ovGreeting", h >= 5 && h < 11 ? "Guten Morgen" : h >= 11 && h < 18 ? "Guten Tag" : "Guten Abend");
     setText("ovDate", F_DATE.format(now));
   }
 

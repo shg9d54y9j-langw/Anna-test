@@ -2,8 +2,10 @@
 // Erscheint, solange es Einträge gibt, die noch nicht als gelesen markiert sind (localStorage dtd-wn-seen = neuester Eintrag).
 (() => {
   const SEEN = "dtd-wn-seen";
+  const NEW_USER = !store.get(SEEN, "") && window.DTD.isNewUser && window.DTD.isNewUser();   // erster Besuch: Liste gilt als gelesen
   // neueste zuerst; href = Sprungziel (Bereich oder Abschnitt), act = besondere Aktion
   const NEW = [
+    { id: "2026-11-16-einfacher", t: "Einfacher bedienen", d: "Oben auf der Startseite vier Kacheln für den schnellen Einstieg: Aktie prüfen, Mein Depot, Marktlage, Ideen. Am Handy unten nur noch Start, Depot, Aktie, Markt und „Mehr“ – dort stehen Vermögen, Werkzeuge, Ideen, Bots, die Einstellungen und eine kurze Anleitung. Hinweise lassen sich antippen und schließen; neue Nutzer bekommen eine Willkommenskarte mit den ersten Schritten.", act: "guide" },
     { id: "2026-11-11-tr-import", t: "Import aus Trade Republic und Scalable", d: "Die Umsatzliste aus Trade Republic (App: Profil → Kontoauszüge → Transaktionsexport) oder Scalable Capital (Web-Broker: Transaktionen → CSV-Export) im Portfolio unter „Sichern und übertragen“ wählen: Die Seite liest die Datei nur im Browser, zeigt Stück und Ø Kaufkurs je Wert, schlägt das Kürzel vor und übernimmt nach Ihrer Bestätigung. Werte in beiden Depots werden zusammengeführt, US-Aktien zum EZB-Kurs des Kauftags in Dollar umgerechnet.", href: "#portfolio" },
     { id: "2026-11-11-ohne-etoro", t: "OMV, Post, EVN & Co. in der Suche", d: "Österreichische und andere europäische Aktien, die eToro gar nicht führt (OMV, Österreichische Post, EVN, DO & CO, Palfinger …), finden Sie jetzt in der Suche – markiert mit „nicht bei eToro“. Der Aktien-Check zeigt dazu Kurs und Diagramm der Heimatbörse von TradingView, aber keine Note und keine Kauf-Marken.", href: "#aktie" },
     { id: "2026-11-11-konto", t: "Konto und App teilen", d: "Oben rechts beim Personen-Symbol: die App per Link teilen und – sobald eingerichtet – mit Einladung anmelden (E-Mail und Passwort oder Code). Portfolio, Journal, Merkliste, Alarme und Vermögen sind dann auf allen Geräten gleich, Ende-zu-Ende verschlüsselt mit Ihrem Sync-Passwort. Bots & Copy-Trading sieht nur der Besitzer.", act: "account" },
@@ -52,6 +54,7 @@
     { t: "Vergleich und Konkurrenz", d: "2–4 Aktien nebeneinander, dazu jede Aktie gegen ihre Branche.", href: "#vergleich" },
     { t: "Branchen-Rotation", d: "Welche Branchen gerade kommen und welche gehen.", href: "#branchen" },
   ];
+  if (NEW_USER) store.set(SEEN, NEW[0].id);
   const unseen = () => { const s = store.get(SEEN, ""); const i = NEW.findIndex(n => n.id === s); return i < 0 ? NEW : NEW.slice(0, i); };
   const item = n => `<li>${n.href ? `<a href="${n.href}">` : n.act ? `<button type="button" class="link-btn" data-wn-act="${n.act}">` : "<span>"}<b>${esc(n.t)}</b>${n.href ? " →" : ""}${n.href ? "</a>" : n.act ? "</button>" : "</span>"}<span class="wn-d">${esc(n.d)}</span></li>`;
   function card() {
@@ -77,6 +80,7 @@
     if (a && a.dataset.wnAct === "layout" && window.DTD.layout) return window.DTD.layout.open();
     if (a && a.dataset.wnAct === "status" && window.DTD.openDataStatus) return window.DTD.openDataStatus();
     if (a && a.dataset.wnAct === "account" && window.DTD.openAccount) return window.DTD.openAccount();
+    if (a && a.dataset.wnAct === "guide" && window.DTD.showGuide) return window.DTD.showGuide();
     if (a && a.dataset.wnAct === "search") {
       const box = document.querySelector(".qs"), input = document.getElementById("qsInput");
       if (box) box.classList.add("open");

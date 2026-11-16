@@ -34,7 +34,21 @@ const stocks = fs.readFileSync(path.join(__dirname, 'fixtures', 'stocks.json'), 
   }
   const hash = p => p.evaluate(() => location.hash);
   const goto = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForTimeout(500); await p.evaluate(() => window.scrollTo(0, 0)); };
-  const left = p => swipe(p, 300, 420, 90, 430), right = p => swipe(p, 90, 420, 300, 430);
+  // mitten im Inhalt wischen: eine Höhe, an der weder Felder noch waagrecht scrollende Leisten (z. B. „Springen zu“) liegen
+  const safeY = p => p.evaluate(() => {
+    const NO = 'input, textarea, select, [contenteditable], .chart-host, .table-wrap, .subnav, .viewswitch, .seg, .ticker, .tradingview-widget-container, iframe, svg, .w-alloc, [data-no-swipe], .bottomnav, .drawer, .navsheet, a, button';
+    const ok = (x, y) => {
+      const el = document.elementFromPoint(x, y);
+      if (!el || el.closest(NO)) return false;
+      for (let e = el; e && e !== document.body; e = e.parentElement) { const ox = getComputedStyle(e).overflowX; if ((ox === 'auto' || ox === 'scroll') && e.scrollWidth > e.clientWidth + 2) return false; }
+      return true;
+    };
+    for (let y = 420; y < innerHeight - 90; y += 20) if (ok(300, y) && ok(90, y)) return y;
+    for (let y = 400; y > 200; y -= 20) if (ok(300, y) && ok(90, y)) return y;
+    return 420;
+  });
+  const left = async p => { const y = await safeY(p); await swipe(p, 300, y, 90, y + 10); };
+  const right = async p => { const y = await safeY(p); await swipe(p, 90, y, 300, y + 10); };
 
   const p = await open();
   await left(p);

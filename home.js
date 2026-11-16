@@ -119,6 +119,44 @@
         : `<p class="muted small">Keine Quartalszahlen Ihrer Aktien, der Merkliste oder der Swing-Ideen in den nächsten 7 Tagen.</p>`}
     </article>`;
   }
+  // ---------- Schnellstart: vier große Kacheln für den Einstieg ----------
+  const tabIcon = id => { const t = document.getElementById(`tab-${id}`), svg = t && t.querySelector("svg"); return svg ? svg.outerHTML : ""; };
+  const LIGHT = { green: "Rückenwind", yellow: "gemischt", red: "Gegenwind" };
+  function startCard() {
+    const off = new Set(window.DTD.layout ? window.DTD.layout.get().hide : []), n = window.DTD.portfolioCount ? window.DTD.portfolioCount() : 0;
+    const m = window.DTD.market, light = m && m.overall && LIGHT[m.overall.light];
+    const tiles = [
+      ["aktie", "#aktie", "Aktie prüfen", "Note, Trend und Nachrichten", true],
+      ["portfolio", "#portfolio", "Mein Depot", n ? `${n} ${n === 1 ? "Aktie" : "Aktien"} im Blick` : "Eintragen oder importieren"],
+      ["markt", "#markt", "Marktlage", light ? `Gerade: ${light}` : "Rückenwind oder Gegenwind?"],
+      ["ideas", "#hot", "Ideen", "Was Experten gerade favorisieren"],
+    ].filter(([g]) => !off.has(g));
+    return tiles.length ? `<nav class="start-tiles" aria-label="Schnellstart">${tiles.map(([g, href, t, sub, search]) => `<a class="start-tile" href="${href}"${search ? " data-start-search" : ""}>${tabIcon(g)}<span><b>${t}</b><small>${esc(sub)}</small></span></a>`).join("")}</nav>` : "";
+  }
+  // ---------- Willkommen: beim ersten Besuch (noch keine eigenen Daten) drei Schritte statt leerer Karten ----------
+  const WELCOME = "dtd-welcome-done";
+  const welcomeOn = () => !store.get(WELCOME, false) && window.DTD.isNewUser && window.DTD.isNewUser();
+  function welcomeCard() {
+    return `<article class="card welcome" aria-labelledby="welcomeTitle">
+      <h2 class="card-title" id="welcomeTitle">Willkommen bei RojkoMoney</h2>
+      <p class="small">Ihr Börsen-Cockpit: Aktien prüfen, das eigene Depot im Blick, die Marktlage auf einen Blick. Kein Konto nötig – Ihre Daten bleiben in diesem Browser.</p>
+      <ol class="welcome-steps">
+        <li><a href="#aktie" data-start-search><b>Eine Aktie prüfen</b><small>Namen eintippen, z. B. Apple oder OMV – Note, Trend, Termine und Nachrichten.</small></a></li>
+        <li><a href="#portfolio"><b>Depot eintragen</b><small>Von Hand oder als Umsatzliste aus Trade Republic oder Scalable.</small></a></li>
+        <li><a href="#markt"><b>Marktlage ansehen</b><small>Die Ampel zeigt, ob gerade Rückenwind oder Gegenwind für neue Käufe herrscht.</small></a></li>
+        <li><button type="button" data-install><b>Als App aufs Handy</b><small>Dann startet RojkoMoney wie jede andere App vom Home-Bildschirm.</small></button></li>
+      </ol>
+      <div class="btn-row"><button type="button" class="btn ghost" data-welcome-done>Alles klar, ausblenden</button><button type="button" class="btn ghost" data-guide>Kurze Anleitung</button></div>
+    </article>`;
+  }
+  document.addEventListener("click", e => {
+    if (e.target.closest("[data-welcome-done]")) { store.set(WELCOME, true); return render(); }
+    if (e.target.closest("[data-install]")) return window.DTD.installApp && window.DTD.installApp();
+    if (e.target.closest("[data-guide]")) return window.DTD.showGuide && window.DTD.showGuide();
+    // „Aktie prüfen“: zum Aktien-Check und gleich ins Suchfeld
+    if (e.target.closest("[data-start-search]")) setTimeout(() => { const i = document.getElementById("stockInput"); if (i && !document.getElementById("aktie").hidden) i.focus(); }, 350);
+  });
+
   let busy = false, tried = 0;
   function render() {
     const host = $("ovSmart");
@@ -140,10 +178,14 @@
       alerts: () => (window.DTD.smartAlertsCard ? window.DTD.smartAlertsCard() : ""),
       depot: () => `<div class="grid-2">${depotCard()}${watchCard()}</div>`,
       today: () => `<div class="grid-2">${newCard()}${dateCard()}</div>`,
+      start: startCard,
     };
     const L = window.DTD.layout ? window.DTD.layout.get() : null;
     const order = L ? L.top : Object.keys(parts), hidden = new Set(L ? L.homeHide : []);
-    host.innerHTML = order.filter(k => parts[k] && !hidden.has(k)).map(k => { const h = parts[k](); return h ? `<div data-home="${k}">${h}</div>` : ""; }).join("");
+    // erster Besuch: Willkommen oben; die leeren Karten zu Depot, Merkliste und Hinweisen erklärt sie mit
+    const welcome = welcomeOn();
+    if (welcome) ["alerts", "depot", "neu", "since"].forEach(k => hidden.add(k));
+    host.innerHTML = (welcome ? `<div data-home="welcome">${welcomeCard()}</div>` : "") + order.filter(k => parts[k] && !hidden.has(k)).map(k => { const h = parts[k](); return h ? `<div data-home="${k}">${h}</div>` : ""; }).join("");
     if (window.DTD.smartBadge) window.DTD.smartBadge();
     if (window.DTD.fillWhy) window.DTD.fillWhy(host);
     window.dispatchEvent(new Event("dtd:sections"));

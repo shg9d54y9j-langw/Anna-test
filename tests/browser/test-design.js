@@ -71,18 +71,19 @@ const ORDER = 'home,portfolio,vermoegen,aktie,markt,tools,ideas';
   const h1 = await m.$eval(lead, e => e.getBoundingClientRect().height);
   check(h0 < 90 && h1 > h0 * 1.5, `Einleitung erst drei Zeilen (${Math.round(h0)} px), angetippt ganz (${Math.round(h1)} px)`);
   const btns = await m.$$eval('.bottomnav button', l => l.map(b => b.dataset.go || 'mehr').join());
-  check(btns === ORDER, `Leiste unten mit allen Hauptbereichen (${btns})`);
+  check(btns === 'home,portfolio,aktie,markt,mehr', `Leiste unten: vier Hauptbereiche und „Mehr“ (${btns})`);
   const fit = await m.$$eval('.bottomnav button span', l => l.filter(s => s.scrollWidth > s.clientWidth + 1 || s.getBoundingClientRect().right > innerWidth).map(s => s.textContent));
   check(!fit.length, `Leiste unten: jede Beschriftung passt (${fit.join(', ') || 'alle'})`);
-  // Ideen: Umschaltleiste, der zuletzt benutzte Teil bleibt gemerkt
-  await m.click('.bottomnav [data-go="ideas"]'); await m.waitForTimeout(500);
+  // Ideen über „Mehr“: Umschaltleiste, der zuletzt benutzte Teil bleibt gemerkt
+  const viaMore = async g => { await m.click('.bottomnav [data-more]'); await m.waitForTimeout(250); await m.click(`.navsheet [data-go="${g}"]`); await m.waitForTimeout(500); };
+  await viaMore('ideas');
   const vs = await m.evaluate(() => { const v = document.querySelector('#views > .view:not([hidden])'); return { id: v.id, n: v.querySelectorAll(':scope > .viewswitch [data-view]').length, sel: (v.querySelector(':scope > .viewswitch [aria-selected="true"]') || {}).dataset?.view }; });
   check(vs.id === 'hot' && vs.n === 4 && vs.sel === 'hot', `Ideen öffnet HotStuff mit Umschaltleiste (${JSON.stringify(vs)})`);
   await m.click('#hot > .viewswitch [data-view="swing"]'); await m.waitForTimeout(500);
   await m.click('.bottomnav [data-go="home"]'); await m.waitForTimeout(300);
-  await m.click('.bottomnav [data-go="ideas"]'); await m.waitForTimeout(500);
-  const back = await m.evaluate(() => [location.hash, (document.querySelector('.bottomnav button.on') || {}).dataset?.go, document.querySelector('#swing > .viewswitch [aria-selected="true"]').textContent]);
-  check(back[0] === '#swing' && back[1] === 'ideas' && /Swing/.test(back[2]), `zuletzt benutzter Teil bleibt gemerkt (${back.join(' · ')})`);
+  await viaMore('ideas');
+  const back = await m.evaluate(() => [location.hash, (document.querySelector('.bottomnav button.on') || {}).dataset?.more !== undefined ? 'mehr' : '', document.querySelector('#swing > .viewswitch [aria-selected="true"]').textContent]);
+  check(back[0] === '#swing' && back[1] === 'mehr' && /Swing/.test(back[2]), `zuletzt benutzter Teil bleibt gemerkt, „Mehr“ hervorgehoben (${back.join(' · ')})`);
   const oldUrl = await m.evaluate(async () => { location.hash = 'daily'; await new Promise(r => setTimeout(r, 400)); return [document.getElementById('botsBtn').getAttribute('aria-current'), !document.getElementById('daily').hidden, document.querySelectorAll('.bottomnav button.on').length]; });
   check(oldUrl[0] === 'page' && oldUrl[1] && oldUrl[2] === 0, `alte Adresse #daily landet bei Bots → Copy-Trading, Knopf oben markiert (${oldUrl})`);
   const mb = await m.evaluate(() => { const b = document.getElementById('botsBtn'), r = b.getBoundingClientRect(), s = document.getElementById('sessions').getBoundingClientRect(); return { text: b.innerText.trim(), sameRow: Math.abs(r.top - s.top) < 12, right: Math.round(r.right) }; });

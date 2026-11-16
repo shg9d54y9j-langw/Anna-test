@@ -602,13 +602,13 @@ details.info .calc { margin-top: 12px; }
   body { font-size: 14.5px; padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
   .tabs { display: none; }
   .bottomnav {
-    display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
     background: var(--glass); border-top: 1px solid var(--line); padding: 0 4px env(safe-area-inset-bottom);
     -webkit-backdrop-filter: saturate(150%) blur(16px); backdrop-filter: saturate(150%) blur(16px);
   }
   .bottomnav button {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 64px;
-    background: transparent; color: var(--muted); border: none; cursor: pointer; font: 600 10.5px var(--font); min-width: 0;
+    background: transparent; color: var(--muted); border: none; cursor: pointer; font: 600 11.5px var(--font); min-width: 0;
   }
   .bottomnav button svg { width: 34px; height: 26px; padding: 3px 7px; border-radius: 999px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: background .15s; }
   .bottomnav button.on { color: var(--text); }
@@ -1096,7 +1096,10 @@ table.cmp tr.cmp-sub th[scope="row"] { color: var(--muted); padding-left: 16px; 
   .appbar .pill { flex: 1 1 50%; padding: 5px 10px; justify-content: flex-start; }
   .pill-x { display: none; }
   #home .view-head .lead { display: none; }
-  .view-head .lead:not(.open) { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+  .view-head .lead:not(.open) { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+  .view-head { gap: 6px; padding-bottom: 10px; }
+  .view-head h1 { font-size: 24px; }
+  .view-head .eyebrow { font-size: 11.5px; }
 }
 @media (max-width: 400px) {
   .appbar { column-gap: 6px; padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
@@ -1430,3 +1433,32 @@ button.livechip:focus-visible { outline: 2px solid var(--accent); outline-offset
 @media (prefers-reduced-motion: reduce) { .view.swipe-in-l, .view.swipe-in-r { animation: none; } }
 .lay-swipe { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 4px 0 8px; }
 .lay-swipe input { width: auto; }
+
+/* ---------- Schnellstart-Kacheln (Startseite) ---------- */
+.start-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.start-tile { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--text); text-decoration: none; min-height: 64px; transition: border-color .15s, background .15s; }
+.start-tile:hover, .start-tile:focus-visible { border-color: var(--accent); background: var(--surface-2); }
+.start-tile svg { flex: none; width: 36px; height: 36px; padding: 7px; border-radius: 10px; background: var(--accent-bg); color: var(--accent-2); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.start-tile b { display: block; font-size: 15px; }
+.start-tile small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; line-height: 1.3; }
+@media (max-width: 900px) { .start-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 380px) { .start-tile { padding: 12px 10px; gap: 9px; } .start-tile svg { width: 32px; height: 32px; padding: 6px; } .start-tile b { font-size: 14px; } }
+/* ---------- Willkommen (erster Besuch) ---------- */
+.welcome { border-color: var(--accent); }
+.welcome-steps { list-style: none; counter-reset: step; padding: 0; margin: 12px 0; display: grid; gap: 8px; }
+.welcome-steps li { counter-increment: step; }
+.welcome-steps a, .welcome-steps button { display: grid; grid-template-columns: 30px 1fr; column-gap: 12px; align-items: center; width: 100%; text-align: left; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); color: var(--text); text-decoration: none; font: inherit; cursor: pointer; }
+.welcome-steps a::before, .welcome-steps button::before { content: counter(step); grid-row: span 2; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--text); color: var(--bg); font-weight: 700; }
+.welcome-steps b { font-size: 15px; }
+.welcome-steps small { color: var(--muted); font-size: 13px; }
+.welcome-steps a:hover, .welcome-steps button:hover { border-color: var(--accent); }
+/* ---------- Fenster „Mehr“ ---------- */
+.navsheet { display: grid; gap: 8px; margin-bottom: 8px; }
+.navsheet-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; }
+.navsheet-row svg { flex: none; width: 34px; height: 34px; padding: 7px; border-radius: 10px; background: var(--accent-bg); color: var(--accent-2); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.navsheet-row b { display: block; font-size: 15px; }
+.navsheet-row small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.navsheet-row.on, .navsheet-row:hover { border-color: var(--accent); }
+.navsheet-row.util { padding: 10px 12px; }
+.guide { padding-left: 20px; display: grid; gap: 8px; }
+.toast { cursor: pointer; }
