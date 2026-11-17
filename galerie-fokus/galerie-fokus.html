@@ -1,0 +1,143 @@
+<!--
+  Galerie-Fokus für Kadence "Advanced Gallery" (Raster/Masonry).
+  Klick auf ein Bild: alle anderen Bilder blenden aus, unter dem Bild öffnet
+  sich ein kleines Textfeld (Bildunterschrift + "Beschreibung" aus der Mediathek).
+  Schließen: erneut aufs Bild klicken, "×" oder Esc.
+
+  Einbau: WPCode → Code-Snippet hinzufügen → "HTML-Snippet" →
+  diesen kompletten Inhalt einfügen → Position "Site Wide Footer" → aktivieren.
+  Karussell-Galerien (z. B. "Archiv") werden bewusst ausgelassen.
+-->
+<style>
+  .gf-gallery .kadence-blocks-gallery-item {
+    cursor: pointer;
+    transition: opacity .45s ease;
+  }
+  .gf-gallery.gf-active .kadence-blocks-gallery-item:not(.gf-current) {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .gf-gallery.gf-active .kadence-blocks-gallery-item.gf-gone { display: none !important; }
+  .gf-gallery.gf-active .kadence-blocks-gallery-item.gf-current {
+    /* das gewählte Bild mittig, etwas größer */
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 560px;
+    margin: 0 auto !important;
+    flex: 0 0 100%;
+    grid-column: 1 / -1;
+  }
+  .gf-gallery.gf-active { display: flex !important; flex-wrap: wrap; justify-content: center; height: auto !important; }
+  .gf-panel {
+    max-width: 560px;
+    margin: 14px auto 0;
+    padding: 14px 18px 16px;
+    border: 1px solid currentColor;
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: left;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity .35s ease .15s, transform .35s ease .15s;
+    position: relative;
+    cursor: default;
+  }
+  .gf-panel.gf-show { opacity: 1; transform: none; }
+  .gf-panel h3 { margin: 0 28px 6px 0; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; font-weight: 400; }
+  .gf-panel p { margin: 0 0 .5em; }
+  .gf-panel p:last-child { margin-bottom: 0; }
+  .gf-close {
+    position: absolute; top: 6px; right: 10px;
+    background: none; border: 0; padding: 4px; cursor: pointer;
+    font-size: 22px; line-height: 1; color: inherit;
+  }
+  /* die normale Bildunterschrift ausblenden, solange das Textfeld offen ist */
+  .gf-gallery.gf-active .gf-current .kadence-blocks-gallery-item__caption { display: none; }
+</style>
+<script>
+(function () {
+  var cache = {};
+
+  function mediaId(img) {
+    if (!img) return null;
+    var id = img.getAttribute('data-id');
+    if (id) return id;
+    var m = (img.className || '').match(/wp-image-(\d+)/);
+    return m ? m[1] : null;
+  }
+
+  function loadDescription(id) {
+    if (!id) return Promise.resolve('');
+    if (cache[id] !== undefined) return Promise.resolve(cache[id]);
+    var root = (window.wpApiSettings && wpApiSettings.root) || '/?rest_route=/';
+    var url = root.replace(/\/$/, '') + '/wp/v2/media/' + id + '&_fields=description';
+    if (root.indexOf('?') === -1) url = url.replace('&', '?');
+    return fetch(url).then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (d) {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = (d.description && d.description.rendered) || '';
+        tmp.querySelectorAll('.attachment').forEach(function (n) { n.remove(); });
+        cache[id] = tmp.innerHTML.trim();
+        return cache[id];
+      })
+      .catch(function () { cache[id] = ''; return ''; });
+  }
+
+  function close(gallery) {
+    var panel = gallery.querySelector('.gf-panel');
+    if (panel) panel.remove();
+    gallery.querySelectorAll('.kadence-blocks-gallery-item').forEach(function (li) {
+      li.classList.remove('gf-gone', 'gf-current');
+    });
+    gallery.classList.remove('gf-active');
+    window.dispatchEvent(new Event('resize')); // Masonry neu anordnen
+  }
+
+  function open(gallery, item) {
+    close(gallery);
+    gallery.classList.add('gf-active');
+    item.classList.add('gf-current');
+    gallery.querySelectorAll('.kadence-blocks-gallery-item').forEach(function (li) {
+      if (li !== item) setTimeout(function () { li.classList.add('gf-gone'); }, 450);
+    });
+
+    var capEl = item.querySelector('.kadence-blocks-gallery-item__caption, figcaption');
+    var caption = capEl ? capEl.textContent.trim() : '';
+    var panel = document.createElement('div');
+    panel.className = 'gf-panel';
+    panel.innerHTML = '<button class="gf-close" aria-label="Schließen">×</button>' +
+      (caption ? '<h3></h3>' : '') + '<div class="gf-text"></div>';
+    if (caption) panel.querySelector('h3').textContent = caption;
+    item.querySelector('figure, .kadence-blocks-gallery-item-inner').appendChild(panel);
+    requestAnimationFrame(function () { panel.classList.add('gf-show'); });
+    setTimeout(function () { item.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 460);
+
+    loadDescription(mediaId(item.querySelector('img'))).then(function (html) {
+      panel.querySelector('.gf-text').innerHTML = html;
+    });
+  }
+
+  function init() {
+    document.querySelectorAll('.kb-gallery-ul').forEach(function (gallery) {
+      var cls = gallery.className + ' ' + (gallery.closest('.wp-block-kadence-advancedgallery') || gallery).className;
+      if (/carousel|slider|splide/.test(cls) || gallery.closest('.splide')) return;
+      gallery.classList.add('gf-gallery');
+      gallery.addEventListener('click', function (e) {
+        if (e.target.closest('.gf-close')) { e.preventDefault(); close(gallery); return; }
+        if (e.target.closest('.gf-panel')) return;
+        var item = e.target.closest('.kadence-blocks-gallery-item');
+        if (!item) return;
+        e.preventDefault(); // Lightbox / Links unterdrücken
+        e.stopPropagation();
+        if (item.classList.contains('gf-current')) close(gallery); else open(gallery, item);
+      }, true);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') document.querySelectorAll('.gf-gallery.gf-active').forEach(close);
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
