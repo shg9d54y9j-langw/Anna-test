@@ -1,17 +1,25 @@
 {
- "asOf": "2026-11-16",
+ "asOf": "2026-11-23",
  "note": "Firmen-Steckbriefe für die Theorie-Seite: Fakten aus Firmenangaben und Presse, Stand siehe asOf. Rollen: leader = Marktführer, supplier = Zulieferer (verdient, egal wer gewinnt), challenger = Herausforderer, spec = spekulativ. Auch Firmen von Börsen außerhalb von eToro (listing = Börse, tv = TradingView-Symbol für den Kurs-Link). Keine Kaufempfehlung. Alle Kürzel kommen automatisch in die Aktien-Daten (scripts/stock-universe.mjs).",
  "firms": {
   "NVDA": {
    "name": "NVIDIA",
    "role": "leader",
    "what": "Entwickelt die Grafik- und KI-Chips, auf denen die meisten großen KI-Modelle trainiert werden – samt Netzwerktechnik und kompletten Server-Systemen.",
-   "why": "Die eigentliche Besonderheit ist die Software CUDA: Millionen Entwickler arbeiten seit fast 20 Jahren damit, wer wechselt, muss viel neu schreiben. Dazu liefert NVIDIA das ganze Paket aus Chip, Vernetzung und Software und bringt fast jedes Jahr eine neue Generation.",
-   "watch": "Die größten Kunden (Google, Amazon, Meta, Microsoft) entwickeln eigene Chips; Exportverbote für China; sehr hohe Erwartungen sind schon im Kurs.",
+   "why": "Die eigentliche Besonderheit ist die Software CUDA: Millionen Entwickler arbeiten seit fast 20 Jahren damit, wer wechselt, muss viel neu schreiben. Dazu liefert NVIDIA das ganze Paket aus Chip, Vernetzung und Software und bringt fast jedes Jahr eine neue Generation. Im 3. Quartal des Geschäftsjahrs 2027 (gemeldet am 17. November 2026) stieg der Umsatz um 103 % auf 115,8 Mrd. $, davon 107,6 Mrd. $ mit Rechenzentren (+110 %); für das 4. Quartal erwartet NVIDIA rund 130 Mrd. $ – ohne Rechenzentrums-Chips für China.",
+   "watch": "Am 12. November 2026 trat Gründer und Chef Jensen Huang mit sofortiger Wirkung zurück; Finanzchefin Colette Kress führt übergangsweise, der Verwaltungsrat sucht einen Nachfolger – offen ist, wer künftig die Technik-Strategie prägt. Die größten Kunden (Google, Amazon, Meta, Microsoft) entwickeln eigene Chips; Exportverbote für China; sehr hohe Erwartungen sind schon im Kurs.",
    "src": [
     [
      "https://investor.nvidia.com",
      "NVIDIA Investor Relations"
+    ],
+    [
+     "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Third-Quarter-Fiscal-2027/default.aspx",
+     "NVIDIA: Zahlen zum 3. Quartal Geschäftsjahr 2027 (Nov. 2026)"
+    ],
+    [
+     "https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000082/nvidiaannouncesceotransiti.htm",
+     "NVIDIA: Wechsel an der Spitze, SEC-Meldung (Nov. 2026)"
     ]
    ]
   },
@@ -1056,6 +1064,63 @@
      "Börsen-Zeitung: RBI verdient mehr im Kerngeschäft (Nov. 2026)"
     ]
    ]
+  },
+  "BME.L": {
+   "name": "B&M European Value Retail",
+   "role": "challenger",
+   "theme": "Discounter: Wende in Großbritannien, Prognose angehoben",
+   "added": "2026-11-23",
+   "what": "Britischer Discounter für Haushaltswaren, Lebensmittel und Gartenartikel mit Filialen in Großbritannien und Frankreich sowie der Tiefkühl-Kette Heron Foods.",
+   "why": "Im ersten Halbjahr des Geschäftsjahrs 2027 (26 Wochen bis 26. September 2026, gemeldet am 12. November) stieg der Konzernumsatz um 3,6 % auf rund 2,8 Mrd. £, der bereinigte Vorsteuergewinn um 16,6 % auf 121 Mio. £. Die vergleichbaren Umsätze in Großbritannien drehten im 2. Quartal mit +3,2 % ins Plus – ein Erfolg des Programms „Back to B&M Basics“. Der freie Mittelzufluss stieg auf 132 Mio. £ (Vorjahr 51 Mio. £); B&M hob die Gewinnprognose an und erhöhte die Zwischendividende.",
+   "watch": "Über das ganze Halbjahr lagen die vergleichbaren UK-Umsätze nur 0,4 % im Plus (1. Quartal −2,3 %); das Weihnachtsquartal gilt als eigentlicher Test; harter Preiswettbewerb im britischen Handel; neuer Finanzchef erst ab Januar 2027.",
+   "src": [
+    [
+     "https://www.hl.co.uk/shares/stock-market-news/company--news/b-and-m-hails-return-to-uk-sales-growth-as-back-to-basics-campaign-bears-fruit",
+     "Hargreaves Lansdown: B&M wächst wieder in Großbritannien (Nov. 2026)"
+    ],
+    [
+     "https://www.ajbell.co.uk/news/articles/bm-profit-tops-forecast-uk-sales-growth-accelerates",
+     "AJ Bell: B&M-Gewinn über den Erwartungen (Nov. 2026)"
+    ]
+   ]
+  },
+  "GRG.L": {
+   "name": "Greggs",
+   "role": "leader",
+   "theme": "Bäckerei-Kette: Prognose angehoben, Kosten runter",
+   "added": "2026-11-23",
+   "what": "Größte britische Bäckerei-Kette für Essen zum Mitnehmen – Sausage Rolls, Sandwiches, Kaffee – mit eigenen und Franchise-Filialen.",
+   "why": "Am 30. September 2026 meldete Greggs für das 3. Quartal (13 Wochen bis 26. September) 7,7 % mehr Umsatz und 3,4 % mehr vergleichbaren Umsatz in den eigenen Filialen – schneller als im ersten Halbjahr. Statt eines etwa gleichbleibenden Gewinns erwartet Greggs für 2026 nun ein leicht besseres Ergebnis; vier Produktionsstätten sollen schließen, was 2028 und 2029 zusammen rund 20 Mio. £ sparen soll.",
+   "watch": "Die Werksschließungen kosten rund 60 Mio. £ und betreffen etwa 740 Stellen; Greggs erwartet für 2027 wieder stärkeren Kostendruck; die Gewinnprognose ist nur vage („leicht besser“).",
+   "src": [
+    [
+     "https://live.euronext.com/en/financial-news/britains-greggs-raises-profit-outlook-improved-trading",
+     "Reuters über Euronext: Greggs hebt Prognose an (Sept. 2026)"
+    ],
+    [
+     "https://www.proactiveinvestors.co.uk/a/101c0c37/greggs-nudges-up-2026-outlook-and-proposes-closing-four-manufacturing-si",
+     "Proactive: Prognose und Werksschließungen (Sept. 2026)"
+    ]
+   ]
+  },
+  "DIA.MC": {
+   "name": "DIA",
+   "role": "challenger",
+   "theme": "Supermärkte Spanien: wächst doppelt so schnell wie der Markt",
+   "added": "2026-11-23",
+   "what": "Spanische Supermarktkette mit Nachbarschaftsläden (eigene und Franchise), starker Eigenmarke und Frischeangebot; daneben ein Geschäft in Argentinien, das verkauft werden soll.",
+   "why": "Im 3. Quartal 2026 (gemeldet am 26. Oktober) stiegen die Bruttoumsätze unter der Marke DIA in Spanien um 11,3 % auf rund 1,61 Mrd. €, auf vergleichbarer Fläche um 8,3 %. Laut NielsenIQ wuchs DIA damit mehr als doppelt so schnell wie der Markt und gewann 0,3 Prozentpunkte Marktanteil; im Quartal kamen 27 neue Läden dazu, Ziel sind 100 Neueröffnungen netto im Jahr.",
+   "watch": "Das Argentinien-Geschäft ist schwach und noch nicht verkauft; starker Preiswettbewerb im spanischen Lebensmittelhandel; gemeldet wurden nur Umsätze, der Gewinn folgt erst mit den Jahreszahlen.",
+   "src": [
+    [
+     "https://emprendedores.es/franquicias/franquicias-actualidad/dia-espana-aumenta-sus-ventas-el-113-en-el-tercer-trimestre/",
+     "Emprendedores: DIA im 3. Quartal (Okt. 2026)"
+    ],
+    [
+     "https://www.merca2.es/2026/10/27/dia-crece-doble-sector-2482167/",
+     "Merca2: DIA wächst doppelt so schnell wie der Markt (Okt. 2026)"
+    ]
+   ]
   }
  },
  "sectors": {
@@ -1223,6 +1288,9 @@
   "COP",
   "ASC.L",
   "JDW.L",
-  "RAW.DE"
+  "RAW.DE",
+  "BME.L",
+  "GRG.L",
+  "DIA.MC"
  ]
 }
